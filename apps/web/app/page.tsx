@@ -282,36 +282,37 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-gradient-mesh" aria-hidden="true" />
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-32">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Column - Hero Content */}
             <div className="space-y-8 animate-fadeIn">
               {/* Badge */}
-              <Badge variant="premium" className="text-sm px-4 py-1.5">
+              <Badge variant="premium" className="text-sm px-4 py-1.5 bg-background/90 backdrop-blur-sm border-primary-dark/40 shadow-sm text-primary-dark font-semibold">
                 AI-Powered B2B Outreach Platform
               </Badge>
               
               {/* Headline */}
               <h1 id="hero-heading" className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
                 <span className="text-foreground">Upload. Connect.</span>
-                <span className="block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary to-primary/70">
+                <span className="block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-primary-dark via-primary to-primary-dark">
                   Pitch Smarter.
                 </span>
               </h1>
 
               {/* Description */}
-              <p className="text-xl sm:text-2xl text-muted-foreground dark:text-foreground/90 leading-relaxed max-w-3xl mx-auto">
+              <p className="text-xl sm:text-2xl text-foreground/80 dark:text-foreground/90 leading-relaxed font-medium">
                 Turn your ingredient specs into AI-generated product pages and reach verified
                 buyers — instantly.
               </p>
 
               {/* CTA Form */}
               <form onSubmit={handleMagicLinkSubmit} className="mt-10">
-                <div className="mx-auto flex max-w-lg flex-col gap-3 sm:flex-row">
+                <div className="flex max-w-lg flex-col gap-3 sm:flex-row">
                   <Input
                     type="email"
                     placeholder="Enter your company email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 sm:h-14 flex-1 text-base"
+                    className="h-12 sm:h-14 flex-1 text-base bg-background/95 backdrop-blur-sm border-border/50 shadow-sm"
                     disabled={isLoading}
                   />
                   <Button
@@ -327,18 +328,216 @@ export default function Home() {
               </form>
 
               {/* Social Proof */}
-              <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground pt-4">
+              <div className="flex flex-wrap items-start gap-6 text-sm text-foreground/80 pt-4">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  <span>No credit card required</span>
+                  <CheckCircle2 className="w-4 h-4 text-primary-dark" />
+                  <span className="font-medium">No credit card required</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  <span>Free trial available</span>
+                  <CheckCircle2 className="w-4 h-4 text-primary-dark" />
+                  <span className="font-medium">Free trial available</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  <span>Cancel anytime</span>
+                  <CheckCircle2 className="w-4 h-4 text-primary-dark" />
+                  <span className="font-medium">Cancel anytime</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - UI Showcase */}
+            <div className="relative mt-8 lg:mt-0 animate-fadeIn hidden lg:block" style={{ animationDelay: '200ms' }}>
+              {/* Background Card - Campaign Analytics Dashboard */}
+              <div className="absolute -top-6 right-6 w-full max-w-md bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl transform rotate-2 overflow-hidden">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-foreground">Campaign Analytics</h3>
+                    <BarChart3 className="w-4 h-4 text-primary-dark" />
+                  </div>
+                  
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-gradient-to-br from-primary/20 to-primary/10 p-2 rounded-lg border border-primary/20">
+                      <div className="text-lg font-bold text-primary-dark">247</div>
+                      <div className="text-[10px] text-foreground/60">Sent</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-500/20 to-green-500/10 p-2 rounded-lg border border-green-500/20">
+                      <div className="text-lg font-bold text-green-700">68%</div>
+                      <div className="text-[10px] text-foreground/60">Opened</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/10 p-2 rounded-lg border border-blue-500/20">
+                      <div className="text-lg font-bold text-blue-700">23</div>
+                      <div className="text-[10px] text-foreground/60">RFQs</div>
+                    </div>
+                  </div>
+
+                  {/* Mini Line Chart */}
+                  <div className="bg-muted/30 p-3 rounded-lg border border-border/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-medium text-foreground/70">Open Rate Trend</span>
+                      <span className="text-[10px] text-green-600 font-semibold">↑ 12%</span>
+                    </div>
+                    <div className="flex items-end gap-1 h-12">
+                      {[40, 52, 48, 65, 58, 68, 72, 68].map((height, i) => (
+                        <div key={i} className="flex-1 bg-gradient-to-t from-primary to-primary-light rounded-t" style={{ height: `${height}%` }} />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mini Pie Chart Representation */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-muted/30 p-2 rounded-lg border border-border/30">
+                      <div className="text-[10px] text-foreground/60 mb-1">Buyer Types</div>
+                      <div className="flex items-center gap-2">
+                        <div className="relative w-10 h-10">
+                          <div className="absolute inset-0 rounded-full" style={{ 
+                            background: `conic-gradient(
+                              hsl(var(--primary)) 0deg 180deg,
+                              hsl(var(--chart-2)) 180deg 288deg,
+                              hsl(var(--chart-3)) 288deg 360deg
+                            )` 
+                          }} />
+                          <div className="absolute inset-2 bg-background rounded-full" />
+                        </div>
+                        <div className="flex-1 space-y-0.5">
+                          <div className="flex items-center gap-1 text-[9px]">
+                            <div className="w-2 h-2 rounded-full bg-primary" />
+                            <span className="text-foreground/60">B2B 50%</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px]">
+                            <div className="w-2 h-2 rounded-full bg-[hsl(var(--chart-2))]" />
+                            <span className="text-foreground/60">Dist 30%</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px]">
+                            <div className="w-2 h-2 rounded-full bg-[hsl(var(--chart-3))]" />
+                            <span className="text-foreground/60">Mfg 20%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-muted/30 p-2 rounded-lg border border-border/30">
+                      <div className="text-[10px] text-foreground/60 mb-1">Top Regions</div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-foreground/70">🇺🇸 USA</span>
+                          <span className="font-semibold text-foreground">42%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-foreground/70">🇪🇺 EU</span>
+                          <span className="font-semibold text-foreground">28%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-foreground/70">🇨🇳 Asia</span>
+                          <span className="font-semibold text-foreground">30%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Foreground Card - Detailed Product Page Preview */}
+              <div className="relative z-10 bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl overflow-hidden max-w-md">
+                {/* Browser Header */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
+                  <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                  <span className="ml-2 text-[10px] text-foreground/50">pitchivo.com/products/curcumin-95</span>
+                </div>
+                
+                {/* Product Content */}
+                <div className="p-4 space-y-3">
+                  {/* Product Header */}
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-foreground">Organic Curcumin Extract 95%</h3>
+                        <p className="text-[10px] text-foreground/60 mt-0.5">High-purity turmeric extract</p>
+                      </div>
+                      <Badge className="text-[9px] px-2 py-0.5 bg-primary/10 text-primary-dark border-primary/20">
+                        In Stock
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Price & Lead Time */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-2 rounded-lg border border-primary/20">
+                      <div className="text-[10px] text-foreground/60 mb-0.5">Price (MOQ 100kg)</div>
+                      <div className="text-base font-bold text-primary-dark">$85/kg</div>
+                    </div>
+                    <div className="bg-muted/50 p-2 rounded-lg border border-border/50">
+                      <div className="text-[10px] text-foreground/60 mb-0.5">Lead Time</div>
+                      <div className="text-base font-bold text-foreground">15-20 days</div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-semibold text-foreground">Description</h4>
+                    <p className="text-[10px] text-foreground/70 leading-relaxed line-clamp-2">
+                      Premium organic curcumin extract standardized to 95% curcuminoids. Sourced from certified organic turmeric roots.
+                    </p>
+                  </div>
+
+                  {/* Specifications */}
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-semibold text-foreground">Specifications</h4>
+                    <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                      <div className="flex justify-between py-1 px-2 bg-muted/30 rounded">
+                        <span className="text-foreground/60">Purity:</span>
+                        <span className="font-medium text-foreground">95%</span>
+                      </div>
+                      <div className="flex justify-between py-1 px-2 bg-muted/30 rounded">
+                        <span className="text-foreground/60">MOQ:</span>
+                        <span className="font-medium text-foreground">100kg</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Certifications */}
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-semibold text-foreground">Certifications</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-700 border-green-500/20">
+                        <Shield className="w-2.5 h-2.5 mr-0.5" />
+                        USDA Organic
+                      </Badge>
+                      <Badge className="text-[9px] px-1.5 py-0.5 bg-blue-500/10 text-blue-700 border-blue-500/20">
+                        <Shield className="w-2.5 h-2.5 mr-0.5" />
+                        ISO 22000
+                      </Badge>
+                      <Badge className="text-[9px] px-1.5 py-0.5 bg-purple-500/10 text-purple-700 border-purple-500/20">
+                        Kosher
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Documents */}
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-semibold text-foreground">Documents</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button className="flex items-center gap-1.5 p-1.5 bg-muted/30 hover:bg-muted/50 rounded-lg border border-border/30 transition-colors">
+                        <FileText className="w-3 h-3 text-primary-dark" />
+                        <span className="text-[9px] font-medium text-foreground">TDS</span>
+                      </button>
+                      <button className="flex items-center gap-1.5 p-1.5 bg-muted/30 hover:bg-muted/50 rounded-lg border border-border/30 transition-colors">
+                        <FileText className="w-3 h-3 text-primary-dark" />
+                        <span className="text-[9px] font-medium text-foreground">COA</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CTA Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <button className="flex-1 bg-gradient-accent text-white text-[11px] font-semibold py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-1.5">
+                      <Send className="w-3 h-3" />
+                      Request Quote
+                    </button>
+                    <button className="px-3 border border-border/50 text-[11px] font-medium rounded-lg hover:bg-muted/50 transition-colors">
+                      <Bell className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -347,7 +546,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 sm:py-24 lg:py-32 bg-background" aria-labelledby="how-it-works-heading">
+      <section className="py-20 sm:py-24 lg:py-32 bg-transparent relative" aria-labelledby="how-it-works-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge variant="premium" className="mb-4">

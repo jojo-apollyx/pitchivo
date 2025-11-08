@@ -290,7 +290,7 @@
   
   .bg-aurora {
     background: linear-gradient(
-      90deg,
+      135deg,
       hsl(var(--accent-color)) 0%,
       hsl(var(--accent-pink)) 15%,
       hsl(var(--primary)) 30%,
@@ -300,18 +300,18 @@
       hsl(var(--accent-color)) 90%,
       hsl(var(--accent-mint-light)) 100%
     ) !important;
-    background-size: 300% 100% !important;
+    background-size: 300% 300% !important;
     animation: aurora 8s ease-in-out infinite !important;
-    filter: blur(20px) !important;
-    opacity: 0.6 !important;
+    filter: blur(40px) !important;
+    opacity: 0.25 !important;
     width: 100% !important;
-    height: 70vh !important;
+    height: 90vh !important;
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
     z-index: -1 !important;
-    transform: skew(15deg, -5deg) !important;
+    clip-path: polygon(0 0, 100% 0, 100% 55%, 0 85%) !important;
   }
   
   .dark .bg-aurora {
@@ -326,8 +326,8 @@
       hsl(var(--accent-color)) 95%,
       hsl(var(--accent-mint-light)) 100%
     ) !important;
-    opacity: 0.8 !important;
-    filter: blur(25px) saturate(1.2) brightness(1.1) !important;
+    opacity: 0.25 !important;
+    filter: blur(35px) saturate(1.2) brightness(1.1) !important;
   }
   
   /* Glass Morphism */
