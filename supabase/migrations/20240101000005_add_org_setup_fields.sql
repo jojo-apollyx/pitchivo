@@ -16,6 +16,9 @@ CREATE INDEX IF NOT EXISTS idx_organizations_industry ON organizations(industry)
 -- Add index for company_size filtering
 CREATE INDEX IF NOT EXISTS idx_organizations_company_size ON organizations(company_size);
 
+-- Drop old function signature first to avoid conflicts
+DROP FUNCTION IF EXISTS get_or_create_organization(TEXT, TEXT);
+
 -- Update get_or_create_organization function to accept more parameters
 CREATE OR REPLACE FUNCTION get_or_create_organization(
   email TEXT, 
