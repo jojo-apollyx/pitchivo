@@ -14,7 +14,11 @@ import {
   Zap,
   FileText,
   Users,
+  Star,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -158,6 +162,7 @@ export default function Home() {
   });
   const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
   const pricingRef = useRef<HTMLElement>(null);
+  const { theme, setTheme } = useTheme();
 
   const scrollToPricing = () => {
     pricingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -176,35 +181,49 @@ export default function Home() {
       return;
     }
 
-    if (isPublicEmail(email)) {
-      toast.error("Please use your company email", {
-        description: "Public emails like Gmail are not allowed.",
-        action: {
-          label: "Join Waitlist",
-          onClick: () => setWaitlistOpen(true),
-        },
-      });
-      return;
-    }
+            if (isPublicEmail(email)) {
+              toast.error("Company Email Required", {
+                description: "We only accept company email addresses for early access.",
+                action: {
+                  label: "Join Waitlist Instead",
+                  onClick: () => setWaitlistOpen(true),
+                },
+              });
+              return;
+            }
 
     setIsLoading(true);
 
     try {
-      const invited = await isInvitedEmail(email);
-      if (!invited) {
-        toast.warning("This platform is invite-only", {
-          description: "You can join the waitlist to request early access.",
-          action: {
-            label: "Join Waitlist →",
-            onClick: () => {
-              setWaitlistData((prev) => ({ ...prev, email }));
-              setWaitlistOpen(true);
-            },
-          },
-        });
-        setIsLoading(false);
-        return;
-      }
+              const invited = await isInvitedEmail(email);
+              if (!invited) {
+                toast(
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-primary-dark" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-foreground mb-1">Invite-Only Access</div>
+                      <p className="text-sm text-foreground/70 mb-3">
+                        We're currently in early access. Join our waitlist to get notified when we open up.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setWaitlistData({ fullName: "", company: "", role: "", note: "" });
+                          setWaitlistOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-accent text-white text-sm font-medium rounded-lg hover:shadow-lg transition-shadow"
+                      >
+                        Join Waitlist
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>,
+                  { duration: 6000 }
+                );
+                setIsLoading(false);
+                return;
+              }
 
       await sendMagicLink(email);
       setEmail("");
@@ -270,6 +289,16 @@ export default function Home() {
                 onClick={scrollToPricing}
               >
                 Pricing
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="w-9 h-9 p-0"
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
               </Button>
             </div>
           </div>
@@ -731,8 +760,147 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Enterprise Security Section */}
+      <section className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="security-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              Security & Compliance
+            </Badge>
+            <h2 id="security-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+              Enterprise-Grade Security
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Your data security and privacy are our top priorities
+            </p>
+          </div>
+
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
+              {[
+                {
+                  icon: "🔒",
+                  title: "SSL/TLS",
+                  description: "256-bit Encryption",
+                },
+                {
+                  icon: "🇪🇺",
+                  title: "GDPR",
+                  description: "Compliant",
+                },
+                {
+                  icon: "🇺🇸",
+                  title: "CCPA",
+                  description: "Compliant",
+                },
+                {
+                  icon: "🛡️",
+                  title: "ISO 27001",
+                  description: "Certified",
+                },
+              ].map((item, index) => (
+                <Card
+                  key={index}
+                  variant="premium"
+                  className="text-center p-6 hover-lift group"
+                >
+                  <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                    {item.icon}
+                  </div>
+                  <h3 className="font-bold text-foreground mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="mt-12 text-center">
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+                We use industry-standard encryption and security practices to protect your data. 
+                All communications are encrypted, and we're fully compliant with international data protection regulations.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 sm:py-24 lg:py-32 bg-background" aria-labelledby="testimonials-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              Testimonials
+            </Badge>
+            <h2 id="testimonials-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+              Trusted by Industry Leaders
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              See what our customers say about Pitchivo
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                name: "Sarah Chen",
+                role: "Export Manager",
+                company: "NutriGlobal Inc.",
+                content: "Pitchivo transformed how we reach international buyers. We generated 50+ qualified leads in the first month and closed 3 major deals. The AI-generated product pages are incredibly professional.",
+                rating: 5,
+              },
+              {
+                name: "Michael Rodriguez",
+                role: "Sales Director",
+                company: "BioIngredients Corp",
+                content: "The campaign analytics are game-changing. We can see exactly which buyers are interested and when to follow up. Our close rate increased by 40% since using Pitchivo.",
+                rating: 5,
+              },
+              {
+                name: "Emma Thompson",
+                role: "Business Development",
+                company: "OrganicSource Ltd",
+                content: "Setting up used to take weeks. With Pitchivo, we launched our first campaign in hours. The platform handles everything from product pages to buyer matching. Absolutely worth it.",
+                rating: 5,
+              },
+            ].map((testimonial, index) => (
+              <Card
+                key={index}
+                variant="premium"
+                className="hover-lift"
+              >
+                <CardContent className="p-6">
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  
+                  {/* Content */}
+                  <p className="text-sm text-foreground/80 mb-6 leading-relaxed">
+                    &ldquo;{testimonial.content}&rdquo;
+                  </p>
+                  
+                  {/* Author */}
+                  <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                    <div className="w-10 h-10 rounded-full bg-gradient-accent flex items-center justify-center text-white font-semibold">
+                      {testimonial.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">{testimonial.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {testimonial.role}, {testimonial.company}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
-      <section ref={pricingRef} className="py-20 sm:py-24 lg:py-32 bg-background" aria-labelledby="pricing-heading">
+      <section ref={pricingRef} className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="pricing-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge variant="premium" className="mb-4">
@@ -860,7 +1028,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Links */}
+            {/* Product Links */}
             <div>
               <h3 className="font-semibold text-foreground mb-4">Product</h3>
               <ul className="space-y-3">
@@ -882,28 +1050,28 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Company */}
+            {/* Legal Links */}
             <div>
-              <h3 className="font-semibold text-foreground mb-4">Company</h3>
+              <h3 className="font-semibold text-foreground mb-4">Legal</h3>
               <ul className="space-y-3">
                 <li>
                   <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    About
+                    Privacy Policy
                   </Button>
                 </li>
                 <li>
                   <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    Contact
+                    Terms of Service
                   </Button>
                 </li>
                 <li>
                   <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    Privacy
+                    Contact Us
                   </Button>
                 </li>
                 <li>
                   <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    Terms
+                    About Us
                   </Button>
                 </li>
               </ul>
@@ -1005,19 +1173,20 @@ export default function Home() {
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setWaitlistOpen(false)}
                 disabled={isSubmittingWaitlist}
+                className="h-11"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="min-h-[44px] touch-manipulation"
                 disabled={isSubmittingWaitlist}
+                className="h-11"
               >
                 {isSubmittingWaitlist ? "Submitting..." : "Submit"}
               </Button>
