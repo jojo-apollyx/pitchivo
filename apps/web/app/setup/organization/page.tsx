@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Building2, Users, Briefcase, Upload, CheckCircle2 } from 'lucide-react'
+import { Sparkles, Building2, Users, Briefcase, Upload, CheckCircle2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 const COMPANY_SIZES = [
   { value: '1-5', label: '1-5' },
@@ -31,16 +31,31 @@ const INDUSTRIES = [
   'Other',
 ]
 
-const USE_CASES = [
-  { id: 'promote', label: 'Promote products' },
-  { id: 'buyers', label: 'Find buyers' },
-  { id: 'team', label: 'Manage team' },
-  { id: 'analytics', label: 'Track analytics' },
+const ROLE_SUGGESTIONS = [
+  'Founder',
+  'CEO',
+  'CTO',
+  'COO',
+  'Sales Manager',
+  'Export Manager',
+  'Business Development Manager',
+  'Marketing Manager',
+  'Product Manager',
+  'Operations Manager',
+  'Account Manager',
+  'Sales Representative',
+  'Export Lead',
+  'Business Owner',
 ]
 
 export default function OrganizationSetup() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [roleSuggestions, setRoleSuggestions] = useState<string[]>([])
+  const [showRoleSuggestions, setShowRoleSuggestions] = useState(false)
   const [formData, setFormData] = useState({
     companyName: '',
     domain: '',
@@ -48,8 +63,111 @@ export default function OrganizationSetup() {
     companySize: '',
     role: '',
     description: '',
-    useCases: [] as string[],
   })
+
+  // Get user email and auto-fill domain
+  useEffect(() => {
+    const loadUserData = async () => {
+      const supabase = createClient()
+      
+      // Wait a bit for session to be established
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // First check session
+      let session = null
+      let retries = 0
+      while (!session && retries < 3) {
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        session = currentSession
+        if (!session) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+          retries++
+        }
+      }
+      
+      if (!session) {
+        toast.error('Session expired', {
+          description: 'Please sign in again to continue.',
+        })
+        router.push('/')
+        return
+      }
+      
+      // Get user from session
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error || !user) {
+        // Clear invalid session
+        await supabase.auth.signOut()
+        // Show toast and redirect
+        toast.error('Session expired', {
+          description: 'Please sign in again to continue.',
+        })
+        router.push('/')
+        return
+      }
+      
+      if (user?.email) {
+        setUserEmail(user.email)
+        const domain = user.email.split('@')[1]
+        setFormData(prev => ({ ...prev, domain: domain || '' }))
+      } else {
+        // Clear session and show toast
+        await supabase.auth.signOut()
+        toast.error('Session expired', {
+          description: 'Please sign in again to continue.',
+        })
+        router.push('/')
+      }
+    }
+    
+    loadUserData()
+  }, [router])
+
+  // Filter role suggestions based on input
+  useEffect(() => {
+    if (formData.role.trim()) {
+      const filtered = ROLE_SUGGESTIONS.filter(role =>
+        role.toLowerCase().includes(formData.role.toLowerCase())
+      )
+      setRoleSuggestions(filtered)
+      setShowRoleSuggestions(filtered.length > 0 && formData.role !== filtered[0])
+    } else {
+      setRoleSuggestions([])
+      setShowRoleSuggestions(false)
+    }
+  }, [formData.role])
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB')
+      return
+    }
+
+    setLogoFile(file)
+
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setLogoPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,8 +180,79 @@ export default function OrganizationSetup() {
     setIsLoading(true)
 
     try {
-      // TODO: Call API to create/update organization
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const supabase = createClient()
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        throw new Error('User not found')
+      }
+
+      // Upload logo if provided
+      let logoUrl = null
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop()
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
+        const filePath = `organizations/${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('logos')
+          .upload(filePath, logoFile, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (uploadError) {
+          console.error('Logo upload error:', uploadError)
+          toast.error('Failed to upload logo. Continuing without logo...')
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('logos')
+            .getPublicUrl(filePath)
+          logoUrl = publicUrl
+        }
+      }
+
+      // Get or create organization
+      const { data: orgData, error: orgError } = await supabase.rpc('get_or_create_organization', {
+        email: user.email!,
+        company_name: formData.companyName,
+        industry: formData.industry,
+        company_size: formData.companySize,
+        description: formData.description || null,
+        use_cases: [],
+      })
+
+      if (orgError) {
+        throw orgError
+      }
+
+      // Complete organization setup
+      const { error: setupError } = await supabase.rpc('complete_organization_setup', {
+        p_org_id: orgData,
+        p_industry: formData.industry,
+        p_company_size: formData.companySize,
+        p_description: formData.description || null,
+        p_use_cases: [],
+        p_logo_url: logoUrl,
+      })
+
+      if (setupError) {
+        throw setupError
+      }
+
+      // Update user role if provided
+      if (formData.role) {
+        const { error: roleError } = await supabase
+          .from('user_profiles')
+          .update({ org_role: formData.role.toLowerCase().includes('sales') ? 'sales' : 
+                   formData.role.toLowerCase().includes('marketing') ? 'marketing' : 'user' })
+          .eq('id', user.id)
+
+        if (roleError) {
+          console.error('Role update error:', roleError)
+        }
+      }
 
       toast.success('Organization created successfully!')
 
@@ -78,14 +267,6 @@ export default function OrganizationSetup() {
     }
   }
 
-  const handleUseCaseToggle = (caseId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      useCases: prev.useCases.includes(caseId)
-        ? prev.useCases.filter((id) => id !== caseId)
-        : [...prev.useCases, caseId],
-    }))
-  }
 
   if (isLoading) {
     return (
@@ -153,14 +334,16 @@ export default function OrganizationSetup() {
               </Label>
               <Input
                 id="domain"
-                placeholder="e.g., abcingredients.com"
-                value={formData.domain}
-                onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                className="text-base"
-                required
+                value={formData.domain || (userEmail ? userEmail.split('@')[1] : '')}
+                readOnly
+                disabled
+                className="text-base bg-muted cursor-not-allowed"
+                placeholder={userEmail ? `Extracting from ${userEmail}...` : 'Loading...'}
               />
               <p className="text-sm text-foreground/60">
-                Users with the same domain will join your workspace automatically.
+                {userEmail 
+                  ? `Automatically detected from your email (${userEmail}). Users with the same domain will automatically join your workspace.`
+                  : 'Users with the same domain will automatically join your workspace.'}
               </p>
             </div>
 
@@ -171,7 +354,9 @@ export default function OrganizationSetup() {
               </Label>
               <Select
                 value={formData.industry}
-                onValueChange={(value) => setFormData({ ...formData, industry: value })}
+                onValueChange={(value) => {
+                  setFormData((prev) => ({ ...prev, industry: value }))
+                }}
               >
                 <SelectTrigger id="industry" className="text-base">
                   <SelectValue />
@@ -220,13 +405,38 @@ export default function OrganizationSetup() {
                 <Briefcase className="h-4 w-4" />
                 Your Role / Title
               </Label>
-              <Input
-                id="role"
-                placeholder="e.g., Founder, Sales Manager, Export Lead"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="text-base"
-              />
+              <div className="relative">
+                <Input
+                  id="role"
+                  placeholder="e.g., Founder, Sales Manager, Export Lead"
+                  value={formData.role}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, role: e.target.value }))}
+                  onFocus={() => {
+                    if (formData.role.trim()) {
+                      setShowRoleSuggestions(true)
+                    }
+                  }}
+                  className="text-base"
+                  autoComplete="off"
+                />
+                {showRoleSuggestions && roleSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-48 overflow-auto">
+                    {roleSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, role: suggestion }))
+                          setShowRoleSuggestions(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-accent text-sm"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Company Description */}
@@ -255,41 +465,37 @@ export default function OrganizationSetup() {
                 Company Logo (Optional)
               </Label>
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-background/50">
-                  <Upload className="h-6 w-6 text-foreground/40" />
+                <div className="relative w-24 h-24 rounded-lg border-2 border-dashed border-border overflow-hidden bg-background/50 flex items-center justify-center">
+                  {logoPreview ? (
+                    <>
+                      <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <Upload className="h-6 w-6 text-foreground/40" />
+                  )}
                 </div>
-                <Button type="button" variant="outline" size="default" className="min-h-[44px]">
-                  Upload Logo
-                </Button>
-              </div>
-            </div>
-
-            {/* Primary Use Case */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">
-                What will you use Pitchivo for? (Select all that apply)
-              </Label>
-              <div className="space-y-3">
-                {USE_CASES.map((useCase) => (
-                  <div
-                    key={useCase.id}
-                    className="flex items-center space-x-3 min-h-[44px] px-4 py-3 rounded-lg border border-border hover:bg-accent/50 transition-colors touch-manipulation"
-                    onClick={() => handleUseCaseToggle(useCase.id)}
-                  >
-                    <Checkbox
-                      id={useCase.id}
-                      checked={formData.useCases.includes(useCase.id)}
-                      onCheckedChange={() => handleUseCaseToggle(useCase.id)}
-                      className="h-5 w-5"
-                    />
-                    <label
-                      htmlFor={useCase.id}
-                      className="text-base font-medium cursor-pointer flex-1"
-                    >
-                      {useCase.label}
-                    </label>
-                  </div>
-                ))}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    id="logo-upload"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <label htmlFor="logo-upload" className="cursor-pointer">
+                    <Button type="button" variant="outline" size="default" className="min-h-[44px] pointer-events-none">
+                      Choose Logo
+                    </Button>
+                  </label>
+                  <p className="text-xs text-foreground/60 mt-1">PNG, JPG up to 5MB</p>
+                </div>
               </div>
             </div>
 

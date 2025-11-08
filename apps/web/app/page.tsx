@@ -120,7 +120,6 @@ async function sendMagicLink(email: string) {
     const client = createClient(supabaseUrl, supabaseKey)
 
     const redirectUrl = `${globalThis.window.location.origin}/auth/callback`
-    console.log('Sending magic link with redirect URL:', redirectUrl)
     
     const { error } = await client.auth.signInWithOtp({
       email,
@@ -131,9 +130,8 @@ async function sendMagicLink(email: string) {
 
     if (error) throw error;
 
-    console.log('Magic link sent successfully')
     toast.success("Magic link sent!", {
-      description: `Check your email for the sign-in link. You'll be redirected to: ${redirectUrl}`,
+      description: "Check your email for the sign-in link.",
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Please try again later.";
@@ -206,11 +204,7 @@ export default function Home() {
   // Handle auth callback on landing page (in case redirect didn't work)
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
-      console.log('Auth tokens detected on landing page')
-      console.log('Current hash:', window.location.hash)
-      // Use replace to keep the hash
       const hash = window.location.hash
-      console.log('Redirecting to /auth/callback with hash:', hash)
       window.location.replace('/auth/callback' + hash)
     }
   }, [])

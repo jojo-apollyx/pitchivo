@@ -10,41 +10,25 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('Auth callback: Page loaded')
-        console.log('Auth callback: Current URL:', window.location.href)
-        console.log('Auth callback: Hash:', window.location.hash)
-        
         const supabase = createClient()
-        
-        console.log('Auth callback: Supabase client created')
         
         // Parse hash fragment manually
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const access_token = hashParams.get('access_token')
         const refresh_token = hashParams.get('refresh_token')
         
-        console.log('Auth callback: Tokens from hash', { 
-          hasAccessToken: !!access_token, 
-          hasRefreshToken: !!refresh_token 
-        })
-        
         // If we have tokens in the hash, set the session manually
         if (access_token && refresh_token) {
-          console.log('Auth callback: Setting session from hash tokens')
-          const { data, error } = await supabase.auth.setSession({
+          await supabase.auth.setSession({
             access_token,
             refresh_token
           })
-          console.log('Auth callback: Session set result', { data, error })
         }
         
         // Get user after setting session
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         
-        console.log('Auth callback: User data', { user, userError })
-        
         if (userError || !user) {
-          console.error('Error getting user:', userError)
           router.push('/?error=user_not_found')
           return
         }
@@ -56,32 +40,26 @@ export default function AuthCallback() {
           .eq('id', user.id)
           .single()
 
-        console.log('Auth callback: Profile data', { profile, profileError })
-
         if (profileError) {
-          console.error('Error fetching user profile:', profileError)
           router.push('/?error=profile_not_found')
           return
         }
 
         // If no organization or organization setup not completed, redirect to setup
-        const needsSetup = !profile?.organization_id || !profile.organizations?.onboarding_completed_at
-        console.log('Auth callback: Needs setup?', needsSetup, {
-          hasOrgId: !!profile?.organization_id,
-          hasOnboardingCompleted: !!profile.organizations?.onboarding_completed_at
-        })
+        // TypeScript infers organizations as array, but it's actually a single object with .single()
+        const organization = Array.isArray(profile?.organizations) 
+          ? profile?.organizations[0] 
+          : profile?.organizations
+        const needsSetup = !profile?.organization_id || !organization?.onboarding_completed_at
         
         if (needsSetup) {
-          console.log('Auth callback: Redirecting to setup')
           router.push('/setup/organization')
           return
         }
 
         // Otherwise, redirect to home
-        console.log('Auth callback: Redirecting to home')
         router.push('/home')
       } catch (error) {
-        console.error('Error in auth callback:', error)
         router.push('/?error=callback_failed')
       }
     }
@@ -97,11 +75,6 @@ export default function AuthCallback() {
           <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
         <p className="text-lg text-foreground/70">Signing you in...</p>
-        <div className="text-xs text-foreground/50 space-y-2">
-          <p>🔍 Debug Info:</p>
-          <p>Current URL: {typeof window !== 'undefined' ? window.location.href : 'Loading...'}</p>
-          <p>Check browser console (F12) for detailed logs</p>
-        </div>
       </div>
     </div>
   )
