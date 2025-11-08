@@ -1,11 +1,11 @@
-# yooquote
+# Pitchivo
 
 A clean monorepo boilerplate built with Next.js, Tailwind CSS, Supabase, and Turborepo.
 
 ## 🧱 Structure
 
 ```
-yooquote/
+pitchivo/
 ├── apps/
 │   └── web/          # Main Next.js app
 ├── packages/
@@ -42,7 +42,7 @@ npm run dev
 
 ### Vercel
 
-1. Import from GitHub → choose `yooquote`
+1. Import from GitHub → choose `pitchivo`
 2. Set **Root Directory:** `apps/web`
 3. Add environment variables from `.env.example`
 4. Deploy ✅

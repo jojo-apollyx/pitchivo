@@ -1,6 +1,7 @@
 {
-  "name": "yooquote",
+  "name": "pitchivo",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -9,10 +10,26 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "clean": "turbo run clean"
+    "debug": "NODE_OPTIONS='--inspect=9229' turbo run dev:debug --filter=web",
+    "debug:clear-ports": "./scripts/clear-debug-ports.sh",
+    "supabase": "supabase",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:migrate": "supabase db push --local",
+    "supabase:deploy": "supabase functions deploy",
+    "supabase:functions:serve": "supabase functions serve --env-file .env.local"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "turbo": "latest"
+    "supabase": "^2.51.0",
+    "turbo": "^2.0.3"
   }
 }
 
