@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
+import { sendWaitlistConfirmationEmail } from "@/lib/email";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -173,6 +174,16 @@ async function addToWaitlist(data: {
     });
 
     if (error) throw error;
+
+    // Send waitlist confirmation email (non-blocking)
+    sendWaitlistConfirmationEmail({
+      to: data.email,
+      fullName: data.fullName,
+      company: data.company,
+    }).catch((error) => {
+      console.error("Failed to send waitlist confirmation email:", error);
+      // Don't show error to user, email sending is not critical
+    });
 
     toast.success("Thank you! You're on the list", {
       description: "We'll notify you once your account is approved.",

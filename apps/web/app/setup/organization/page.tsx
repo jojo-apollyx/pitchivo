@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { sendOrganizationSetupEmail } from '@/lib/email'
 
 const COMPANY_SIZES = [
   { value: '1-5', label: '1-5' },
@@ -252,6 +253,18 @@ export default function OrganizationSetup() {
         if (roleError) {
           console.error('Role update error:', roleError)
         }
+      }
+
+      // Send organization setup email (non-blocking)
+      if (user.email) {
+        sendOrganizationSetupEmail({
+          to: user.email,
+          userName: user.user_metadata?.full_name || user.email.split('@')[0],
+          companyName: formData.companyName,
+        }).catch((error) => {
+          console.error('Failed to send organization setup email:', error)
+          // Don't show error to user, email sending is not critical
+        })
       }
 
       toast.success('Organization created successfully!')
