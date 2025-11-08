@@ -23,7 +23,7 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -151,89 +151,6 @@ async function addToWaitlist(data: {
   }
 }
 
-// Structured Data for SEO/AEO
-const structuredData = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": "https://pitchivo.com/#website",
-      url: "https://pitchivo.com/",
-      name: "Pitchivo",
-      description:
-        "AI-powered B2B outreach platform for ingredient suppliers",
-      publisher: {
-        "@id": "https://pitchivo.com/#organization",
-      },
-      potentialAction: {
-        "@type": "SearchAction",
-        target: {
-          "@type": "EntryPoint",
-          urlTemplate: "https://pitchivo.com/faq?q={search_term_string}",
-        },
-        "query-input": "required name=search_term_string",
-      },
-    },
-    {
-      "@type": "Organization",
-      "@id": "https://pitchivo.com/#organization",
-      name: "Pitchivo",
-      url: "https://pitchivo.com/",
-      logo: {
-        "@type": "ImageObject",
-        url: "https://pitchivo.com/logo.png",
-      },
-      sameAs: ["https://twitter.com/pitchivo", "https://linkedin.com/company/pitchivo"],
-      contactPoint: {
-        "@type": "ContactPoint",
-        email: "hello@pitchivo.com",
-        contactType: "Customer Service",
-        availableLanguage: ["English"],
-      },
-    },
-    {
-      "@type": "SoftwareApplication",
-      name: "Pitchivo",
-      applicationCategory: "BusinessApplication",
-      operatingSystem: "Web",
-      offers: {
-        "@type": "AggregateOffer",
-        lowPrice: "0",
-        highPrice: "999",
-        priceCurrency: "USD",
-        offerCount: "4",
-      },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "5",
-        reviewCount: "3",
-        bestRating: "5",
-        worstRating: "1",
-      },
-      featureList: [
-        "AI-Generated Product Pages",
-        "Built-in Buyer Databases",
-        "Smart Cold Email Campaigns",
-        "Precision Tracking",
-        "Access Control",
-        "Multi-link & QR Code Friendly",
-        "Real-time Notifications",
-      ],
-    },
-    {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Home",
-          item: "https://pitchivo.com/",
-        },
-      ],
-    },
-  ],
-};
-
 export default function Home() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -352,12 +269,6 @@ export default function Home() {
 
   return (
     <>
-      {/* Structured Data for SEO/AEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-
       <div className="min-h-screen relative">
         {/* Aurora Background - covers header and hero section */}
         <div className="bg-aurora" aria-hidden="true" />
@@ -1141,13 +1052,12 @@ export default function Home() {
                   </Button>
                 </li>
                 <li>
-                  <Button 
-                    variant="link" 
-                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                    asChild
+                  <Link 
+                    href="/faq"
+                    className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
-                    <Link href="/faq">FAQ</Link>
-                  </Button>
+                    FAQ
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -1157,40 +1067,36 @@ export default function Home() {
               <h3 className="font-semibold text-foreground mb-4">Legal</h3>
               <ul className="space-y-3">
                 <li>
-                  <Button 
-                    variant="link" 
-                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                    asChild
+                  <Link 
+                    href="/privacy"
+                    className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
-                    <Link href="/privacy">Privacy Policy</Link>
-                  </Button>
+                    Privacy Policy
+                  </Link>
                 </li>
                 <li>
-                  <Button 
-                    variant="link" 
-                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                    asChild
+                  <Link 
+                    href="/terms"
+                    className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
-                    <Link href="/terms">Terms of Service</Link>
-                  </Button>
+                    Terms of Service
+                  </Link>
                 </li>
                 <li>
-                  <Button 
-                    variant="link" 
-                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                    asChild
+                  <Link 
+                    href="/contact"
+                    className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
-                    <Link href="/contact">Contact Us</Link>
-                  </Button>
+                    Contact Us
+                  </Link>
                 </li>
                 <li>
-                  <Button 
-                    variant="link" 
-                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                    asChild
+                  <Link 
+                    href="/about"
+                    className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
-                    <Link href="/about">About Us</Link>
-                  </Button>
+                    About Us
+                  </Link>
                 </li>
               </ul>
             </div>
