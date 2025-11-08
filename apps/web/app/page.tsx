@@ -165,6 +165,14 @@ const structuredData = {
       publisher: {
         "@id": "https://pitchivo.com/#organization",
       },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: "https://pitchivo.com/faq?q={search_term_string}",
+        },
+        "query-input": "required name=search_term_string",
+      },
     },
     {
       "@type": "Organization",
@@ -176,11 +184,18 @@ const structuredData = {
         url: "https://pitchivo.com/logo.png",
       },
       sameAs: ["https://twitter.com/pitchivo", "https://linkedin.com/company/pitchivo"],
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "hello@pitchivo.com",
+        contactType: "Customer Service",
+        availableLanguage: ["English"],
+      },
     },
     {
       "@type": "SoftwareApplication",
       name: "Pitchivo",
       applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
       offers: {
         "@type": "AggregateOffer",
         lowPrice: "0",
@@ -192,34 +207,27 @@ const structuredData = {
         "@type": "AggregateRating",
         ratingValue: "5",
         reviewCount: "3",
+        bestRating: "5",
+        worstRating: "1",
       },
+      featureList: [
+        "AI-Generated Product Pages",
+        "Built-in Buyer Databases",
+        "Smart Cold Email Campaigns",
+        "Precision Tracking",
+        "Access Control",
+        "Multi-link & QR Code Friendly",
+        "Real-time Notifications",
+      ],
     },
     {
-      "@type": "FAQPage",
-      mainEntity: [
+      "@type": "BreadcrumbList",
+      itemListElement: [
         {
-          "@type": "Question",
-          name: "What is Pitchivo?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Pitchivo is an AI-powered B2B outreach platform that transforms ingredient specs into professional product pages and helps suppliers reach verified buyers through smart email campaigns.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "How does Pitchivo work?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Upload your product specs, connect to buyer databases, launch personalized campaigns, track analytics, and receive RFQs - all automated with AI.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "What industries does Pitchivo serve?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Pitchivo serves food ingredients, dietary supplements, and chemical suppliers looking to scale their B2B outreach.",
-          },
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://pitchivo.com/",
         },
       ],
     },
@@ -1133,8 +1141,12 @@ export default function Home() {
                   </Button>
                 </li>
                 <li>
-                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    FAQ
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                    asChild
+                  >
+                    <Link href="/faq">FAQ</Link>
                   </Button>
                 </li>
               </ul>

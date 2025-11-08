@@ -11,7 +11,7 @@ const STATIC_ASSETS = [
 ]
 
 // Install event
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       return cache.addAll(STATIC_ASSETS)
@@ -20,7 +20,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 })
 
 // Activate event
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
 })
 
 // Fetch event
-self.addEventListener('fetch', (event: FetchEvent) => {
+self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
       return (
