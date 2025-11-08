@@ -21,25 +21,25 @@ This design system is built for **mobile-first Progressive Web Apps (PWA)** usin
 
 The design system uses CSS variables for theming (defined in `globals.css`):
 
-**Current Implementation: Mint Green Theme**
+**Current Implementation: Medium Spring Green Theme**
 
 ```css
 :root {
-  /* Primary: Mint Green #98FBCB */
-  --primary: 157 94% 79%;              /* #98FBCB - primary mint green */
-  --primary-foreground: 0 0% 5%;       /* gray-950 - dark text on light primary */
+  /* Primary: Medium Spring Green #00FA9A */
+  --primary: 157 100% 49%;              /* #00FA9A - primary medium spring green */
+  --primary-foreground: 0 0% 100%;     /* white - light text on dark primary */
   
   /* Primary Variants */
-  --primary-light: 162 100% 87%;      /* #BFFFED - lighter mint */
-  --primary-dark: 150 48% 66%;        /* #7FCFA8 - darker mint */
-  --primary-darker: 150 24% 44%;      /* #558B71 - darkest mint */
+  --primary-light: 120 73% 75%;        /* #90EE90 - lighter light green */
+  --primary-dark: 147 50% 47%;         /* #3CB371 - darker medium sea green */
+  --primary-darker: 147 50% 47%;        /* #3CB371 - darkest (same as dark) */
   --background: 0 0% 100%;           /* white */
   --foreground: 0 0% 5%;             /* gray-950 */
   --card: 0 0% 100%;                 /* white */
   --card-foreground: 0 0% 5%;        /* gray-950 */
   --border: 0 0% 90%;                /* gray-200 */
   --input: 0 0% 90%;                 /* gray-200 */
-  --ring: 157 94% 79%;                /* primary mint green */
+  --ring: 157 100% 49%;                /* primary medium spring green */
   --radius: 0.75rem;                 /* 12px - premium rounded */
   
   /* Accent Colors */
@@ -70,12 +70,12 @@ className="bg-gradient-to-r from-primary to-primary/80"
 
 ### Current Color Palette
 
-**Mint Green Theme** (Implemented):
-- **Primary**: `#98FBCB` (Mint Green) - `157 94% 79%`
-- **Primary Light**: `#BFFFED` - `162 100% 87%`
-- **Primary Dark**: `#7FCFA8` - `150 48% 66%`
-- **Primary Darker**: `#558B71` - `150 24% 44%`
-- **Accent Color**: `#98FBCB` (same as primary) - for selected states and highlights
+**Medium Spring Green Theme** (Implemented):
+- **Primary**: `#00FA9A` (Medium Spring Green) - `157 100% 49%`
+- **Primary Light**: `#90EE90` (Light Green) - `120 73% 75%`
+- **Primary Dark**: `#3CB371` (Medium Sea Green) - `147 50% 47%`
+- **Primary Darker**: `#3CB371` (Medium Sea Green) - `147 50% 47%`
+- **Accent Color**: `#00FA9A` (same as primary) - for selected states and highlights
 
 ### Accent Colors
 

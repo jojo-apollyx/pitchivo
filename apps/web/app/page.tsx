@@ -11,9 +11,13 @@ import {
   Send,
   Shield,
   Sparkles,
+  Zap,
+  FileText,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -244,51 +248,28 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background Decorative Elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10" />
-        
-        {/* Sloped Lines Background */}
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: `repeating-linear-gradient(
-              -45deg,
-              transparent,
-              transparent 20px,
-              hsl(var(--primary-light)) 20px,
-              hsl(var(--primary-light)) 21px
-            )`,
-          }}
-        />
-        
-        {/* Vector Shapes */}
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-40 left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-light/5 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen relative">
+      {/* Aurora Background - covers header and hero section */}
+      <div className="bg-aurora" aria-hidden="true" />
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-3 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold text-foreground">Pitchville</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
             </div>
             <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="hidden sm:flex hover:bg-primary-light/20 transition-colors"
+                className="hidden sm:flex hover:bg-primary/10 transition-colors font-medium"
                 onClick={scrollToPricing}
               >
                 Pricing
-              </Button>
-              <Button variant="outline" size="sm" className="hover:bg-primary-light/20 transition-colors">
-                Login
               </Button>
             </div>
           </div>
@@ -296,145 +277,176 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-              Upload. Connect. Pitch Smarter.
-            </h1>
-            <p className="mt-4 text-base text-muted-foreground sm:text-lg lg:text-xl">
-              Turn your ingredient specs into AI-generated product pages and reach verified
-              buyers — instantly.
-            </p>
+      <section className="relative overflow-hidden" aria-labelledby="hero-heading">
+        {/* Ambient glow */}
+        <div className="absolute inset-0 -z-10 bg-gradient-mesh" aria-hidden="true" />
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-32">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="space-y-8 animate-fadeIn">
+              {/* Badge */}
+              <Badge variant="premium" className="text-sm px-4 py-1.5">
+                AI-Powered B2B Outreach Platform
+              </Badge>
+              
+              {/* Headline */}
+              <h1 id="hero-heading" className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+                <span className="text-foreground">Upload. Connect.</span>
+                <span className="block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary to-primary/70">
+                  Pitch Smarter.
+                </span>
+              </h1>
 
-            {/* Magic Link Input */}
-            <form onSubmit={handleMagicLinkSubmit} className="mt-8">
-              <div className="mx-auto flex max-w-md flex-col gap-3 sm:flex-row">
-                <Input
-                  type="email"
-                  placeholder="Enter your company email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 flex-1 touch-manipulation"
-                  disabled={isLoading}
-                />
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="min-h-[44px] touch-manipulation transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/30"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending..." : "Get Magic Link 🔑"}
-                </Button>
+              {/* Description */}
+              <p className="text-xl sm:text-2xl text-muted-foreground dark:text-foreground/90 leading-relaxed max-w-3xl mx-auto">
+                Turn your ingredient specs into AI-generated product pages and reach verified
+                buyers — instantly.
+              </p>
+
+              {/* CTA Form */}
+              <form onSubmit={handleMagicLinkSubmit} className="mt-10">
+                <div className="mx-auto flex max-w-lg flex-col gap-3 sm:flex-row">
+                  <Input
+                    type="email"
+                    placeholder="Enter your company email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 sm:h-14 flex-1 text-base"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-12 sm:h-14 px-8 text-base font-semibold hover-scale shadow-lg"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Sending..." : "Get Started"}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </form>
+
+              {/* Social Proof */}
+              <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground pt-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  <span>No credit card required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  <span>Free trial available</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  <span>Cancel anytime</span>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="border-t border-border/50 bg-background px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="text-center text-2xl font-semibold text-foreground sm:text-3xl lg:text-4xl">
-            How Pitchville Works
-          </h2>
+      <section className="py-20 sm:py-24 lg:py-32 bg-background" aria-labelledby="how-it-works-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              How It Works
+            </Badge>
+            <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+              Simple Process, Powerful Results
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              From upload to buyer engagement — all in five easy steps
+            </p>
+          </div>
 
-          <div className="mt-12 space-y-8 sm:mt-16">
-            {/* Step 1 */}
-            <div className="flex gap-4 transition-all duration-300 hover:translate-x-2 group">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-dark">
-                <span className="text-lg font-semibold">1</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground sm:text-xl">
-                  Upload your product files
-                </h3>
-                <p className="mt-2 text-base text-muted-foreground">
-                  Upload product PDFs or spec sheets — our AI automatically extracts ingredients,
-                  features, and certifications, then generates a clean, SEO-friendly product page
-                  optimized for search and buyers.
-                </p>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto">
+            {[
+              {
+                step: "01",
+                icon: FileText,
+                title: "Upload Product Files",
+                description: "Upload PDFs or spec sheets. Our AI extracts ingredients, features, and certifications to generate SEO-optimized product pages.",
+              },
+              {
+                step: "02",
+                icon: Database,
+                title: "Connect to Buyers",
+                description: "Choose from pre-curated industry-specific buyer databases. AI automatically matches your products with verified potential buyers.",
+              },
+              {
+                step: "03",
+                icon: Send,
+                title: "Launch Campaigns",
+                description: "Send personalized cold emails to selected buyers. Control the number and schedule across days or weeks — no spam, no hassle.",
+              },
+              {
+                step: "04",
+                icon: BarChart3,
+                title: "Track Interactions",
+                description: "View precise analytics: opens, clicks, viewed fields, QR-code tracking, and RFQ submissions. Optimize with real data.",
+              },
+              {
+                step: "05",
+                icon: CheckCircle2,
+                title: "Receive RFQs",
+                description: "Get instant notifications when buyers fill out your RFQ form. No manual follow-up needed.",
+              },
+            ].map((step, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "relative",
+                  index < 2 ? "lg:col-span-1" : index === 2 ? "lg:col-span-1" : "lg:col-span-1"
+                )}
+              >
+                <Card 
+                  variant="premium" 
+                  className="h-full hover-lift group"
+                >
+                  <CardHeader>
+                    <div className="flex items-start gap-4 mb-4">
+                      <span className="text-5xl font-bold text-primary/20 select-none">
+                        {step.step}
+                      </span>
+                      <div className="inline-flex p-3 bg-gradient-accent rounded-xl shadow-premium group-hover:shadow-premium-lg transition-shadow duration-300">
+                        <step.icon className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <CardTitle className="text-xl">{step.title}</CardTitle>
+                    <CardDescription className="text-base leading-relaxed">
+                      {step.description}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
 
-            {/* Step 2 */}
-            <div className="flex gap-4 transition-all duration-300 hover:translate-x-2 group">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-dark">
-                <span className="text-lg font-semibold">2</span>
+                {/* Connector Arrow */}
+                {index < 2 && (
+                  <div className="hidden lg:block absolute top-1/2 -right-6 w-12 h-0.5 bg-gradient-to-r from-primary/50 to-transparent" />
+                )}
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground sm:text-xl">
-                  Connect to your industry buyer database
-                </h3>
-                <p className="mt-2 text-base text-muted-foreground">
-                  Choose from pre-curated buyer databases for your industry (e.g. Food
-                  Ingredients, Dietary Supplements). The system automatically matches your products
-                  with verified potential buyers.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex gap-4 transition-all duration-300 hover:translate-x-2 group">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-dark">
-                <span className="text-lg font-semibold">3</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground sm:text-xl">
-                  Launch your outreach campaign
-                </h3>
-                <p className="mt-2 text-base text-muted-foreground">
-                  Pitchville sends personalized cold emails to your selected buyers over time — no
-                  spam, no setup headaches. You can control the number of emails and schedule them
-                  across days or weeks.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="flex gap-4 transition-all duration-300 hover:translate-x-2 group">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-dark">
-                <span className="text-lg font-semibold">4</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground sm:text-xl">
-                  Track every interaction
-                </h3>
-                <p className="mt-2 text-base text-muted-foreground">
-                  View precise analytics for each campaign: Email opened, link clicked, viewed
-                  fields, QR-code entry tracking, RFQ forms submitted. Every detail is logged for
-                  you to optimize future outreach.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 5 */}
-            <div className="flex gap-4 transition-all duration-300 hover:translate-x-2 group">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-dark">
-                <span className="text-lg font-semibold">5</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground sm:text-xl">
-                  Receive real RFQs from verified buyers
-                </h3>
-                <p className="mt-2 text-base text-muted-foreground">
-                  When a buyer fills out your RFQ form, you get notified instantly — no manual
-                  follow-up needed.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Core Features Section */}
-      <section className="border-t border-border/50 bg-background px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
-        <div className="container mx-auto max-w-6xl">
-          <h2 className="text-center text-2xl font-semibold text-foreground sm:text-3xl lg:text-4xl">
-            Core Features
-          </h2>
+      <section className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="features-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              Core Features
+            </Badge>
+            <h2 id="features-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+              Everything You Need to Scale
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Powerful tools to automate your B2B outreach and close more deals
+            </p>
+          </div>
 
-          <div className="mt-12 grid gap-6 sm:mt-16 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
             {[
               {
                 icon: Sparkles,
@@ -478,97 +490,150 @@ export default function Home() {
                 description:
                   "Get instant email alerts when a buyer opens, clicks, or sends an RFQ.",
               },
+              {
+                icon: Zap,
+                title: "Automated Workflows",
+                description:
+                  "Set up automatic follow-ups and nurture sequences to keep prospects engaged.",
+              },
+              {
+                icon: Users,
+                title: "CRM Integration",
+                description:
+                  "Sync with your existing CRM and keep all buyer data in one place.",
+              },
             ].map((feature, index) => (
-              <Card 
-                key={index} 
-                className="border-border/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20 hover:-translate-y-1 hover:border-primary-light/50 cursor-pointer group active:scale-[0.98]"
+              <div
+                key={index}
+                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-sm hover:border-primary/30 hover:from-primary/10 hover:via-card/80 hover:to-primary/5 transition-all duration-500 hover-lift"
               >
-                <CardHeader>
-                  <feature.icon className="h-8 w-8 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:text-primary-dark" />
-                  <CardTitle className="text-lg sm:text-xl group-hover:text-primary-dark transition-colors">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">{feature.description}</CardDescription>
-                </CardContent>
-              </Card>
+                {/* Content */}
+                <div className="relative p-8">
+                  {/* Icon */}
+                  <div className="mb-6">
+                    <div className="inline-flex p-4 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                      <feature.icon className="w-7 h-7 text-primary" />
+                    </div>
+                  </div>
+                  
+                  {/* Title */}
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                    {feature.title}
+                  </h3>
+                  
+                  {/* Description */}
+                  <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section ref={pricingRef} className="border-t border-border/50 bg-background px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
-        <div className="container mx-auto max-w-5xl">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold text-foreground sm:text-3xl lg:text-4xl">
-              Pricing Snapshot
+      <section ref={pricingRef} className="py-20 sm:py-24 lg:py-32 bg-background" aria-labelledby="pricing-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              Pricing
+            </Badge>
+            <h2 id="pricing-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+              Plans That Scale With You
             </h2>
-            <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-              Try free. Upgrade anytime.
+            <p className="text-lg text-muted-foreground">
+              Try free. Upgrade anytime. Cancel anytime.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-6 sm:mt-16 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
             {[
               {
                 name: "Free Trial",
-                price: "$0/mo",
+                price: "$0",
+                period: "/mo",
                 features: [
                   "1 product page",
                   "50 cold emails",
-                  "1 hidden RFQ (upgrade to view)",
+                  "Basic analytics",
+                  "Email support",
                 ],
+                popular: false,
               },
               {
                 name: "Basic",
-                price: "$299/mo",
-                features: ["5 product pages", "500 emails", "RFQ access"],
+                price: "$299",
+                period: "/mo",
+                features: [
+                  "5 product pages", 
+                  "500 emails/month", 
+                  "RFQ access",
+                  "Priority support",
+                ],
+                popular: true,
               },
               {
                 name: "Pro",
-                price: "$999/mo",
+                price: "$999",
+                period: "/mo",
                 features: [
-                  "20 pages",
-                  "2,000 emails",
+                  "20 product pages",
+                  "2,000 emails/month",
                   "Priority database access",
-                  "Monthly report",
+                  "Monthly reports",
+                  "API access",
                 ],
+                popular: false,
               },
               {
                 name: "Enterprise",
                 price: "Custom",
+                period: "",
                 features: [
+                  "Unlimited pages",
+                  "Unlimited emails",
                   "Dedicated database",
-                  "SLA",
-                  "API integration",
+                  "SLA guarantee",
+                  "Custom integrations",
                 ],
+                popular: false,
               },
             ].map((plan, index) => (
               <Card
                 key={index}
+                variant={plan.popular ? "premium" : "default"}
                 className={cn(
-                  "border-border/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20 hover:-translate-y-1 hover:border-primary-light/50 flex flex-col",
-                  index === 1 && "border-primary/50 shadow-lg ring-2 ring-primary-light/20"
+                  "transition-all duration-300 hover-lift flex flex-col relative",
+                  plan.popular && "border-primary/50 ring-2 ring-primary/20"
                 )}
               >
-                <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl">{plan.name}</CardTitle>
-                  <div className="mt-2">
-                    <span className="text-2xl font-semibold text-foreground">{plan.price}</span>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <Badge variant="default" className="shadow-lg">
+                      Most Popular
+                    </Badge>
+                  </div>
+                )}
+                <CardHeader className="pb-8">
+                  <CardTitle className="text-xl mb-2">{plan.name}</CardTitle>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                    {plan.period && <span className="text-muted-foreground">{plan.period}</span>}
                   </div>
                 </CardHeader>
                 <CardContent className="flex flex-col flex-1">
-                  <ul className="space-y-2 flex-1">
+                  <ul className="space-y-3 flex-1 mb-6">
                     {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        <span className="text-muted-foreground">{feature}</span>
+                      <li key={featureIndex} className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+                        <span className="text-sm text-foreground">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   <Button
-                    className="mt-6 w-full min-h-[44px] touch-manipulation transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                    variant={index === 1 ? "default" : "outline"}
+                    className="w-full h-11 font-semibold hover-scale"
+                    variant={plan.popular ? "default" : "outline"}
                   >
                     {index === 3 ? "Contact Sales" : "Get Started"}
                   </Button>
@@ -576,54 +641,87 @@ export default function Home() {
               </Card>
             ))}
           </div>
-
-          <div className="mt-8 text-center">
-            <Button variant="link" className="text-base">
-              View Pricing <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-background px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <span className="text-lg font-semibold text-foreground">Pitchville</span>
-            </div>
-            <p className="mt-4 text-base text-muted-foreground">
-              AI for B2B Outreach
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Built for suppliers, exporters, and manufacturers who want results — not spreadsheets.
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm">
-              <Button variant="ghost" size="sm">
-                About
-              </Button>
-              <Button variant="ghost" size="sm">
-                Privacy
-              </Button>
-              <Button variant="ghost" size="sm">
-                Terms
-              </Button>
-              <Button variant="ghost" size="sm">
-                Contact
-              </Button>
+      <footer className="border-t border-border/50 bg-gradient-to-b from-background to-background/50 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            {/* Brand */}
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
+              </div>
+              <p className="text-base text-muted-foreground max-w-sm">
+                AI-powered B2B outreach platform for suppliers, exporters, and manufacturers who want results — not spreadsheets.
+              </p>
             </div>
 
-            <div className="mt-8">
-              <p className="text-sm text-muted-foreground">Have an invite?</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 min-h-[44px] touch-manipulation transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:bg-primary-light/20"
-              >
-                Sign In with Magic Link
-              </Button>
+            {/* Links */}
+            <div>
+              <h3 className="font-semibold text-foreground mb-4">Product</h3>
+              <ul className="space-y-3">
+                <li>
+                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+                    Features
+                  </Button>
+                </li>
+                <li>
+                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground" onClick={scrollToPricing}>
+                    Pricing
+                  </Button>
+                </li>
+                <li>
+                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+                    FAQ
+                  </Button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div>
+              <h3 className="font-semibold text-foreground mb-4">Company</h3>
+              <ul className="space-y-3">
+                <li>
+                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+                    About
+                  </Button>
+                </li>
+                <li>
+                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+                    Contact
+                  </Button>
+                </li>
+                <li>
+                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+                    Privacy
+                  </Button>
+                </li>
+                <li>
+                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+                    Terms
+                  </Button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom */}
+          <div className="pt-8 border-t border-border/50">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-muted-foreground">
+                © 2025 Pitchivo. All rights reserved.
+              </p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Built with</span>
+                <span className="text-primary">♥</span>
+                <span>for B2B teams</span>
+              </div>
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { Toaster } from "sonner";
 import "./../globals.css";
 
 export const metadata: Metadata = {
-  title: "Pitchville - AI for B2B Outreach",
+  title: "Pitchivo - AI for B2B Outreach",
   description: "Turn your ingredient specs into AI-generated product pages and reach verified buyers — instantly.",
 };
 

@@ -14,18 +14,18 @@
     --popover: 0 0% 100%;              /* white */
     --popover-foreground: 0 0% 5%;     /* gray-950 */
     
-    /* Primary: Mint Green #98FBCB */
-    --primary: 157 94% 79%;              /* #98FBCB - primary mint green */
-    --primary-foreground: 0 0% 5%;       /* gray-950 - dark text on light primary */
+    /* Primary: Medium Spring Green #00FA9A */
+    --primary: 157 100% 49%;              /* #00FA9A - primary medium spring green */
+    --primary-foreground: 0 0% 100%;     /* white - light text on dark primary */
     
     /* Primary Variants */
-    --primary-light: 162 100% 87%;      /* #BFFFED - lighter mint */
-    --primary-dark: 150 48% 66%;        /* #7FCFA8 - darker mint */
-    --primary-darker: 150 24% 44%;      /* #558B71 - darkest mint */
+    --primary-light: 120 73% 75%;        /* #90EE90 - lighter light green */
+    --primary-dark: 147 50% 47%;         /* #3CB371 - darker medium sea green */
+    --primary-darker: 147 50% 47%;      /* #3CB371 - darkest (same as dark) */
     
     /* Accent Colors - for selected states, highlights */
-    --accent-color: 157 94% 79%;        /* #98FBCB - use primary as accent */
-    --accent-color-foreground: 0 0% 5%; /* gray-950 - dark text on accent */
+    --accent-color: 157 100% 49%;        /* #00FA9A - use primary as accent */
+    --accent-color-foreground: 0 0% 100%; /* white - light text on accent */
     
     /* Additional Accent Variants */
     --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
@@ -46,15 +46,15 @@
     
     --border: 0 0% 90%;                /* gray-200 */
     --input: 0 0% 90%;                 /* gray-200 */
-    --ring: 157 94% 79%;                /* primary mint green */
+    --ring: 157 100% 49%;                /* primary medium spring green */
     
     --radius: 0.75rem;                 /* 12px - premium rounded */
     
     /* Chart Colors */
-    --chart-1: 157 94% 79%;            /* primary mint green */
-    --chart-2: 162 100% 87%;            /* primary light */
-    --chart-3: 150 48% 66%;             /* primary dark */
-    --chart-4: 150 24% 44%;             /* primary darker */
+    --chart-1: 157 100% 49%;            /* primary medium spring green */
+    --chart-2: 120 73% 75%;             /* primary light */
+    --chart-3: 147 50% 47%;             /* primary dark */
+    --chart-4: 147 50% 47%;             /* primary darker */
     --chart-5: 35 100% 74%;             /* accent yellow */
   }
   
@@ -69,18 +69,18 @@
     --popover: 0 0% 7%;                /* gray-950 */
     --popover-foreground: 0 0% 100%;   /* white */
     
-    /* Primary: Mint Green #98FBCB */
-    --primary: 157 94% 79%;            /* #98FBCB - primary mint green */
-    --primary-foreground: 0 0% 5%;     /* gray-950 - dark text on light primary */
+    /* Primary: Medium Spring Green #00FA9A */
+    --primary: 157 100% 49%;            /* #00FA9A - primary medium spring green */
+    --primary-foreground: 0 0% 100%;   /* white - light text on dark primary */
     
     /* Primary Variants */
-    --primary-light: 162 100% 87%;      /* #BFFFED - lighter mint */
-    --primary-dark: 150 48% 66%;        /* #7FCFA8 - darker mint */
-    --primary-darker: 150 24% 44%;      /* #558B71 - darkest mint */
+    --primary-light: 120 73% 75%;      /* #90EE90 - lighter light green */
+    --primary-dark: 147 50% 47%;       /* #3CB371 - darker medium sea green */
+    --primary-darker: 147 50% 47%;      /* #3CB371 - darkest (same as dark) */
     
     /* Accent Colors - for selected states, highlights */
-    --accent-color: 157 94% 79%;       /* #98FBCB - use primary as accent */
-    --accent-color-foreground: 0 0% 5%; /* gray-950 - dark text on accent */
+    --accent-color: 157 100% 49%;       /* #00FA9A - use primary as accent */
+    --accent-color-foreground: 0 0% 100%; /* white - light text on accent */
     
     /* Additional Accent Variants */
     --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
@@ -101,13 +101,13 @@
     
     --border: 0 0% 15%;                /* gray-800 */
     --input: 0 0% 15%;                 /* gray-800 */
-    --ring: 157 94% 79%;                /* primary mint green */
+    --ring: 157 100% 49%;                /* primary medium spring green */
     
     /* Chart Colors */
-    --chart-1: 157 94% 79%;            /* primary mint green */
-    --chart-2: 162 100% 87%;           /* primary light */
-    --chart-3: 150 48% 66%;            /* primary dark */
-    --chart-4: 150 24% 44%;            /* primary darker */
+    --chart-1: 157 100% 49%;            /* primary medium spring green */
+    --chart-2: 120 73% 75%;             /* primary light */
+    --chart-3: 147 50% 47%;             /* primary dark */
+    --chart-4: 147 50% 47%;             /* primary darker */
     --chart-5: 35 100% 74%;             /* accent yellow */
   }
 }
