@@ -120,7 +120,11 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Function to check if email domain is blocked
 CREATE OR REPLACE FUNCTION is_email_domain_blocked(email TEXT)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN 
+LANGUAGE plpgsql 
+IMMUTABLE
+SET search_path = public
+AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM email_domain_policy
@@ -128,11 +132,15 @@ BEGIN
     AND status = 'blocked'
   );
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$;
 
 -- Function to check if email domain is whitelisted
 CREATE OR REPLACE FUNCTION is_email_domain_whitelisted(email TEXT)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN 
+LANGUAGE plpgsql 
+IMMUTABLE
+SET search_path = public
+AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM email_domain_policy
@@ -140,11 +148,14 @@ BEGIN
     AND status = 'whitelisted'
   );
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$;
 
 -- Function to get or create organization by domain
 CREATE OR REPLACE FUNCTION get_or_create_organization(email TEXT, company_name TEXT DEFAULT NULL)
-RETURNS UUID AS $$
+RETURNS UUID 
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
   org_domain TEXT;
   org_id UUID;
@@ -170,7 +181,7 @@ BEGIN
   
   RETURN org_id;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ============================================================================
 -- TRIGGERS
@@ -208,7 +219,11 @@ CREATE TRIGGER update_email_domain_policy_updated_at
 
 -- Function to automatically create user profile on signup
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   user_domain TEXT;
   org_id UUID;
@@ -219,7 +234,7 @@ BEGIN
   org_id := get_or_create_organization(NEW.email);
   
   -- Create user profile
-  INSERT INTO public.user_profiles (id, email, domain, organization_id, full_name, is_pitchivo_admin, org_role)
+  INSERT INTO user_profiles (id, email, domain, organization_id, full_name, is_pitchivo_admin, org_role)
   VALUES (
     NEW.id,
     NEW.email,
@@ -232,7 +247,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger to create profile on user signup
 CREATE TRIGGER on_auth_user_created
@@ -255,7 +270,10 @@ CREATE OR REPLACE FUNCTION whitelist_domain(
   p_invited_by UUID DEFAULT NULL,
   p_reason TEXT DEFAULT NULL
 )
-RETURNS UUID AS $$
+RETURNS UUID 
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
   policy_id UUID;
 BEGIN
@@ -283,5 +301,5 @@ BEGIN
   
   RETURN policy_id;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
