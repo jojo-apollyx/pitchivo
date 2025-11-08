@@ -57,8 +57,8 @@ export default function AuthCallback() {
           return
         }
 
-        // Otherwise, redirect to home
-        router.push('/home')
+        // Otherwise, redirect to dashboard
+        router.push('/dashboard')
       } catch (error) {
         router.push('/?error=callback_failed')
       }

@@ -336,9 +336,9 @@ export default function OrganizationSetup() {
 
       toast.success('Organization created successfully!')
 
-      // Redirect to home after a short delay
+      // Redirect to dashboard after a short delay
       setTimeout(() => {
-        router.push('/home')
+        router.push('/dashboard')
       }, 1000)
     } catch (error) {
       console.error('Error creating organization:', error)
