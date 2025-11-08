@@ -315,21 +315,25 @@ export default function OrganizationSetup() {
       }
 
       // Update organization with all setup details and mark as completed
-      const { error: updateError } = await supabase
-        .from('organizations')
-        .update({
-          name: data.companyName,
-          industry: data.industry,
-          company_size: data.companySize,
-          description: data.description || null,
-          use_cases: [],
-          logo_url: logoUrl,
-          onboarding_completed_at: new Date().toISOString(),
-        })
-        .eq('id', orgId)
+      // Use RPC function to bypass RLS restrictions
+      const completedAt = new Date().toISOString()
+      const { data: updateSuccess, error: updateError } = await supabase.rpc('update_user_organization', {
+        p_org_id: orgId,
+        p_name: data.companyName,
+        p_industry: data.industry,
+        p_company_size: data.companySize,
+        p_description: data.description || null,
+        p_use_cases: [],
+        p_logo_url: logoUrl,
+        p_onboarding_completed_at: completedAt,
+      })
 
       if (updateError) {
         throw updateError
+      }
+
+      if (!updateSuccess) {
+        throw new Error('Failed to update organization')
       }
 
       // Update user role

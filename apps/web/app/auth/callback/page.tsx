@@ -45,14 +45,16 @@ export default function AuthCallback() {
           return
         }
 
-        // If no organization or organization setup not completed, redirect to setup
-        // TypeScript infers organizations as array, but it's actually a single object with .single()
+        // Check if user has organization and if onboarding is completed
+        // Supabase PostgREST returns nested relations as arrays even with .single()
+        // Since one user maps to one organization via organization_id foreign key,
+        // we take the first (and only) organization from the array
         const organization = Array.isArray(profile?.organizations) 
-          ? profile?.organizations[0] 
+          ? profile.organizations[0] 
           : profile?.organizations
-        const needsSetup = !profile?.organization_id || !organization?.onboarding_completed_at
+        const hasOrganization = profile?.organization_id && organization?.onboarding_completed_at
         
-        if (needsSetup) {
+        if (!hasOrganization) {
           router.push('/setup/organization')
           return
         }
