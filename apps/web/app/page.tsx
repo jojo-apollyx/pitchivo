@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
@@ -742,7 +743,7 @@ export default function Home() {
       </section>
 
       {/* Core Features Section */}
-      <section className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="features-heading">
+      <section id="features" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="features-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge variant="premium" className="mb-4">
@@ -1115,7 +1116,14 @@ export default function Home() {
               <h3 className="font-semibold text-foreground mb-4">Product</h3>
               <ul className="space-y-3">
                 <li>
-                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const featuresSection = document.getElementById('features');
+                      featuresSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
                     Features
                   </Button>
                 </li>
@@ -1137,23 +1145,39 @@ export default function Home() {
               <h3 className="font-semibold text-foreground mb-4">Legal</h3>
               <ul className="space-y-3">
                 <li>
-                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    Privacy Policy
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                    asChild
+                  >
+                    <Link href="/privacy">Privacy Policy</Link>
                   </Button>
                 </li>
                 <li>
-                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    Terms of Service
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                    asChild
+                  >
+                    <Link href="/terms">Terms of Service</Link>
                   </Button>
                 </li>
                 <li>
-                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    Contact Us
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                    asChild
+                  >
+                    <Link href="/contact">Contact Us</Link>
                   </Button>
                 </li>
                 <li>
-                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground">
-                    About Us
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                    asChild
+                  >
+                    <Link href="/about">About Us</Link>
                   </Button>
                 </li>
               </ul>
