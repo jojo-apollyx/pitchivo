@@ -107,18 +107,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         
-        {/* Preload critical assets */}
-        <link
-          rel="preload"
-          href="/web-app-manifest-192x192.png"
-          as="image"
-          type="image/png"
-        />
-        
         {/* Apple Touch Icon */}
         <link rel="apple-touch-icon" href="/web-app-manifest-192x192.png" />
         
         {/* iOS meta tags for PWA */}
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Pitchivo" />
