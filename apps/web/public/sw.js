@@ -40,6 +40,14 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - Network first, cache fallback
 self.addEventListener('fetch', (event) => {
+  const method = event.request.method
+  
+  // Skip caching for POST, PUT, DELETE, PATCH requests
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+    event.respondWith(fetch(event.request))
+    return
+  }
+  
   // Skip caching for same-origin requests to avoid CSS/JS issues
   if (event.request.url.startsWith(self.location.origin)) {
     event.respondWith(
@@ -53,10 +61,14 @@ self.addEventListener('fetch', (event) => {
         return (
           response ||
           fetch(event.request).then((fetchResponse) => {
-            return caches.open(DYNAMIC_CACHE).then((cache) => {
-              cache.put(event.request, fetchResponse.clone())
-              return fetchResponse
-            })
+            // Only cache GET requests with successful responses
+            if (method === 'GET' && fetchResponse.ok) {
+              return caches.open(DYNAMIC_CACHE).then((cache) => {
+                cache.put(event.request, fetchResponse.clone())
+                return fetchResponse
+              })
+            }
+            return fetchResponse
           })
         )
       })

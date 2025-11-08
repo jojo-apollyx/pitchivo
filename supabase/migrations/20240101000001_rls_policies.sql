@@ -116,14 +116,23 @@ CREATE POLICY "Users can update own profile"
   WITH CHECK (id = auth.uid());
 
 -- Users in the same organization can read each other's profiles
+-- Use SECURITY DEFINER function to avoid infinite recursion
+CREATE OR REPLACE FUNCTION get_user_organization_id(user_id UUID)
+RETURNS UUID AS $$
+BEGIN
+  RETURN (
+    SELECT organization_id FROM user_profiles
+    WHERE id = user_id
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 CREATE POLICY "Organization members can read each other's profiles"
   ON user_profiles
   FOR SELECT
   USING (
-    organization_id IN (
-      SELECT organization_id FROM user_profiles
-      WHERE id = auth.uid()
-    )
+    organization_id IS NOT NULL AND
+    organization_id = get_user_organization_id(auth.uid())
   );
 
 -- Only service role can create/delete profiles

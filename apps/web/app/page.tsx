@@ -67,11 +67,39 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// Check if email is in invited list (placeholder - replace with actual API call)
-function isInvitedEmail(_email: string): Promise<boolean> {
-  // TODO: Replace with actual API call to check invite list
-  // For now, return false to show waitlist flow
-  return Promise.resolve(false);
+// Check if email domain is whitelisted
+async function isInvitedEmail(email: string): Promise<boolean> {
+  try {
+    if (typeof globalThis.window === 'undefined') {
+      return false;
+    }
+
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase environment variables are not set');
+      return false;
+    }
+    
+    const client = createClient(supabaseUrl, supabaseKey)
+
+    // Check if user can login (domain is whitelisted and not blocked)
+    const { data, error } = await client.rpc('can_user_login', {
+      email: email.toLowerCase().trim()
+    });
+
+    if (error) {
+      console.error('Error checking whitelist:', error);
+      return false;
+    }
+
+    return data === true;
+  } catch (error) {
+    console.error('Error in isInvitedEmail:', error);
+    return false;
+  }
 }
 
 // Send magic link
@@ -82,10 +110,13 @@ async function sendMagicLink(email: string) {
     }
 
     const { createClient } = await import('@supabase/supabase-js')
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase environment variables are not set')
+    }
+    
     const client = createClient(supabaseUrl, supabaseKey)
 
     const { error } = await client.auth.signInWithOtp({
@@ -122,10 +153,13 @@ async function addToWaitlist(data: {
     }
 
     const { createClient } = await import('@supabase/supabase-js')
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase environment variables are not set')
+    }
+    
     const client = createClient(supabaseUrl, supabaseKey)
 
     const { error } = await client.from("waitlist").insert({
@@ -184,11 +218,7 @@ export default function Home() {
 
             if (isPublicEmail(email)) {
               toast.error("Company Email Required", {
-                description: "We only accept company email addresses for early access.",
-                action: {
-                  label: "Join Waitlist Instead",
-                  onClick: () => setWaitlistOpen(true),
-                },
+                description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
               });
               return;
             }
@@ -240,6 +270,20 @@ export default function Home() {
 
     if (!waitlistData.fullName.trim() || !waitlistData.company.trim()) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate email format
+    if (!isValidEmail(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    // Block public email domains from waitlist too
+    if (isPublicEmail(email)) {
+      toast.error("Company Email Required", {
+        description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
+      });
       return;
     }
 
