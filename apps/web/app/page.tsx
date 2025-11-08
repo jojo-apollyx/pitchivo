@@ -423,13 +423,13 @@ export default function Home() {
                     placeholder="Enter your company email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 sm:h-14 flex-1 text-base bg-background/95 backdrop-blur-sm border-border/50 shadow-sm"
+                    className="h-14 sm:h-14 flex-1 text-base bg-background/95 backdrop-blur-sm border-border/50 shadow-sm px-4"
                     disabled={isLoading}
                   />
                   <Button
                     type="submit"
                     size="lg"
-                    className="h-12 sm:h-14 px-8 text-base font-semibold hover-scale shadow-lg"
+                    className="h-14 sm:h-14 px-8 text-base font-semibold hover-scale shadow-lg"
                     disabled={isLoading}
                   >
                     {isLoading ? "Sending..." : "Get Started"}
