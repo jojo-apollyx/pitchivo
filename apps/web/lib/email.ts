@@ -3,6 +3,12 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 
+// Check if we're in local development
+const isLocalDevelopment = () => {
+  const url = SUPABASE_URL || ''
+  return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('127.0.0.1:54321')
+}
+
 export interface SendEmailOptions {
   to: string | string[]
   subject: string
@@ -28,10 +34,24 @@ export interface SendEmailResponse {
 
 /**
  * Send a transactional email via Brevo using Supabase Edge Function
+ * In local development, emails are skipped (use Mailpit to view emails sent via Supabase Auth)
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResponse> {
+  // Skip email sending in local development
+  if (isLocalDevelopment()) {
+    console.log('📧 Email sending skipped in local development. Check Mailpit at http://localhost:54324 for emails sent via Supabase Auth.')
+    return {
+      success: true,
+      messageId: 'local-dev-skipped',
+    }
+  }
+
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error("Supabase environment variables are not set")
+    console.warn("Supabase environment variables are not set, skipping email")
+    return {
+      success: false,
+      error: "Supabase environment variables are not set",
+    }
   }
 
   try {
@@ -45,7 +65,29 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       body: JSON.stringify(options),
     })
 
-    const data = await response.json()
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get("content-type")
+    let data: any = {}
+    
+    if (contentType && contentType.includes("application/json")) {
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        const text = await response.text()
+        console.error("Failed to parse JSON response:", text)
+        return {
+          success: false,
+          error: `Invalid response: ${text.substring(0, 100)}`,
+        }
+      }
+    } else {
+      const text = await response.text()
+      console.error("Non-JSON response:", text)
+      return {
+        success: false,
+        error: `Function not found or not deployed. Response: ${text.substring(0, 100)}`,
+      }
+    }
 
     if (!response.ok) {
       return {

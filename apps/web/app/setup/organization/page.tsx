@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Sparkles, Building2, Users, Briefcase, Upload, CheckCircle2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,22 +52,78 @@ const ROLE_SUGGESTIONS = [
   'Business Owner',
 ]
 
+// Zod schema for form validation
+const organizationSetupSchema = z.object({
+  companyName: z
+    .string()
+    .min(2, 'Company name must be at least 2 characters')
+    .max(100, 'Company name must be less than 100 characters')
+    .regex(/^[a-zA-Z0-9\s&.,'-]+$/, 'Company name contains invalid characters'),
+  domain: z
+    .string()
+    .min(1, 'Domain is required')
+    .regex(
+      /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/,
+      'Please enter a valid domain name'
+    ),
+  industry: z.enum(
+    [
+      'Food & Supplement Ingredients',
+      'Chemicals & Raw Materials',
+      'Pharmaceuticals',
+      'Cosmetics & Personal Care',
+      'Other',
+    ],
+    {
+      required_error: 'Please select an industry',
+    }
+  ),
+  companySize: z.enum(['1-5', '6-20', '21-100', '100+'], {
+    required_error: 'Please select a company size',
+  }),
+  role: z
+    .string()
+    .min(2, 'Role must be at least 2 characters')
+    .max(100, 'Role must be less than 100 characters')
+    .regex(/^[a-zA-Z0-9\s&.,'-]+$/, 'Role contains invalid characters'),
+  description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(500, 'Description must be less than 500 characters'),
+})
+
+type OrganizationSetupFormData = z.infer<typeof organizationSetupSchema>
+
 export default function OrganizationSetup() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoError, setLogoError] = useState<string | null>(null)
   const [roleSuggestions, setRoleSuggestions] = useState<string[]>([])
   const [showRoleSuggestions, setShowRoleSuggestions] = useState(false)
-  const [formData, setFormData] = useState({
-    companyName: '',
-    domain: '',
-    industry: 'Food & Supplement Ingredients',
-    companySize: '',
-    role: '',
-    description: '',
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<OrganizationSetupFormData>({
+    resolver: zodResolver(organizationSetupSchema),
+    defaultValues: {
+      companyName: '',
+      domain: '',
+      industry: 'Food & Supplement Ingredients',
+      companySize: undefined,
+      role: '',
+      description: '',
+    },
   })
+
+  const formData = watch()
 
   // Get user email and auto-fill domain
   useEffect(() => {
@@ -111,7 +170,9 @@ export default function OrganizationSetup() {
       if (user?.email) {
         setUserEmail(user.email)
         const domain = user.email.split('@')[1]
-        setFormData(prev => ({ ...prev, domain: domain || '' }))
+        if (domain) {
+          setValue('domain', domain)
+        }
       } else {
         // Clear session and show toast
         await supabase.auth.signOut()
@@ -123,16 +184,17 @@ export default function OrganizationSetup() {
     }
     
     loadUserData()
-  }, [router])
+  }, [router, setValue])
 
   // Filter role suggestions based on input
   useEffect(() => {
-    if (formData.role.trim()) {
-      const filtered = ROLE_SUGGESTIONS.filter(role =>
-        role.toLowerCase().includes(formData.role.toLowerCase())
+    const role = formData.role || ''
+    if (role.trim()) {
+      const filtered = ROLE_SUGGESTIONS.filter(r =>
+        r.toLowerCase().includes(role.toLowerCase())
       )
       setRoleSuggestions(filtered)
-      setShowRoleSuggestions(filtered.length > 0 && formData.role !== filtered[0])
+      setShowRoleSuggestions(filtered.length > 0 && role !== filtered[0])
     } else {
       setRoleSuggestions([])
       setShowRoleSuggestions(false)
@@ -141,20 +203,26 @@ export default function OrganizationSetup() {
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      setLogoError('Please select a logo file')
+      return
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
+      setLogoError('Please upload an image file (PNG, JPG, etc.)')
       toast.error('Please upload an image file')
       return
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
+      setLogoError('Image size must be less than 5MB')
       toast.error('Image size must be less than 5MB')
       return
     }
 
+    setLogoError(null)
     setLogoFile(file)
 
     // Create preview
@@ -168,13 +236,14 @@ export default function OrganizationSetup() {
   const handleRemoveLogo = () => {
     setLogoFile(null)
     setLogoPreview(null)
+    setLogoError(null)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!formData.companyName || !formData.domain || !formData.companySize) {
-      toast.error('Please fill in all required fields')
+  const onSubmit = async (data: OrganizationSetupFormData) => {
+    // Validate logo
+    if (!logoFile) {
+      setLogoError('Please upload a company logo')
+      toast.error('Please upload a company logo')
       return
     }
 
@@ -189,38 +258,38 @@ export default function OrganizationSetup() {
         throw new Error('User not found')
       }
 
-      // Upload logo if provided
-      let logoUrl = null
-      if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop()
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = `organizations/${fileName}`
+      // Upload logo (required)
+      const fileExt = logoFile.name.split('.').pop()
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`
+      const filePath = `organizations/${fileName}`
 
-        const { error: uploadError } = await supabase.storage
-          .from('logos')
-          .upload(filePath, logoFile, {
-            cacheControl: '3600',
-            upsert: false
-          })
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(filePath, logoFile, {
+          cacheControl: '3600',
+          upsert: false
+        })
 
-        if (uploadError) {
-          console.error('Logo upload error:', uploadError)
-          toast.error('Failed to upload logo. Continuing without logo...')
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('logos')
-            .getPublicUrl(filePath)
-          logoUrl = publicUrl
-        }
+      if (uploadError) {
+        console.error('Logo upload error:', uploadError)
+        setLogoError('Failed to upload logo. Please try again.')
+        toast.error('Failed to upload logo. Please try again.')
+        setIsLoading(false)
+        return
       }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(filePath)
+      const logoUrl = publicUrl
 
       // Get or create organization
       const { data: orgData, error: orgError } = await supabase.rpc('get_or_create_organization', {
         email: user.email!,
-        company_name: formData.companyName,
-        industry: formData.industry,
-        company_size: formData.companySize,
-        description: formData.description || null,
+        company_name: data.companyName,
+        industry: data.industry,
+        company_size: data.companySize,
+        description: data.description || null,
         use_cases: [],
       })
 
@@ -231,9 +300,9 @@ export default function OrganizationSetup() {
       // Complete organization setup
       const { error: setupError } = await supabase.rpc('complete_organization_setup', {
         p_org_id: orgData,
-        p_industry: formData.industry,
-        p_company_size: formData.companySize,
-        p_description: formData.description || null,
+        p_industry: data.industry,
+        p_company_size: data.companySize,
+        p_description: data.description || null,
         p_use_cases: [],
         p_logo_url: logoUrl,
       })
@@ -242,17 +311,15 @@ export default function OrganizationSetup() {
         throw setupError
       }
 
-      // Update user role if provided
-      if (formData.role) {
-        const { error: roleError } = await supabase
-          .from('user_profiles')
-          .update({ org_role: formData.role.toLowerCase().includes('sales') ? 'sales' : 
-                   formData.role.toLowerCase().includes('marketing') ? 'marketing' : 'user' })
-          .eq('id', user.id)
+      // Update user role
+      const { error: roleError } = await supabase
+        .from('user_profiles')
+        .update({ org_role: data.role.toLowerCase().includes('sales') ? 'sales' : 
+                 data.role.toLowerCase().includes('marketing') ? 'marketing' : 'user' })
+        .eq('id', user.id)
 
-        if (roleError) {
-          console.error('Role update error:', roleError)
-        }
+      if (roleError) {
+        console.error('Role update error:', roleError)
       }
 
       // Send organization setup email (non-blocking)
@@ -260,7 +327,7 @@ export default function OrganizationSetup() {
         sendOrganizationSetupEmail({
           to: user.email,
           userName: user.user_metadata?.full_name || user.email.split('@')[0],
-          companyName: formData.companyName,
+          companyName: data.companyName,
         }).catch((error) => {
           console.error('Failed to send organization setup email:', error)
           // Don't show error to user, email sending is not critical
@@ -323,7 +390,7 @@ export default function OrganizationSetup() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
             {/* Company Name */}
             <div className="space-y-2">
               <Label htmlFor="companyName" className="text-base font-semibold flex items-center gap-2">
@@ -333,11 +400,12 @@ export default function OrganizationSetup() {
               <Input
                 id="companyName"
                 placeholder="e.g., ABC Ingredients Co."
-                value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                className="text-base"
-                required
+                {...register('companyName')}
+                className={`text-base ${errors.companyName ? 'border-destructive' : ''}`}
               />
+              {errors.companyName && (
+                <p className="text-sm text-destructive">{errors.companyName.message}</p>
+              )}
             </div>
 
             {/* Company Domain */}
@@ -347,12 +415,15 @@ export default function OrganizationSetup() {
               </Label>
               <Input
                 id="domain"
-                value={formData.domain || (userEmail ? userEmail.split('@')[1] : '')}
+                {...register('domain')}
                 readOnly
                 disabled
-                className="text-base bg-muted cursor-not-allowed"
+                className={`text-base bg-muted cursor-not-allowed ${errors.domain ? 'border-destructive' : ''}`}
                 placeholder={userEmail ? `Extracting from ${userEmail}...` : 'Loading...'}
               />
+              {errors.domain && (
+                <p className="text-sm text-destructive">{errors.domain.message}</p>
+              )}
               <p className="text-sm text-foreground/60">
                 {userEmail 
                   ? `Automatically detected from your email (${userEmail}). Users with the same domain will automatically join your workspace.`
@@ -368,11 +439,13 @@ export default function OrganizationSetup() {
               <Select
                 value={formData.industry}
                 onValueChange={(value) => {
-                  setFormData((prev) => ({ ...prev, industry: value }))
+                  setValue('industry', value as OrganizationSetupFormData['industry'], {
+                    shouldValidate: true,
+                  })
                 }}
               >
-                <SelectTrigger id="industry" className="text-base">
-                  <SelectValue />
+                <SelectTrigger id="industry" className={`text-base ${errors.industry ? 'border-destructive' : ''}`}>
+                  <SelectValue placeholder="Select an industry" />
                 </SelectTrigger>
                 <SelectContent>
                   {INDUSTRIES.map((industry) => (
@@ -382,6 +455,9 @@ export default function OrganizationSetup() {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.industry && (
+                <p className="text-sm text-destructive">{errors.industry.message}</p>
+              )}
             </div>
 
             {/* Company Size */}
@@ -395,13 +471,19 @@ export default function OrganizationSetup() {
                   <button
                     key={size.value}
                     type="button"
-                    onClick={() => setFormData({ ...formData, companySize: size.value })}
+                    onClick={() => {
+                      setValue('companySize', size.value as OrganizationSetupFormData['companySize'], {
+                        shouldValidate: true,
+                      })
+                    }}
                     className={`
                       min-h-[44px] px-4 py-3 rounded-lg border-2 text-base font-medium
                       transition-all duration-200 touch-manipulation
                       ${
                         formData.companySize === size.value
                           ? 'bg-primary text-primary-foreground border-primary shadow-lg'
+                          : errors.companySize
+                          ? 'border-destructive hover:border-destructive/50'
                           : 'bg-background text-foreground border-border hover:border-primary/50 hover:bg-primary/5'
                       }
                     `}
@@ -410,26 +492,28 @@ export default function OrganizationSetup() {
                   </button>
                 ))}
               </div>
+              {errors.companySize && (
+                <p className="text-sm text-destructive">{errors.companySize.message}</p>
+              )}
             </div>
 
             {/* Role / Title */}
             <div className="space-y-2">
               <Label htmlFor="role" className="text-base font-semibold flex items-center gap-2">
                 <Briefcase className="h-4 w-4" />
-                Your Role / Title
+                Your Role / Title *
               </Label>
               <div className="relative">
                 <Input
                   id="role"
                   placeholder="e.g., Founder, Sales Manager, Export Lead"
-                  value={formData.role}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, role: e.target.value }))}
+                  {...register('role')}
                   onFocus={() => {
-                    if (formData.role.trim()) {
+                    if (formData.role?.trim()) {
                       setShowRoleSuggestions(true)
                     }
                   }}
-                  className="text-base"
+                  className={`text-base ${errors.role ? 'border-destructive' : ''}`}
                   autoComplete="off"
                 />
                 {showRoleSuggestions && roleSuggestions.length > 0 && (
@@ -439,7 +523,7 @@ export default function OrganizationSetup() {
                         key={suggestion}
                         type="button"
                         onClick={() => {
-                          setFormData((prev) => ({ ...prev, role: suggestion }))
+                          setValue('role', suggestion, { shouldValidate: true })
                           setShowRoleSuggestions(false)
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-accent text-sm"
@@ -450,42 +534,65 @@ export default function OrganizationSetup() {
                   </div>
                 )}
               </div>
+              {errors.role && (
+                <p className="text-sm text-destructive">{errors.role.message}</p>
+              )}
             </div>
 
             {/* Company Description */}
             <div className="space-y-2">
               <Label htmlFor="description" className="text-base font-semibold">
-                Company Description
+                Company Description *
               </Label>
               <textarea
                 id="description"
                 placeholder="Briefly describe what your company does (e.g., supplier of botanical extracts)"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                {...register('description')}
                 rows={4}
-                className="
-                  w-full px-3 py-2 text-base rounded-xl border border-border
+                className={`
+                  w-full px-3 py-2 text-base rounded-xl border
                   bg-background text-foreground placeholder:text-foreground/40
                   focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
                   transition-colors touch-manipulation resize-none
-                "
+                  ${errors.description ? 'border-destructive' : 'border-border'}
+                `}
               />
+              {errors.description && (
+                <p className="text-sm text-destructive">{errors.description.message}</p>
+              )}
             </div>
 
-            {/* Logo Upload (Optional) */}
+            {/* Logo Upload (Required) */}
             <div className="space-y-2">
               <Label className="text-base font-semibold">
-                Company Logo (Optional)
+                Company Logo *
               </Label>
               <div className="flex items-center gap-4">
-                <div className="relative w-24 h-24 rounded-lg border-2 border-dashed border-border overflow-hidden bg-background/50 flex items-center justify-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="logo-upload"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative w-24 h-24 rounded-lg border-2 border-dashed overflow-hidden bg-background/50 flex items-center justify-center cursor-pointer transition-colors ${
+                    logoError ? 'border-destructive' : 'border-border hover:border-primary/50'
+                  }`}
+                >
                   {logoPreview ? (
                     <>
                       <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
-                        onClick={handleRemoveLogo}
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleRemoveLogo()
+                        }}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors z-10"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -495,19 +602,19 @@ export default function OrganizationSetup() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <input
-                    type="file"
-                    id="logo-upload"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                  <label htmlFor="logo-upload" className="cursor-pointer">
-                    <Button type="button" variant="outline" size="default" className="min-h-[44px] pointer-events-none">
-                      Choose Logo
-                    </Button>
-                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="default"
+                    className="min-h-[44px]"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Choose Logo
+                  </Button>
                   <p className="text-xs text-foreground/60 mt-1">PNG, JPG up to 5MB</p>
+                  {logoError && (
+                    <p className="text-sm text-destructive mt-1">{logoError}</p>
+                  )}
                 </div>
               </div>
             </div>

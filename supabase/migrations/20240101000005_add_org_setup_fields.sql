@@ -94,12 +94,12 @@ AS $$
 BEGIN
   UPDATE organizations
   SET
-    industry = COALESCE(p_industry, industry),
-    company_size = COALESCE(p_company_size, company_size),
-    description = COALESCE(p_description, description),
-    use_cases = COALESCE(p_use_cases, use_cases),
-    logo_url = COALESCE(p_logo_url, logo_url),
-    onboarding_completed_at = COALESCE(onboarding_completed_at, NOW()),
+    industry = COALESCE(p_industry, organizations.industry),
+    company_size = COALESCE(p_company_size, organizations.company_size),
+    description = COALESCE(p_description, organizations.description),
+    use_cases = COALESCE(p_use_cases, organizations.use_cases),
+    logo_url = COALESCE(p_logo_url, organizations.logo_url),
+    onboarding_completed_at = COALESCE(organizations.onboarding_completed_at, NOW()),
     updated_at = NOW()
   WHERE id = p_org_id;
   
