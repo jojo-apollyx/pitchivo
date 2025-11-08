@@ -1,7 +1,7 @@
 # Technical Stack Documentation
 
 ## Overview
-yooquote (Pitchivo) is a modern web application built with a comprehensive tech stack focusing on performance, scalability, and developer experience.
+Pitchivo is a modern web application built with a comprehensive tech stack focusing on performance, scalability, and developer experience.
 
 ---
 
@@ -508,6 +508,6 @@ if (request.nextUrl.pathname.startsWith('/api/')) {
 ---
 
 **Last Updated:** December 2024  
-**Version:** 2.1 (Updated for yooquote/Pitchivo)  
-**Maintained By:** yooquote Development Team
+**Version:** 2.1 (Updated for Pitchivo)  
+**Maintained By:** Pitchivo Development Team
 

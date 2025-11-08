@@ -11,7 +11,7 @@ This design system is built for **mobile-first Progressive Web Apps (PWA)** usin
 - ✅ Premium animations and utilities
 - ✅ Mobile-first responsive design
 
-**This document is the single source of truth for all styling, colors, fonts, spacing, and design decisions in the yooquote (Pitchivo) codebase.**
+**This document is the single source of truth for all styling, colors, fonts, spacing, and design decisions in the Pitchivo codebase.**
 
 ---
 
