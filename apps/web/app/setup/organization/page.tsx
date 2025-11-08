@@ -263,7 +263,7 @@ export default function OrganizationSetup() {
       const fileName = `${user.id}-${Date.now()}.${fileExt}`
       const filePath = `organizations/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('logos')
         .upload(filePath, logoFile, {
           cacheControl: '3600',
@@ -272,8 +272,21 @@ export default function OrganizationSetup() {
 
       if (uploadError) {
         console.error('Logo upload error:', uploadError)
-        setLogoError('Failed to upload logo. Please try again.')
-        toast.error('Failed to upload logo. Please try again.')
+        let errorMessage = 'Failed to upload logo. Please try again.'
+        
+        // Provide more specific error messages
+        if (uploadError.message?.includes('new row violates row-level security policy')) {
+          errorMessage = 'Upload failed: Permission denied. Please check your account permissions.'
+        } else if (uploadError.message?.includes('file size')) {
+          errorMessage = 'File is too large. Maximum size is 5MB.'
+        } else if (uploadError.message?.includes('mime type') || uploadError.message?.includes('content type')) {
+          errorMessage = 'Invalid file type. Please upload an image (PNG, JPG, WebP, or GIF).'
+        } else if (uploadError.message) {
+          errorMessage = `Upload failed: ${uploadError.message}`
+        }
+        
+        setLogoError(errorMessage)
+        toast.error(errorMessage)
         setIsLoading(false)
         return
       }
@@ -284,7 +297,7 @@ export default function OrganizationSetup() {
       const logoUrl = publicUrl
 
       // Get or create organization
-      const { data: orgData, error: orgError } = await supabase.rpc('get_or_create_organization', {
+      const { data: orgId, error: orgError } = await supabase.rpc('get_or_create_organization', {
         email: user.email!,
         company_name: data.companyName,
         industry: data.industry,
@@ -297,18 +310,26 @@ export default function OrganizationSetup() {
         throw orgError
       }
 
-      // Complete organization setup
-      const { error: setupError } = await supabase.rpc('complete_organization_setup', {
-        p_org_id: orgData,
-        p_industry: data.industry,
-        p_company_size: data.companySize,
-        p_description: data.description || null,
-        p_use_cases: [],
-        p_logo_url: logoUrl,
-      })
+      if (!orgId) {
+        throw new Error('Failed to get or create organization')
+      }
 
-      if (setupError) {
-        throw setupError
+      // Update organization with all setup details and mark as completed
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({
+          name: data.companyName,
+          industry: data.industry,
+          company_size: data.companySize,
+          description: data.description || null,
+          use_cases: [],
+          logo_url: logoUrl,
+          onboarding_completed_at: new Date().toISOString(),
+        })
+        .eq('id', orgId)
+
+      if (updateError) {
+        throw updateError
       }
 
       // Update user role

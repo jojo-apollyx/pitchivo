@@ -81,6 +81,7 @@ $$;
 -- Function to complete organization onboarding
 CREATE OR REPLACE FUNCTION complete_organization_setup(
   p_org_id UUID,
+  p_company_name TEXT DEFAULT NULL,
   p_industry TEXT DEFAULT NULL,
   p_company_size TEXT DEFAULT NULL,
   p_description TEXT DEFAULT NULL,
@@ -94,6 +95,7 @@ AS $$
 BEGIN
   UPDATE organizations
   SET
+    name = COALESCE(p_company_name, organizations.name),
     industry = COALESCE(p_industry, organizations.industry),
     company_size = COALESCE(p_company_size, organizations.company_size),
     description = COALESCE(p_description, organizations.description),

@@ -68,3 +68,34 @@ BEGIN
 END;
 $$;
 
+-- Fix complete_organization_setup function to also update company name
+CREATE OR REPLACE FUNCTION complete_organization_setup(
+  p_org_id UUID,
+  p_company_name TEXT DEFAULT NULL,
+  p_industry TEXT DEFAULT NULL,
+  p_company_size TEXT DEFAULT NULL,
+  p_description TEXT DEFAULT NULL,
+  p_use_cases TEXT[] DEFAULT '{}'::TEXT[],
+  p_logo_url TEXT DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE organizations
+  SET
+    name = COALESCE(p_company_name, organizations.name),
+    industry = COALESCE(p_industry, organizations.industry),
+    company_size = COALESCE(p_company_size, organizations.company_size),
+    description = COALESCE(p_description, organizations.description),
+    use_cases = COALESCE(p_use_cases, organizations.use_cases),
+    logo_url = COALESCE(p_logo_url, organizations.logo_url),
+    onboarding_completed_at = COALESCE(organizations.onboarding_completed_at, NOW()),
+    updated_at = NOW()
+  WHERE id = p_org_id;
+  
+  RETURN FOUND;
+END;
+$$;
+

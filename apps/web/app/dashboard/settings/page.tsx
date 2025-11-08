@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Building2, Save } from 'lucide-react'
+import { ThemeColorSettings } from '@/components/dashboard/theme-color-settings'
 
 export default async function SettingsPage() {
   const user = await requireAuth()
@@ -89,17 +90,25 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Preferences */}
+        {/* Theme Color Settings */}
+        {organization?.id && (
+          <ThemeColorSettings
+            organizationId={organization.id}
+            currentThemeColor={organization.theme_color || '#ADEBB3'}
+          />
+        )}
+
+        {/* Team Members */}
         <Card>
           <CardHeader>
-            <CardTitle>Preferences</CardTitle>
+            <CardTitle>Team Members</CardTitle>
             <CardDescription>
-              Customize your experience
+              Manage team members and their access
             </CardDescription>
           </CardHeader>
           <CardContent className="min-h-[200px] flex items-center justify-center">
             <p className="text-muted-foreground text-center">
-              Preference settings coming soon
+              Team management coming soon
             </p>
           </CardContent>
         </Card>

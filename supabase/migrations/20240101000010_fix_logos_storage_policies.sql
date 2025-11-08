@@ -1,18 +1,13 @@
 -- ============================================================================
--- CREATE LOGOS STORAGE BUCKET
+-- FIX LOGOS STORAGE POLICIES
 -- ============================================================================
--- This migration creates a storage bucket for organization logos
+-- Fix storage policies to use correct path checking syntax
 
--- Create logos bucket (public for now, can be made private later)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'logos',
-  'logos',
-  true,
-  5242880, -- 5MB
-  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-)
-ON CONFLICT (id) DO NOTHING;
+-- Drop existing policies
+DROP POLICY IF EXISTS "Authenticated users can upload logos" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can update logos" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can read logos" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete logos" ON storage.objects;
 
 -- Create storage policy for logos bucket
 -- Allow authenticated users to upload logos to organizations/ folder
