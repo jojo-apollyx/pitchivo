@@ -2,21 +2,418 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Premium Light Theme - Mint Blue Palette */
+    --background: 0 0% 100%;           /* white */
+    --foreground: 0 0% 5%;             /* gray-950 */
+    
+    --card: 0 0% 100%;                 /* white */
+    --card-foreground: 0 0% 5%;        /* gray-950 */
+    
+    --popover: 0 0% 100%;              /* white */
+    --popover-foreground: 0 0% 5%;     /* gray-950 */
+    
+    /* Primary: Mint Green #98FBCB */
+    --primary: 157 94% 79%;              /* #98FBCB - primary mint green */
+    --primary-foreground: 0 0% 5%;       /* gray-950 - dark text on light primary */
+    
+    /* Primary Variants */
+    --primary-light: 162 100% 87%;      /* #BFFFED - lighter mint */
+    --primary-dark: 150 48% 66%;        /* #7FCFA8 - darker mint */
+    --primary-darker: 150 24% 44%;      /* #558B71 - darkest mint */
+    
+    /* Accent Colors - for selected states, highlights */
+    --accent-color: 157 94% 79%;        /* #98FBCB - use primary as accent */
+    --accent-color-foreground: 0 0% 5%; /* gray-950 - dark text on accent */
+    
+    /* Additional Accent Variants */
+    --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
+    --accent-pink: 343 100% 88%;        /* #ffc0d1 - pink */
+    --accent-mint-light: 162 60% 78%;   /* #a6e9d7 - light mint */
+    
+    --secondary: 0 0% 96%;             /* gray-100 */
+    --secondary-foreground: 0 0% 9%;   /* gray-900 */
+    
+    --muted: 0 0% 96%;                 /* gray-100 */
+    --muted-foreground: 0 0% 45%;      /* gray-500 */
+    
+    --accent: 0 0% 96%;                /* gray-100 */
+    --accent-foreground: 0 0% 9%;      /* gray-900 */
+    
+    --destructive: 0 84% 60%;          /* red-500 */
+    --destructive-foreground: 0 0% 100%; /* white */
+    
+    --border: 0 0% 90%;                /* gray-200 */
+    --input: 0 0% 90%;                 /* gray-200 */
+    --ring: 157 94% 79%;                /* primary mint green */
+    
+    --radius: 0.75rem;                 /* 12px - premium rounded */
+    
+    /* Chart Colors */
+    --chart-1: 157 94% 79%;            /* primary mint green */
+    --chart-2: 162 100% 87%;            /* primary light */
+    --chart-3: 150 48% 66%;             /* primary dark */
+    --chart-4: 150 24% 44%;             /* primary darker */
+    --chart-5: 35 100% 74%;             /* accent yellow */
+  }
+  
+  .dark {
+    /* Premium Dark Theme - Mint Blue Palette */
+    --background: 0 0% 0%;             /* black */
+    --foreground: 0 0% 100%;           /* white */
+    
+    --card: 0 0% 7%;                   /* gray-950 */
+    --card-foreground: 0 0% 100%;      /* white */
+    
+    --popover: 0 0% 7%;                /* gray-950 */
+    --popover-foreground: 0 0% 100%;   /* white */
+    
+    /* Primary: Mint Green #98FBCB */
+    --primary: 157 94% 79%;            /* #98FBCB - primary mint green */
+    --primary-foreground: 0 0% 5%;     /* gray-950 - dark text on light primary */
+    
+    /* Primary Variants */
+    --primary-light: 162 100% 87%;      /* #BFFFED - lighter mint */
+    --primary-dark: 150 48% 66%;        /* #7FCFA8 - darker mint */
+    --primary-darker: 150 24% 44%;      /* #558B71 - darkest mint */
+    
+    /* Accent Colors - for selected states, highlights */
+    --accent-color: 157 94% 79%;       /* #98FBCB - use primary as accent */
+    --accent-color-foreground: 0 0% 5%; /* gray-950 - dark text on accent */
+    
+    /* Additional Accent Variants */
+    --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
+    --accent-pink: 343 100% 88%;        /* #ffc0d1 - pink */
+    --accent-mint-light: 162 60% 78%;   /* #a6e9d7 - light mint */
+    
+    --secondary: 0 0% 15%;             /* gray-900 */
+    --secondary-foreground: 0 0% 100%; /* white */
+    
+    --muted: 0 0% 15%;                 /* gray-900 */
+    --muted-foreground: 0 0% 64%;      /* gray-400 */
+    
+    --accent: 0 0% 15%;                /* gray-900 */
+    --accent-foreground: 0 0% 100%;    /* white */
+    
+    --destructive: 0 84% 60%;          /* red-500 */
+    --destructive-foreground: 0 0% 100%; /* white */
+    
+    --border: 0 0% 15%;                /* gray-800 */
+    --input: 0 0% 15%;                 /* gray-800 */
+    --ring: 157 94% 79%;                /* primary mint green */
+    
+    /* Chart Colors */
+    --chart-1: 157 94% 79%;            /* primary mint green */
+    --chart-2: 162 100% 87%;           /* primary light */
+    --chart-3: 150 48% 66%;            /* primary dark */
+    --chart-4: 150 24% 44%;            /* primary darker */
+    --chart-5: 35 100% 74%;             /* accent yellow */
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    touch-action: pan-x pan-y; /* Allow panning but disable pinch zoom */
+    -webkit-touch-callout: none; /* Disable callout on iOS */
+    -webkit-user-select: none; /* Disable text selection on iOS */
+    user-select: none; /* Disable text selection */
+  }
+  
+  /* Enable text selection for specific elements */
+  p, span, h1, h2, h3, h4, h5, h6, a, button, input, textarea, select {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  
+  /* Ensure no horizontal overflow */
+  html {
+    overflow-x: hidden;
+    touch-action: pan-x pan-y; /* Disable pinch zoom on html level */
+  }
+  
+  /* Additional zoom prevention */
+  * {
+    touch-action: pan-x pan-y; /* Disable pinch zoom on all elements */
+  }
+  
+  /* Prevent double-tap zoom on iOS */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Mobile-specific improvements */
+  @media (max-width: 640px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+}
+
+/* Premium Animations */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes aurora {
+  0% {
+    background-position: 0% 0%;
+    transform: scale(1.1) rotate(0deg);
+  }
+  25% {
+    background-position: 100% 0%;
+    transform: scale(1.15) rotate(1deg);
+  }
+  50% {
+    background-position: 100% 100%;
+    transform: scale(1.1) rotate(0deg);
+  }
+  75% {
+    background-position: 0% 100%;
+    transform: scale(1.15) rotate(-1deg);
+  }
+  100% {
+    background-position: 0% 0%;
+    transform: scale(1.1) rotate(0deg);
+  }
+}
+
+@layer utilities {
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .animate-slideUp {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-scaleIn {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  .animate-slideDown {
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  .animate-aurora {
+    animation: aurora 8s ease-in-out infinite;
+  }
+  
+  /* Premium Gradients */
+  .bg-gradient-premium {
+    background: linear-gradient(to bottom right, hsl(var(--background)), hsl(var(--background)), hsl(var(--primary) / 0.05));
+  }
+  
+  .bg-gradient-premium-dark {
+    background: linear-gradient(to bottom right, hsl(var(--background)), hsl(var(--background)), hsl(var(--primary) / 0.05));
+  }
+  
+  .bg-gradient-accent {
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary) / 0.9));
+  }
+  
+  .bg-gradient-accent-soft {
+    background: linear-gradient(to bottom right, hsl(var(--primary)), hsl(var(--primary)), hsl(var(--primary) / 0.8));
+  }
+  
+  .bg-gradient-mesh {
+    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.2), hsl(var(--background)), hsl(var(--background)));
+  }
+  
+  .bg-gradient-mesh-dark {
+    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.1), hsl(var(--background)), hsl(var(--background)));
+  }
+  
+  .bg-aurora {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--accent-color)) 0%,
+      hsl(var(--accent-pink)) 15%,
+      hsl(var(--primary)) 30%,
+      hsl(var(--accent-mint-light)) 45%,
+      hsl(var(--accent-beige)) 60%,
+      hsl(var(--primary)) 75%,
+      hsl(var(--accent-color)) 90%,
+      hsl(var(--accent-mint-light)) 100%
+    ) !important;
+    background-size: 300% 100% !important;
+    animation: aurora 8s ease-in-out infinite !important;
+    filter: blur(20px) !important;
+    opacity: 0.6 !important;
+    width: 100% !important;
+    height: 70vh !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: -1 !important;
+    transform: skew(15deg, -5deg) !important;
+  }
+  
+  .dark .bg-aurora {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--accent-color)) 0%,
+      hsl(var(--accent-pink)) 20%,
+      hsl(var(--primary)) 35%,
+      hsl(var(--accent-mint-light)) 50%,
+      hsl(var(--accent-beige)) 65%,
+      hsl(var(--primary)) 80%,
+      hsl(var(--accent-color)) 95%,
+      hsl(var(--accent-mint-light)) 100%
+    ) !important;
+    opacity: 0.8 !important;
+    filter: blur(25px) saturate(1.2) brightness(1.1) !important;
+  }
+  
+  /* Glass Morphism */
+  .glass {
+    backdrop-filter: blur(24px);
+    background-color: hsl(var(--background) / 0.8);
+    border: 1px solid;
+    border-color: hsl(var(--border) / 0.5);
+  }
+  
+  /* Premium Shadows */
+  .shadow-premium {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1), 0 0 0 1px hsl(var(--primary) / 0.1);
+  }
+  
+  .shadow-premium-lg {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1), 0 0 0 1px hsl(var(--primary) / 0.2);
+  }
+  
+  .shadow-premium-xl {
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25), 0 0 0 1px hsl(var(--primary) / 0.25);
+  }
+  
+  /* Hover Effects */
+  .hover-lift {
+    transition: transform 200ms;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+  }
+  
+  .hover-scale {
+    transition: transform 200ms;
+  }
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+  
+  .hover-glow {
+    transition: box-shadow 300ms;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1), 0 0 0 1px hsl(var(--primary) / 0.2);
+  }
+  
+  /* Focus States */
+  .focus-premium {
+    outline: none;
+  }
+  .focus-premium:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  
+  /* Safe area utilities for mobile devices */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  /* Bottom navigation with safe area support */
+  .bottom-nav-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    min-height: calc(4rem + env(safe-area-inset-bottom, 0));
+  }
+  
+  /* Support for Chrome's dynamic bottom bar on mobile - ensures minimum padding */
+  @supports (padding: max(0px)) {
+    .bottom-nav-safe {
+      padding-bottom: max(env(safe-area-inset-bottom, 0), 8px);
+      min-height: calc(4rem + max(env(safe-area-inset-bottom, 0), 8px));
+    }
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 

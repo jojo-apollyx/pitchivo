@@ -9,6 +9,12 @@
   },
   "deno.suggest.imports.autoDiscover": true,
   "deno.importMap": "./deno.json",
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.disablePaths": [
+    "apps/web"
+  ],
   "typescript.preferences.includePackageJsonAutoImports": "off",
   "typescript.suggest.autoImports": false,
   "typescript.updateImportsOnFileMove.enabled": "never",
