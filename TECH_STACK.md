@@ -53,10 +53,17 @@ Pitchivo is a modern web application built with a comprehensive tech stack focus
 - **motion 12.23.24** - Motion library (duplicate/alias of framer-motion) ✅
 
 ### State Management & Data Fetching
-- **Zustand 4.5.7** - Lightweight state management solution ✅
+- **Zustand 4.5.7** - Lightweight state management solution ✅ **REQUIRED for client state**
   - Note: Root package has 5.0.8, web app uses 4.5.7
-- **TanStack Query 5.90.5** - Powerful data synchronization and caching ✅
-- **TanStack Table 8.21.3** - Headless UI for building powerful tables & datagrids ✅
+  - Use for: Theme state, UI state (dialogs, loading), global client state
+  - See patterns below
+- **TanStack Query 5.90.5** - Powerful data synchronization and caching ✅ **REQUIRED for server state**
+  - Use for: All API calls, data fetching, caching
+  - Automatically works with impersonation via cookies
+  - See patterns below
+- **TanStack Table 8.21.3** - Headless UI for building powerful tables & datagrids ✅ **REQUIRED for tables**
+  - Use for: All data tables (admin pages, lists, etc.)
+  - See patterns below
 
 ### Forms & Validation
 - **React Hook Form 7.65.0** - Performant, flexible forms with easy validation
@@ -360,51 +367,442 @@ export const LANDING_PAGE_AUTH_MODE =
 
 ---
 
+## Library Usage Patterns
+
+### Zustand State Management
+
+**REQUIRED: Use Zustand for all global client state**
+
+**Available Stores:**
+- `useThemeStore()` - Theme/color scheme management
+- `useUIStore()` - Dialog and UI state management
+
+**Theme Store Pattern:**
+```typescript
+import { useThemeStore } from '@/lib/stores/theme-store'
+
+function MyComponent() {
+  const { selectedScheme, setScheme, initializeFromStorage } = useThemeStore()
+  
+  useEffect(() => {
+    initializeFromStorage() // Load from localStorage on mount
+  }, [])
+  
+  const handleChange = (scheme: ColorScheme) => {
+    setScheme(scheme) // Automatically applies and persists
+  }
+}
+```
+
+**UI Store Pattern (Dialogs):**
+```typescript
+import { useUIStore } from '@/lib/stores/ui-store'
+
+function MyComponent() {
+  const { openDialog, closeDialog, isDialogOpen, getDialogData } = useUIStore()
+  
+  const handleOpen = () => {
+    openDialog('myDialog', { data: 'some data' })
+  }
+  
+  const handleClose = () => {
+    closeDialog('myDialog')
+  }
+  
+  // In JSX:
+  <Dialog open={isDialogOpen('myDialog')} onOpenChange={handleClose}>
+    <DialogContent>
+      {getDialogData('myDialog')?.data}
+    </DialogContent>
+  </Dialog>
+}
+```
+
+**When to use Zustand:**
+- ✅ Theme/color scheme state
+- ✅ Dialog/modal state
+- ✅ Global UI state (loading, notifications)
+- ✅ User preferences
+- ❌ Form state (use React Hook Form)
+- ❌ Server data (use TanStack Query)
+- ❌ Component-local state (use useState)
+
+---
+
+### TanStack Table Pattern
+
+**REQUIRED: Use TanStack Table for all data tables**
+
+**Step 1: Define Types**
+```typescript
+// app/admin/users/types.ts
+export interface User {
+  id: string
+  email: string
+  full_name?: string
+  // ... other fields
+}
+```
+
+**Step 2: Create Column Definitions**
+```typescript
+// app/admin/users/columns.tsx
+import { ColumnDef } from '@tanstack/react-table'
+import { createSortableHeader, createDateColumn } from '@/components/data-table/column-helpers'
+
+export const createUsersColumns = (
+  onAction: (user: User) => void
+): ColumnDef<User>[] => [
+  createSortableHeader<User>('Email', 'email'),
+  createSortableHeader<User>('Name', 'full_name'),
+  createDateColumn<User>('created_at', 'Created At'),
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => (
+      <Button onClick={() => onAction(row.original)}>Action</Button>
+    ),
+  },
+]
+```
+
+**Step 3: Use DataTable Component**
+```typescript
+// app/admin/users/page.tsx
+import { DataTable } from '@/components/data-table/data-table'
+import { createUsersColumns } from './columns'
+
+export default function UsersPage() {
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: fetchUsers,
+  })
+  
+  const columns = useMemo(
+    () => createUsersColumns(handleAction),
+    []
+  )
+  
+  return (
+    <DataTable
+      columns={columns}
+      data={users}
+      searchKey="email"
+      searchPlaceholder="Search users..."
+      loading={isLoading}
+      emptyMessage="No users found"
+    />
+  )
+}
+```
+
+**Features:**
+- ✅ Automatic sorting (click column headers)
+- ✅ Built-in search/filtering
+- ✅ Pagination
+- ✅ Loading states
+- ✅ Empty states
+- ✅ Responsive design
+
+---
+
+### API Routes with Impersonation
+
+**REQUIRED: Use `withApiHandler` wrapper for all API routes**
+
+**Pattern:**
+```typescript
+// app/api/products/route.ts
+import { withApiHandler } from '@/lib/impersonation'
+import { z } from 'zod'
+
+// GET endpoint
+export const GET = withApiHandler(
+  '/api/products',
+  'GET',
+  'list_products',
+  async ({ context, supabase }) => {
+    // context automatically includes:
+    // - userId: effective user (impersonated if applicable)
+    // - organizationId: effective org (impersonated if applicable)
+    // - isImpersonating: boolean
+    // - isAdmin: boolean
+    
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .eq('organization_id', context.organizationId) // Uses impersonated org
+    
+    return { products: data }
+  },
+  { requireOrg: true } // Options: requireOrg, requireAdmin
+)
+
+// POST endpoint with validation
+export const POST = withApiHandler(
+  '/api/products',
+  'POST',
+  'create_product',
+  async ({ context, supabase, request }) => {
+    const body = await request.json()
+    
+    // Validate with Zod
+    const validated = z.object({
+      name: z.string(),
+      price: z.number(),
+    }).parse(body)
+    
+    const { data } = await supabase
+      .from('products')
+      .insert({
+        ...validated,
+        organization_id: context.organizationId, // Auto-scoped
+        created_by: context.userId, // Auto-scoped
+      })
+      .select()
+      .single()
+    
+    return { product: data }
+  },
+  { requireOrg: true }
+)
+```
+
+**What `withApiHandler` provides:**
+- ✅ Automatic impersonation context
+- ✅ Automatic logging
+- ✅ Organization validation
+- ✅ Error handling
+- ✅ Type safety
+
+**Options:**
+- `requireOrg: true` - Ensures organization context exists
+- `requireAdmin: true` - Requires admin access (for admin-only endpoints)
+
+---
+
+### TanStack Query with Impersonation
+
+**REQUIRED: Use `apiClient` for all API calls**
+
+**Pattern:**
+```typescript
+// lib/api/products.ts
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { apiClient, queryKeys } from './client'
+import { z } from 'zod'
+
+// Query hook
+export function useProducts() {
+  return useQuery({
+    queryKey: queryKeys.products.lists(),
+    queryFn: async () => {
+      // apiClient automatically includes cookies (impersonation cookie)
+      const data = await apiClient<{ products: Product[] }>('/api/products')
+      return z.object({ products: z.array(productSchema) }).parse(data)
+    },
+  })
+}
+
+// Mutation hook
+export function useCreateProduct() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (input: CreateProductInput) => {
+      // Validate input with Zod
+      const validated = createProductSchema.parse(input)
+      
+      // apiClient sends cookies automatically
+      return apiClient<Product>('/api/products', {
+        method: 'POST',
+        body: JSON.stringify(validated),
+      })
+    },
+    onSuccess: () => {
+      // Invalidate cache to refetch
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() })
+    },
+  })
+}
+```
+
+**How Impersonation Works:**
+1. Admin sets impersonation cookie via `/api/impersonate` endpoint
+2. `apiClient` automatically includes cookies with `credentials: 'include'`
+3. API route reads cookie via `withApiHandler` → gets impersonation context
+4. All queries automatically use impersonated user/org context
+5. No manual cookie handling needed!
+
+**Query Keys Pattern:**
+```typescript
+// lib/api/client.ts
+export const queryKeys = {
+  products: {
+    all: ['products'] as const,
+    lists: () => [...queryKeys.products.all, 'list'] as const,
+    detail: (id: string) => [...queryKeys.products.all, 'detail', id] as const,
+  },
+} as const
+```
+
+**Cache Invalidation:**
+```typescript
+// After mutations, invalidate related queries
+queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() })
+queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(id) })
+```
+
+---
+
+### Impersonation Flow
+
+**How Impersonation Works End-to-End:**
+
+1. **Admin initiates impersonation:**
+```typescript
+// Admin clicks "Impersonate" button
+await fetch('/api/impersonate', {
+  method: 'POST',
+  body: JSON.stringify({ userId: targetUserId }),
+})
+// Sets cookie: impersonate_user_id=targetUserId
+```
+
+2. **Client-side API calls:**
+```typescript
+// All API calls via apiClient automatically include cookies
+const data = await apiClient('/api/products')
+// Cookie sent automatically → API gets impersonation context
+```
+
+3. **Server-side API route:**
+```typescript
+// withApiHandler automatically reads cookie and provides context
+export const GET = withApiHandler('/api/products', 'GET', 'list_products', 
+  async ({ context }) => {
+    // context.userId = impersonated user (if applicable)
+    // context.organizationId = impersonated org (if applicable)
+    // context.isImpersonating = true/false
+  }
+)
+```
+
+4. **Server-side pages:**
+```typescript
+// Use getEffectiveUserAndProfile() helper
+import { getEffectiveUserAndProfile } from '@/lib/auth'
+
+export default async function Page() {
+  const { user, profile, organization } = await getEffectiveUserAndProfile()
+  // Automatically returns impersonated user/org if cookie is set
+}
+```
+
+**Key Points:**
+- ✅ Impersonation is cookie-based (no query params)
+- ✅ Works automatically with TanStack Query
+- ✅ Works automatically with API routes (via `withApiHandler`)
+- ✅ Works automatically with server pages (via `getEffectiveUserAndProfile`)
+- ✅ All actions are logged for audit trail
+
+---
+
 ## Best Practices Implementation
 
 ### Data Fetching
 
-**Use TanStack Query for all server data:**
+**REQUIRED: Use TanStack Query + apiClient for all server data:**
 ```typescript
+import { useQuery } from '@tanstack/react-query'
+import { apiClient, queryKeys } from '@/lib/api/client'
+
 const { data, isLoading, error } = useQuery({
-  queryKey: ['myData'],
-  queryFn: fetchMyData,
+  queryKey: queryKeys.products.lists(),
+  queryFn: async () => {
+    // apiClient automatically includes cookies (impersonation support)
+    return apiClient<{ products: Product[] }>('/api/products')
+  },
   staleTime: 1000 * 60 * 5, // 5 minutes
 })
 ```
 
+**See "TanStack Query with Impersonation" section above for full patterns.**
+
 ### Form Management
 
-**Use React Hook Form + Zod for all forms:**
+**REQUIRED: Use React Hook Form + Zod for all forms:**
 ```typescript
-const { register, handleSubmit } = useForm({
-  resolver: zodResolver(mySchema),
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const schema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
 })
+
+const { register, handleSubmit, formState: { errors } } = useForm({
+  resolver: zodResolver(schema),
+})
+
+// Submit handler
+const onSubmit = async (data: z.infer<typeof schema>) => {
+  // Use TanStack Query mutation
+  await createProduct.mutateAsync(data)
+}
 ```
+
+**Always validate with Zod before sending to API.**
 
 ### State Management
 
-- **TanStack Query**: Server state (API calls, caching)
-- **Zustand**: Global client state (user session, preferences)
-- **React Hook Form**: Form state
-- **useState**: Local UI state only
+**REQUIRED: Use the right tool for the right job**
+
+- **TanStack Query**: Server state (API calls, caching) - **ALWAYS use this for API data**
+- **Zustand**: Global client state (theme, dialogs, UI state) - **ALWAYS use this for global client state**
+- **React Hook Form**: Form state - **ALWAYS use this for forms**
+- **useState**: Local component state only - **ONLY for component-specific UI state**
 
 ### Animations
 
-**Use Framer Motion for animations:**
+**REQUIRED: Use Framer Motion for all animations**
+
+**Button animations (automatic via Button component):**
 ```typescript
+// Button component already includes animations
+<Button>Click me</Button> // Automatically has hover/tap animations
+```
+
+**Page transitions:**
+```typescript
+import { motion } from 'framer-motion'
+
 <motion.div
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.3 }}
+>
+  {/* Page content */}
+</motion.div>
+```
+
+**Component animations:**
+```typescript
+<motion.div
   whileHover={{ scale: 1.02 }}
   whileTap={{ scale: 0.98 }}
+  transition={{ duration: 0.2 }}
 >
+  {/* Interactive element */}
+</motion.div>
 ```
 
 **Principles:**
 - Hardware-accelerated (transform/opacity only)
 - Respect reduced motion preferences
 - Keep animations subtle (scale 1.02, not 1.05)
+- Duration: 0.2-0.3s for responsiveness
 
 ---
 
@@ -489,12 +887,11 @@ if (request.nextUrl.pathname.startsWith('/api/')) {
 
 ---
 
-### Additional Packages (Not in Original Docs)
+### Additional Packages
 - **@ai-sdk/azure 2.0.60** - AI SDK for Azure integration
 - **@ai-sdk/react 2.0.87** - AI SDK React integration
 - **@ai-sdk/ui-utils 1.2.11** - AI SDK UI utilities
 - **ai 5.0.87** - AI SDK core
-- **@xyflow/react 12.9.2** - Flow diagram library (⚠️ Not currently used)
 - **cmdk 1.1.1** - Command menu component
 - **embla-carousel-react 8.6.0** - Carousel component
 - **nanoid 5.1.6** - ID generator
@@ -504,6 +901,10 @@ if (request.nextUrl.pathname.startsWith('/api/')) {
 - **streamdown 1.4.0** - Streaming utilities
 - **tokenlens 1.3.1** - Token utilities
 - **use-stick-to-bottom 1.1.1** - Scroll hook
+
+### Removed Packages
+- **@xyflow/react** - Removed (not used)
+- **motion** - Removed (duplicate of framer-motion)
 
 ---
 
