@@ -1,43 +1,37 @@
-import { requireAuth, getUserProfile } from '@/lib/auth'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { Topbar } from '@/components/dashboard/topbar'
-import { MobileNav } from '@/components/dashboard/mobile-nav'
+import { requireAdmin } from '@/lib/auth'
+import { AdminSidebar } from '@/components/admin/admin-sidebar'
+import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { ThemeProvider } from '@/components/dashboard/theme-provider'
 import { ImpersonateBarWrapper } from '@/components/admin/impersonate-bar-wrapper'
 
-export default async function DashboardLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const user = await requireAuth()
-  const profile = await getUserProfile(user.id)
-  const organization = profile?.organizations
+  const { user, profile } = await requireAdmin()
   
   // Get color scheme from organization (defaults to Emerald Spark)
   const colorScheme = {
-    primary: organization?.primary_color || '#10B981',
-    secondary: organization?.secondary_color || '#059669',
-    accent: organization?.accent_color || '#F87171',
+    primary: '#10B981',
+    secondary: '#059669',
+    accent: '#F87171',
   }
-
-  // Check if user is admin
-  const isAdmin = profile?.is_pitchivo_admin ?? false
 
   return (
     <div className="min-h-screen bg-background">
       <ThemeProvider colorScheme={colorScheme} />
       <div className="flex h-screen overflow-hidden">
         {/* Desktop Sidebar */}
-        <Sidebar isAdmin={isAdmin} />
+        <AdminSidebar />
         
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Impersonate Warning Bar (if admin is impersonating) */}
+          {/* Impersonate Warning Bar */}
           <ImpersonateBarWrapper />
           
           {/* Topbar */}
-          <Topbar user={user} />
+          <AdminTopbar user={user} />
           
           {/* Page Content */}
           <main className="flex-1 overflow-y-auto pb-20 lg:pb-6">
@@ -45,9 +39,6 @@ export default async function DashboardLayout({
           </main>
         </div>
       </div>
-      
-      {/* Mobile Bottom Navigation */}
-      <MobileNav />
     </div>
   )
 }

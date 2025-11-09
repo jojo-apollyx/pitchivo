@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, getUserProfile } from '@/lib/auth'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import { 
@@ -7,11 +7,14 @@ import {
   Settings, 
   User, 
   HelpCircle, 
-  ChevronRight 
+  ChevronRight,
+  Shield
 } from 'lucide-react'
 
 export default async function MorePage() {
-  await requireAuth()
+  const user = await requireAuth()
+  const profile = await getUserProfile(user.id)
+  const isAdmin = profile?.is_pitchivo_admin ?? false
 
   const menuItems = [
     {
@@ -45,6 +48,13 @@ export default async function MorePage() {
       description: 'Get help',
     },
   ]
+
+  const adminMenuItem = {
+    label: 'Admin Panel',
+    href: '/admin',
+    icon: Shield,
+    description: 'System administration',
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -81,6 +91,28 @@ export default async function MorePage() {
                 </Link>
               )
             })}
+            {isAdmin && (
+              <>
+                <div className="border-t border-border/30 my-2" />
+                <Link
+                  href={adminMenuItem.href}
+                  className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors touch-manipulation active:bg-accent/70"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Shield className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{adminMenuItem.label}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {adminMenuItem.description}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </Link>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

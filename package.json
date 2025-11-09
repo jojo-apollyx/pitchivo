@@ -18,6 +18,7 @@
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset --local",
     "supabase:migrate": "supabase db push --local",
+    "supabase:migrate:run": "node scripts/run-migration.js",
     "supabase:deploy": "supabase functions deploy",
     "supabase:functions:serve": "supabase functions serve --env-file .env.local"
   },

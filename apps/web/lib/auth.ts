@@ -33,3 +33,19 @@ export async function getUserProfile(userId: string) {
   return profile
 }
 
+export async function requireAdmin() {
+  const user = await requireAuth()
+  const profile = await getUserProfile(user.id)
+  
+  if (!profile?.is_pitchivo_admin) {
+    redirect('/dashboard')
+  }
+  
+  return { user, profile }
+}
+
+export async function isAdmin(userId: string) {
+  const profile = await getUserProfile(userId)
+  return profile?.is_pitchivo_admin ?? false
+}
+

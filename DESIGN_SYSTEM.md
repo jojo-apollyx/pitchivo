@@ -257,12 +257,29 @@ className="border-2 border-border" // Too thick
 
 ## 📱 Mobile-First Layout Patterns
 
+### ⚠️ CRITICAL: Integral Design - NO Card Borders
+
+**PRIORITY RULE: ALWAYS use continuous flow design. NEVER use cards with borders to segment pages.**
+
+**❌ FORBIDDEN:**
+- Card components with borders (`<Card>` with `border-border/50`)
+- Heavy card segmentation that breaks page flow
+- Multiple nested cards
+- Card grids that create visual separation
+
+**✅ REQUIRED:**
+- Continuous sections with `border-b` dividers
+- Integral flow using `<section>` elements
+- Subtle dividers (`border-border/30`) between sections
+- Sticky headers with `sticky top-0` for section headers
+- Use `divide-y` for list items within sections
+
 ### Integral Content Sections (Preferred)
 
 **Rule: Use continuous flow, not heavy card segmentation**
 
 ```tsx
-// ✅ Good: Integral section (Mobile-first)
+// ✅ REQUIRED: Integral section (Mobile-first) - NO CARDS
 <section className="bg-background">
   <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-border/50">
     <h2 className="text-xl font-semibold">Today's Bookings</h2>
@@ -276,7 +293,28 @@ className="border-2 border-border" // Too thick
   </div>
 </section>
 
-// ❌ Avoid: Heavy card segmentation
+// ✅ REQUIRED: Page structure with integral sections
+<div className="min-h-screen bg-background">
+  {/* Page Header - Integral Section */}
+  <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Page Title</h1>
+      <p className="text-sm sm:text-base text-muted-foreground mt-2">Description</p>
+    </div>
+  </section>
+
+  {/* Search/Filter - Integral Section */}
+  <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+    {/* Search and filters */}
+  </section>
+
+  {/* Content - Integral Section */}
+  <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+    {/* Table or list content */}
+  </section>
+</div>
+
+// ❌ FORBIDDEN: Heavy card segmentation
 <Card className="mb-4">
   <CardHeader>...</CardHeader>
   <CardContent>
@@ -285,17 +323,41 @@ className="border-2 border-border" // Too thick
     ))}
   </CardContent>
 </Card>
+
+// ❌ FORBIDDEN: Cards with borders
+<Card className="rounded-xl border-border/50">
+  <CardHeader>...</CardHeader>
+  <CardContent>...</CardContent>
+</Card>
 ```
 
 ### Compact Grid Layouts (Mobile)
 
 ```tsx
-// ✅ Good: Compact 2-column grid (Mobile)
+// ✅ Good: Compact 2-column grid (Mobile) - NO CARD BORDERS
 <div className="grid grid-cols-2 gap-3 px-4">
   {items.map(item => (
-    <div key={item.id} className="p-3 rounded-xl bg-card border border-border/50">
-      {/* Compact card content */}
+    <div key={item.id} className="p-3 rounded-xl bg-card/50 hover:bg-card/80 transition-colors">
+      {/* Compact content without border */}
     </div>
+  ))}
+</div>
+
+// ✅ Better: Use integral sections with divide-y
+<section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+  <div className="divide-y divide-border/30">
+    {items.map(item => (
+      <div key={item.id} className="py-4 hover:bg-accent/5 transition-colors">
+        {/* Content flows continuously */}
+      </div>
+    ))}
+  </div>
+</section>
+
+// ❌ FORBIDDEN: Cards with borders
+<div className="grid grid-cols-2 gap-3 px-4">
+  {items.map(item => (
+    <Card key={item.id} className="border border-border/50">...</Card>  // NO BORDERS
   ))}
 </div>
 
@@ -311,27 +373,47 @@ className="border-2 border-border" // Too thick
 
 ## 🖥️ Desktop Layout Patterns
 
-### Continuous Flow (Desktop)
+### Continuous Flow (Desktop) - NO CARD BORDERS
 
-**Rule: Expand the same continuous flow, don't create segmented boxes**
+**PRIORITY RULE: Expand the same continuous flow, NEVER create segmented boxes with card borders**
 
 ```tsx
-// ✅ Good: Continuous flow with expanded spacing (Desktop)
-<section className="py-6 md:py-10 lg:py-12">
-  <div className="px-4 md:px-8 max-w-4xl mx-auto">
-    <h2 className="text-lg md:text-xl font-semibold mb-6">Section Title</h2>
-    <div className="space-y-4 md:space-y-6">
-      {/* Content flows continuously */}
+// ✅ REQUIRED: Continuous flow with expanded spacing (Desktop) - NO CARDS
+<div className="min-h-screen bg-background">
+  {/* Page Header - Integral Section */}
+  <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Page Title</h1>
+      <p className="text-sm sm:text-base text-muted-foreground mt-2">Description</p>
     </div>
-  </div>
-</section>
+  </section>
 
-// ❌ Avoid: Card grid layouts on desktop
-<div className="grid grid-cols-3 gap-6">
-  <Card>...</Card>
-  <Card>...</Card>
-  <Card>...</Card>
+  {/* Content Sections - Integral Flow */}
+  <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+    <h2 className="text-lg md:text-xl font-semibold mb-4">Section Title</h2>
+    <div className="space-y-4 md:space-y-6">
+      {/* Content flows continuously - NO CARD WRAPPERS */}
+    </div>
+  </section>
+
+  {/* Another Section - Continuous */}
+  <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+    {/* More content */}
+  </section>
 </div>
+
+// ❌ FORBIDDEN: Card grid layouts on desktop
+<div className="grid grid-cols-3 gap-6">
+  <Card className="border border-border/50">...</Card>  // NO CARDS WITH BORDERS
+  <Card className="border border-border/50">...</Card>
+  <Card className="border border-border/50">...</Card>
+</div>
+
+// ❌ FORBIDDEN: Segmented boxes
+<Card className="mb-6">
+  <CardHeader>...</CardHeader>
+  <CardContent>...</CardContent>
+</Card>
 ```
 
 ---
@@ -578,14 +660,21 @@ className="h-screen overflow-y-auto"     // Scrollable full screen
 
 ## 🎯 Design Philosophy Summary
 
-### Core Principles
+### Core Principles (Priority Order)
 
-1. **Mobile-First**: Design for mobile, enhance for desktop
-2. **Touch-Optimized**: 44px minimum touch targets
-3. **Continuous Flow**: Avoid heavy card segmentation
-4. **Subtle Animations**: Professional, not aggressive
-5. **CSS Variables**: Always use design system variables
-6. **Premium Feel**: Rounded corners, soft shadows, breathing space
+1. **⚡ INTEGRAL DESIGN (HIGHEST PRIORITY)**: 
+   - **ALWAYS** use continuous flow with `<section>` elements
+   - **NEVER** use cards with borders (`<Card>` with borders)
+   - Use `border-b` dividers between sections, not card wrappers
+   - Sticky headers for section navigation
+   - `divide-y` for list items within sections
+
+2. **Mobile-First**: Design for mobile, enhance for desktop
+3. **Touch-Optimized**: 44px minimum touch targets
+4. **Continuous Flow**: Avoid heavy card segmentation (enforced by #1)
+5. **Subtle Animations**: Professional, not aggressive
+6. **CSS Variables**: Always use design system variables
+7. **Premium Feel**: Rounded corners, soft shadows, breathing space
 
 ### Key Metrics
 
@@ -604,13 +693,29 @@ When generating UI with AI, use this prompt:
 
 ```
 Create a **mobile-first**, **flat**, and **integrated** layout using **shadcn/ui + Tailwind CSS**.
-Avoid dashboard or grid design. No cards unless absolutely needed.
+
+CRITICAL REQUIREMENTS:
+- **NEVER use Card components with borders** - this is FORBIDDEN
+- **ALWAYS use continuous flow** with `<section>` elements
+- Use `border-b border-border/30` for section dividers, NOT card borders
+- Use sticky headers: `sticky top-0 bg-background/95 backdrop-blur-sm z-10`
+- Use `divide-y divide-border/30` for list items within sections
+- Structure: Page Header → Search/Filter Section → Content Section (all as `<section>`)
+
+Avoid dashboard or grid design. No cards unless absolutely needed (and even then, NO BORDERS).
 Use continuous sections with clear visual flow.
 Use `flex`, `gap`, and `divide-y` for structure, not `<Card>`.
 On mobile: use bottom navigation, simple headers, and list-style items.
 On desktop (`lg:`), expand the layout horizontally and introduce a sidebar or wider padding — but maintain a continuous, cohesive background.
 Use light typography, soft spacing (`p-4`, `gap-4`), rounded corners (`rounded-lg`), and subtle shadows (`shadow-sm` or none).
 Make it feel like a PWA, not a dashboard website.
+
+Example structure:
+<div className="min-h-screen bg-background">
+  <section className="sticky top-0 ... border-b border-border/50">Header</section>
+  <section className="... border-b border-border/30">Filters</section>
+  <section className="...">Content</section>
+</div>
 ```
 
 ---
