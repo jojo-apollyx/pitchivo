@@ -41,7 +41,7 @@ export default async function SettingsPage() {
                 <Label htmlFor="company-name">Company Name</Label>
                 <Input 
                   id="company-name" 
-                  defaultValue={organization?.company_name || ''} 
+                  defaultValue={organization?.name || ''} 
                   disabled
                   className="transition-all duration-300"
                 />

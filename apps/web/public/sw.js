@@ -1,5 +1,5 @@
 // Service Worker for Pitchivo PWA
-const CACHE_VERSION = 'v4' // Bump this to force cache refresh
+const CACHE_VERSION = 'v6' // Bump this to force cache refresh
 const STATIC_CACHE = `pitchivo-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `pitchivo-dynamic-${CACHE_VERSION}`
 const IMAGE_CACHE = `pitchivo-images-${CACHE_VERSION}`

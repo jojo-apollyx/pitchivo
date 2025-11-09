@@ -341,7 +341,7 @@ export default function Home() {
                     <div className="flex-1">
                       <div className="font-semibold text-foreground mb-1">Invite-Only Access</div>
                       <p className="text-sm text-foreground/70 mb-3">
-                        We're currently in early access. Join our waitlist to get notified when we open up.
+                        We are invitation only. Join our waitlist to get notified when we open up.
                       </p>
                       <button
                         onClick={() => {
