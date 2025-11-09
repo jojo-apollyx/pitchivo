@@ -49,3 +49,15 @@ export async function isAdmin(userId: string) {
   return profile?.is_pitchivo_admin ?? false
 }
 
+export async function getOrganizationById(organizationId: string) {
+  const supabase = await createServerClient()
+  
+  const { data: organization } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', organizationId)
+    .single()
+  
+  return organization
+}
+

@@ -24,7 +24,8 @@ import {
   Search, 
   UserCog, 
   UserX, 
-  Eye
+  Eye,
+  UserCheck
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
@@ -60,6 +61,8 @@ export default function AdminUsersPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'suspended'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [impersonateDialog, setImpersonateDialog] = useState<{ open: boolean; user: User | null }>({ open: false, user: null })
+  const [suspendDialog, setSuspendDialog] = useState<{ open: boolean; user: User | null }>({ open: false, user: null })
+  const [unsuspendDialog, setUnsuspendDialog] = useState<{ open: boolean; user: User | null }>({ open: false, user: null })
 
   useEffect(() => {
     loadUsers()
@@ -68,6 +71,29 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true)
+      
+      // First, get all auth users with their banned status using admin endpoint
+      // Note: This requires calling an Edge Function since client can't access auth.users directly
+      const { data: authUsersData, error: authError } = await supabase.functions.invoke('admin-list-users')
+      
+      if (authError) {
+        console.error('Error loading auth users:', authError)
+        // Fall back to loading without status
+      }
+      
+      // Create a map of user IDs to their banned status
+      const bannedStatusMap = new Map<string, boolean>()
+      if (authUsersData?.users) {
+        console.log('Auth users data:', authUsersData.users)
+        authUsersData.users.forEach((authUser: any) => {
+          const isBanned = authUser.is_banned === true || 
+                          (authUser.banned_until !== null && authUser.banned_until !== undefined)
+          console.log(`User ${authUser.email}: banned=${isBanned}, banned_until=${authUser.banned_until}`)
+          bannedStatusMap.set(authUser.id, isBanned)
+        })
+      }
+      console.log('Banned status map size:', bannedStatusMap.size)
+      
       // Get all users with their organization info
       const { data: usersData, error: usersError } = await supabase
         .from('user_profiles')
@@ -89,18 +115,23 @@ export default function AdminUsersPage() {
 
       if (usersError) throw usersError
 
-      const usersWithOrg = (usersData || []).map((user: any) => ({
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        organization_id: user.organization_id,
-        organization_name: user.organizations?.name,
-        organization_domain: user.organizations?.domain,
-        org_role: user.org_role,
-        is_pitchivo_admin: user.is_pitchivo_admin,
-        created_at: user.created_at,
-        status: 'active' as const,
-      }))
+      const usersWithOrg = (usersData || []).map((user: any) => {
+        const isBanned = bannedStatusMap.get(user.id) || false
+        const status = isBanned ? ('suspended' as const) : ('active' as const)
+        console.log(`User ${user.email}: status=${status}, banned=${isBanned}`)
+        return {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          organization_id: user.organization_id,
+          organization_name: user.organizations?.name,
+          organization_domain: user.organizations?.domain,
+          org_role: user.org_role,
+          is_pitchivo_admin: user.is_pitchivo_admin,
+          created_at: user.created_at,
+          status: status,
+        }
+      })
 
       setUsers(usersWithOrg)
     } catch (error) {
@@ -123,9 +154,70 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleSuspend = async (userId: string) => {
-    // TODO: Implement suspend functionality
-    console.log('Suspend user:', userId)
+  const handleSuspend = (user: User) => {
+    setSuspendDialog({ open: true, user })
+  }
+
+  const confirmSuspend = async () => {
+    if (!suspendDialog.user) return
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-suspend-user', {
+        body: { 
+          userId: suspendDialog.user.id,
+          action: 'suspend'
+        }
+      })
+
+      if (error) throw error
+
+      console.log('User suspended successfully:', data)
+      alert(`User ${suspendDialog.user.email} has been suspended successfully`)
+      
+      setSuspendDialog({ open: false, user: null })
+      
+      // Wait a moment for Supabase to process the ban
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Reload users list to show updated status
+      await loadUsers()
+    } catch (error: any) {
+      console.error('Error suspending user:', error)
+      alert(`Failed to suspend user: ${error.message || 'Unknown error'}`)
+    }
+  }
+
+  const handleUnsuspend = (user: User) => {
+    setUnsuspendDialog({ open: true, user })
+  }
+
+  const confirmUnsuspend = async () => {
+    if (!unsuspendDialog.user) return
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-suspend-user', {
+        body: { 
+          userId: unsuspendDialog.user.id,
+          action: 'unsuspend'
+        }
+      })
+
+      if (error) throw error
+
+      console.log('User unsuspended successfully:', data)
+      alert(`User ${unsuspendDialog.user.email} has been unsuspended successfully`)
+      
+      setUnsuspendDialog({ open: false, user: null })
+      
+      // Wait a moment for Supabase to process the unban
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Reload users list to show updated status
+      await loadUsers()
+    } catch (error: any) {
+      console.error('Error unsuspending user:', error)
+      alert(`Failed to unsuspend user: ${error.message || 'Unknown error'}`)
+    }
   }
 
   const filteredUsers = users.filter(user => {
@@ -300,21 +392,39 @@ export default function AdminUsersPage() {
                                 </TooltipContent>
                               </Tooltip>
                             )}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleSuspend(user.id)}
-                                  className="min-h-[36px] px-2 text-destructive hover:text-destructive"
-                                >
-                                  <UserX className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Suspend this user</p>
-                              </TooltipContent>
-                            </Tooltip>
+                            {user.status === 'active' ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSuspend(user)}
+                                    className="min-h-[36px] px-2 text-destructive hover:text-destructive"
+                                  >
+                                    <UserX className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Suspend this user</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleUnsuspend(user)}
+                                    className="min-h-[36px] px-2 text-success hover:text-success"
+                                  >
+                                    <UserCheck className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Unsuspend this user</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -361,6 +471,59 @@ export default function AdminUsersPage() {
             </Button>
             <Button onClick={confirmImpersonate}>
               Confirm Impersonate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Suspend Confirmation Dialog */}
+      <Dialog open={suspendDialog.open} onOpenChange={(open) => setSuspendDialog({ open, user: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Suspend User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to suspend <strong>{suspendDialog.user?.email}</strong>? 
+              This will prevent the user from accessing the application until they are unsuspended.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSuspendDialog({ open: false, user: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmSuspend}
+            >
+              Suspend User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unsuspend Confirmation Dialog */}
+      <Dialog open={unsuspendDialog.open} onOpenChange={(open) => setUnsuspendDialog({ open, user: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unsuspend User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to unsuspend <strong>{unsuspendDialog.user?.email}</strong>? 
+              This will restore the user's access to the application.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setUnsuspendDialog({ open: false, user: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmUnsuspend}
+            >
+              Unsuspend User
             </Button>
           </DialogFooter>
         </DialogContent>

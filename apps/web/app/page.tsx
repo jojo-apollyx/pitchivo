@@ -254,6 +254,50 @@ export default function Home() {
     }
   }, [])
 
+  // Handle auth errors (like banned users)
+  useEffect(() => {
+    console.log('🔍 Checking for auth errors in URL hash')
+    
+    if (typeof window !== 'undefined' && window.location.hash) {
+      console.log('🔗 Hash found:', window.location.hash)
+      
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const error = hashParams.get('error')
+      const error_code = hashParams.get('error_code')
+      const error_description = hashParams.get('error_description')
+      
+      console.log('📋 Parsed params:', { error, error_code, error_description })
+      
+      if (error) {
+        console.log('❌ Auth error detected:', { error, error_code, error_description })
+        
+        // Add a small delay to ensure toast system is ready
+        setTimeout(() => {
+          if (error_code === 'user_banned') {
+            console.log('🚫 Showing user banned toast')
+            toast.error('Account Suspended', {
+              description: 'Your account has been suspended. Please contact support for assistance.',
+              duration: 6000,
+            })
+          } else if (error === 'access_denied') {
+            console.log('🔒 Showing access denied toast')
+            toast.error('Access Denied', {
+              description: error_description ? decodeURIComponent(error_description) : 'Unable to sign in. Please try again.',
+              duration: 5000,
+            })
+          }
+          
+          // Clear the error from URL
+          window.history.replaceState(null, '', '/')
+        }, 100)
+      } else {
+        console.log('✅ No auth errors found')
+      }
+    } else {
+      console.log('⚠️ No hash in URL')
+    }
+  }, [])
+
   const scrollToPricing = () => {
     pricingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };

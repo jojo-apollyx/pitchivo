@@ -1,4 +1,4 @@
-import { requireAuth, getUserProfile } from '@/lib/auth'
+import { requireAuth, getUserProfile, getOrganizationById } from '@/lib/auth'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Topbar } from '@/components/dashboard/topbar'
 import { MobileNav } from '@/components/dashboard/mobile-nav'
@@ -7,12 +7,25 @@ import { ImpersonateBarWrapper } from '@/components/admin/impersonate-bar-wrappe
 
 export default async function DashboardLayout({
   children,
+  searchParams,
 }: {
   children: React.ReactNode
+  searchParams?: { impersonate?: string }
 }) {
   const user = await requireAuth()
   const profile = await getUserProfile(user.id)
-  const organization = profile?.organizations
+  
+  // Check if admin is impersonating an organization
+  const impersonateOrgId = searchParams?.impersonate
+  let organization = profile?.organizations
+  
+  if (impersonateOrgId && profile?.is_pitchivo_admin) {
+    // Admin is impersonating - load the impersonated organization
+    const impersonatedOrg = await getOrganizationById(impersonateOrgId)
+    if (impersonatedOrg) {
+      organization = impersonatedOrg
+    }
+  }
   
   // Get color scheme from organization (defaults to Emerald Spark)
   const colorScheme = {
