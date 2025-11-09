@@ -309,6 +309,8 @@ export function applyThemeColor(themeColor: string): void {
     primary: themeColor,
     secondary: `#${hslToHex(lightenHsl(hsl, 15))}`,
     accent: `#${hslToHex(lightenHsl(hsl, 30))}`,
+    description: 'Custom theme color',
+    category: 'Neutral',
   }
   applyColorScheme(scheme)
 }

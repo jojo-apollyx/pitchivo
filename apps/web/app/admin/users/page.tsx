@@ -33,9 +33,11 @@ import {
 interface Organization {
   id: string
   name: string
-  owner_email: string
+  domain: string
   created_at: string
   status: 'active' | 'suspended'
+  owner_email?: string
+  member_count?: number
 }
 
 const ITEMS_PER_PAGE = 20
@@ -57,22 +59,61 @@ export default function AdminUsersPage() {
   const loadOrganizations = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      // Get all organizations
+      const { data: orgsData, error: orgsError } = await supabase
         .from('organizations')
-        .select('id, name, owner_email, created_at')
+        .select('id, name, domain, created_at')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (orgsError) throw orgsError
 
-      // Map to include status (default to active for now)
-      const orgsWithStatus = (data || []).map(org => ({
-        ...org,
-        status: 'active' as const,
-      }))
+      // For each organization, get the first user (owner) email
+      const orgsWithUsers = await Promise.all(
+        (orgsData || []).map(async (org) => {
+          // Get first user (owner) - the one who created the org or first member
+          const { data: users } = await supabase
+            .from('user_profiles')
+            .select('email')
+            .eq('organization_id', org.id)
+            .order('created_at', { ascending: true })
+            .limit(1)
 
-      setOrganizations(orgsWithStatus)
+          // Get member count
+          const { count } = await supabase
+            .from('user_profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', org.id)
+
+          return {
+            ...org,
+            owner_email: users && users.length > 0 ? users[0].email : undefined,
+            member_count: count || 0,
+            status: 'active' as const,
+          }
+        })
+      )
+
+      setOrganizations(orgsWithUsers)
     } catch (error) {
       console.error('Error loading organizations:', error)
+      // Fallback: just get organizations without user data
+      try {
+        const { data, error: fallbackError } = await supabase
+          .from('organizations')
+          .select('id, name, domain, created_at')
+          .order('created_at', { ascending: false })
+
+        if (fallbackError) throw fallbackError
+
+        setOrganizations((data || []).map(org => ({
+          ...org,
+          owner_email: undefined,
+          member_count: 0,
+          status: 'active' as const,
+        })))
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError)
+      }
     } finally {
       setLoading(false)
     }
@@ -97,7 +138,8 @@ export default function AdminUsersPage() {
   const filteredOrganizations = organizations.filter(org => {
     const matchesSearch = 
       org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      org.owner_email.toLowerCase().includes(searchQuery.toLowerCase())
+      org.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (org.owner_email && org.owner_email.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesFilter = filterStatus === 'all' || org.status === filterStatus
     return matchesSearch && matchesFilter
   })
@@ -198,7 +240,7 @@ export default function AdminUsersPage() {
                     paginatedOrganizations.map((org) => (
                       <TableRow key={org.id} className="hover:bg-accent/5">
                         <TableCell className="font-medium">{org.name}</TableCell>
-                        <TableCell>{org.owner_email}</TableCell>
+                        <TableCell>{org.owner_email || '-'}</TableCell>
                         <TableCell className="text-muted-foreground">-</TableCell>
                         <TableCell className="text-muted-foreground">-</TableCell>
                         <TableCell className="text-muted-foreground">-</TableCell>

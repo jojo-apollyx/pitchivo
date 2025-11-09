@@ -43,24 +43,58 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-// Public email domains to block
-const PUBLIC_EMAIL_DOMAINS = [
-  "gmail.com",
-  "yahoo.com",
-  "outlook.com",
-  "hotmail.com",
-  "icloud.com",
-  "aol.com",
-  "protonmail.com",
-  "mail.com",
-  "yandex.com",
-  "zoho.com",
-];
+// Check email domain status in database
+// Returns: 'public' | 'blocked' | null
+async function checkEmailDomainStatus(email: string): Promise<'public' | 'blocked' | null> {
+  try {
+    if (typeof globalThis.window === 'undefined') {
+      return null;
+    }
 
-// Check if email is from public domain
-function isPublicEmail(email: string): boolean {
-  const domain = email.split("@")[1]?.toLowerCase();
-  return PUBLIC_EMAIL_DOMAINS.includes(domain || "");
+    const domain = email.split("@")[1]?.toLowerCase();
+    if (!domain) return null;
+
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return null;
+    }
+    
+    const client = createClient(supabaseUrl, supabaseKey)
+
+    const { data, error } = await client
+      .from('email_domain_policy')
+      .select('status, is_public_domain')
+      .eq('domain', domain)
+      .eq('status', 'blocked')
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error checking email domain status:', error);
+      return null;
+    }
+
+    if (data === null) {
+      return null;
+    }
+
+    // Check if it's a public domain first
+    if (data.is_public_domain === true) {
+      return 'public';
+    }
+
+    // Otherwise it's a blocked domain (not public)
+    if (data.status === 'blocked') {
+      return 'blocked';
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error checking email domain status:', error);
+    return null;
+  }
 }
 
 // Validate email format
@@ -237,17 +271,29 @@ export default function Home() {
       return;
     }
 
-            if (isPublicEmail(email)) {
-              toast.error("Company Email Required", {
-                description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
-              });
-              return;
-            }
-
     setIsLoading(true);
 
     try {
-              const invited = await isInvitedEmail(email);
+      // Check email domain status in database
+      const domainStatus = await checkEmailDomainStatus(email);
+      
+      if (domainStatus === 'public') {
+        toast.error("Company Email Required", {
+          description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (domainStatus === 'blocked') {
+        toast.error("Domain Blocked", {
+          description: "This email domain has been blocked and cannot be used to sign up.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const invited = await isInvitedEmail(email);
               if (!invited) {
                 toast(
                   <div className="flex items-start gap-3">
@@ -300,15 +346,31 @@ export default function Home() {
       return;
     }
 
-    // Block public email domains from waitlist too
-    if (isPublicEmail(email)) {
-      toast.error("Company Email Required", {
-        description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
-      });
-      return;
-    }
-
     setIsSubmittingWaitlist(true);
+
+    try {
+      // Check email domain status in database
+      const domainStatus = await checkEmailDomainStatus(email);
+      
+      if (domainStatus === 'public') {
+        toast.error("Company Email Required", {
+          description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
+        });
+        setIsSubmittingWaitlist(false);
+        return;
+      }
+
+      if (domainStatus === 'blocked') {
+        toast.error("Domain Blocked", {
+          description: "This email domain has been blocked and cannot be used to join the waitlist.",
+        });
+        setIsSubmittingWaitlist(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking email domain:', error);
+      // Continue with submission if check fails
+    }
 
     const success = await addToWaitlist({
       email,

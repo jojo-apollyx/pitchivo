@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -31,6 +32,7 @@ import { toast } from 'sonner'
 interface BlockedDomain {
   domain: string
   status: 'blocked' | 'whitelisted' | 'allowed'
+  is_public_domain?: boolean
   reason?: string
   created_at: string
   updated_at: string
@@ -58,6 +60,7 @@ export default function AdminDomainsPage() {
         .from('email_domain_policy')
         .select('*')
         .eq('status', 'blocked')
+        .order('is_public_domain', { ascending: false })
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -87,6 +90,7 @@ export default function AdminDomainsPage() {
         .upsert({
           domain,
           status: 'blocked',
+          is_public_domain: false,
           reason: 'Manually blocked by admin',
         })
 
@@ -184,6 +188,7 @@ export default function AdminDomainsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Domain</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Added At</TableHead>
                     <TableHead>Reason</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -194,6 +199,17 @@ export default function AdminDomainsPage() {
                     paginatedDomains.map((domain) => (
                       <TableRow key={domain.domain} className="hover:bg-accent/5">
                         <TableCell className="font-medium">{domain.domain}</TableCell>
+                        <TableCell>
+                          {domain.is_public_domain ? (
+                            <Badge variant="secondary" className="text-xs">
+                              Public
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Blocked
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {new Date(domain.created_at).toLocaleDateString()}
                         </TableCell>
@@ -215,7 +231,7 @@ export default function AdminDomainsPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-12">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                         No blocked domains
                       </TableCell>
                     </TableRow>
