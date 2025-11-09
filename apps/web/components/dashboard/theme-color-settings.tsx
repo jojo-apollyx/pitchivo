@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Palette, Save } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { motion } from 'framer-motion'
 import { ColorSchemePicker } from './color-scheme-picker'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { applyColorScheme, COLOR_SCHEMES, type ColorScheme } from '@/lib/theme'
+import { COLOR_SCHEMES, type ColorScheme } from '@/lib/theme'
+import { useThemeStore } from '@/lib/stores/theme-store'
 
 interface ThemeColorSettingsProps {
   organizationId: string
@@ -62,34 +64,30 @@ export function ThemeColorSettings({
     }
   }
 
-  const [selectedScheme, setSelectedScheme] = useState<ColorScheme>(() => getInitialScheme())
+  const { selectedScheme, setScheme, initializeFromStorage } = useThemeStore()
   const [isSaving, setIsSaving] = useState(false)
 
-  // Apply color scheme on mount and when it changes
+  // Initialize from storage on mount
   useEffect(() => {
-    if (selectedScheme) {
-      applyColorScheme(selectedScheme)
-      // Store in localStorage as backup
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('pitchivo-color-scheme', JSON.stringify({
-          primary: selectedScheme.primary,
-          secondary: selectedScheme.secondary,
-          accent: selectedScheme.accent
-        }))
-      }
-    }
-  }, [selectedScheme])
+    initializeFromStorage()
+  }, [initializeFromStorage])
   
   // Reapply current scheme when currentScheme prop changes (after page navigation)
   useEffect(() => {
     const scheme = getInitialScheme()
-    setSelectedScheme(scheme)
-    applyColorScheme(scheme)
-  }, [currentScheme.primary, currentScheme.secondary, currentScheme.accent])
+    if (scheme) {
+      setScheme(scheme)
+    }
+  }, [currentScheme.primary, currentScheme.secondary, currentScheme.accent, setScheme])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
+      if (!selectedScheme) {
+        toast.error('No color scheme selected')
+        return
+      }
+
       console.log('[Theme Save] Saving color scheme:', {
         organizationId,
         primary: selectedScheme.primary,
@@ -128,16 +126,11 @@ export function ThemeColorSettings({
       console.log('[Theme Save] Successfully updated organization colors')
       toast.success(`Color scheme "${selectedScheme.name}" saved successfully!`)
       
-      // Apply the scheme immediately
-      applyColorScheme(selectedScheme)
+      // Update Zustand store (which applies the scheme)
+      setScheme(selectedScheme)
       
       // Force router to refresh server-side data
       router.refresh()
-      
-      // Small delay to ensure the color persists
-      setTimeout(() => {
-        applyColorScheme(selectedScheme)
-      }, 100)
     } catch (error) {
       console.error('[Theme Save] Error updating color scheme:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to update color scheme. Please try again.')
@@ -146,40 +139,54 @@ export function ThemeColorSettings({
     }
   }
 
-  const hasChanged = 
-    selectedScheme.primary !== currentScheme.primary ||
-    selectedScheme.secondary !== currentScheme.secondary ||
-    selectedScheme.accent !== currentScheme.accent
+  const hasChanged = selectedScheme
+    ? (selectedScheme.primary !== currentScheme.primary ||
+       selectedScheme.secondary !== currentScheme.secondary ||
+       selectedScheme.accent !== currentScheme.accent)
+    : false
+
+  const currentSelectedScheme = selectedScheme || getInitialScheme()
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Palette className="h-5 w-5" />
-          Brand Colors
-        </CardTitle>
-        <CardDescription>
-          Choose a professional color scheme for your organization. This will be applied across your dashboard and customer-facing pages.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <ColorSchemePicker 
-          value={selectedScheme} 
-          onChange={setSelectedScheme} 
-        />
-        
-        <div className="flex justify-end pt-4 border-t border-border/50">
-          <Button 
-            onClick={handleSave} 
-            disabled={isSaving || !hasChanged}
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Save Color Scheme'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Brand Colors
+          </CardTitle>
+          <CardDescription>
+            Choose a professional color scheme for your organization. This will be applied across your dashboard and customer-facing pages.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <ColorSchemePicker 
+            value={currentSelectedScheme} 
+            onChange={(scheme) => setScheme(scheme)} 
+          />
+          
+          <div className="flex justify-end pt-4 border-t border-border/50">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving || !hasChanged}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Saving...' : 'Save Color Scheme'}
+              </Button>
+            </motion.div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 
