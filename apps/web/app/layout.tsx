@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import JsonLd from "./json-ld";
 import { GlobalThemeLoader } from "@/components/global-theme-loader";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -134,6 +135,7 @@ export default function RootLayout({
             <GlobalThemeLoader />
             {children}
             <Toaster position="top-center" richColors />
+            <SpeedInsights />
           </QueryProvider>
         </ThemeProvider>
         
