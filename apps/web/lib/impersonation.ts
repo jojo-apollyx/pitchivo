@@ -189,3 +189,97 @@ export async function getOrgScopedQuery() {
   }
 }
 
+/**
+ * Wrapper for API routes that automatically handles:
+ * - Context retrieval
+ * - Logging
+ * - Organization validation
+ * - Error handling
+ * 
+ * Usage:
+ * export const GET = withApiHandler('/api/products', 'GET', 'list_products', async ({ context, supabase }) => {
+ *   const { data } = await supabase.from('products').select('*').eq('organization_id', context.organizationId)
+ *   return { products: data }
+ * })
+ */
+export function withApiHandler<T = any>(
+  endpoint: string,
+  method: string,
+  action: string,
+  handler: (params: {
+    context: { userId: string; organizationId: string; isImpersonating: boolean; isAdmin: boolean }
+    supabase: Awaited<ReturnType<typeof createServerClient>>
+    request: Request
+    requireOrg?: () => void
+  }) => Promise<T>,
+  options?: {
+    requireOrg?: boolean
+    requireAdmin?: boolean
+  }
+) {
+  return async (request: Request) => {
+    try {
+      // Get context (with admin check if needed)
+      const rawContext = options?.requireAdmin
+        ? await requireAdminOrImpersonating()
+        : await getEffectiveContext()
+      
+      // Log access
+      await logApiAccess(endpoint, method, action)
+      
+      // Normalize context (handle both getEffectiveContext and requireAdminOrImpersonating return types)
+      const normalizedContext = 'effectiveUserId' in rawContext
+        ? {
+            userId: rawContext.effectiveUserId,
+            organizationId: rawContext.effectiveOrgId || '',
+            isImpersonating: rawContext.isImpersonating,
+            isAdmin: rawContext.isAdmin,
+          }
+        : {
+            userId: rawContext.userId,
+            organizationId: rawContext.organizationId || '',
+            isImpersonating: rawContext.isImpersonating,
+            isAdmin: rawContext.isAdmin,
+          }
+      
+      // Validate organization if required
+      if (options?.requireOrg && !normalizedContext.organizationId) {
+        return Response.json(
+          { error: 'No organization context' },
+          { status: 400 }
+        )
+      }
+      
+      // Create supabase client
+      const supabase = await createServerClient()
+      
+      // Helper to require org (can be called inside handler if needed)
+      const requireOrg = () => {
+        if (!normalizedContext.organizationId) {
+          throw new Error('Organization context required')
+        }
+      }
+      
+      // Call handler with context, supabase, and request
+      const result = await handler({
+        context: normalizedContext,
+        supabase,
+        request,
+        requireOrg,
+      })
+      
+      return Response.json(result)
+    } catch (error: any) {
+      console.error(`[${endpoint}] Error:`, error)
+      const status = error.message?.includes('Forbidden') ? 403
+        : error.message?.includes('Unauthorized') ? 401
+        : 500
+      return Response.json(
+        { error: error.message || 'Internal server error' },
+        { status }
+      )
+    }
+  }
+}
+
+
