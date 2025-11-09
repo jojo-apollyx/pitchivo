@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { Search, ArrowLeft } from 'lucide-react'
+import { Search, ArrowLeft, Menu } from 'lucide-react'
 import { UserMenu } from '../dashboard/user-menu'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { AdminMobileNav } from './admin-mobile-nav'
 
 interface AdminTopbarProps {
   user: {
@@ -24,18 +25,18 @@ export function AdminTopbar({ user, searchPlaceholder = "Search users or organiz
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6 gap-4">
         <div className="flex items-center gap-4 flex-1">
-          {/* Mobile back button and logo */}
+          {/* Mobile menu button and logo */}
           <div className="lg:hidden flex items-center gap-3">
-            <Link href="/dashboard">
+            <AdminMobileNav>
               <Button
                 variant="ghost"
                 size="sm"
                 className="min-h-[36px] px-2 -ml-2"
-                title="Return to Merchant View"
+                title="Open menu"
               >
-                <ArrowLeft className="h-5 w-5" />
+                <Menu className="h-5 w-5" />
               </Button>
-            </Link>
+            </AdminMobileNav>
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">A</span>
