@@ -90,18 +90,43 @@ export function ThemeColorSettings({
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from('organizations')
-        .update({ 
-          primary_color: selectedScheme.primary,
-          secondary_color: selectedScheme.secondary,
-          accent_color: selectedScheme.accent
-        })
-        .eq('id', organizationId)
+      console.log('[Theme Save] Saving color scheme:', {
+        organizationId,
+        primary: selectedScheme.primary,
+        secondary: selectedScheme.secondary,
+        accent: selectedScheme.accent,
+        name: selectedScheme.name
+      })
 
-      if (error) throw error
+      // Use RPC function to bypass RLS restrictions
+      const { data, error } = await supabase.rpc('update_user_organization', {
+        p_org_id: organizationId,
+        p_primary_color: selectedScheme.primary,
+        p_secondary_color: selectedScheme.secondary,
+        p_accent_color: selectedScheme.accent,
+        p_name: null,
+        p_industry: null,
+        p_company_size: null,
+        p_description: null,
+        p_use_cases: null,
+        p_logo_url: null,
+        p_onboarding_completed_at: null
+      })
 
-      toast.success('Color scheme updated successfully!')
+      console.log('[Theme Save] RPC result:', { data, error })
+
+      if (error) {
+        console.error('[Theme Save] Database error:', error)
+        throw error
+      }
+
+      if (!data) {
+        console.warn('[Theme Save] RPC returned false - may not have permission')
+        throw new Error('Failed to update colors. You may not have permission to modify this organization.')
+      }
+
+      console.log('[Theme Save] Successfully updated organization colors')
+      toast.success(`Color scheme "${selectedScheme.name}" saved successfully!`)
       
       // Apply the scheme immediately
       applyColorScheme(selectedScheme)
@@ -114,8 +139,8 @@ export function ThemeColorSettings({
         applyColorScheme(selectedScheme)
       }, 100)
     } catch (error) {
-      console.error('Error updating color scheme:', error)
-      toast.error('Failed to update color scheme. Please try again.')
+      console.error('[Theme Save] Error updating color scheme:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update color scheme. Please try again.')
     } finally {
       setIsSaving(false)
     }
