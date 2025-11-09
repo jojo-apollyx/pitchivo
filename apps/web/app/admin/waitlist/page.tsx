@@ -273,14 +273,26 @@ export default function AdminWaitlistPage() {
 
   const handleRestoreRejected = async (entry: WaitlistEntry) => {
     try {
-      const { error } = await supabase
+      const domain = entry.email.split('@')[1]
+      
+      // Unblock the domain in email_domain_policy
+      const { error: domainError } = await supabase
+        .from('email_domain_policy')
+        .update({ status: 'allowed' })
+        .eq('domain', domain)
+        .eq('status', 'blocked')
+
+      if (domainError) throw domainError
+
+      // Restore waitlist entry to pending
+      const { error: waitlistError } = await supabase
         .from('waitlist')
         .update({ status: 'pending' })
         .eq('id', entry.id)
 
-      if (error) throw error
+      if (waitlistError) throw waitlistError
 
-      toast.success('Entry restored to pending status')
+      toast.success('Entry restored and domain unblocked')
       loadWaitlist()
     } catch (error) {
       console.error('Error restoring entry:', error)
