@@ -13,6 +13,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Pagination } from '@/components/ui/pagination'
 import { 
   Search, 
@@ -30,14 +36,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-interface Organization {
+interface User {
   id: string
-  name: string
-  domain: string
+  email: string
+  full_name?: string
+  organization_id?: string
+  organization_name?: string
+  organization_domain?: string
+  org_role?: 'marketing' | 'sales' | 'user'
+  is_pitchivo_admin: boolean
   created_at: string
   status: 'active' | 'suspended'
-  owner_email?: string
-  member_count?: number
 }
 
 const ITEMS_PER_PAGE = 20
@@ -45,119 +54,104 @@ const ITEMS_PER_PAGE = 20
 export default function AdminUsersPage() {
   const router = useRouter()
   const supabase = createClient()
-  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'suspended'>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [impersonateDialog, setImpersonateDialog] = useState<{ open: boolean; org: Organization | null }>({ open: false, org: null })
+  const [impersonateDialog, setImpersonateDialog] = useState<{ open: boolean; user: User | null }>({ open: false, user: null })
 
   useEffect(() => {
-    loadOrganizations()
+    loadUsers()
   }, [])
 
-  const loadOrganizations = async () => {
+  const loadUsers = async () => {
     try {
       setLoading(true)
-      // Get all organizations
-      const { data: orgsData, error: orgsError } = await supabase
-        .from('organizations')
-        .select('id, name, domain, created_at')
+      // Get all users with their organization info
+      const { data: usersData, error: usersError } = await supabase
+        .from('user_profiles')
+        .select(`
+          id,
+          email,
+          full_name,
+          organization_id,
+          org_role,
+          is_pitchivo_admin,
+          created_at,
+          organizations (
+            id,
+            name,
+            domain
+          )
+        `)
         .order('created_at', { ascending: false })
 
-      if (orgsError) throw orgsError
+      if (usersError) throw usersError
 
-      // For each organization, get the first user (owner) email
-      const orgsWithUsers = await Promise.all(
-        (orgsData || []).map(async (org) => {
-          // Get first user (owner) - the one who created the org or first member
-          const { data: users } = await supabase
-            .from('user_profiles')
-            .select('email')
-            .eq('organization_id', org.id)
-            .order('created_at', { ascending: true })
-            .limit(1)
+      const usersWithOrg = (usersData || []).map((user: any) => ({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        organization_id: user.organization_id,
+        organization_name: user.organizations?.name,
+        organization_domain: user.organizations?.domain,
+        org_role: user.org_role,
+        is_pitchivo_admin: user.is_pitchivo_admin,
+        created_at: user.created_at,
+        status: 'active' as const,
+      }))
 
-          // Get member count
-          const { count } = await supabase
-            .from('user_profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('organization_id', org.id)
-
-          return {
-            ...org,
-            owner_email: users && users.length > 0 ? users[0].email : undefined,
-            member_count: count || 0,
-            status: 'active' as const,
-          }
-        })
-      )
-
-      setOrganizations(orgsWithUsers)
+      setUsers(usersWithOrg)
     } catch (error) {
-      console.error('Error loading organizations:', error)
-      // Fallback: just get organizations without user data
-      try {
-        const { data, error: fallbackError } = await supabase
-          .from('organizations')
-          .select('id, name, domain, created_at')
-          .order('created_at', { ascending: false })
-
-        if (fallbackError) throw fallbackError
-
-        setOrganizations((data || []).map(org => ({
-          ...org,
-          owner_email: undefined,
-          member_count: 0,
-          status: 'active' as const,
-        })))
-      } catch (fallbackError) {
-        console.error('Fallback query also failed:', fallbackError)
-      }
+      console.error('Error loading users:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleImpersonate = (org: Organization) => {
-    setImpersonateDialog({ open: true, org })
-  }
-
-  const confirmImpersonate = () => {
-    if (impersonateDialog.org) {
-      // Redirect to dashboard with impersonate query param
-      window.location.href = `/dashboard?impersonate=${impersonateDialog.org.id}`
+  const handleImpersonate = (user: User) => {
+    if (user.organization_id) {
+      setImpersonateDialog({ open: true, user })
     }
   }
 
-  const handleSuspend = async (orgId: string) => {
-    // TODO: Implement suspend functionality
-    console.log('Suspend organization:', orgId)
+  const confirmImpersonate = () => {
+    if (impersonateDialog.user?.organization_id) {
+      // Redirect to dashboard with impersonate query param
+      window.location.href = `/dashboard?impersonate=${impersonateDialog.user.organization_id}`
+    }
   }
 
-  const filteredOrganizations = organizations.filter(org => {
+  const handleSuspend = async (userId: string) => {
+    // TODO: Implement suspend functionality
+    console.log('Suspend user:', userId)
+  }
+
+  const filteredUsers = users.filter(user => {
     const matchesSearch = 
-      org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      org.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (org.owner_email && org.owner_email.toLowerCase().includes(searchQuery.toLowerCase()))
-    const matchesFilter = filterStatus === 'all' || org.status === filterStatus
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.full_name && user.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.organization_name && user.organization_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesFilter = filterStatus === 'all' || user.status === filterStatus
     return matchesSearch && matchesFilter
   })
 
   // Pagination
-  const totalPages = Math.ceil(filteredOrganizations.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedOrganizations = filteredOrganizations.slice(startIndex, endIndex)
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-background">
       {/* Page Header - Integral Section */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Users / Organizations</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Manage organizations and their owners
+            Manage all users and their organizations
           </p>
         </div>
       </section>
@@ -216,7 +210,7 @@ export default function AdminUsersPage() {
         </div>
       </section>
 
-      {/* Organizations Table - Integral Section */}
+      {/* Users Table - Integral Section */}
       <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
@@ -226,61 +220,101 @@ export default function AdminUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Organization Name</TableHead>
-                    <TableHead>Owner Email</TableHead>
-                    <TableHead>Products</TableHead>
-                    <TableHead>Campaigns Sent</TableHead>
-                    <TableHead>RFQs Received</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Organization</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Admin</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedOrganizations.length > 0 ? (
-                    paginatedOrganizations.map((org) => (
-                      <TableRow key={org.id} className="hover:bg-accent/5">
-                        <TableCell className="font-medium">{org.name}</TableCell>
-                        <TableCell>{org.owner_email || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">-</TableCell>
-                        <TableCell className="text-muted-foreground">-</TableCell>
-                        <TableCell className="text-muted-foreground">-</TableCell>
+                  {paginatedUsers.length > 0 ? (
+                    paginatedUsers.map((user) => (
+                      <TableRow key={user.id} className="hover:bg-accent/5">
+                        <TableCell className="font-medium">{user.email}</TableCell>
+                        <TableCell>{user.full_name || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.organization_name || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {user.org_role ? (
+                            <Badge variant="info" className="text-xs">
+                              {user.org_role}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {user.is_pitchivo_admin ? (
+                            <Badge variant="warning" className="text-xs">
+                              Admin
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge
-                            variant={org.status === 'active' ? 'default' : 'destructive'}
+                            variant={user.status === 'active' ? 'success' : 'error'}
                             className="text-xs"
                           >
-                            {org.status}
+                            {user.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleImpersonate(org)}
-                              className="min-h-[36px] px-2"
-                              title="Impersonate"
-                            >
-                              <UserCog className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => router.push(`/admin/users/${org.id}`)}
-                              className="min-h-[36px] px-2"
-                              title="View Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleSuspend(org.id)}
-                              className="min-h-[36px] px-2 text-destructive hover:text-destructive"
-                              title="Suspend"
-                            >
-                              <UserX className="h-4 w-4" />
-                            </Button>
+                            {user.organization_id && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleImpersonate(user)}
+                                    className="min-h-[36px] px-2"
+                                  >
+                                    <UserCog className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Impersonate this organization</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {user.organization_id && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => router.push(`/admin/users/${user.organization_id}`)}
+                                    className="min-h-[36px] px-2"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View organization details</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleSuspend(user.id)}
+                                  className="min-h-[36px] px-2 text-destructive hover:text-destructive"
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Suspend this user</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -288,7 +322,7 @@ export default function AdminUsersPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
-                        No organizations found
+                        No users found
                       </TableCell>
                     </TableRow>
                   )}
@@ -309,19 +343,19 @@ export default function AdminUsersPage() {
       </section>
 
       {/* Impersonate Confirmation Dialog */}
-      <Dialog open={impersonateDialog.open} onOpenChange={(open) => setImpersonateDialog({ open, org: null })}>
+      <Dialog open={impersonateDialog.open} onOpenChange={(open) => setImpersonateDialog({ open, user: null })}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Impersonate Organization</DialogTitle>
             <DialogDescription>
-              You are about to impersonate <strong>{impersonateDialog.org?.name}</strong>. 
-              You will see the interface as this organization's owner would see it.
+              You are about to impersonate <strong>{impersonateDialog.user?.organization_name}</strong> as <strong>{impersonateDialog.user?.email}</strong>. 
+              You will see the interface as this user would see it.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setImpersonateDialog({ open: false, org: null })}
+              onClick={() => setImpersonateDialog({ open: false, user: null })}
             >
               Cancel
             </Button>
@@ -332,5 +366,6 @@ export default function AdminUsersPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   )
 }

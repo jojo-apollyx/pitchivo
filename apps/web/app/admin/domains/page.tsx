@@ -6,6 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   Table,
   TableBody,
   TableCell,
@@ -17,7 +23,8 @@ import { Pagination } from '@/components/ui/pagination'
 import { 
   Shield, 
   Plus, 
-  Trash2
+  Trash2,
+  CheckCircle
 } from 'lucide-react'
 import {
   Dialog,
@@ -48,6 +55,7 @@ export default function AdminDomainsPage() {
   const [addDialog, setAddDialog] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [removeDialog, setRemoveDialog] = useState<{ open: boolean; domain: string | null }>({ open: false, domain: null })
+  const [unblockDialog, setUnblockDialog] = useState<{ open: boolean; domain: string | null }>({ open: false, domain: null })
 
   useEffect(() => {
     loadDomains()
@@ -127,6 +135,27 @@ export default function AdminDomainsPage() {
     }
   }
 
+  const handleUnblockDomain = async () => {
+    if (!unblockDialog.domain) return
+
+    try {
+      const { error } = await supabase
+        .from('email_domain_policy')
+        .update({ status: 'allowed' })
+        .eq('domain', unblockDialog.domain)
+        .eq('status', 'blocked')
+
+      if (error) throw error
+
+      toast.success('Domain unblocked successfully')
+      setUnblockDialog({ open: false, domain: null })
+      loadDomains()
+    } catch (error) {
+      console.error('Error unblocking domain:', error)
+      toast.error('Failed to unblock domain')
+    }
+  }
+
   // Pagination
   const totalPages = Math.ceil(domains.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
@@ -134,6 +163,7 @@ export default function AdminDomainsPage() {
   const paginatedDomains = domains.slice(startIndex, endIndex)
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-background">
       {/* Page Header - Integral Section */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -201,11 +231,11 @@ export default function AdminDomainsPage() {
                         <TableCell className="font-medium">{domain.domain}</TableCell>
                         <TableCell>
                           {domain.is_public_domain ? (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="info" className="text-xs">
                               Public
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="error" className="text-xs">
                               Blocked
                             </Badge>
                           )}
@@ -217,15 +247,40 @@ export default function AdminDomainsPage() {
                           {domain.reason || '-'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRemoveDialog({ open: true, domain: domain.domain })}
-                            className="min-h-[36px] px-2 text-destructive hover:text-destructive"
-                            title="Remove from Blocklist"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            {!domain.is_public_domain && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setUnblockDialog({ open: true, domain: domain.domain })}
+                                    className="min-h-[36px] px-2 text-primary hover:text-primary"
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Unblock domain (change to allowed)</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setRemoveDialog({ open: true, domain: domain.domain })}
+                                  className="min-h-[36px] px-2 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Remove from blocklist permanently</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -276,14 +331,41 @@ export default function AdminDomainsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Unblock Domain Confirmation Dialog */}
+      <Dialog open={unblockDialog.open} onOpenChange={(open) => setUnblockDialog({ open, domain: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unblock Domain</DialogTitle>
+            <DialogDescription>
+              Unblock <strong>{unblockDialog.domain}</strong>? 
+              This will change the status to 'allowed' and permit emails from this domain to register.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setUnblockDialog({ open: false, domain: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUnblockDomain}
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Unblock Domain
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Remove Domain Confirmation Dialog */}
       <Dialog open={removeDialog.open} onOpenChange={(open) => setRemoveDialog({ open, domain: null })}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remove Domain from Blocklist</DialogTitle>
             <DialogDescription>
-              Remove <strong>{removeDialog.domain}</strong> from the blocklist? 
-              This will allow emails from this domain to register again.
+              Permanently remove <strong>{removeDialog.domain}</strong> from the blocklist? 
+              This will delete the record entirely. To temporarily allow the domain, use "Unblock" instead.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -303,5 +385,6 @@ export default function AdminDomainsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   )
 }

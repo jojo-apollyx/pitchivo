@@ -13,12 +13,19 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Pagination } from '@/components/ui/pagination'
 import { 
   Search, 
   Mail, 
   CheckCircle, 
-  Shield
+  Shield,
+  RotateCcw
 } from 'lucide-react'
 import {
   Dialog,
@@ -127,16 +134,39 @@ export default function AdminWaitlistPage() {
     try {
       const domain = blockDialog.entry.email.split('@')[1]
       
-      // Block the domain
-      const { error: domainError } = await supabase
+      // Check if domain already exists
+      const { data: existingDomain, error: checkError } = await supabase
         .from('email_domain_policy')
-        .upsert({
-          domain,
-          status: 'blocked',
-          reason: 'Blocked from waitlist',
-        })
+        .select('*')
+        .eq('domain', domain)
+        .maybeSingle()
 
-      if (domainError) throw domainError
+      if (checkError) throw checkError
+
+      // If domain exists, update it; otherwise insert
+      if (existingDomain) {
+        const { error: updateError } = await supabase
+          .from('email_domain_policy')
+          .update({
+            status: 'blocked',
+            is_public_domain: false,
+            reason: 'Blocked from waitlist',
+          })
+          .eq('domain', domain)
+
+        if (updateError) throw updateError
+      } else {
+        const { error: insertError } = await supabase
+          .from('email_domain_policy')
+          .insert({
+            domain,
+            status: 'blocked',
+            is_public_domain: false,
+            reason: 'Blocked from waitlist',
+          })
+
+        if (insertError) throw insertError
+      }
 
       // Update waitlist entry
       const { error: waitlistError } = await supabase
@@ -165,6 +195,23 @@ export default function AdminWaitlistPage() {
     }
   }
 
+  const handleRestoreRejected = async (entry: WaitlistEntry) => {
+    try {
+      const { error } = await supabase
+        .from('waitlist')
+        .update({ status: 'pending' })
+        .eq('id', entry.id)
+
+      if (error) throw error
+
+      toast.success('Entry restored to pending status')
+      loadWaitlist()
+    } catch (error) {
+      console.error('Error restoring entry:', error)
+      toast.error('Failed to restore entry')
+    }
+  }
+
   const filteredWaitlist = waitlist.filter(entry => {
     const matchesSearch = 
       entry.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -182,16 +229,17 @@ export default function AdminWaitlistPage() {
   const paginatedWaitlist = filteredWaitlist.slice(startIndex, endIndex)
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' | 'error'> = {
       pending: 'outline',
-      invited: 'secondary',
-      approved: 'default',
-      rejected: 'destructive',
+      invited: 'info',
+      approved: 'success',
+      rejected: 'error',
     }
     return variants[status] || 'outline'
   }
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-background">
       {/* Page Header - Integral Section */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -317,47 +365,90 @@ export default function AdminWaitlistPage() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             {entry.status === 'pending' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleInvite(entry)}
-                                className="min-h-[36px] px-2"
-                                title="Send Invitation"
-                              >
-                                <Mail className="h-4 w-4" />
-                              </Button>
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleInvite(entry)}
+                                      className="min-h-[36px] px-2"
+                                    >
+                                      <Mail className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Send invitation email</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleApprove(entry)}
+                                      className="min-h-[36px] px-2"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Approve and move to whitelist</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </>
                             )}
                             {entry.status === 'invited' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleResendInvite(entry)}
-                                className="min-h-[36px] px-2"
-                                title="Resend Invitation"
-                              >
-                                <Mail className="h-4 w-4" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleResendInvite(entry)}
+                                    className="min-h-[36px] px-2"
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Resend invitation email</p>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
-                            {entry.status === 'pending' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleApprove(entry)}
-                                className="min-h-[36px] px-2"
-                                title="Approve"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
+                            {entry.status === 'rejected' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRestoreRejected(entry)}
+                                    className="min-h-[36px] px-2 text-primary hover:text-primary"
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Restore to pending status</p>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleBlock(entry)}
-                              className="min-h-[36px] px-2 text-destructive hover:text-destructive"
-                              title="Block Domain"
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
+                            {entry.status !== 'rejected' && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleBlock(entry)}
+                                    className="min-h-[36px] px-2 text-destructive hover:text-destructive"
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Block domain and reject entry</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -435,5 +526,6 @@ export default function AdminWaitlistPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   )
 }

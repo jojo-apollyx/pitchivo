@@ -14,9 +14,18 @@ const badgeVariants = cva(
           "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
           "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
-        outline: "text-foreground",
+        outline: "text-foreground border-border",
         premium:
           "border-primary/20 bg-primary/10 text-primary shadow-sm hover:bg-primary/20",
+        // Semantic variants using theme colors with light backgrounds for readability
+        success:
+          "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15",
+        warning:
+          "border-accent/30 bg-accent/10 text-accent hover:bg-accent/15",
+        info:
+          "border-secondary/30 bg-secondary/20 text-secondary-foreground hover:bg-secondary/30",
+        error:
+          "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15",
       },
     },
     defaultVariants: {
