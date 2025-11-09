@@ -1,5 +1,4 @@
 -- Enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search
 
 -- ============================================================================
@@ -7,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search
 -- ============================================================================
 -- Table to store email domain policies (blocked, whitelisted, or allowed)
 CREATE TABLE IF NOT EXISTS email_domain_policy (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   domain TEXT NOT NULL UNIQUE,
   status TEXT NOT NULL DEFAULT 'blocked' CHECK (status IN ('blocked', 'whitelisted', 'allowed')),
   reason TEXT,
@@ -40,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_email_domain_policy_domain ON email_domain_policy
 -- ============================================================================
 -- Table for managing waitlist entries
 CREATE TABLE IF NOT EXISTS waitlist (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
   company TEXT NOT NULL,
@@ -65,7 +64,7 @@ CREATE INDEX IF NOT EXISTS idx_waitlist_created_at ON waitlist(created_at DESC);
 -- ============================================================================
 -- Table for domain-based organizations
 CREATE TABLE IF NOT EXISTS organizations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   domain TEXT NOT NULL UNIQUE, -- e.g., 'abcingredients.com'
   name TEXT NOT NULL, -- Company name
   slug TEXT NOT NULL UNIQUE, -- URL-friendly identifier
