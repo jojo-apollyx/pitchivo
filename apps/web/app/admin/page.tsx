@@ -68,75 +68,87 @@ export default async function AdminDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Page Header - Integral Section */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Admin Dashboard</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Overview of platform activity and metrics
-          </p>
-        </div>
-      </section>
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
-      {/* Summary Statistics - Integral Section */}
-      <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {summaryCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <div key={card.title} className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {card.title}
-                  </span>
-                  <Icon className={`h-5 w-5 ${card.color}`} />
-                </div>
-                <div className="text-2xl sm:text-3xl font-semibold">{card.value}</div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* Recent Activity - Integral Section */}
-      <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="h-5 w-5 text-primary" />
-          <h2 className="text-lg sm:text-xl font-semibold">Recent Activity</h2>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Recent Organizations</h3>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Organization Name</TableHead>
-                  <TableHead>Created At</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentOrganizations && recentOrganizations.length > 0 ? (
-                  recentOrganizations.map((org) => (
-                    <TableRow key={org.id} className="hover:bg-accent/5">
-                      <TableCell className="font-medium">{org.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(org.created_at).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground py-12">
-                      No recent activity
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+      <div className="relative">
+        {/* Page Header - Integral Section */}
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Admin Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              Overview of platform activity and metrics
+            </p>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Summary Statistics - Integral Section */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {summaryCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <div
+                  key={card.title}
+                  className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {card.title}
+                    </span>
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                      <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color} transition-transform duration-300 group-hover:scale-110`} />
+                    </div>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-semibold group-hover:text-primary transition-colors duration-300">{card.value}</div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* Recent Activity - Integral Section */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="max-w-4xl">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-semibold">Recent Activity</h2>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Recent Organizations</h3>
+                <div className="overflow-x-auto">
+                  <div className="divide-y divide-border/30">
+                    {recentOrganizations && recentOrganizations.length > 0 ? (
+                      recentOrganizations.map((org) => (
+                        <div
+                          key={org.id}
+                          className="py-4 hover:bg-primary/5 transition-all duration-300 group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium group-hover:text-primary transition-colors duration-300">{org.name}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(org.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-muted-foreground py-12">
+                        No recent activity
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

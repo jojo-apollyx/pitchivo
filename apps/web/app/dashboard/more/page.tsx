@@ -1,5 +1,4 @@
 import { requireAuth, getUserProfile } from '@/lib/auth'
-import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import { 
   Mail, 
@@ -57,65 +56,75 @@ export default async function MorePage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold">More</h1>
-        <p className="text-muted-foreground mt-1">
-          Additional menu options
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl animate-float pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="divide-y divide-border/30">
-            {menuItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors touch-manipulation active:bg-accent/70"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{item.label}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </Link>
-              )
-            })}
-            {isAdmin && (
-              <>
-                <div className="border-t border-border/30 my-2" />
-                <Link
-                  href={adminMenuItem.href}
-                  className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors touch-manipulation active:bg-accent/70"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Shield className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{adminMenuItem.label}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {adminMenuItem.description}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </Link>
-              </>
-            )}
+      <div className="relative">
+        {/* Page Header */}
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">More</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              Additional menu options
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </section>
+
+        {/* Menu Items */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="max-w-4xl">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl divide-y divide-border/30 overflow-hidden shadow-sm">
+              {menuItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center justify-between p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 touch-manipulation active:scale-[0.98] group"
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-base sm:text-lg group-hover:text-primary transition-colors duration-300">{item.label}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary" />
+                  </Link>
+                )
+              })}
+              {isAdmin && (
+                <>
+                  <div className="border-t border-border/30 my-2" />
+                  <Link
+                    href={adminMenuItem.href}
+                    className="flex items-center justify-between p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 touch-manipulation active:scale-[0.98] group"
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                        <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-base sm:text-lg group-hover:text-primary transition-colors duration-300">{adminMenuItem.label}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {adminMenuItem.description}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary" />
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

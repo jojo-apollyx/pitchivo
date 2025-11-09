@@ -200,72 +200,73 @@ export default function FAQPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
       />
 
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-                  Pitchivo
-                </span>
-              </Link>
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </nav>
+      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
-        {/* Hero Section */}
-        <section className="py-12 sm:py-16 lg:py-20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <div className="text-center mb-12">
-              <Badge variant="premium" className="mb-4">
-                FAQ
-              </Badge>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-                Frequently Asked Questions
-              </h1>
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Find answers to common questions about Pitchivo and how it can help scale your B2B outreach.
-              </p>
+        <div className="relative">
+          {/* Header */}
+          <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+            <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between">
+                <Link href="/" className="flex items-center gap-2 transition-all duration-300 hover:scale-[1.02]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                    Pitchivo
+                  </span>
+                </Link>
+                <Link href="/">
+                  <Button variant="ghost" size="sm" className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-        </section>
+          </nav>
 
-        {/* FAQ Section */}
-        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-primary/5 via-background to-background">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <div className="space-y-4">
-              {faqs.map((faq, index) => (
-                <Card
-                  key={index}
-                  variant="premium"
-                  className="hover-lift"
-                  itemScope
-                  itemType="https://schema.org/Question"
-                >
-                  <CardHeader>
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10">
-                        <HelpCircle className="h-5 w-5 text-primary-dark" />
+          {/* Hero Section */}
+          <section className="py-12 sm:py-16 lg:py-20">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+              <div className="text-center mb-12">
+                <Badge variant="premium" className="mb-4 transition-all duration-300 hover:scale-[1.02]">
+                  FAQ
+                </Badge>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+                  Frequently Asked Questions
+                </h1>
+                <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+                  Find answers to common questions about Pitchivo and how it can help scale your B2B outreach.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* FAQ Section */}
+          <section className="py-12 sm:py-16 lg:py-20 border-b border-border/30">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+              <div className="space-y-4">
+                {faqs.map((faq, index) => (
+                  <div
+                    key={index}
+                    className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
+                    itemScope
+                    itemType="https://schema.org/Question"
+                  >
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                        <HelpCircle className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                       </div>
-                      <CardTitle
-                        className="text-lg sm:text-xl"
+                      <h2
+                        className="text-lg sm:text-xl font-semibold group-hover:text-primary transition-colors duration-300"
                         itemProp="name"
                       >
                         {faq.question}
-                      </CardTitle>
+                      </h2>
                     </div>
-                  </CardHeader>
-                  <CardContent>
                     <div
                       className="text-base text-muted-foreground leading-relaxed"
                       itemScope
@@ -274,24 +275,26 @@ export default function FAQPage() {
                     >
                       <span itemProp="text">{faq.answer}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  </div>
+                ))}
+              </div>
 
-            {/* CTA Section */}
-            <div className="mt-12 text-center">
-              <p className="text-base text-muted-foreground mb-6">
-                Still have questions? We're here to help.
-              </p>
-              <Link href="/contact">
-                <Button size="lg" className="h-12 sm:h-14 px-8">
-                  Contact Us
-                </Button>
-              </Link>
+              {/* CTA Section */}
+              <div className="mt-12 text-center">
+                <div className="bg-card/50 backdrop-blur-sm rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+                  <p className="text-base text-muted-foreground mb-6">
+                    Still have questions? We're here to help.
+                  </p>
+                  <Link href="/contact">
+                    <Button size="lg" className="h-12 sm:h-14 px-8 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+                      Contact Us
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </>
   );

@@ -388,46 +388,54 @@ export default function OrganizationSetup() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50">
-        <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark">
-              <Sparkles className="h-5 w-5 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
+
+      <div className="relative">
+        {/* Header */}
+        <section className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50">
+          <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-foreground">Pitchivo</span>
             </div>
-            <span className="text-xl font-bold text-foreground">Pitchivo</span>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 sm:py-12">
-        <div className="max-w-2xl mx-auto">
-          {/* Title Section */}
-          <div className="text-center mb-8 sm:mb-12">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">
-              Set up your organization
-            </h1>
-            <p className="text-base sm:text-lg text-foreground/70">
-              Let's personalize your workspace for your company.
-            </p>
-          </div>
+        {/* Main Content */}
+        <section className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 sm:py-12">
+          <div className="max-w-2xl mx-auto">
+            {/* Title Section */}
+            <div className="text-center mb-8 sm:mb-12">
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 mb-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">
+                  Set up your organization
+                </h1>
+                <p className="text-base sm:text-lg text-foreground/70">
+                  Let's personalize your workspace for your company.
+                </p>
+              </div>
+            </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
+            {/* Form */}
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
             {/* Company Name */}
             <div className="space-y-2">
               <Label htmlFor="companyName" className="text-base font-semibold flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
                 Company Name *
               </Label>
-              <Input
-                id="companyName"
-                placeholder="e.g., ABC Ingredients Co."
-                {...register('companyName')}
-                className={`text-base ${errors.companyName ? 'border-destructive' : ''}`}
-              />
+                <Input
+                  id="companyName"
+                  placeholder="e.g., ABC Ingredients Co."
+                  {...register('companyName')}
+                  className={`text-base transition-all duration-300 ${errors.companyName ? 'border-destructive' : ''}`}
+                />
               {errors.companyName && (
                 <p className="text-sm text-destructive">{errors.companyName.message}</p>
               )}
@@ -438,14 +446,14 @@ export default function OrganizationSetup() {
               <Label htmlFor="domain" className="text-base font-semibold">
                 Company Domain *
               </Label>
-              <Input
-                id="domain"
-                {...register('domain')}
-                readOnly
-                disabled
-                className={`text-base bg-muted cursor-not-allowed ${errors.domain ? 'border-destructive' : ''}`}
-                placeholder={userEmail ? `Extracting from ${userEmail}...` : 'Loading...'}
-              />
+                <Input
+                  id="domain"
+                  {...register('domain')}
+                  readOnly
+                  disabled
+                  className={`text-base bg-muted cursor-not-allowed transition-all duration-300 ${errors.domain ? 'border-destructive' : ''}`}
+                  placeholder={userEmail ? `Extracting from ${userEmail}...` : 'Loading...'}
+                />
               {errors.domain && (
                 <p className="text-sm text-destructive">{errors.domain.message}</p>
               )}
@@ -469,7 +477,7 @@ export default function OrganizationSetup() {
                   })
                 }}
               >
-                <SelectTrigger id="industry" className={`text-base ${errors.industry ? 'border-destructive' : ''}`}>
+                <SelectTrigger id="industry" className={`text-base transition-all duration-300 ${errors.industry ? 'border-destructive' : ''}`}>
                   <SelectValue placeholder="Select an industry" />
                 </SelectTrigger>
                 <SelectContent>
@@ -503,7 +511,7 @@ export default function OrganizationSetup() {
                     }}
                     className={`
                       min-h-[44px] px-4 py-3 rounded-lg border-2 text-base font-medium
-                      transition-all duration-200 touch-manipulation
+                      transition-all duration-300 touch-manipulation hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20
                       ${
                         formData.companySize === size.value
                           ? 'bg-primary text-primary-foreground border-primary shadow-lg'
@@ -538,7 +546,7 @@ export default function OrganizationSetup() {
                       setShowRoleSuggestions(true)
                     }
                   }}
-                  className={`text-base ${errors.role ? 'border-destructive' : ''}`}
+                  className={`text-base transition-all duration-300 ${errors.role ? 'border-destructive' : ''}`}
                   autoComplete="off"
                 />
                 {showRoleSuggestions && roleSuggestions.length > 0 && (
@@ -578,7 +586,7 @@ export default function OrganizationSetup() {
                   w-full px-3 py-2 text-base rounded-xl border
                   bg-background text-foreground placeholder:text-foreground/40
                   focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
-                  transition-colors touch-manipulation resize-none
+                  transition-all duration-300 touch-manipulation resize-none
                   ${errors.description ? 'border-destructive' : 'border-border'}
                 `}
               />
@@ -631,7 +639,7 @@ export default function OrganizationSetup() {
                     type="button"
                     variant="outline"
                     size="default"
-                    className="min-h-[44px]"
+                    className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Choose Logo
@@ -646,17 +654,19 @@ export default function OrganizationSetup() {
 
             {/* Submit Button */}
             <div className="pt-4">
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full min-h-[52px] text-base font-semibold shadow-lg hover:shadow-xl transition-all"
-              >
-                Create Organization
-                <CheckCircle2 className="ml-2 h-5 w-5" />
-              </Button>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full min-h-[52px] text-base font-semibold shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+                >
+                  Create Organization
+                  <CheckCircle2 className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </form>
             </div>
-          </form>
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   )

@@ -133,76 +133,90 @@ export default function AdminDomainsPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen bg-background"
+      className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden"
     >
-      {/* Page Header - Integral Section */}
-      <motion.section
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50"
-      >
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Domain Control</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Manage blocked domains and email domain policies
-          </p>
-        </div>
-      </motion.section>
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
-      {/* Add Domain - Integral Section */}
-      <motion.section
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-        className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <Shield className="h-5 w-5 text-primary" />
-          <h2 className="text-lg sm:text-xl font-semibold">Add Domain to Blocklist</h2>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Input
-            type="text"
-            placeholder="Enter domain (e.g., spamdomain.com or user@spamdomain.com)"
-            value={newDomain}
-            onChange={(e) => setNewDomain(e.target.value)}
-            className="flex-1 h-9"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                openDialog('add', { domain: newDomain })
-              }
-            }}
-          />
-          <Button
-            onClick={() => openDialog('add', { domain: newDomain })}
-            className="min-h-[36px]"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Domain
-          </Button>
-        </div>
-      </motion.section>
+      <div className="relative">
+        {/* Page Header - Integral Section */}
+        <motion.section
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50"
+        >
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Domain Control</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              Manage blocked domains and email domain policies
+            </p>
+          </div>
+        </motion.section>
 
-      {/* Blocked Domains List - Integral Section */}
-      <motion.section
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-lg sm:text-xl font-semibold">Blocked Domains</h2>
-        </div>
-        <DataTable
-          columns={columns}
-          data={domains}
-          searchKey="domain"
-          searchPlaceholder="Search domains..."
-          loading={isLoading}
-          emptyMessage="No blocked domains"
-        />
-      </motion.section>
+        {/* Add Domain - Integral Section */}
+        <motion.section
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30"
+        >
+          <div className="max-w-4xl">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-semibold">Add Domain to Blocklist</h2>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Input
+                  type="text"
+                  placeholder="Enter domain (e.g., spamdomain.com or user@spamdomain.com)"
+                  value={newDomain}
+                  onChange={(e) => setNewDomain(e.target.value)}
+                  className="flex-1 h-11 transition-all duration-300"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      openDialog('add', { domain: newDomain })
+                    }
+                  }}
+                />
+                <Button
+                  onClick={() => openDialog('add', { domain: newDomain })}
+                  className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Domain
+                </Button>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Blocked Domains List - Integral Section */}
+        <motion.section
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6"
+        >
+          <div className="max-w-6xl">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Blocked Domains</h2>
+              <DataTable
+                columns={columns}
+                data={domains}
+                searchKey="domain"
+                searchPlaceholder="Search domains..."
+                loading={isLoading}
+                emptyMessage="No blocked domains"
+              />
+            </div>
+          </div>
+        </motion.section>
+      </div>
 
       {/* Add Domain Dialog */}
       <Dialog

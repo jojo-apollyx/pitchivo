@@ -1,5 +1,4 @@
 import { getEffectiveUserAndProfile } from '@/lib/auth'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { 
   Package, 
@@ -123,86 +122,88 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-      {/* Welcome Section */}
-      <section>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold">
-              Welcome back, {userName} 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {organizationName}
-            </p>
-          </div>
-          
-          {/* Quick Actions - Desktop */}
-          <div className="hidden sm:flex items-center gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon
-              return (
-                <Link key={action.href} href={action.href}>
-                  <Button 
-                    variant={action.variant}
-                    className="min-h-[44px] gap-2"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {action.label}
-                  </Button>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
-        {/* Quick Actions - Mobile Cards */}
-        <div className="grid grid-cols-3 gap-3 mt-6 sm:hidden">
-          {quickActions.map((action) => {
-            const Icon = action.icon
-            return (
-              <Link key={action.href} href={action.href}>
-                <Card className="hover:shadow-md transition-shadow touch-manipulation active:scale-[0.98] h-full">
-                  <CardContent className="p-4 flex flex-col items-center justify-center gap-2 h-full min-h-[120px]">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Icon className="h-6 w-6 text-primary" />
+      <div className="relative">
+        {/* Welcome Section */}
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">
+                  Welcome back, {userName} 👋
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                  {organizationName}
+                </p>
+              </div>
+              
+              {/* Quick Actions - Desktop */}
+              <div className="hidden sm:flex items-center gap-3">
+                {quickActions.map((action) => {
+                  const Icon = action.icon
+                  return (
+                    <Link key={action.href} href={action.href}>
+                      <Button 
+                        variant={action.variant}
+                        className="min-h-[44px] gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {action.label}
+                      </Button>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Quick Actions - Mobile */}
+            <div className="grid grid-cols-3 gap-3 mt-6 sm:hidden">
+              {quickActions.map((action) => {
+                const Icon = action.icon
+                return (
+                  <Link key={action.href} href={action.href}>
+                    <div className="bg-card/50 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center gap-2 h-full min-h-[120px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 touch-manipulation group">
+                      <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                        <Icon className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <p className="text-xs text-center font-medium leading-tight group-hover:text-primary transition-colors duration-300">
+                        {action.label}
+                      </p>
                     </div>
-                    <p className="text-xs text-center font-medium leading-tight">
-                      {action.label}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
-        </div>
-      </section>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </section>
 
-      {/* Metrics Overview */}
-      <section>
-        <h2 className="text-lg sm:text-xl font-semibold mb-4">
-          Metrics Overview
-        </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {metrics.map((metric) => {
-            const Icon = metric.icon
-            return (
-              <Card 
-                key={metric.label}
-                className="hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-primary-light/50"
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
+        {/* Metrics Overview */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+            Metrics Overview
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {metrics.map((metric) => {
+              const Icon = metric.icon
+              return (
+                <div
+                  key={metric.label}
+                  className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-muted-foreground">
                       {metric.label}
-                    </CardTitle>
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-primary" />
+                    </p>
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{metric.value}</div>
-                  <p className={`text-xs mt-1 ${
+                  <div className="text-2xl sm:text-3xl font-bold">{metric.value}</div>
+                  <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 ${
                     metric.changeType === 'positive' 
                       ? 'text-primary' 
                       : metric.changeType === 'negative'
@@ -211,38 +212,36 @@ export default async function DashboardPage() {
                   }`}>
                     {metric.change}
                   </p>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      </section>
+                </div>
+              )
+            })}
+          </div>
+        </section>
 
-      {/* Recent Activity */}
-      <section>
-        <h2 className="text-lg sm:text-xl font-semibold mb-4">
-          Recent Activity
-        </h2>
-        <Card>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border/30">
+        {/* Recent Activity */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+            Recent Activity
+          </h2>
+          <div className="max-w-4xl">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl divide-y divide-border/30 overflow-hidden shadow-sm">
               {recentActivities.map((activity, index) => {
                 const Icon = activity.icon
                 return (
                   <div 
                     key={index}
-                    className="p-4 hover:bg-accent/50 transition-colors cursor-pointer touch-manipulation active:bg-accent/70"
+                    className="p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 cursor-pointer touch-manipulation active:scale-[0.98] group"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary-light/20 ${
                         activity.type === 'success' 
-                          ? 'bg-primary/10 text-primary' 
+                          ? 'bg-primary/10 text-primary group-hover:bg-primary/20' 
                           : 'bg-muted text-muted-foreground'
                       }`}>
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-300 group-hover:scale-110" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm sm:text-base">
+                        <p className="font-medium text-sm sm:text-base group-hover:text-primary transition-colors duration-300">
                           {activity.title}
                         </p>
                         <p className="text-sm text-muted-foreground mt-0.5">
@@ -260,9 +259,9 @@ export default async function DashboardPage() {
                 )
               })}
             </div>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

@@ -256,31 +256,25 @@ export default function Home() {
 
   // Handle auth errors (like banned users)
   useEffect(() => {
-    console.log('🔍 Checking for auth errors in URL hash')
     
     if (typeof window !== 'undefined' && window.location.hash) {
-      console.log('🔗 Hash found:', window.location.hash)
       
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
       const error = hashParams.get('error')
       const error_code = hashParams.get('error_code')
       const error_description = hashParams.get('error_description')
       
-      console.log('📋 Parsed params:', { error, error_code, error_description })
       
       if (error) {
-        console.log('❌ Auth error detected:', { error, error_code, error_description })
         
         // Add a small delay to ensure toast system is ready
         setTimeout(() => {
           if (error_code === 'user_banned') {
-            console.log('🚫 Showing user banned toast')
             toast.error('Account Suspended', {
               description: 'Your account has been suspended. Please contact support for assistance.',
               duration: 6000,
             })
           } else if (error === 'access_denied') {
-            console.log('🔒 Showing access denied toast')
             toast.error('Access Denied', {
               description: error_description ? decodeURIComponent(error_description) : 'Unable to sign in. Please try again.',
               duration: 5000,
@@ -440,7 +434,10 @@ export default function Home() {
 
   return (
     <>
-      <div className="min-h-screen relative">
+      <div className="min-h-screen relative bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10">
+        {/* Decorative background elements */}
+        <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
         {/* Aurora Background - covers header and hero section */}
         <div className="bg-aurora" aria-hidden="true" />
 
@@ -449,7 +446,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
@@ -458,7 +455,7 @@ export default function Home() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="hidden sm:flex hover:bg-primary/10 transition-colors font-medium"
+                className="hidden sm:flex hover:bg-primary/10 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 font-medium"
                 onClick={scrollToPricing}
               >
                 Pricing
@@ -467,7 +464,7 @@ export default function Home() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="w-9 h-9 p-0"
+                className="w-9 h-9 p-0 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20"
               >
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -520,7 +517,7 @@ export default function Home() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="h-12 sm:h-14 px-8 text-base font-semibold hover-scale shadow-lg"
+                    className="h-12 sm:h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20 shadow-lg"
                     disabled={isLoading}
                   >
                     {isLoading ? "Sending..." : "Get Started"}
@@ -804,7 +801,7 @@ export default function Home() {
               >
                 <Card 
                   variant="premium" 
-                  className="h-full hover-lift group"
+                  className="h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
                   <CardHeader>
                     <div className="flex items-start gap-4 mb-4">
@@ -906,7 +903,7 @@ export default function Home() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-sm hover:border-primary/30 hover:from-primary/10 hover:via-card/80 hover:to-primary/5 transition-all duration-500 hover-lift"
+                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-sm hover:border-primary/30 hover:from-primary/10 hover:via-card/80 hover:to-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98]"
               >
                 {/* Content */}
                 <div className="relative p-8">
@@ -1035,11 +1032,11 @@ export default function Home() {
                 rating: 5,
               },
             ].map((testimonial, index) => (
-              <Card
-                key={index}
-                variant="premium"
-                className="hover-lift"
-              >
+                <Card
+                  key={index}
+                  variant="premium"
+                  className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98]"
+                >
                 <CardContent className="p-6">
                   {/* Rating */}
                   <div className="flex items-center gap-1 mb-4">
@@ -1140,14 +1137,14 @@ export default function Home() {
                 popular: false,
               },
             ].map((plan, index) => (
-              <Card
-                key={index}
-                variant={plan.popular ? "premium" : "default"}
-                className={cn(
-                  "transition-all duration-300 hover-lift flex flex-col relative",
-                  plan.popular && "border-primary/50 ring-2 ring-primary/20"
-                )}
-              >
+                <Card
+                  key={index}
+                  variant={plan.popular ? "premium" : "default"}
+                  className={cn(
+                    "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] flex flex-col relative",
+                    plan.popular && "border-primary/50 ring-2 ring-primary/20"
+                  )}
+                >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                     <Badge variant="default" className="shadow-lg">
@@ -1172,7 +1169,7 @@ export default function Home() {
                     ))}
                   </ul>
                   <Button
-                    className="w-full h-11 font-semibold hover-scale"
+                    className="w-full h-11 font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
                     variant={plan.popular ? "default" : "outline"}
                   >
                     {index === 3 ? "Contact Sales" : "Get Started"}

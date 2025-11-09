@@ -10,10 +10,12 @@ This document explains how to set up Brevo (formerly Sendinblue) for transaction
 
 ## API Key
 
-Your Brevo API key:
-```
-YOUR_BREVO_API_KEY_HERE
-```
+Your Brevo API key can be found in your Brevo account:
+1. Log in to your Brevo account
+2. Go to **Settings** → **API Keys**
+3. Create a new API key or use an existing one with transactional email permissions
+
+**Important:** Never commit your actual API key to git. Use placeholders in documentation.
 
 ## Setting Up in Production Supabase
 
@@ -26,7 +28,7 @@ YOUR_BREVO_API_KEY_HERE
 
    **Secret 1 (Required):**
    - **Name:** `BREVO_API_KEY`
-   - **Value:** `YOUR_BREVO_API_KEY_HERE`
+   - **Value:** `YOUR_BREVO_API_KEY_HERE` (replace with your actual API key from Brevo)
 
    **Secret 2 (Required):**
    - **Name:** `BREVO_SENDER_EMAIL`
