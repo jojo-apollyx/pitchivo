@@ -34,16 +34,25 @@ export interface SendEmailResponse {
 
 /**
  * Send a transactional email via Brevo using Supabase Edge Function
- * In local development, emails are skipped (use Mailpit to view emails sent via Supabase Auth)
+ * In local development, emails are sent via Edge Function which can be configured to use Mailpit
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResponse> {
-  // Skip email sending in local development
+  // In local development, log email details
   if (isLocalDevelopment()) {
-    console.log('📧 Email sending skipped in local development. Check Mailpit at http://localhost:54324 for emails sent via Supabase Auth.')
-    return {
-      success: true,
-      messageId: 'local-dev-skipped',
-    }
+    console.log('📧 Local development mode: Email sending')
+    console.log('📧 Email details:', {
+      to: options.to,
+      subject: options.subject,
+      timestamp: new Date().toISOString(),
+    })
+    console.log('📧 Full email content:', {
+      to: options.to,
+      subject: options.subject,
+      htmlContent: options.htmlContent,
+      textContent: options.textContent,
+      sender: options.sender,
+      replyTo: options.replyTo,
+    })
   }
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -82,6 +91,21 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       }
     } else {
       const text = await response.text()
+      
+      // In local development, if Edge Function is not running, provide helpful message
+      if (isLocalDevelopment() && (text.includes("Function not found") || response.status === 404)) {
+        console.warn("⚠️ Edge Function not running. To start it, run:")
+        console.warn("   npm run supabase:functions:serve")
+        console.warn("   or")
+        console.warn("   supabase functions serve send-email --env-file .env.local")
+        console.warn("📧 Email details logged above. In production, this would be sent via Brevo.")
+        
+        return {
+          success: true,
+          messageId: `local-${Date.now()}`,
+        }
+      }
+      
       console.error("Non-JSON response:", text)
       return {
         success: false,
@@ -101,6 +125,20 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       messageId: data.messageId,
     }
   } catch (error) {
+    // In local development, if fetch fails (Edge Function not running), provide helpful message
+    if (isLocalDevelopment() && error instanceof TypeError && error.message.includes("fetch")) {
+      console.warn("⚠️ Edge Function not accessible. To start it, run:")
+      console.warn("   npm run supabase:functions:serve")
+      console.warn("   or")
+      console.warn("   supabase functions serve send-email --env-file .env.local")
+      console.warn("📧 Email details logged above. In production, this would be sent via Brevo.")
+      
+      return {
+        success: true,
+        messageId: `local-${Date.now()}`,
+      }
+    }
+    
     console.error("Error sending email:", error)
     return {
       success: false,
@@ -270,5 +308,93 @@ export async function sendWaitlistConfirmationEmail(data: {
       The Pitchivo Team
     `,
   })
+}
+
+/**
+ * Send invitation email to waitlist user
+ */
+export async function sendInvitationEmail(data: {
+  to: string
+  fullName: string
+  company: string
+  inviteLink?: string
+}): Promise<SendEmailResponse> {
+  const { to, fullName, company, inviteLink } = data
+  const signupUrl = inviteLink || `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'}/auth/signup`
+
+  console.log('📧 Sending invitation email:', {
+    to,
+    fullName,
+    company,
+    signupUrl,
+    timestamp: new Date().toISOString(),
+  })
+
+  const result = await sendEmail({
+    to,
+    subject: `You're invited to join Pitchivo!`,
+    htmlContent: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">You're Invited!</h1>
+          </div>
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">Hi ${fullName},</p>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              Great news! Your request for ${company} has been approved. You're now invited to join Pitchivo!
+            </p>
+            <p style="font-size: 16px; margin-bottom: 30px;">
+              Click the button below to create your account and get started:
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${signupUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Create Account</a>
+            </div>
+            <p style="font-size: 14px; color: #666; margin-top: 30px;">
+              Or copy and paste this link into your browser:<br>
+              <a href="${signupUrl}" style="color: #667eea; word-break: break-all;">${signupUrl}</a>
+            </p>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+              <p style="font-size: 14px; color: #666; margin: 0;">Best regards,<br>The Pitchivo Team</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    textContent: `
+      You're Invited!
+
+      Hi ${fullName},
+
+      Great news! Your request for ${company} has been approved. You're now invited to join Pitchivo!
+
+      Click the link below to create your account and get started:
+      ${signupUrl}
+
+      Best regards,
+      The Pitchivo Team
+    `,
+  })
+
+  if (result.success) {
+    console.log('✅ Invitation email sent successfully:', {
+      to,
+      messageId: result.messageId,
+      timestamp: new Date().toISOString(),
+    })
+  } else {
+    console.error('❌ Failed to send invitation email:', {
+      to,
+      error: result.error,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  return result
 }
 

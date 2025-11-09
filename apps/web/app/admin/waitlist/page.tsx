@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { sendInvitationEmail } from '@/lib/email'
 
 interface WaitlistEntry {
   id: string
@@ -90,19 +91,55 @@ export default function AdminWaitlistPage() {
     if (!inviteDialog.entry) return
 
     try {
-      // TODO: Implement actual invite email sending
+      console.log('📧 Starting invitation process:', {
+        email: inviteDialog.entry.email,
+        fullName: inviteDialog.entry.full_name,
+        company: inviteDialog.entry.company,
+        timestamp: new Date().toISOString(),
+      })
+
+      // Send invitation email
+      const emailResult = await sendInvitationEmail({
+        to: inviteDialog.entry.email,
+        fullName: inviteDialog.entry.full_name,
+        company: inviteDialog.entry.company,
+      })
+
+      if (!emailResult.success) {
+        console.error('❌ Email sending failed:', emailResult.error)
+        toast.error(`Failed to send email: ${emailResult.error}`)
+        return
+      }
+
+      // Update waitlist status and timestamps
+      const { data: { user } } = await supabase.auth.getUser()
       const { error } = await supabase
         .from('waitlist')
-        .update({ status: 'invited' })
+        .update({ 
+          status: 'invited',
+          invited_at: new Date().toISOString(),
+          invited_by: user?.id || null,
+          invitation_email_sent_at: new Date().toISOString(),
+        })
         .eq('id', inviteDialog.entry.id)
 
       if (error) throw error
+
+      console.log('✅ Invitation completed successfully:', {
+        email: inviteDialog.entry.email,
+        messageId: emailResult.messageId,
+        timestamp: new Date().toISOString(),
+      })
 
       toast.success('Invitation sent successfully')
       setInviteDialog({ open: false, entry: null })
       loadWaitlist()
     } catch (error) {
-      console.error('Error sending invite:', error)
+      console.error('❌ Error sending invite:', {
+        error,
+        email: inviteDialog.entry?.email,
+        timestamp: new Date().toISOString(),
+      })
       toast.error('Failed to send invitation')
     }
   }
@@ -187,10 +224,49 @@ export default function AdminWaitlistPage() {
 
   const handleResendInvite = async (entry: WaitlistEntry) => {
     try {
-      // TODO: Implement actual invite email resending
+      console.log('📧 Resending invitation:', {
+        email: entry.email,
+        fullName: entry.full_name,
+        company: entry.company,
+        timestamp: new Date().toISOString(),
+      })
+
+      const emailResult = await sendInvitationEmail({
+        to: entry.email,
+        fullName: entry.full_name,
+        company: entry.company,
+      })
+
+      if (!emailResult.success) {
+        console.error('❌ Email resending failed:', emailResult.error)
+        toast.error(`Failed to resend email: ${emailResult.error}`)
+        return
+      }
+
+      // Update invitation timestamp
+      const { error } = await supabase
+        .from('waitlist')
+        .update({ 
+          invitation_email_sent_at: new Date().toISOString(),
+        })
+        .eq('id', entry.id)
+
+      if (error) throw error
+
+      console.log('✅ Invitation resent successfully:', {
+        email: entry.email,
+        messageId: emailResult.messageId,
+        timestamp: new Date().toISOString(),
+      })
+
       toast.success('Invitation resent successfully')
+      loadWaitlist()
     } catch (error) {
-      console.error('Error resending invite:', error)
+      console.error('❌ Error resending invite:', {
+        error,
+        email: entry.email,
+        timestamp: new Date().toISOString(),
+      })
       toast.error('Failed to resend invitation')
     }
   }

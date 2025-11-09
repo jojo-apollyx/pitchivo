@@ -21,7 +21,8 @@
     "supabase:migrate:run": "node scripts/run-migration.js",
     "supabase:dump-schema": "node scripts/dump-schema.js",
     "supabase:deploy": "supabase functions deploy",
-    "supabase:functions:serve": "supabase functions serve --env-file .env.local"
+    "supabase:functions:serve": "supabase functions serve --env-file .env.local",
+    "supabase:functions:serve:send-email": "supabase functions serve send-email --env-file .env.local"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
