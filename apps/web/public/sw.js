@@ -1,7 +1,8 @@
-// Service Worker for PWA
-const CACHE_NAME = 'pitchivo-v2'
-const STATIC_CACHE = 'pitchivo-static-v2'
-const DYNAMIC_CACHE = 'pitchivo-dynamic-v2'
+// Service Worker for Pitchivo PWA
+const CACHE_VERSION = 'v3' // Bump this to force cache refresh
+const STATIC_CACHE = `pitchivo-static-${CACHE_VERSION}`
+const DYNAMIC_CACHE = `pitchivo-dynamic-${CACHE_VERSION}`
+const IMAGE_CACHE = `pitchivo-images-${CACHE_VERSION}`
 
 const STATIC_ASSETS = [
   '/manifest.json',
@@ -10,69 +11,156 @@ const STATIC_ASSETS = [
   '/favicon.ico',
 ]
 
-// Install event
+// Routes that should NEVER be cached (auth, user data, etc.)
+const NEVER_CACHE = [
+  '/auth/', // Auth callbacks
+  '/rest/v1/user_profiles', // User profiles from Supabase
+  '/rest/v1/organizations', // Organization data
+  'supabase.co/auth/', // Supabase auth endpoints
+  'supabase.co/rest/', // Supabase REST API
+  '/storage/v1/object/sign', // Signed URLs
+]
+
+// Check if URL should never be cached
+function shouldNeverCache(url) {
+  return NEVER_CACHE.some(pattern => url.includes(pattern)) ||
+         url.includes('authorization') || // Skip if has auth header
+         url.includes('access_token') || // Skip if has access token
+         url.includes('refresh_token') // Skip if has refresh token
+}
+
+// Install event - cache static assets
 self.addEventListener('install', (event) => {
-  self.skipWaiting()
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.error('Failed to cache assets:', err)
+    caches.open(STATIC_CACHE)
+      .then((cache) => {
+        return Promise.allSettled(
+          STATIC_ASSETS.map(asset => cache.add(asset))
+        )
       })
-    })
+      .then(() => self.skipWaiting())
+      .catch((error) => {
+        console.warn('Service worker install failed:', error)
+        return self.skipWaiting()
+      })
   )
 })
 
-// Activate event
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      self.clients.claim(),
-      caches.keys().then((cacheNames) => {
+    caches.keys()
+      .then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter((name) => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
-            .map((name) => caches.delete(name))
+            .filter((cacheName) => {
+              // Delete all caches except current version
+              return !cacheName.includes(CACHE_VERSION)
+            })
+            .map((cacheName) => caches.delete(cacheName))
         )
       })
-    ])
+      .then(() => self.clients.claim())
   )
 })
 
-// Fetch event - Network first, cache fallback
+// Fetch event - intelligent caching strategies
 self.addEventListener('fetch', (event) => {
-  const method = event.request.method
-  
-  // Skip caching for POST, PUT, DELETE, PATCH requests
-  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
-    event.respondWith(fetch(event.request))
+  const { request } = event
+  const url = new URL(request.url)
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
     return
   }
-  
-  // Skip caching for same-origin requests to avoid CSS/JS issues
-  if (event.request.url.startsWith(self.location.origin)) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(event.request)
-      })
-    )
-  } else {
-    event.respondWith(
-      caches.match(event.request).then((response) => {
-        return (
-          response ||
-          fetch(event.request).then((fetchResponse) => {
-            // Only cache GET requests with successful responses
-            if (method === 'GET' && fetchResponse.ok) {
-              return caches.open(DYNAMIC_CACHE).then((cache) => {
-                cache.put(event.request, fetchResponse.clone())
-                return fetchResponse
-              })
-            }
-            return fetchResponse
-          })
-        )
-      })
-    )
+
+  // NEVER cache auth/user data - always use network
+  if (shouldNeverCache(request.url)) {
+    event.respondWith(fetch(request))
+    return
   }
+
+  // Determine strategy based on request type
+  const strategy = getCacheStrategy(request)
+  event.respondWith(handleRequest(request, strategy))
 })
+
+// Determine cache strategy
+function getCacheStrategy(request) {
+  const url = new URL(request.url)
+  const pathname = url.pathname
+
+  // Static Next.js assets - cache first
+  if (pathname.includes('/_next/static/')) {
+    return 'cache-first'
+  }
+
+  // Images - cache first
+  if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(pathname)) {
+    return 'cache-first'
+  }
+
+  // Fonts - cache first
+  if (pathname.includes('/fonts/') || /\.(woff|woff2|ttf|eot)$/i.test(pathname)) {
+    return 'cache-first'
+  }
+
+  // Everything else - network first (pages, API calls, etc.)
+  return 'network-first'
+}
+
+// Handle request based on strategy
+async function handleRequest(request, strategy) {
+  switch (strategy) {
+    case 'cache-first':
+      return cacheFirst(request)
+    case 'network-first':
+    default:
+      return networkFirst(request)
+  }
+}
+
+// Cache first strategy
+async function cacheFirst(request) {
+  const cachedResponse = await caches.match(request)
+  if (cachedResponse) {
+    return cachedResponse
+  }
+
+  try {
+    const networkResponse = await fetch(request)
+    if (networkResponse.ok) {
+      const cacheName = request.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) 
+        ? IMAGE_CACHE 
+        : DYNAMIC_CACHE
+      const cache = await caches.open(cacheName)
+      cache.put(request, networkResponse.clone())
+    }
+    return networkResponse
+  } catch (error) {
+    console.warn('Fetch failed; returning offline page:', error)
+    throw error
+  }
+}
+
+// Network first strategy - always fetch fresh data
+async function networkFirst(request) {
+  try {
+    const networkResponse = await fetch(request)
+    
+    // Only cache successful responses
+    if (networkResponse.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE)
+      cache.put(request, networkResponse.clone())
+    }
+    return networkResponse
+  } catch (error) {
+    // Fallback to cache only for navigation requests
+    const cachedResponse = await caches.match(request)
+    if (cachedResponse) {
+      return cachedResponse
+    }
+    throw error
+  }
+}
 

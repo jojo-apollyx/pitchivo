@@ -28,9 +28,38 @@ export function UserMenu({ user }: UserMenuProps) {
   const supabase = createClient()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+      
+      // Clear all storage
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+        sessionStorage.clear()
+        
+        // Clear all cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+        })
+        
+        // Unregister service workers to clear SW cache
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations()
+          for (const registration of registrations) {
+            await registration.unregister()
+          }
+        }
+      }
+      
+      // Redirect to home and force a hard refresh
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Still redirect even if there's an error
+      window.location.href = '/'
+    }
   }
 
   const avatarUrl = user.user_metadata?.avatar_url

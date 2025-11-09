@@ -28,40 +28,73 @@ export default function AuthCallback() {
         // Get user after setting session
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         
+        console.log('[Auth Callback] User fetch:', { user: user?.id, error: userError })
+        
         if (userError || !user) {
+          console.error('[Auth Callback] User not found:', userError)
           router.push('/?error=user_not_found')
           return
         }
 
         // Check if user has completed organization setup
+        // First get the user profile to get their domain
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
-          .select('organization_id, organizations(onboarding_completed_at)')
+          .select('id, domain, organization_id')
           .eq('id', user.id)
           .single()
 
-        if (profileError) {
+        console.log('[Auth Callback] Profile fetch:', { 
+          profile, 
+          error: profileError,
+          organization_id: profile?.organization_id,
+          domain: profile?.domain
+        })
+
+        if (profileError || !profile) {
+          console.error('[Auth Callback] Profile error:', profileError)
           router.push('/?error=profile_not_found')
           return
         }
 
-        // Check if user has organization and if onboarding is completed
-        // Supabase PostgREST returns nested relations as arrays even with .single()
-        // Since one user maps to one organization via organization_id foreign key,
-        // we take the first (and only) organization from the array
-        const organization = Array.isArray(profile?.organizations) 
-          ? profile.organizations[0] 
-          : profile?.organizations
-        const hasOrganization = profile?.organization_id && organization?.onboarding_completed_at
+        // Check if there's an organization for the user's domain with completed onboarding
+        // This is more reliable than checking organization_id since organizations are domain-based
+        // Query for organizations with completed onboarding for this domain
+        const { data: organizations, error: orgError } = await supabase
+          .from('organizations')
+          .select('id, onboarding_completed_at')
+          .eq('domain', profile.domain)
+          .not('onboarding_completed_at', 'is', null)
+          .limit(1)
+        
+        const organization = organizations?.[0]
+
+        console.log('[Auth Callback] Organization check:', {
+          domain: profile.domain,
+          organization,
+          error: orgError,
+          onboarding_completed_at: organization?.onboarding_completed_at
+        })
+
+        const hasOrganization = !!organization?.onboarding_completed_at
+        
+        console.log('[Auth Callback] Has organization check:', {
+          hasOrganization,
+          hasOnboardingCompleted: !!organization?.onboarding_completed_at,
+          organizationId: organization?.id
+        })
         
         if (!hasOrganization) {
+          console.log('[Auth Callback] Redirecting to setup - organization not complete')
           router.push('/setup/organization')
           return
         }
 
         // Otherwise, redirect to dashboard
+        console.log('[Auth Callback] Redirecting to dashboard - organization setup complete')
         router.push('/dashboard')
       } catch (error) {
+        console.error('[Auth Callback] Unexpected error:', error)
         router.push('/?error=callback_failed')
       }
     }
