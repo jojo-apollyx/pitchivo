@@ -1,6 +1,6 @@
 # Current Database Tables
 
-> **Auto-generated:** 2025-11-09T09:28:50.812Z
+> **Auto-generated:** 2025-11-09T12:01:37.766Z
 > **Note:** This is a simplified version. See DATABASE_SCHEMA.md for the complete schema.
 
 ## Table: `email_domain_policy`

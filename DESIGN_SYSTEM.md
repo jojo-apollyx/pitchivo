@@ -6,7 +6,7 @@ This design system is built for **mobile-first Progressive Web Apps (PWA)** usin
 
 **Current Implementation:**
 - ✅ shadcn/ui components installed (Button, Input, Card, Badge)
-- ✅ Mint Blue color palette implemented
+- ✅ Organization-based color theming implemented
 - ✅ ThemeProvider configured with next-themes
 - ✅ Premium animations and utilities
 - ✅ Mobile-first responsive design
@@ -17,37 +17,122 @@ This design system is built for **mobile-first Progressive Web Apps (PWA)** usin
 
 ## 🎨 Color System
 
-### Primary Colors - Mint Blue Palette
+### Organization-Based Theming
+
+Each organization can customize their color scheme with three colors:
+- **Primary Color**: Main brand identity color
+- **Secondary Color**: Darker shade for hover states
+- **Accent Color**: Complementary color for highlights
+
+Colors are stored in the `organizations` table and applied via `ThemeProvider` in the dashboard layout.
+
+### Color Roles & Usage
+
+#### PRIMARY COLOR
+**Main brand identity color**
+
+**Use for:**
+- ✅ Primary buttons (CTAs)
+- ✅ Active navigation items
+- ✅ Links and hyperlinks
+- ✅ Form focus states
+- ✅ Selected checkboxes/radio buttons
+- ✅ Active tab indicators
+- ✅ Logo and brand elements
+
+**Text:** Always white text on primary color for maximum contrast
+
+**Example:**
+```tsx
+// Primary button
+<Button className="bg-primary text-primary-foreground hover:bg-primary-dark">
+  Get Started
+</Button>
+
+// Active navigation
+<Link className={isActive && 'bg-primary/10 text-primary'}>
+  Dashboard
+</Link>
+```
+
+#### SECONDARY COLOR
+**Darker shade of primary - used internally for hover states**
+
+**Use for:**
+- ✅ Hover states on primary elements
+- ✅ Pressed states on buttons
+- ✅ Darker variations (automatically applied as `--primary-dark`)
+
+**Don't use directly in components** - it's automatically applied via `hover:bg-primary-dark`
+
+#### ACCENT COLOR
+**Complementary color - use SPARINGLY for highlights**
+
+**Use for:**
+- ✅ Notification badges (e.g., "3 new messages")
+- ✅ Success messages and alerts
+- ✅ Important status indicators
+- ✅ Small icons for special actions
+- ✅ Sale tags and promotional badges
+- ✅ Progress highlights
+
+**AVOID for:**
+- ❌ Large background areas
+- ❌ Primary action buttons
+- ❌ Navigation elements
+- ❌ Large text sections
+
+**Example:**
+```tsx
+// Notification badge
+<div className="relative">
+  <BellIcon />
+  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full px-1.5">
+    3
+  </span>
+</div>
+
+// Success message
+<Alert className="border-accent/20 bg-accent/5 text-accent-dark">
+  <CheckIcon className="text-accent" />
+  Profile updated successfully!
+</Alert>
+
+// Important tag
+<Badge className="bg-accent text-accent-foreground">
+  New
+</Badge>
+```
+
+### CSS Variables
 
 The design system uses CSS variables for theming (defined in `globals.css`):
 
-**Current Implementation: Medium Spring Green Theme**
-
 ```css
 :root {
-  /* Primary: Medium Spring Green #00FA9A */
-  --primary: 157 100% 49%;              /* #00FA9A - primary medium spring green */
-  --primary-foreground: 0 0% 100%;     /* white - light text on dark primary */
+  /* Primary - Main brand color */
+  --primary: /* Organization's primary color */
+  --primary-foreground: white /* Text on primary */
+  --primary-light: /* Lighter variant */
+  --primary-dark: /* Hover state (uses secondary) */
+  --primary-darker: /* Pressed state */
   
-  /* Primary Variants */
-  --primary-light: 120 73% 75%;        /* #90EE90 - lighter light green */
-  --primary-dark: 147 50% 47%;         /* #3CB371 - darker medium sea green */
-  --primary-darker: 147 50% 47%;        /* #3CB371 - darkest (same as dark) */
+  /* Accent - Complementary highlights */
+  --accent: /* Organization's accent color */
+  --accent-foreground: white /* Text on accent */
+  --accent-color: /* Pure accent */
+  --accent-light: /* Lighter variant */
+  --accent-dark: /* Darker variant */
+  
+  /* Base colors */
   --background: 0 0% 100%;           /* white */
   --foreground: 0 0% 5%;             /* gray-950 */
   --card: 0 0% 100%;                 /* white */
   --card-foreground: 0 0% 5%;        /* gray-950 */
   --border: 0 0% 90%;                /* gray-200 */
   --input: 0 0% 90%;                 /* gray-200 */
-  --ring: 157 100% 49%;                /* primary medium spring green */
+  --ring: /* Primary color */         /* Focus ring */
   --radius: 0.75rem;                 /* 12px - premium rounded */
-  
-  /* Accent Colors */
-  --accent-color: 35 100% 74%;        /* #ffc87c - yellow/peach accent */
-  --accent-color-foreground: 0 0% 5%; /* gray-950 - dark text on accent */
-  --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
-  --accent-pink: 343 100% 88%;        /* #ffc0d1 - pink */
-  --accent-mint-light: 162 60% 78%;   /* #a6e9d7 - light mint */
 }
 ```
 
@@ -68,52 +153,136 @@ className="text-red-600 dark:text-red-400"
 className="bg-gradient-to-r from-primary to-primary/80"
 ```
 
-### Current Color Palette
-
-**Medium Spring Green Theme** (Implemented):
-- **Primary**: `#00FA9A` (Medium Spring Green) - `157 100% 49%`
-- **Primary Light**: `#90EE90` (Light Green) - `120 73% 75%`
-- **Primary Dark**: `#3CB371` (Medium Sea Green) - `147 50% 47%`
-- **Primary Darker**: `#3CB371` (Medium Sea Green) - `147 50% 47%`
-- **Accent Color**: `#00FA9A` (same as primary) - for selected states and highlights
-
-### Accent Colors
-
-**Accent color is the same as primary** and is used for highlights, selected states, and visual emphasis. This creates a cohesive, harmonious color scheme.
-
+**Usage in Tailwind:**
 ```css
-/* Accent Colors */
---accent-color: 157 94% 79%;              /* #98FBCB - same as primary mint green */
---accent-color-foreground: 0 0% 5%;      /* gray-950 - dark text on light accent */
---accent-beige: 20 25% 67%;              /* #bea698 - beige/tan */
---accent-pink: 343 100% 88%;             /* #ffc0d1 - pink */
---accent-mint-light: 162 60% 78%;        /* #a6e9d7 - light mint */
+bg-primary text-primary-foreground
+hover:bg-primary-dark
+bg-accent text-accent-foreground
+border-accent/20
 ```
 
-**Usage Rules:**
+### Example Color Schemes
 
+#### Emerald Spark (Default)
+- **Primary:** `#10B981` (Emerald Green)
+- **Secondary:** `#059669` (Darker Green)
+- **Accent:** `#F87171` (Coral Red - complementary)
+- **Use:** Fresh, modern, growth-oriented brands
+
+#### Ocean Energy
+- **Primary:** `#0EA5E9` (Sky Blue)
+- **Secondary:** `#0284C7` (Deep Blue)
+- **Accent:** `#FB923C` (Orange - complementary)
+- **Use:** Trust, professionalism, tech companies
+
+#### Royal Violet
+- **Primary:** `#8B5CF6` (Violet)
+- **Secondary:** `#7C3AED` (Deep Purple)
+- **Accent:** `#FBBF24` (Gold - complementary)
+- **Use:** Luxury, creativity, premium brands
+
+### Component-Specific Color Guidelines
+
+#### Buttons
 ```tsx
-// ✅ Correct - Use accent color for highlights and selected states
-className="bg-accent-color text-accent-color-foreground"
-className="bg-accent-color/10 text-accent-color border-accent-color/20"
-className="hover:bg-accent-color/20"
-className="hover:bg-accent-color/90"
+// Primary CTA - use primary color
+<Button className="bg-primary text-primary-foreground hover:bg-primary-dark">
+  Save Changes
+</Button>
 
-// ✅ Use accent-color for selected badges/interactive highlights
-className={cn(
-  isSelected && 'bg-accent-color text-accent-color-foreground border-accent-color',
-  !isSelected && 'bg-background border-border'
-)}
+// Secondary action - use outline with primary
+<Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
+  Cancel
+</Button>
+
+// Accent for special actions (use sparingly!)
+<Button className="bg-accent text-accent-foreground hover:bg-accent-dark">
+  Upgrade Now
+</Button>
 ```
 
-**Note:** The accent-color is configured in `tailwind.config.js` and can be used directly with Tailwind classes like `bg-accent-color` and `text-accent-color-foreground`.
+#### Navigation
+```tsx
+// Sidebar active state - subtle primary background
+<Link className={cn(
+  'px-4 py-3 rounded-lg',
+  isActive 
+    ? 'bg-primary/10 text-primary font-medium'
+    : 'text-foreground/70 hover:bg-accent/5'
+)}>
+  Dashboard
+</Link>
 
-**Color Combinations:**
+// Don't use full accent color backgrounds - too chaotic!
+```
 
-- **Primary (Mint Green) + Primary Variants**: Harmonious, cohesive, fresh
-- **Primary (Mint Green) + Accent (Pink)**: Soft, elegant, feminine
-- **Primary (Mint Green) + Accent (Beige)**: Natural, calm, sophisticated
-- **Primary (Mint Green) + Light Mint**: Serene, cohesive, modern
+#### Badges & Pills
+```tsx
+// Status badge with accent for important info
+<Badge className="bg-accent text-accent-foreground">
+  Sale
+</Badge>
+
+// Regular badge with subtle primary
+<Badge className="bg-primary/10 text-primary">
+  Active
+</Badge>
+```
+
+#### Forms
+```tsx
+// Focus state uses primary
+<Input className="focus:ring-primary focus:border-primary" />
+
+// Error state (not accent - use destructive)
+<Input className="border-destructive focus:ring-destructive" />
+```
+
+#### Notifications
+```tsx
+// Success - use accent
+<div className="bg-accent/10 border-accent/20 text-accent-dark">
+  <CheckCircle className="text-accent" />
+  Order confirmed!
+</div>
+
+// Info - use primary
+<div className="bg-primary/10 border-primary/20 text-primary-dark">
+  <Info className="text-primary" />
+  New features available
+</div>
+```
+
+### Common Color Mistakes to Avoid
+
+1. **Using accent color everywhere**
+   - ❌ Active nav items with full accent background
+   - ✅ Active nav items with subtle primary background
+
+2. **Mixing too many colors**
+   - ❌ Different colors for each menu item
+   - ✅ Consistent primary for all active states
+
+3. **Poor contrast**
+   - ❌ Dark text on dark primary
+   - ✅ White text on all primary/accent backgrounds
+
+4. **Accent overload**
+   - ❌ Large buttons in accent color
+   - ✅ Small badges and notifications in accent
+
+5. **Ignoring hover states**
+   - ❌ No visual feedback on hover
+   - ✅ Use `hover:bg-primary-dark` for clear feedback
+
+### Quick Color Rules
+
+1. **Primary = Brand** → Use for main actions and navigation
+2. **Secondary = Hover** → Automatically applied, darker shade
+3. **Accent = Highlight** → Use sparingly for notifications and badges
+4. **Always white text** on primary and accent backgrounds
+5. **Keep it simple** → Don't use more than 3 colors per screen
+6. **Test contrast** → Ensure readability on all backgrounds
 
 ---
 
@@ -213,6 +382,25 @@ className="min-h-[44px]"    // Required for mobile touch targets
 
 // Icon Buttons (Mobile)
 className="min-h-[44px] min-w-[44px]" // Touch-optimized icon buttons
+```
+
+### Button Variants
+
+```tsx
+import { Button } from "@/components/ui/button"
+
+// Variants
+<Button variant="default">Primary</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="premium">Premium</Button>
+
+// Sizes (Mobile-optimized)
+<Button size="sm">Small</Button>
+<Button size="default" className="min-h-[44px]">Default</Button>
+<Button size="lg">Large</Button>
 ```
 
 ---
@@ -360,13 +548,6 @@ className="border-2 border-border" // Too thick
     <Card key={item.id} className="border border-border/50">...</Card>  // NO BORDERS
   ))}
 </div>
-
-// ❌ Avoid: One card per row on mobile
-<div className="space-y-4">
-  {items.map(item => (
-    <Card className="w-full">...</Card>  // Wastes space on mobile
-  ))}
-</div>
 ```
 
 ---
@@ -408,12 +589,6 @@ className="border-2 border-border" // Too thick
   <Card className="border border-border/50">...</Card>
   <Card className="border border-border/50">...</Card>
 </div>
-
-// ❌ FORBIDDEN: Segmented boxes
-<Card className="mb-6">
-  <CardHeader>...</CardHeader>
-  <CardContent>...</CardContent>
-</Card>
 ```
 
 ---
@@ -464,13 +639,6 @@ whileTap={{ scale: 0.9 }}      // Too extreme
 <Button className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/30">
   Click me
 </Button>
-
-// ✅ Correct - Step/item hover effects
-<div className="transition-all duration-300 hover:translate-x-2 group">
-  <div className="transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-dark">
-    Step
-  </div>
-</div>
 ```
 
 ### Background Effects
@@ -497,7 +665,6 @@ whileTap={{ scale: 0.9 }}      // Too extreme
 
 // ✅ Correct - Vector shapes (floating circles)
 <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl animate-float" />
-<div className="absolute bottom-40 left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
 ```
 
 **Background Effect Guidelines:**
@@ -529,25 +696,6 @@ whileTap={{ scale: 0.9 }}      // Too extreme
 ---
 
 ## 🎨 Component Examples
-
-### Button Component
-
-```tsx
-import { Button } from "@/components/ui/button"
-
-// Variants
-<Button variant="default">Primary</Button>
-<Button variant="secondary">Secondary</Button>
-<Button variant="outline">Outline</Button>
-<Button variant="ghost">Ghost</Button>
-<Button variant="destructive">Delete</Button>
-<Button variant="premium">Premium</Button>
-
-// Sizes (Mobile-optimized)
-<Button size="sm">Small</Button>
-<Button size="default" className="min-h-[44px]">Default</Button>
-<Button size="lg">Large</Button>
-```
 
 ### Input Component
 
@@ -621,7 +769,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
   <CardContent className="text-base">
     Card content
   </CardContent>
-  </Card>
+</Card>
 ```
 
 ---
@@ -721,4 +869,4 @@ Example structure:
 ---
 
 **Last Updated**: December 2024  
-**Version**: 2.0 (Consolidated)
+**Version**: 3.0 (Consolidated - Color Usage + Design System)
