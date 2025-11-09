@@ -142,15 +142,31 @@ export default function AdminUsersPage() {
   }
 
   const handleImpersonate = (user: User) => {
-    if (user.organization_id) {
+    if (user.id) {
       setImpersonateDialog({ open: true, user })
     }
   }
 
-  const confirmImpersonate = () => {
-    if (impersonateDialog.user?.organization_id) {
-      // Redirect to dashboard with impersonate query param
-      window.location.href = `/dashboard?impersonate=${impersonateDialog.user.organization_id}`
+  const confirmImpersonate = async () => {
+    if (impersonateDialog.user?.id) {
+      try {
+        // Set impersonate cookie via API with USER_ID
+        const response = await fetch('/api/impersonate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: impersonateDialog.user.id }),
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to set impersonate session')
+        }
+        
+        // Redirect to dashboard
+        window.location.href = '/dashboard'
+      } catch (error) {
+        console.error('Error impersonating:', error)
+        alert('Failed to start impersonation session')
+      }
     }
   }
 

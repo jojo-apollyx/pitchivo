@@ -1,24 +1,37 @@
 'use client'
 
 import { AlertTriangle, X } from 'lucide-react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 
-interface ImpersonateBarProps {
+interface ImpersonateBarClientProps {
+  userName: string
   organizationName: string
-  organizationId: string
 }
 
-export function ImpersonateBar({ organizationName, organizationId }: ImpersonateBarProps) {
+export function ImpersonateBarClient({ userName, organizationName }: ImpersonateBarClientProps) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
 
-  const handleReturnToAdmin = () => {
-    const newSearchParams = new URLSearchParams(searchParams.toString())
-    newSearchParams.delete('impersonate')
-    const newPath = pathname.replace('/dashboard', '/admin')
-    router.push(`${newPath}?${newSearchParams.toString()}`)
+  const handleReturnToAdmin = async () => {
+    try {
+      // Clear impersonate cookie
+      const response = await fetch('/api/impersonate', {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to clear impersonate session')
+      }
+      
+      // Redirect to admin
+      router.push('/admin/users')
+      router.refresh()
+    } catch (error) {
+      console.error('Error clearing impersonation:', error)
+      // Still try to redirect
+      router.push('/admin/users')
+      router.refresh()
+    }
   }
 
   return (
@@ -27,7 +40,7 @@ export function ImpersonateBar({ organizationName, organizationId }: Impersonate
         <div className="flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-yellow-950" />
           <span className="text-sm sm:text-base font-medium text-yellow-950">
-            You are impersonating: <span className="font-semibold">{organizationName}</span>
+            {`Impersonating: `}<span className="font-semibold">{userName}</span> ({organizationName})
           </span>
         </div>
         <Button

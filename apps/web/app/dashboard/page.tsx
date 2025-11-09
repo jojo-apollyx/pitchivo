@@ -1,4 +1,4 @@
-import { requireAuth, getUserProfile } from '@/lib/auth'
+import { getEffectiveUserAndProfile } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { 
@@ -17,11 +17,11 @@ import {
 import Link from 'next/link'
 
 export default async function DashboardPage() {
-  const user = await requireAuth()
-  const profile = await getUserProfile(user.id)
+  const { profile, organization } = await getEffectiveUserAndProfile()
 
-  const organizationName = profile?.organizations?.company_name || 'there'
-  const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+  const organizationName = organization?.name || organization?.company_name || 'there'
+  const userName = profile?.full_name || profile?.email?.split('@')[0] || 'User'
+  
 
   // Mock metrics data - in production, fetch from database
   type MetricChangeType = 'positive' | 'negative' | 'neutral'

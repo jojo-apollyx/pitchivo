@@ -2,7 +2,6 @@ import { requireAdmin } from '@/lib/auth'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { ThemeProvider } from '@/components/dashboard/theme-provider'
-import { ImpersonateBarWrapper } from '@/components/admin/impersonate-bar-wrapper'
 
 export default async function AdminLayout({
   children,
@@ -27,9 +26,6 @@ export default async function AdminLayout({
         
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Impersonate Warning Bar */}
-          <ImpersonateBarWrapper />
-          
           {/* Topbar */}
           <AdminTopbar user={user} />
           

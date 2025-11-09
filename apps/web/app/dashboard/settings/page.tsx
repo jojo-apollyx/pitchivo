@@ -1,4 +1,4 @@
-import { requireAuth, getUserProfile } from '@/lib/auth'
+import { getEffectiveUserAndProfile } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,10 +7,7 @@ import { Building2, Save } from 'lucide-react'
 import { ThemeColorSettings } from '@/components/dashboard/theme-color-settings'
 
 export default async function SettingsPage() {
-  const user = await requireAuth()
-  const profile = await getUserProfile(user.id)
-
-  const organization = profile?.organizations
+  const { organization } = await getEffectiveUserAndProfile()
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
