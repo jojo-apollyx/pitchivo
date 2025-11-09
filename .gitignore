@@ -37,3 +37,11 @@ next-env.d.ts
 # turbo
 .turbo
 
+# Supabase
+.branches
+.temp
+
+# Auto-generated schema files (optional: remove these lines if you want to commit schema files)
+# DATABASE_SCHEMA.md
+# supabase/CURRENT_SCHEMA.md
+

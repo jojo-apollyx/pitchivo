@@ -46,7 +46,18 @@ try {
     cwd: path.join(__dirname, '..')
   });
   
-  console.log(`\n✅ Migration completed successfully!\n`);
+  console.log(`\n✅ Migration completed successfully!`);
+  
+  // Auto-dump schema after successful migration
+  console.log(`\n📊 Auto-dumping database schema...`);
+  try {
+    execSync('node scripts/dump-schema.js', { 
+      stdio: 'inherit',
+      cwd: path.join(__dirname, '..')
+    });
+  } catch (dumpError) {
+    console.log(`⚠️  Warning: Could not auto-dump schema (this is optional)`);
+  }
 } catch (error) {
   console.error(`\n❌ Migration failed!`);
   console.error(error.message);
