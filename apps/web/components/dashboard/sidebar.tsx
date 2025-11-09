@@ -72,11 +72,14 @@ export function Sidebar() {
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
                 'active:scale-[0.98] touch-manipulation',
                 isActive 
-                  ? 'bg-accent-color text-accent-color-foreground font-medium' 
-                  : 'text-foreground/70 hover:bg-primary/20 hover:text-foreground'
+                  ? 'bg-primary/10 text-primary font-medium' 
+                  : 'text-foreground/70 hover:bg-accent/5 hover:text-foreground'
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className={cn(
+                'h-5 w-5 transition-colors',
+                isActive && 'text-primary'
+              )} />
               <span>{item.label}</span>
             </Link>
           )

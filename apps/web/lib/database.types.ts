@@ -102,6 +102,13 @@ export interface Database {
           logo_url: string | null
           onboarding_completed_at: string | null
           settings: Json
+          industry: string | null
+          company_size: string | null
+          description: string | null
+          use_cases: string[]
+          primary_color: string
+          secondary_color: string
+          accent_color: string
           created_at: string
           updated_at: string
         }
@@ -113,6 +120,13 @@ export interface Database {
           logo_url?: string | null
           onboarding_completed_at?: string | null
           settings?: Json
+          industry?: string | null
+          company_size?: string | null
+          description?: string | null
+          use_cases?: string[]
+          primary_color?: string
+          secondary_color?: string
+          accent_color?: string
           created_at?: string
           updated_at?: string
         }
@@ -124,6 +138,13 @@ export interface Database {
           logo_url?: string | null
           onboarding_completed_at?: string | null
           settings?: Json
+          industry?: string | null
+          company_size?: string | null
+          description?: string | null
+          use_cases?: string[]
+          primary_color?: string
+          secondary_color?: string
+          accent_color?: string
           created_at?: string
           updated_at?: string
         }

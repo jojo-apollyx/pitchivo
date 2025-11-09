@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import JsonLd from "./json-ld";
+import { GlobalThemeLoader } from "@/components/global-theme-loader";
 import "./../globals.css";
 
 export const viewport: Viewport = {
@@ -128,6 +129,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <GlobalThemeLoader />
           {children}
           <Toaster position="top-center" richColors />
         </ThemeProvider>

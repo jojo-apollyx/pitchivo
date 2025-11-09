@@ -12,11 +12,17 @@ export default async function DashboardLayout({
   const user = await requireAuth()
   const profile = await getUserProfile(user.id)
   const organization = profile?.organizations
-  const themeColor = organization?.theme_color || '#ADEBB3'
+  
+  // Get color scheme from organization (defaults to Emerald Spark)
+  const colorScheme = {
+    primary: organization?.primary_color || '#10B981',
+    secondary: organization?.secondary_color || '#059669',
+    accent: organization?.accent_color || '#F87171',
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <ThemeProvider themeColor={themeColor} />
+      <ThemeProvider colorScheme={colorScheme} />
       <div className="flex h-screen overflow-hidden">
         {/* Desktop Sidebar */}
         <Sidebar />

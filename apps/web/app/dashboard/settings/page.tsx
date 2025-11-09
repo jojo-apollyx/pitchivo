@@ -90,28 +90,17 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Theme Color Settings */}
+        {/* Brand Color Settings */}
         {organization?.id && (
           <ThemeColorSettings
             organizationId={organization.id}
-            currentThemeColor={organization.theme_color || '#ADEBB3'}
+            currentScheme={{
+              primary: organization.primary_color || '#10B981',
+              secondary: organization.secondary_color || '#059669',
+              accent: organization.accent_color || '#F87171',
+            }}
           />
         )}
-
-        {/* Team Members */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Members</CardTitle>
-            <CardDescription>
-              Manage team members and their access
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="min-h-[200px] flex items-center justify-center">
-            <p className="text-muted-foreground text-center">
-              Team management coming soon
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
