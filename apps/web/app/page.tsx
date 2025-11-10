@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { sendWaitlistConfirmationEmail } from "@/lib/email";
+import { sendWaitlistConfirmationEmail, sendWaitlistAdminNotification } from "@/lib/emails";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -218,6 +218,28 @@ async function addToWaitlist(data: {
       console.error("Failed to send waitlist confirmation email:", error);
       // Don't show error to user, email sending is not critical
     });
+
+    // Send notification email to all admin users (non-blocking)
+    fetch('/api/admin/emails')
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.emails && result.emails.length > 0) {
+          return sendWaitlistAdminNotification({
+            adminEmails: result.emails,
+            waitlistEntry: {
+              email: data.email,
+              fullName: data.fullName,
+              company: data.company,
+              role: data.role,
+              note: data.note,
+            },
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to send admin notification email:", error);
+        // Don't show error to user, email sending is not critical
+      });
 
     toast.success("Thank you! You're on the list", {
       description: "We'll notify you once your account is approved.",
@@ -1272,14 +1294,23 @@ export default function Home() {
 
           {/* Bottom */}
           <div className="pt-8 border-t border-border/50">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
-                © 2025 Pitchivo. All rights reserved.
-              </p>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Built with</span>
-                <span className="text-primary">♥</span>
-                <span>for B2B teams</span>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  © 2025 Pitchivo. All rights reserved.
+                </p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Built with</span>
+                  <span className="text-primary">♥</span>
+                  <span>for B2B teams</span>
+                </div>
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Pitchivo</strong>
+                  <br />
+                  4539 N 22ND ST, STE N, PHOENIX, AZ 85016, United States
+                </p>
               </div>
             </div>
           </div>

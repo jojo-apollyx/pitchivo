@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     // Get Brevo configuration from environment first (needed for detection)
     // Note: In local dev, these may not be set, which is fine - we'll just log the email
     const brevoApiKey = Deno.env.get("BREVO_API_KEY")
-    const brevoSenderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || "noreply@pitchivo.com"
+    const brevoSenderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || "team@pitchivo.com"
     const brevoSenderName = Deno.env.get("BREVO_SENDER_NAME") || "Pitchivo"
     
     // Check if we're in local development:

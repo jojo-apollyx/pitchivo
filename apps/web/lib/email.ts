@@ -1,3 +1,11 @@
+/**
+ * @deprecated This file is deprecated. Use @/lib/emails instead.
+ * This file is kept for backward compatibility but will be removed in the future.
+ * 
+ * New email templates should be created in @/lib/emails/templates/
+ * and use the spam-prevention best practices.
+ */
+
 // Client-side utility for sending emails via Supabase Edge Function
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
@@ -312,21 +320,21 @@ export async function sendWaitlistConfirmationEmail(data: {
 
 /**
  * Send invitation email to waitlist user
+ * Note: Users sign in using magic links on the landing page, not a separate signup page
  */
 export async function sendInvitationEmail(data: {
   to: string
   fullName: string
   company: string
-  inviteLink?: string
 }): Promise<SendEmailResponse> {
-  const { to, fullName, company, inviteLink } = data
-  const signupUrl = inviteLink || `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'}/auth/signup`
+  const { to, fullName, company } = data
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'
 
   console.log('📧 Sending invitation email:', {
     to,
     fullName,
     company,
-    signupUrl,
+    siteUrl,
     timestamp: new Date().toISOString(),
   })
 
@@ -349,16 +357,15 @@ export async function sendInvitationEmail(data: {
             <p style="font-size: 16px; margin-bottom: 20px;">
               Great news! Your request for ${company} has been approved. You're now invited to join Pitchivo!
             </p>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+              To get started, visit our website and sign in using your email address. We'll send you a magic link to access your account.
+            </p>
             <p style="font-size: 16px; margin-bottom: 30px;">
-              Click the button below to create your account and get started:
+              Visit <a href="${siteUrl}" style="color: #667eea; text-decoration: none;">${siteUrl}</a> and enter your email to receive your sign-in link.
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${signupUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Create Account</a>
+              <a href="${siteUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Go to Pitchivo</a>
             </div>
-            <p style="font-size: 14px; color: #666; margin-top: 30px;">
-              Or copy and paste this link into your browser:<br>
-              <a href="${signupUrl}" style="color: #667eea; word-break: break-all;">${signupUrl}</a>
-            </p>
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
               <p style="font-size: 14px; color: #666; margin: 0;">Best regards,<br>The Pitchivo Team</p>
             </div>
@@ -373,8 +380,7 @@ export async function sendInvitationEmail(data: {
 
       Great news! Your request for ${company} has been approved. You're now invited to join Pitchivo!
 
-      Click the link below to create your account and get started:
-      ${signupUrl}
+      To get started, visit ${siteUrl} and sign in using your email address. We'll send you a magic link to access your account.
 
       Best regards,
       The Pitchivo Team
@@ -396,5 +402,75 @@ export async function sendInvitationEmail(data: {
   }
 
   return result
+}
+
+/**
+ * Send notification email to admin users when someone joins the waitlist
+ */
+export async function sendWaitlistAdminNotification(data: {
+  adminEmails: string | string[]
+  waitlistEntry: {
+    email: string
+    fullName: string
+    company: string
+    role?: string
+    note?: string
+  }
+}): Promise<SendEmailResponse> {
+  const { adminEmails, waitlistEntry } = data
+  const { email, fullName, company, role, note } = waitlistEntry
+
+  const adminUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'}/admin/waitlist`
+
+  return sendEmail({
+    to: adminEmails,
+    subject: `New Waitlist Entry: ${fullName} from ${company}`,
+    htmlContent: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">New Waitlist Entry</h1>
+          </div>
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">A new person has joined the waitlist:</p>
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+              <p style="margin: 8px 0;"><strong>Name:</strong> ${fullName}</p>
+              <p style="margin: 8px 0;"><strong>Email:</strong> <a href="mailto:${email}" style="color: #667eea;">${email}</a></p>
+              <p style="margin: 8px 0;"><strong>Company:</strong> ${company}</p>
+              ${role ? `<p style="margin: 8px 0;"><strong>Role:</strong> ${role}</p>` : ''}
+              ${note ? `<p style="margin: 8px 0;"><strong>Note:</strong> ${note}</p>` : ''}
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${adminUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">View Waitlist</a>
+            </div>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+              <p style="font-size: 14px; color: #666; margin: 0;">Best regards,<br>The Pitchivo Team</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    textContent: `
+      New Waitlist Entry
+
+      A new person has joined the waitlist:
+
+      Name: ${fullName}
+      Email: ${email}
+      Company: ${company}
+      ${role ? `Role: ${role}` : ''}
+      ${note ? `Note: ${note}` : ''}
+
+      View the waitlist: ${adminUrl}
+
+      Best regards,
+      The Pitchivo Team
+    `,
+  })
 }
 

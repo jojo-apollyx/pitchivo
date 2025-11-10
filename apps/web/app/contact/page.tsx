@@ -120,6 +120,24 @@ export default function ContactPage() {
                     </a>
                   </p>
                 </div>
+
+                <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                      <Mail className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+                    </div>
+                    <h3 className="text-lg font-semibold group-hover:text-primary transition-colors duration-300">Address</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">Pitchivo</strong>
+                    <br />
+                    4539 N 22ND ST, STE N
+                    <br />
+                    PHOENIX, AZ 85016
+                    <br />
+                    United States
+                  </p>
+                </div>
               </div>
 
               {/* Contact Form */}

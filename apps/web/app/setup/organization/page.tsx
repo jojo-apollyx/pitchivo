@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
-import { sendOrganizationSetupEmail } from '@/lib/email'
+import { sendOrganizationSetupEmail } from '@/lib/emails'
 
 const COMPANY_SIZES = [
   { value: '1-5', label: '1-5' },

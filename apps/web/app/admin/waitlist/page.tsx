@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { sendInvitationEmail } from '@/lib/email'
+import { sendInvitationEmail } from '@/lib/emails'
 import { motion } from 'framer-motion'
 import type { WaitlistEntry } from './types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'

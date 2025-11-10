@@ -186,6 +186,17 @@ export default function PrivacyPage() {
                 </a>
                 .
               </p>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Pitchivo</strong>
+                  <br />
+                  4539 N 22ND ST, STE N
+                  <br />
+                  PHOENIX, AZ 85016
+                  <br />
+                  United States
+                </p>
+              </div>
             </div>
           </div>
         </div>
