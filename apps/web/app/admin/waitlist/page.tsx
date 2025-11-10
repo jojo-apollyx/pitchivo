@@ -82,17 +82,27 @@ export default function AdminWaitlistPage() {
       }
 
       const { data: { user } } = await supabase.auth.getUser()
-      const { error } = await supabase
-        .from('waitlist')
-        .update({ 
-          status: 'invited',
-          invited_at: new Date().toISOString(),
-          invited_by: user?.id || null,
-          invitation_email_sent_at: new Date().toISOString(),
+      
+      // Extract domain from email and whitelist it using the database function
+      // This function was designed to handle this but was never being called
+      const domain = entry.email.split('@')[1]?.toLowerCase()
+      if (domain) {
+        const { data: policyId, error: whitelistError } = await supabase.rpc('whitelist_domain', {
+          p_domain: domain,
+          p_waitlist_id: entry.id,
+          p_invited_by: user?.id || null,
+          p_reason: 'Invited from waitlist',
         })
-        .eq('id', entry.id)
 
-      if (error) throw error
+        if (whitelistError) {
+          console.error('❌ Error whitelisting domain:', whitelistError)
+          throw whitelistError
+        }
+
+        console.log('✅ Domain whitelisted:', { domain, policyId })
+      }
+
+      // Note: whitelist_domain already updates waitlist status, invited_at, invited_by, and invitation_email_sent_at
 
       console.log('✅ Invitation completed successfully:', {
         email: entry.email,
@@ -204,6 +214,27 @@ export default function AdminWaitlistPage() {
         console.error('❌ Email resending failed:', emailResult.error)
         toast.error(`Failed to resend email: ${emailResult.error}`)
         return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      // Extract domain from email and whitelist it using the database function
+      // This ensures the domain is added to email_domain_policy so users can send magic links
+      const domain = entry.email.split('@')[1]?.toLowerCase()
+      if (domain) {
+        const { data: policyId, error: whitelistError } = await supabase.rpc('whitelist_domain', {
+          p_domain: domain,
+          p_waitlist_id: null, // Don't update waitlist status on resend
+          p_invited_by: user?.id || null,
+          p_reason: 'Invited from waitlist',
+        })
+
+        if (whitelistError) {
+          console.error('❌ Error whitelisting domain:', whitelistError)
+          throw whitelistError
+        }
+
+        console.log('✅ Domain whitelisted:', { domain, policyId })
       }
 
       const { error } = await supabase
