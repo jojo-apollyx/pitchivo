@@ -3,12 +3,11 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-import { motion } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:scale-[1.02] active:scale-[0.98]",
   {
     variants: {
       variant: {
@@ -49,21 +48,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
     }
     
-    // Use motion.div wrapper to avoid type conflicts with motion.button
     return (
-      <motion.div
-        whileHover={disabled ? {} : { scale: 1.02 }}
-        whileTap={disabled ? {} : { scale: 0.98 }}
-        transition={{ duration: 0.2 }}
-        style={{ display: 'inline-flex' }}
-      >
-        <button
-          className={cn(buttonVariants({ variant, size, className }))}
-          ref={ref}
-          disabled={disabled}
-          {...props}
-        />
-      </motion.div>
+      <button
+        className={cn(buttonVariants({ variant, size, className }), disabled && 'hover:scale-100 active:scale-100')}
+        ref={ref}
+        disabled={disabled}
+        {...props}
+      />
     )
   }
 )

@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import JsonLd from "./json-ld";
 import { GlobalThemeLoader } from "@/components/global-theme-loader";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { MotionProvider } from "@/components/providers/motion-provider";
 import "./../globals.css";
 
 export const viewport: Viewport = {
@@ -125,19 +126,21 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <QueryProvider>
-            <GlobalThemeLoader />
-            {children}
-            <Toaster position="top-center" richColors />
-            <SpeedInsights />
-          </QueryProvider>
-        </ThemeProvider>
+        <MotionProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <QueryProvider>
+              <GlobalThemeLoader />
+              {children}
+              <Toaster position="top-center" richColors />
+              <SpeedInsights />
+            </QueryProvider>
+          </ThemeProvider>
+        </MotionProvider>
         
         {/* Service Worker Registration */}
         <script
