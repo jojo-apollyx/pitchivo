@@ -7,33 +7,55 @@ import { z } from 'zod'
 
 // Product schemas
 export const productSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  organization_id: z.string().uuid(),
-  created_by: z.string().uuid(),
+  product_id: z.string().uuid(),
+  org_id: z.string().uuid(),
+  product_name: z.string().min(1, 'Product name is required'),
+  industry_code: z.string().min(1, 'Industry code is required'),
+  template_id: z.string().uuid().nullable(),
+  template_version_snapshot: z.any().nullable(), // JSONB
+  status: z.enum(['draft', 'published']).default('draft'),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 })
 
-export const createProductSchema = productSchema.omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-  organization_id: true, // Set by server
-  created_by: true, // Set by server
-}).extend({
-  name: z.string().min(1, 'Name is required').max(200),
-  description: z.string().max(1000).optional(),
+// Schema for creating a product (initial step - just product name)
+export const createProductInitSchema = z.object({
+  product_name_raw: z.string().min(1, 'Product name is required').max(200),
 })
 
-export const updateProductSchema = createProductSchema.partial()
+// Schema for creating a product with full data
+export const createProductSchema = z.object({
+  product_name: z.string().min(1, 'Product name is required').max(200),
+  industry_code: z.string().min(1, 'Industry code is required'),
+  template_id: z.string().uuid().nullable().optional(),
+  template_version_snapshot: z.any().nullable().optional(), // JSONB - will be set from template
+  status: z.enum(['draft', 'published']).default('draft').optional(),
+  // Product data based on template (dynamic fields)
+  product_data: z.record(z.any()).optional(), // Dynamic fields from template
+})
+
+// Schema for updating a product
+export const updateProductSchema = z.object({
+  product_name: z.string().min(1).max(200).optional(),
+  status: z.enum(['draft', 'published']).optional(),
+  product_data: z.record(z.any()).optional(), // Dynamic fields from template
+})
 
 export const productsResponseSchema = z.object({
   products: z.array(productSchema),
   context: z.object({
     isImpersonating: z.boolean(),
     organizationId: z.string().uuid(),
+  }).optional(),
+})
+
+// Response schema for product creation with template
+export const createProductWithTemplateResponseSchema = z.object({
+  product: productSchema,
+  template: z.any(), // TemplateSchema
+  template_id: z.string().uuid(),
+  context: z.object({
+    isImpersonating: z.boolean(),
   }).optional(),
 })
 
@@ -90,9 +112,11 @@ export const rfqSchema = z.object({
 
 // Type exports for TypeScript
 export type Product = z.infer<typeof productSchema>
+export type CreateProductInitInput = z.infer<typeof createProductInitSchema>
 export type CreateProductInput = z.infer<typeof createProductSchema>
 export type UpdateProductInput = z.infer<typeof updateProductSchema>
 export type ProductsResponse = z.infer<typeof productsResponseSchema>
+export type CreateProductWithTemplateResponse = z.infer<typeof createProductWithTemplateResponseSchema>
 
 export type Organization = z.infer<typeof organizationSchema>
 export type OrganizationsResponse = z.infer<typeof organizationsResponseSchema>
@@ -101,4 +125,24 @@ export type Campaign = z.infer<typeof campaignSchema>
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>
 
 export type RFQ = z.infer<typeof rfqSchema>
+
+// Template schemas
+export const getTemplateRequestSchema = z.object({
+  product_name_raw: z.string().min(1),
+  org_id: z.string().uuid().optional(),
+})
+
+export const templateResponseSchema = z.object({
+  template: z.any(), // TemplateSchema from template-validation
+  template_id: z.string().uuid(), // UUID from database
+  version: z.string(),
+  source: z.enum(['database', 'ai_generated', 'ai_generated_and_saved', 'manual']),
+  industry_code: z.string(),
+  industry_name: z.string().optional(), // Industry name for display
+  warning: z.string().optional(),
+  is_generating: z.boolean().optional(), // True if template is being generated
+})
+
+export type GetTemplateRequest = z.infer<typeof getTemplateRequestSchema>
+export type TemplateResponse = z.infer<typeof templateResponseSchema>
 

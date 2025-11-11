@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Package, Plus } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function ProductsPage() {
   await requireAuth()
@@ -22,10 +23,12 @@ export default async function ProductsPage() {
                   Manage your product pages and catalog
                 </p>
               </div>
-              <Button className="min-h-[44px] gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
-                <Plus className="h-4 w-4" />
-                Add Product
-              </Button>
+              <Link href="/dashboard/products/create">
+                <Button className="min-h-[44px] gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+                  <Plus className="h-4 w-4" />
+                  Add Product
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
@@ -42,10 +45,12 @@ export default async function ProductsPage() {
                 <p className="text-sm sm:text-base text-muted-foreground mb-6">
                   Create your first product page to start showcasing to buyers
                 </p>
-                <Button className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
-                  <Plus className="h-4 w-4" />
-                  Create Product
-                </Button>
+                <Link href="/dashboard/products/create">
+                  <Button className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+                    <Plus className="h-4 w-4" />
+                    Create Product
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

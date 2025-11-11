@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient, queryKeys } from './client'
-import { productsResponseSchema, createProductSchema, updateProductSchema, type Product, type CreateProductInput, type UpdateProductInput } from './schemas'
+import { productsResponseSchema, createProductSchema, createProductInitSchema, updateProductSchema, type Product, type CreateProductInput, type CreateProductInitInput, type UpdateProductInput, type TemplateResponse, type CreateProductWithTemplateResponse } from './schemas'
 
 /**
  * TanStack Query hooks for products API
@@ -30,6 +30,19 @@ export function useProduct(id: string) {
   })
 }
 
+// Get template for product creation (initial step)
+export function useGetProductTemplate() {
+  return useMutation({
+    mutationFn: async (input: CreateProductInitInput) => {
+      const validated = createProductInitSchema.parse(input)
+      return apiClient<TemplateResponse>('/api/products', {
+        method: 'POST',
+        body: JSON.stringify(validated),
+      })
+    },
+  })
+}
+
 // Create product mutation
 export function useCreateProduct() {
   const queryClient = useQueryClient()
@@ -38,7 +51,7 @@ export function useCreateProduct() {
     mutationFn: async (input: CreateProductInput) => {
       // Validate input with Zod before sending
       const validated = createProductSchema.parse(input)
-      return apiClient<Product>('/api/products', {
+      return apiClient<CreateProductWithTemplateResponse>('/api/products', {
         method: 'POST',
         body: JSON.stringify(validated),
       })
