@@ -109,6 +109,7 @@ export interface Database {
           primary_color: string
           secondary_color: string
           accent_color: string
+          pitchivo_domain: string | null
           created_at: string
           updated_at: string
         }
@@ -127,6 +128,7 @@ export interface Database {
           primary_color?: string
           secondary_color?: string
           accent_color?: string
+          pitchivo_domain?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -145,6 +147,7 @@ export interface Database {
           primary_color?: string
           secondary_color?: string
           accent_color?: string
+          pitchivo_domain?: string | null
           created_at?: string
           updated_at?: string
         }

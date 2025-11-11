@@ -1,8 +1,5 @@
 import { getEffectiveUserAndProfile } from '@/lib/auth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Building2, Save } from 'lucide-react'
+import { OrganizationSettingsForm } from './organization-settings-form'
 import { ThemeColorSettings } from '@/components/dashboard/theme-color-settings'
 
 export default async function SettingsPage() {
@@ -28,59 +25,9 @@ export default async function SettingsPage() {
         {/* Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
           {/* Organization Information */}
-          <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              <h2 className="text-lg sm:text-xl font-semibold">Organization Information</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              Basic information about your organization
-            </p>
-            <div className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="company-name">Company Name</Label>
-                <Input 
-                  id="company-name" 
-                  defaultValue={organization?.name || ''} 
-                  disabled
-                  className="transition-all duration-300"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="domain">Domain</Label>
-                <Input 
-                  id="domain" 
-                  defaultValue={organization?.domain || ''} 
-                  disabled
-                  className="transition-all duration-300"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="industry">Industry</Label>
-                <Input 
-                  id="industry" 
-                  defaultValue={organization?.industry || ''} 
-                  disabled
-                  className="transition-all duration-300"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="company-size">Company Size</Label>
-                <Input 
-                  id="company-size" 
-                  defaultValue={organization?.company_size || ''} 
-                  disabled
-                  className="transition-all duration-300"
-                />
-              </div>
-              <div className="flex justify-end pt-4">
-                <Button className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" disabled>
-                  <Save className="h-4 w-4" />
-                  Save Changes
-                </Button>
-              </div>
-            </div>
-          </section>
+          {organization && (
+            <OrganizationSettingsForm organization={organization} />
+          )}
 
           {/* Team Members */}
           <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
@@ -113,4 +60,3 @@ export default async function SettingsPage() {
     </div>
   )
 }
-

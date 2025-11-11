@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Sparkles, Building2, Users, Briefcase, Upload, CheckCircle2, X } from 'lucide-react'
+import { Sparkles, Building2, Users, Briefcase, Upload, CheckCircle2, X, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { sendOrganizationSetupEmail } from '@/lib/emails'
+import { SetupCompletionAnimation } from '@/components/setup/setup-completion-animation'
 
 const COMPANY_SIZES = [
   { value: '1-5', label: '1-5' },
@@ -97,6 +98,8 @@ type OrganizationSetupFormData = z.infer<typeof organizationSetupSchema>
 export default function OrganizationSetup() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [showCompletionAnimation, setShowCompletionAnimation] = useState(false)
+  const [pitchivoDomain, setPitchivoDomain] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState('')
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -125,7 +128,7 @@ export default function OrganizationSetup() {
 
   const formData = watch()
 
-  // Get user email and auto-fill domain
+  // Get user email and auto-fill domain, and load existing organization data
   useEffect(() => {
     const loadUserData = async () => {
       const supabase = createClient()
@@ -172,6 +175,41 @@ export default function OrganizationSetup() {
         const domain = user.email.split('@')[1]
         if (domain) {
           setValue('domain', domain)
+        }
+
+        // Load existing organization data if it exists
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.organization_id) {
+          const { data: organization } = await supabase
+            .from('organizations')
+            .select('name, industry, company_size, description, logo_url')
+            .eq('id', profile.organization_id)
+            .single()
+
+          if (organization) {
+            // Populate form with existing data
+            if (organization.name) {
+              setValue('companyName', organization.name)
+            }
+            if (organization.industry) {
+              setValue('industry', organization.industry as OrganizationSetupFormData['industry'])
+            }
+            if (organization.company_size) {
+              setValue('companySize', organization.company_size as OrganizationSetupFormData['companySize'])
+            }
+            if (organization.description) {
+              setValue('description', organization.description)
+            }
+            if (organization.logo_url) {
+              setLogoPreview(organization.logo_url)
+              // Note: We can't set the file, but we can show the preview
+            }
+          }
         }
       } else {
         // Clear session and show toast
@@ -240,8 +278,8 @@ export default function OrganizationSetup() {
   }
 
   const onSubmit = async (data: OrganizationSetupFormData) => {
-    // Validate logo
-    if (!logoFile) {
+    // Validate logo - only required if no existing logo
+    if (!logoFile && !logoPreview) {
       setLogoError('Please upload a company logo')
       toast.error('Please upload a company logo')
       return
@@ -258,43 +296,50 @@ export default function OrganizationSetup() {
         throw new Error('User not found')
       }
 
-      // Upload logo (required)
-      const fileExt = logoFile.name.split('.').pop()
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`
-      const filePath = `organizations/${fileName}`
+      let logoUrl: string | null = null
 
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('logos')
-        .upload(filePath, logoFile, {
-          cacheControl: '3600',
-          upsert: false
-        })
+      // Upload logo only if a new file was selected
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop()
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
+        const filePath = `organizations/${fileName}`
 
-      if (uploadError) {
-        console.error('Logo upload error:', uploadError)
-        let errorMessage = 'Failed to upload logo. Please try again.'
-        
-        // Provide more specific error messages
-        if (uploadError.message?.includes('new row violates row-level security policy')) {
-          errorMessage = 'Upload failed: Permission denied. Please check your account permissions.'
-        } else if (uploadError.message?.includes('file size')) {
-          errorMessage = 'File is too large. Maximum size is 5MB.'
-        } else if (uploadError.message?.includes('mime type') || uploadError.message?.includes('content type')) {
-          errorMessage = 'Invalid file type. Please upload an image (PNG, JPG, WebP, or GIF).'
-        } else if (uploadError.message) {
-          errorMessage = `Upload failed: ${uploadError.message}`
+        const { error: uploadError, data: uploadData } = await supabase.storage
+          .from('logos')
+          .upload(filePath, logoFile, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (uploadError) {
+          console.error('Logo upload error:', uploadError)
+          let errorMessage = 'Failed to upload logo. Please try again.'
+          
+          // Provide more specific error messages
+          if (uploadError.message?.includes('new row violates row-level security policy')) {
+            errorMessage = 'Upload failed: Permission denied. Please check your account permissions.'
+          } else if (uploadError.message?.includes('file size')) {
+            errorMessage = 'File is too large. Maximum size is 5MB.'
+          } else if (uploadError.message?.includes('mime type') || uploadError.message?.includes('content type')) {
+            errorMessage = 'Invalid file type. Please upload an image (PNG, JPG, WebP, or GIF).'
+          } else if (uploadError.message) {
+            errorMessage = `Upload failed: ${uploadError.message}`
+          }
+          
+          setLogoError(errorMessage)
+          toast.error(errorMessage)
+          setIsLoading(false)
+          return
         }
-        
-        setLogoError(errorMessage)
-        toast.error(errorMessage)
-        setIsLoading(false)
-        return
-      }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('logos')
-        .getPublicUrl(filePath)
-      const logoUrl = publicUrl
+        const { data: { publicUrl } } = supabase.storage
+          .from('logos')
+          .getPublicUrl(filePath)
+        logoUrl = publicUrl
+      } else if (logoPreview) {
+        // Use existing logo URL if no new file was uploaded
+        logoUrl = logoPreview
+      }
 
       // Get or create organization
       const { data: orgId, error: orgError } = await supabase.rpc('get_or_create_organization', {
@@ -336,6 +381,17 @@ export default function OrganizationSetup() {
         throw new Error('Failed to update organization')
       }
 
+      // Fetch the updated organization to get pitchivo_domain
+      const { data: updatedOrg } = await supabase
+        .from('organizations')
+        .select('pitchivo_domain')
+        .eq('id', orgId)
+        .single()
+
+      if (updatedOrg?.pitchivo_domain) {
+        setPitchivoDomain(updatedOrg.pitchivo_domain)
+      }
+
       // Update user role
       const { error: roleError } = await supabase
         .from('user_profiles')
@@ -359,12 +415,9 @@ export default function OrganizationSetup() {
         })
       }
 
-      toast.success('Organization created successfully!')
-
-      // Redirect to dashboard after a short delay
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 1000)
+      // Show completion animation instead of immediate redirect
+      setIsLoading(false)
+      setShowCompletionAnimation(true)
     } catch (error) {
       console.error('Error creating organization:', error)
       toast.error('Failed to create organization. Please try again.')
@@ -372,6 +425,18 @@ export default function OrganizationSetup() {
     }
   }
 
+  const handleAnimationComplete = () => {
+    router.push('/dashboard')
+  }
+
+  if (showCompletionAnimation) {
+    return (
+      <SetupCompletionAnimation
+        onComplete={handleAnimationComplete}
+        pitchivoDomain={pitchivoDomain}
+      />
+    )
+  }
 
   if (isLoading) {
     return (
@@ -439,6 +504,13 @@ export default function OrganizationSetup() {
               {errors.companyName && (
                 <p className="text-sm text-destructive">{errors.companyName.message}</p>
               )}
+              {/* Warning about company name being non-editable */}
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-accent/10 border border-accent/30 text-sm">
+                <AlertTriangle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                <p className="text-foreground/80">
+                  <span className="font-semibold text-foreground">Important:</span> Company name cannot be changed after setup. Please pay attention to capitalization and spelling.
+                </p>
+              </div>
             </div>
 
             {/* Company Domain */}
@@ -598,8 +670,13 @@ export default function OrganizationSetup() {
             {/* Logo Upload (Required) */}
             <div className="space-y-2">
               <Label className="text-base font-semibold">
-                Company Logo *
+                Company Logo {logoPreview ? '' : '*'}
               </Label>
+              {logoPreview && (
+                <p className="text-sm text-foreground/60">
+                  Logo already uploaded. Upload a new one to replace it.
+                </p>
+              )}
               <div className="flex items-center gap-4">
                 <input
                   ref={fileInputRef}

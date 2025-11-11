@@ -1,0 +1,180 @@
+'use client'
+
+import { useState } from 'react'
+import { Building2, Save } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
+
+const COMPANY_SIZES = [
+  { value: '1-5', label: '1-5' },
+  { value: '6-20', label: '6-20' },
+  { value: '21-100', label: '21-100' },
+  { value: '100+', label: '100+' },
+]
+
+const INDUSTRIES = [
+  'Food & Supplement Ingredients',
+  'Chemicals & Raw Materials',
+  'Pharmaceuticals',
+  'Cosmetics & Personal Care',
+  'Other',
+]
+
+interface OrganizationSettingsFormProps {
+  organization: {
+    id: string
+    name: string
+    domain: string
+    industry: string | null
+    company_size: string | null
+    pitchivo_domain: string | null
+  }
+}
+
+export function OrganizationSettingsForm({ organization }: OrganizationSettingsFormProps) {
+  const [companySize, setCompanySize] = useState(organization.company_size || '')
+  const [industry, setIndustry] = useState(organization.industry || '')
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSave = async () => {
+    const hasSizeChange = companySize !== (organization.company_size || '')
+    const hasIndustryChange = industry !== (organization.industry || '')
+    
+    if (!hasSizeChange && !hasIndustryChange) {
+      toast.info('No changes to save')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const supabase = createClient()
+      
+      const { data: success, error } = await supabase.rpc('update_user_organization', {
+        p_org_id: organization.id,
+        p_company_size: companySize || null,
+        p_industry: industry || null,
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (!success) {
+        throw new Error('Failed to update organization')
+      }
+
+      const changes = []
+      if (hasSizeChange) changes.push('company size')
+      if (hasIndustryChange) changes.push('industry')
+      
+      toast.success(`${changes.join(' and ').replace(/, ([^,]*)$/, ' and $1')} updated successfully`)
+    } catch (error) {
+      console.error('Error updating organization:', error)
+      toast.error('Failed to update organization. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const hasChanges = companySize !== (organization.company_size || '') || industry !== (organization.industry || '')
+
+  return (
+    <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+      <div className="flex items-center gap-2 mb-2">
+        <Building2 className="h-5 w-5 text-primary" />
+        <h2 className="text-lg sm:text-xl font-semibold">Organization Information</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">
+        Basic information about your organization
+      </p>
+      <div className="space-y-4">
+        <div className="grid gap-2">
+          <Label htmlFor="company-name">Company Name</Label>
+          <Input 
+            id="company-name" 
+            defaultValue={organization.name || ''} 
+            disabled
+            className="transition-all duration-300"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="domain">Email Domain</Label>
+          <Input 
+            id="domain" 
+            defaultValue={organization.domain || ''} 
+            disabled
+            className="transition-all duration-300"
+          />
+        </div>
+        {organization.pitchivo_domain && (
+          <div className="grid gap-2">
+            <Label htmlFor="pitchivo-domain">Pitchivo Domain</Label>
+            <Input 
+              id="pitchivo-domain" 
+              defaultValue={organization.pitchivo_domain || ''} 
+              disabled
+              className="transition-all duration-300"
+            />
+          </div>
+        )}
+        <div className="grid gap-2">
+          <Label htmlFor="industry">Industry</Label>
+          <Select
+            value={industry}
+            onValueChange={setIndustry}
+          >
+            <SelectTrigger id="industry" className="transition-all duration-300">
+              <SelectValue placeholder="Select an industry" />
+            </SelectTrigger>
+            <SelectContent>
+              {INDUSTRIES.map((ind) => (
+                <SelectItem key={ind} value={ind}>
+                  {ind}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="company-size">Company Size</Label>
+          <Select
+            value={companySize}
+            onValueChange={setCompanySize}
+          >
+            <SelectTrigger id="company-size" className="transition-all duration-300">
+              <SelectValue placeholder="Select company size" />
+            </SelectTrigger>
+            <SelectContent>
+              {COMPANY_SIZES.map((size) => (
+                <SelectItem key={size.value} value={size.value}>
+                  {size.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex justify-end pt-4">
+          <Button 
+            className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" 
+            onClick={handleSave}
+            disabled={!hasChanges || isSaving}
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
