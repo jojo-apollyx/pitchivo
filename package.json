@@ -12,6 +12,7 @@
     "lint": "turbo run lint",
     "debug": "NODE_OPTIONS='--inspect=9229' turbo run dev:debug --filter=web",
     "debug:clear-ports": "./scripts/clear-debug-ports.sh",
+    "clean:rebuild": "./scripts/clean-rebuild.sh",
     "functions": "supabase functions serve --env-file .env.local",
     "supabase": "supabase",
     "supabase:start": "supabase start",
