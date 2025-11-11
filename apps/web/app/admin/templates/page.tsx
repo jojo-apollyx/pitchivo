@@ -5,7 +5,9 @@ import { FileText, Edit, Save, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { validateGeneratedTemplate } from '@/lib/api/template-validation'
 import type { TemplateSchema } from '@/lib/api/template-validation'
 
 interface Template {
@@ -29,6 +31,7 @@ export default function AdminTemplatesPage() {
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editedTemplate, setEditedTemplate] = useState<Partial<Template> | null>(null)
+  const [schemaJsonString, setSchemaJsonString] = useState<string>('')
 
   useEffect(() => {
     loadTemplates()
@@ -47,10 +50,10 @@ export default function AdminTemplatesPage() {
 
       const data = await response.json()
       setTemplates(data.templates || [])
-    } catch (error) {
-      console.error('Error loading templates:', error)
-      toast.error('Failed to load templates')
-    } finally {
+      } catch (error) {
+        console.error('Error loading templates:', error)
+        toast.error('Failed to load templates', { duration: 10000 })
+      } finally {
       setLoading(false)
     }
   }
@@ -64,17 +67,36 @@ export default function AdminTemplatesPage() {
       is_default: template.is_default,
       schema_json: template.schema_json,
     })
+    setSchemaJsonString(JSON.stringify(template.schema_json || {}, null, 2))
   }
 
   const handleCancel = () => {
     setEditingId(null)
     setEditedTemplate(null)
+    setSchemaJsonString('')
   }
 
   const handleSave = async (templateId: string) => {
     if (!editedTemplate) return
 
     try {
+      // Parse JSON string to object
+      let parsedSchema: TemplateSchema
+      try {
+        parsedSchema = JSON.parse(schemaJsonString)
+      } catch (error) {
+        toast.error('Invalid JSON format. Please check your JSON syntax.', { duration: 10000 })
+        return
+      }
+
+      // Validate template schema before saving
+      const validation = validateGeneratedTemplate(parsedSchema)
+      if (!validation.valid) {
+        const errorMsg = `Template validation failed: ${validation.errors.join('; ')}`
+        toast.error(errorMsg, { duration: 10000 })
+        return
+      }
+
       const response = await fetch('/api/admin/templates', {
         method: 'PUT',
         headers: {
@@ -84,6 +106,7 @@ export default function AdminTemplatesPage() {
         body: JSON.stringify({
           template_id: templateId,
           ...editedTemplate,
+          schema_json: parsedSchema,
         }),
       })
 
@@ -95,10 +118,12 @@ export default function AdminTemplatesPage() {
       toast.success('Template updated successfully')
       setEditingId(null)
       setEditedTemplate(null)
+      setSchemaJsonString('')
       loadTemplates()
     } catch (error) {
       console.error('Error updating template:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to update template')
+      const errorMsg = error instanceof Error ? error.message : 'Failed to update template'
+      toast.error(errorMsg, { duration: 10000 })
     }
   }
 
@@ -280,11 +305,17 @@ export default function AdminTemplatesPage() {
                           <Label className="text-sm font-medium mb-2 block">
                             Template Schema (JSON)
                           </Label>
-                          <pre className="text-xs overflow-auto max-h-96 bg-background p-4 rounded border border-border">
-                            {JSON.stringify(editedTemplate?.schema_json, null, 2)}
-                          </pre>
+                          <Textarea
+                            value={schemaJsonString}
+                            onChange={(e) => {
+                              setSchemaJsonString(e.target.value)
+                            }}
+                            className="font-mono text-xs min-h-[300px] max-h-[600px] bg-background border border-input"
+                            placeholder="Enter valid JSON schema..."
+                            spellCheck={false}
+                          />
                           <p className="text-xs text-muted-foreground mt-2">
-                            Note: Schema editing requires JSON knowledge. Edit with caution.
+                            Note: Schema editing requires JSON knowledge. Edit with caution. Invalid JSON will be caught on save.
                           </p>
                         </div>
                       </div>

@@ -23,6 +23,21 @@ export const Visibility = {
   PUBLIC: 'public',
   TARGET_ONLY: 'target_only',
   AFTER_RFQ: 'after_rfq',
+  HIDDEN: 'hidden',
+} as const
+
+// Importance enum
+export const Importance = {
+  CORE: 'core',
+  OPTIONAL: 'optional',
+  EXTENDED: 'extended',
+} as const
+
+// Display mode enum
+export const DisplayMode = {
+  EXPANDED: 'expanded',
+  COLLAPSED: 'collapsed',
+  HIDDEN: 'hidden',
 } as const
 
 // Search normalization enum
@@ -63,7 +78,16 @@ const fieldSchema = z.object({
     Visibility.PUBLIC,
     Visibility.TARGET_ONLY,
     Visibility.AFTER_RFQ,
+    Visibility.HIDDEN,
   ]).default(Visibility.PUBLIC),
+  importance: z.enum([
+    Importance.CORE,
+    Importance.OPTIONAL,
+    Importance.EXTENDED,
+  ]).default(Importance.CORE),
+  ai_generated: z.boolean().optional(),
+  source_file: z.string().optional(),
+  default_value: z.any().optional(),
   search_normalize: z.enum([
     SearchNormalize.KEYWORD,
     SearchNormalize.NUMERIC,
@@ -86,6 +110,11 @@ const fieldSchema = z.object({
 const sectionSchema = z.object({
   section_id: z.string().regex(/^[a-z][a-z0-9_]*$/, 'Section ID must be lowercase_snake_case'),
   title: z.string().min(1, 'Section title is required'),
+  display_mode: z.enum([
+    DisplayMode.EXPANDED,
+    DisplayMode.COLLAPSED,
+    DisplayMode.HIDDEN,
+  ]).default(DisplayMode.EXPANDED),
   fields: z.array(fieldSchema).min(1, 'Section must have at least one field'),
 })
 
@@ -119,13 +148,10 @@ export function validateGeneratedTemplate(schemaJson: unknown): {
     
     const errors: string[] = []
     
-    // Check for required sections
-    const requiredSections = ['basic_info', 'specifications', 'commercial']
+    // Check for required sections (at minimum, basic_info is required)
     const sectionIds = template.sections.map(s => s.section_id)
-    for (const required of requiredSections) {
-      if (!sectionIds.includes(required)) {
-        errors.push(`Missing required section: ${required}`)
-      }
+    if (!sectionIds.includes('basic_info')) {
+      errors.push(`Missing required section: basic_info`)
     }
     
     // Check for required fields across all sections
@@ -147,6 +173,12 @@ export function validateGeneratedTemplate(schemaJson: unknown): {
     
     // Validate field-specific requirements
     for (const section of template.sections) {
+      // Check that each section has at least one core field
+      const coreFields = section.fields.filter(f => f.importance === Importance.CORE)
+      if (coreFields.length === 0) {
+        errors.push(`Section '${section.section_id}' must have at least one core field`)
+      }
+      
       for (const field of section.fields) {
         // Select/multiselect must have options
         if ((field.type === FieldType.SELECT || field.type === FieldType.MULTISELECT) && !field.options) {
@@ -165,6 +197,11 @@ export function validateGeneratedTemplate(schemaJson: unknown): {
         
         if (field.unit_options && !field.unit_type) {
           errors.push(`Field '${field.key}' with 'unit_options' must specify 'unit_type'`)
+        }
+        
+        // Validate importance is set
+        if (!field.importance) {
+          errors.push(`Field '${field.key}' must have an importance value (core, optional, or extended)`)
         }
       }
     }
@@ -195,6 +232,11 @@ export function normalizeTemplateSchema(schemaJson: any): TemplateSchema {
   // Fix unit handling - convert old format to new format
   if (schemaJson.sections) {
     for (const section of schemaJson.sections) {
+      // Set default display_mode if not set
+      if (!section.display_mode) {
+        section.display_mode = DisplayMode.EXPANDED
+      }
+      
       if (section.fields) {
         for (const field of section.fields) {
           // Convert old unit format: {type: "select", options: [...]} to new format
@@ -219,6 +261,16 @@ export function normalizeTemplateSchema(schemaJson: any): TemplateSchema {
           // Ensure all keys are lowercase_snake_case
           if (field.key) {
             field.key = field.key.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^([^a-z])/, '_$1')
+          }
+          
+          // Set default importance if not set
+          if (!field.importance) {
+            field.importance = Importance.CORE
+          }
+          
+          // Set default visibility if not set
+          if (!field.visibility) {
+            field.visibility = Visibility.PUBLIC
           }
         }
       }

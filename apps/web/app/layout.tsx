@@ -136,7 +136,23 @@ export default function RootLayout({
             <QueryProvider>
               <GlobalThemeLoader />
               {children}
-              <Toaster position="top-center" richColors />
+              <Toaster 
+                position="top-center" 
+                richColors 
+                expand={true}
+                toastOptions={{
+                  className: 'select-text',
+                  style: {
+                    userSelect: 'text',
+                    WebkitUserSelect: 'text',
+                    MozUserSelect: 'text',
+                    msUserSelect: 'text',
+                    cursor: 'text',
+                    pointerEvents: 'auto',
+                  },
+                }}
+                closeButton
+              />
               <SpeedInsights />
             </QueryProvider>
           </ThemeProvider>

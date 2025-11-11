@@ -2,6 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Make toast text selectable - override Sonner's default styles */
+/* Target all possible Sonner toast elements with maximum specificity */
+[data-sonner-toast],
+[data-sonner-toast] *,
+[data-sonner-toast] *::before,
+[data-sonner-toast] *::after,
+.sonner-toast,
+.sonner-toast *,
+.sonner-toast *::before,
+.sonner-toast *::after,
+[data-sonner-toast] .sonner-toast,
+[data-sonner-toast] .sonner-description,
+[data-sonner-toast] .sonner-title,
+[data-sonner-toast] [data-title],
+[data-sonner-toast] [data-description],
+[data-sonner-toaster] [data-sonner-toast],
+[data-sonner-toaster] [data-sonner-toast] * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text !important;
+  pointer-events: auto !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Make toast text selectable */
+.select-text,
+.select-text *,
+.select-text *::before,
+.select-text *::after {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text !important;
+  pointer-events: auto !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Force text selection on toast content - most aggressive override */
+body [data-sonner-toast],
+body [data-sonner-toast] *,
+html body [data-sonner-toast],
+html body [data-sonner-toast] * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text !important;
+  pointer-events: auto !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Prevent toast dismissal when selecting text */
+[data-sonner-toast][data-selecting] {
+  pointer-events: none !important;
+}
+
+[data-sonner-toast][data-selecting] * {
+  pointer-events: auto !important;
+}
+
 @layer base {
   :root {
     /* Premium Light Theme - Mint Blue Palette */

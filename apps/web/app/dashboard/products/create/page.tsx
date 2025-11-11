@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Package, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Package, ArrowLeft, Loader2, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { useGetProductTemplate, useCreateProduct } from '@/lib/api/products'
 import type { TemplateSchema, FieldSchema, SectionSchema } from '@/lib/api/template-validation'
+import { Importance, Visibility } from '@/lib/api/template-validation'
 
 const productNameSchema = z.object({
   product_name_raw: z.string().min(1, 'Product name is required').max(200),
@@ -27,6 +28,7 @@ export default function CreateProductPage() {
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [productNameRaw, setProductNameRaw] = useState('')
   const [formData, setFormData] = useState<Record<string, any>>({})
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
   const [loadingState, setLoadingState] = useState<{
     stage: 'analyzing_product' | 'checking_template' | 'ready'
     message: string
@@ -86,8 +88,21 @@ export default function CreateProductPage() {
       // Small delay to show success message
       await new Promise((resolve) => setTimeout(resolve, 600))
 
-      setTemplate(response.template as TemplateSchema)
+      const templateData = response.template as TemplateSchema
+      setTemplate(templateData)
       setTemplateId(response.template_id)
+      
+      // Initialize form data with default values from template
+      const initialFormData: Record<string, any> = {}
+      templateData.sections.forEach((section) => {
+        section.fields.forEach((field) => {
+          if (field.default_value !== undefined) {
+            initialFormData[field.key] = field.default_value
+          }
+        })
+      })
+      setFormData(initialFormData)
+      
       setStep('form')
       setLoadingState(null)
     } catch (error) {
@@ -137,7 +152,7 @@ export default function CreateProductPage() {
   }
 
   // Render dynamic form field based on template field schema
-  const renderField = (field: FieldSchema, sectionId: string) => {
+  const renderField = (field: FieldSchema, sectionId: string, isAIGenerated = false) => {
     const fieldKey = `${sectionId}.${field.key}`
     const value = formData[field.key] || ''
 
@@ -153,9 +168,15 @@ export default function CreateProductPage() {
       case 'textarea':
         return (
           <div key={field.key} className="space-y-2">
-            <Label htmlFor={fieldKey}>
+            <Label htmlFor={fieldKey} className="flex items-center gap-2 flex-wrap">
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
+              {(isAIGenerated || field.ai_generated) && (
+                <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  AI Detected
+                </span>
+              )}
             </Label>
             {field.type === 'textarea' ? (
               <textarea
@@ -184,9 +205,15 @@ export default function CreateProductPage() {
       case 'number':
         return (
           <div key={field.key} className="space-y-2">
-            <Label htmlFor={fieldKey}>
+            <Label htmlFor={fieldKey} className="flex items-center gap-2 flex-wrap">
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
+              {(isAIGenerated || field.ai_generated) && (
+                <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  AI Detected
+                </span>
+              )}
             </Label>
             <div className="flex gap-2">
               <Input
@@ -227,9 +254,15 @@ export default function CreateProductPage() {
       case 'multiselect':
         return (
           <div key={field.key} className="space-y-2">
-            <Label htmlFor={fieldKey}>
+            <Label htmlFor={fieldKey} className="flex items-center gap-2 flex-wrap">
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
+              {(isAIGenerated || field.ai_generated) && (
+                <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  AI Detected
+                </span>
+              )}
             </Label>
             {field.type === 'multiselect' ? (
               <div className="space-y-2">
@@ -276,9 +309,15 @@ export default function CreateProductPage() {
       case 'image':
         return (
           <div key={field.key} className="space-y-2">
-            <Label htmlFor={fieldKey}>
+            <Label htmlFor={fieldKey} className="flex items-center gap-2 flex-wrap">
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
+              {(isAIGenerated || field.ai_generated) && (
+                <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  AI Detected
+                </span>
+              )}
             </Label>
             <Input
               id={fieldKey}
@@ -304,9 +343,15 @@ export default function CreateProductPage() {
       case 'date':
         return (
           <div key={field.key} className="space-y-2">
-            <Label htmlFor={fieldKey}>
+            <Label htmlFor={fieldKey} className="flex items-center gap-2 flex-wrap">
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
+              {(isAIGenerated || field.ai_generated) && (
+                <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  AI Detected
+                </span>
+              )}
             </Label>
             <Input
               id={fieldKey}
@@ -556,17 +601,145 @@ export default function CreateProductPage() {
           </div>
 
           <form onSubmit={(e) => { e.preventDefault(); onFormSubmit(); }} className="space-y-8">
-            {template.sections.map((section: SectionSchema) => (
-              <div
-                key={section.section_id}
-                className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8"
-              >
-                <h2 className="text-xl font-semibold mb-6">{section.title}</h2>
-                <div className="space-y-6">
-                  {section.fields.map((field) => renderField(field, section.section_id))}
+            {template.sections.map((section: SectionSchema) => {
+              // Skip hidden sections
+              if (section.display_mode === 'hidden') {
+                return null
+              }
+
+              // Group fields by importance
+              // Note: In product creation form, we show all fields except those explicitly hidden
+              // Visibility (target_only, after_rfq) is for product display, not form creation
+              const coreFields = section.fields.filter(
+                (f) => 
+                  f.importance === Importance.CORE && 
+                  f.visibility !== Visibility.HIDDEN
+              )
+              const optionalFields = section.fields.filter(
+                (f) => 
+                  f.importance === Importance.OPTIONAL && 
+                  f.visibility !== Visibility.HIDDEN
+              )
+              const extendedFields = section.fields.filter(
+                (f) => 
+                  f.importance === Importance.EXTENDED && 
+                  f.visibility !== Visibility.HIDDEN
+              )
+
+              // Show extended fields only if they have values or are AI-generated
+              const visibleExtendedFields = extendedFields.filter(
+                (f) => formData[f.key] || f.ai_generated
+              )
+
+              // Handle section display_mode
+              const sectionDisplayMode = section.display_mode || 'expanded'
+              const isSectionExpanded = 
+                sectionDisplayMode === 'expanded' || 
+                expandedSections.has(section.section_id)
+              const isSectionCollapsed = sectionDisplayMode === 'collapsed' && !expandedSections.has(section.section_id)
+              
+              // Separate state for optional fields expansion (per section)
+              const optionalFieldsExpandedKey = `${section.section_id}_optional`
+              const areOptionalFieldsExpanded = expandedSections.has(optionalFieldsExpandedKey)
+              
+              const hasOptionalFields = optionalFields.length > 0
+              const hasVisibleExtendedFields = visibleExtendedFields.length > 0
+
+              return (
+                <div
+                  key={section.section_id}
+                  className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold">{section.title}</h2>
+                    {sectionDisplayMode === 'collapsed' && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newExpanded = new Set(expandedSections)
+                          if (isSectionExpanded) {
+                            newExpanded.delete(section.section_id)
+                          } else {
+                            newExpanded.add(section.section_id)
+                          }
+                          setExpandedSections(newExpanded)
+                        }}
+                      >
+                        {isSectionExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4 mr-2" />
+                            Collapse
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4 mr-2" />
+                            Expand
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {isSectionCollapsed ? (
+                    <p className="text-sm text-muted-foreground">Click Expand to view fields</p>
+                  ) : (
+                    <>
+                      {/* Core Fields - Always visible */}
+                      <div className="space-y-6">
+                        {coreFields.map((field) => renderField(field, section.section_id))}
+                      </div>
+
+                      {/* Optional Fields - Collapsible */}
+                      {hasOptionalFields && (
+                        <div className="mt-6">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                              const newExpanded = new Set(expandedSections)
+                              if (areOptionalFieldsExpanded) {
+                                newExpanded.delete(optionalFieldsExpandedKey)
+                              } else {
+                                newExpanded.add(optionalFieldsExpandedKey)
+                              }
+                              setExpandedSections(newExpanded)
+                            }}
+                            className="w-full justify-between mb-4"
+                          >
+                            <span>Show More ({optionalFields.length} optional fields)</span>
+                            {areOptionalFieldsExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                          {areOptionalFieldsExpanded && (
+                            <div className="space-y-6 border-t border-border/50 pt-6">
+                              {optionalFields.map((field) => renderField(field, section.section_id))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Extended Fields - Only show if they have values or are AI-generated */}
+                      {hasVisibleExtendedFields && (
+                        <div className="mt-6 space-y-6 border-t border-border/50 pt-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium text-muted-foreground">
+                              AI Detected Fields
+                            </span>
+                          </div>
+                          {visibleExtendedFields.map((field) => renderField(field, section.section_id, true))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             <div className="flex gap-4 justify-end">
               <Button

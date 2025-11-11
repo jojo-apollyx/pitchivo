@@ -1,6 +1,7 @@
 import { withApiHandler } from '@/lib/impersonation'
 import { productsResponseSchema, createProductSchema, createProductInitSchema, productSchema, createProductWithTemplateResponseSchema, templateResponseSchema } from '@/lib/api/schemas'
 import { detectProductIndustry } from '@/lib/api/industry-detection'
+import { validateGeneratedTemplate } from '@/lib/api/template-validation'
 
 /**
  * EXAMPLE: Get products for current user's organization
@@ -117,6 +118,16 @@ export const POST = withApiHandler(
         throw new Error(
           `No product template found for industry "${industry.industry_name}". ` +
           `Please contact an administrator to create a template for this industry.`
+        )
+      }
+
+      // Validate template schema at runtime
+      const validation = validateGeneratedTemplate(existingTemplate.schema_json)
+      if (!validation.valid) {
+        console.error('[Product Creation] Template validation failed:', validation.errors)
+        throw new Error(
+          `Template validation failed: ${validation.errors.join('; ')}. ` +
+          `Please contact an administrator to fix the template.`
         )
       }
 
