@@ -193,6 +193,102 @@ export interface Database {
           updated_at?: string
         }
       }
+      industries: {
+        Row: {
+          industry_code: string
+          industry_name: string
+          description: string | null
+          is_enabled: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          industry_code: string
+          industry_name: string
+          description?: string | null
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          industry_code?: string
+          industry_name?: string
+          description?: string | null
+          is_enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      product_templates: {
+        Row: {
+          template_id: string
+          industry_code: string
+          template_name: string | null
+          schema_json: Json
+          version: string | null
+          is_active: boolean
+          is_default: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          template_id?: string
+          industry_code: string
+          template_name?: string | null
+          schema_json?: Json
+          version?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          template_id?: string
+          industry_code?: string
+          template_name?: string | null
+          schema_json?: Json
+          version?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      products: {
+        Row: {
+          product_id: string
+          org_id: string
+          product_name: string
+          industry_code: string
+          template_id: string | null
+          template_version_snapshot: Json | null
+          status: 'draft' | 'published'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          product_id?: string
+          org_id: string
+          product_name: string
+          industry_code: string
+          template_id?: string | null
+          template_version_snapshot?: Json | null
+          status?: 'draft' | 'published'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          product_id?: string
+          org_id?: string
+          product_name?: string
+          industry_code?: string
+          template_id?: string | null
+          template_version_snapshot?: Json | null
+          status?: 'draft' | 'published'
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       user_profile_with_org: {
@@ -331,6 +427,9 @@ export type WaitlistEntry = Database['public']['Tables']['waitlist']['Row']
 export type UserProfile = Database['public']['Tables']['user_profiles']['Row']
 export type Organization = Database['public']['Tables']['organizations']['Row']
 export type EmailDomainPolicy = Database['public']['Tables']['email_domain_policy']['Row']
+export type Industry = Database['public']['Tables']['industries']['Row']
+export type ProductTemplate = Database['public']['Tables']['product_templates']['Row']
+export type Product = Database['public']['Tables']['products']['Row']
 
 export type UserProfileWithOrg = Database['public']['Views']['user_profile_with_org']['Row']
 export type OrganizationMember = Database['public']['Views']['organization_members']['Row']

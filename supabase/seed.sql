@@ -28,3 +28,15 @@ INSERT INTO email_domain_policy (domain, status, reason) VALUES
   ('pitchivo.com', 'whitelisted', 'Pitchivo company domain')
 ON CONFLICT (domain) DO NOTHING;
 
+-- ============================================================================
+-- INDUSTRIES
+-- ============================================================================
+-- Insert supported industries for organization setup
+INSERT INTO industries (industry_code, industry_name, description, is_enabled) VALUES
+  ('supplements_food_ingredients', 'Nutritional Supplements / Food Ingredients', 'Companies producing nutritional supplements, food ingredients, and related products', TRUE),
+  ('chemicals_raw_materials', 'Chemicals & Raw Materials', 'Companies producing chemicals, raw materials, and industrial compounds', TRUE),
+  ('pharmaceuticals', 'Pharmaceuticals', 'Companies in the pharmaceutical industry producing medicines and healthcare products', TRUE),
+  ('cosmetics_personal_care', 'Cosmetics & Personal Care', 'Companies producing cosmetics, personal care products, and beauty items', TRUE),
+  ('other', 'Other', 'Other industries not specifically categorized', TRUE)
+ON CONFLICT (industry_code) DO NOTHING;
+

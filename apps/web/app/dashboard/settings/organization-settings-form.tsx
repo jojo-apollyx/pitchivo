@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Building2, Save, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,14 +22,6 @@ const COMPANY_SIZES = [
   { value: '100+', label: '100+' },
 ]
 
-const INDUSTRIES = [
-  'Food & Supplement Ingredients',
-  'Chemicals & Raw Materials',
-  'Pharmaceuticals',
-  'Cosmetics & Personal Care',
-  'Other',
-]
-
 interface OrganizationSettingsFormProps {
   organization: {
     id: string
@@ -47,6 +39,95 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
   const [industry, setIndustry] = useState(organization.industry || '')
   const [role, setRole] = useState(userRole || '')
   const [isSaving, setIsSaving] = useState(false)
+  const [industries, setIndustries] = useState<string[]>([])
+  const [industryMap, setIndustryMap] = useState<Record<string, string>>({}) // code -> name mapping
+  const [isLoadingIndustries, setIsLoadingIndustries] = useState(true)
+
+  // Load supported industries from database
+  useEffect(() => {
+    const loadIndustries = async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('industries')
+          .select('industry_code, industry_name')
+          .eq('is_enabled', true)
+          .order('industry_name', { ascending: true })
+
+        if (error) {
+          console.error('Error loading industries:', error)
+          // Fallback to default industries if database query fails
+          const fallbackCodes = [
+            'supplements_food_ingredients',
+            'chemicals_raw_materials',
+            'pharmaceuticals',
+            'cosmetics_personal_care',
+            'other',
+          ]
+          const fallbackMap: Record<string, string> = {
+            'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
+            'chemicals_raw_materials': 'Chemicals & Raw Materials',
+            'pharmaceuticals': 'Pharmaceuticals',
+            'cosmetics_personal_care': 'Cosmetics & Personal Care',
+            'other': 'Other',
+          }
+          setIndustries(fallbackCodes)
+          setIndustryMap(fallbackMap)
+        } else {
+          const industryCodes = data?.map((item) => item.industry_code) || []
+          const map: Record<string, string> = {}
+          data?.forEach((item) => {
+            map[item.industry_code] = item.industry_name
+          })
+          if (industryCodes.length > 0) {
+            setIndustries(industryCodes)
+            setIndustryMap(map)
+          } else {
+            // Fallback
+            const fallbackCodes = [
+              'supplements_food_ingredients',
+              'chemicals_raw_materials',
+              'pharmaceuticals',
+              'cosmetics_personal_care',
+              'other',
+            ]
+            const fallbackMap: Record<string, string> = {
+              'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
+              'chemicals_raw_materials': 'Chemicals & Raw Materials',
+              'pharmaceuticals': 'Pharmaceuticals',
+              'cosmetics_personal_care': 'Cosmetics & Personal Care',
+              'other': 'Other',
+            }
+            setIndustries(fallbackCodes)
+            setIndustryMap(fallbackMap)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading industries:', error)
+        // Fallback to default industries
+        const fallbackCodes = [
+          'supplements_food_ingredients',
+          'chemicals_raw_materials',
+          'pharmaceuticals',
+          'cosmetics_personal_care',
+          'other',
+        ]
+        const fallbackMap: Record<string, string> = {
+          'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
+          'chemicals_raw_materials': 'Chemicals & Raw Materials',
+          'pharmaceuticals': 'Pharmaceuticals',
+          'cosmetics_personal_care': 'Cosmetics & Personal Care',
+          'other': 'Other',
+        }
+        setIndustries(fallbackCodes)
+        setIndustryMap(fallbackMap)
+      } finally {
+        setIsLoadingIndustries(false)
+      }
+    }
+
+    loadIndustries()
+  }, [])
 
   const handleSave = async () => {
     const hasSizeChange = companySize !== (organization.company_size || '')
@@ -164,11 +245,15 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
               <SelectValue placeholder="Select an industry" />
             </SelectTrigger>
             <SelectContent>
-              {INDUSTRIES.map((ind) => (
-                <SelectItem key={ind} value={ind}>
-                  {ind}
-                </SelectItem>
-              ))}
+              {isLoadingIndustries ? (
+                <SelectItem value="loading" disabled>Loading industries...</SelectItem>
+              ) : (
+                industries.map((industryCode) => (
+                  <SelectItem key={industryCode} value={industryCode}>
+                    {industryMap[industryCode] || industryCode}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>

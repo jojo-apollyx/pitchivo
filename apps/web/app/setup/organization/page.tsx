@@ -28,14 +28,6 @@ const COMPANY_SIZES = [
   { value: '100+', label: '100+' },
 ]
 
-const INDUSTRIES = [
-  'Food & Supplement Ingredients',
-  'Chemicals & Raw Materials',
-  'Pharmaceuticals',
-  'Cosmetics & Personal Care',
-  'Other',
-]
-
 const ROLE_SUGGESTIONS = [
   'Founder',
   'CEO',
@@ -54,7 +46,7 @@ const ROLE_SUGGESTIONS = [
 ]
 
 // Zod schema for form validation - will be made conditional based on isSubsequentUser
-const createOrganizationSetupSchema = (isSubsequentUser: boolean) => z.object({
+const createOrganizationSetupSchema = (isSubsequentUser: boolean, industries: string[]) => z.object({
   companyName: isSubsequentUser 
     ? z.string().optional()
     : z
@@ -71,18 +63,11 @@ const createOrganizationSetupSchema = (isSubsequentUser: boolean) => z.object({
           /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/,
           'Please enter a valid domain name'
         ),
-  industry: z.enum(
-    [
-      'Food & Supplement Ingredients',
-      'Chemicals & Raw Materials',
-      'Pharmaceuticals',
-      'Cosmetics & Personal Care',
-      'Other',
-    ],
-    {
-      required_error: 'Please select an industry',
-    }
-  ),
+  industry: industries.length > 0 
+    ? z.enum(industries as [string, ...string[]], {
+        required_error: 'Please select an industry',
+      })
+    : z.string().min(1, 'Please select an industry'),
   companySize: z.enum(['1-5', '6-20', '21-100', '100+'], {
     required_error: 'Please select a company size',
   }),
@@ -113,10 +98,13 @@ export default function OrganizationSetup() {
   const [isSubsequentUser, setIsSubsequentUser] = useState(false)
   const [existingOrgId, setExistingOrgId] = useState<string | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
+  const [industries, setIndustries] = useState<string[]>([])
+  const [industryMap, setIndustryMap] = useState<Record<string, string>>({}) // code -> name mapping
+  const [isLoadingIndustries, setIsLoadingIndustries] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Memoize schema to update when isSubsequentUser changes
-  const schema = useMemo(() => createOrganizationSetupSchema(isSubsequentUser), [isSubsequentUser])
+  // Memoize schema to update when isSubsequentUser or industries change
+  const schema = useMemo(() => createOrganizationSetupSchema(isSubsequentUser, industries), [isSubsequentUser, industries])
 
   const {
     register,
@@ -129,7 +117,7 @@ export default function OrganizationSetup() {
     defaultValues: {
       companyName: '',
       domain: '',
-      industry: 'Food & Supplement Ingredients',
+      industry: '' as any,
       companySize: undefined,
       role: '',
       description: '',
@@ -137,6 +125,99 @@ export default function OrganizationSetup() {
   })
 
   const formData = watch()
+
+  // Update default industry value when industries are loaded
+  useEffect(() => {
+    if (industries.length > 0 && !formData.industry) {
+      setValue('industry', industries[0] as OrganizationSetupFormData['industry'])
+    }
+  }, [industries, setValue, formData.industry])
+
+  // Load supported industries from database
+  useEffect(() => {
+    const loadIndustries = async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('industries')
+          .select('industry_code, industry_name')
+          .eq('is_enabled', true)
+          .order('industry_name', { ascending: true })
+
+        if (error) {
+          console.error('Error loading industries:', error)
+          // Fallback to default industries if database query fails
+          const fallbackCodes = [
+            'supplements_food_ingredients',
+            'chemicals_raw_materials',
+            'pharmaceuticals',
+            'cosmetics_personal_care',
+            'other',
+          ]
+          const fallbackMap: Record<string, string> = {
+            'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
+            'chemicals_raw_materials': 'Chemicals & Raw Materials',
+            'pharmaceuticals': 'Pharmaceuticals',
+            'cosmetics_personal_care': 'Cosmetics & Personal Care',
+            'other': 'Other',
+          }
+          setIndustries(fallbackCodes)
+          setIndustryMap(fallbackMap)
+        } else {
+          const industryCodes = data?.map((item) => item.industry_code) || []
+          const map: Record<string, string> = {}
+          data?.forEach((item) => {
+            map[item.industry_code] = item.industry_name
+          })
+          if (industryCodes.length > 0) {
+            setIndustries(industryCodes)
+            setIndustryMap(map)
+          } else {
+            // Fallback
+            const fallbackCodes = [
+              'supplements_food_ingredients',
+              'chemicals_raw_materials',
+              'pharmaceuticals',
+              'cosmetics_personal_care',
+              'other',
+            ]
+            const fallbackMap: Record<string, string> = {
+              'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
+              'chemicals_raw_materials': 'Chemicals & Raw Materials',
+              'pharmaceuticals': 'Pharmaceuticals',
+              'cosmetics_personal_care': 'Cosmetics & Personal Care',
+              'other': 'Other',
+            }
+            setIndustries(fallbackCodes)
+            setIndustryMap(fallbackMap)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading industries:', error)
+        // Fallback to default industries
+        const fallbackCodes = [
+          'supplements_food_ingredients',
+          'chemicals_raw_materials',
+          'pharmaceuticals',
+          'cosmetics_personal_care',
+          'other',
+        ]
+        const fallbackMap: Record<string, string> = {
+          'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
+          'chemicals_raw_materials': 'Chemicals & Raw Materials',
+          'pharmaceuticals': 'Pharmaceuticals',
+          'cosmetics_personal_care': 'Cosmetics & Personal Care',
+          'other': 'Other',
+        }
+        setIndustries(fallbackCodes)
+        setIndustryMap(fallbackMap)
+      } finally {
+        setIsLoadingIndustries(false)
+      }
+    }
+
+    loadIndustries()
+  }, [])
 
   // Get user email and auto-fill domain, and load existing organization data
   useEffect(() => {
@@ -210,8 +291,10 @@ export default function OrganizationSetup() {
               setIsSubsequentUser(true)
               
               // Populate form with existing data (for subsequent users)
-              if (orgByDomain.industry) {
+              if (orgByDomain.industry && industries.includes(orgByDomain.industry)) {
                 setValue('industry', orgByDomain.industry as OrganizationSetupFormData['industry'])
+              } else if (industries.length > 0) {
+                setValue('industry', industries[0] as OrganizationSetupFormData['industry'])
               }
               if (orgByDomain.company_size) {
                 setValue('companySize', orgByDomain.company_size as OrganizationSetupFormData['companySize'])
@@ -239,8 +322,10 @@ export default function OrganizationSetup() {
                 if (organization.name) {
                   setValue('companyName', organization.name)
                 }
-                if (organization.industry) {
+                if (organization.industry && industries.includes(organization.industry)) {
                   setValue('industry', organization.industry as OrganizationSetupFormData['industry'])
+                } else if (industries.length > 0) {
+                  setValue('industry', industries[0] as OrganizationSetupFormData['industry'])
                 }
                 if (organization.company_size) {
                   setValue('companySize', organization.company_size as OrganizationSetupFormData['companySize'])
@@ -268,7 +353,7 @@ export default function OrganizationSetup() {
     }
 
     loadUserData()
-  }, [router, setValue])
+  }, [router, setValue, industries])
 
   // Filter role suggestions based on input
   useEffect(() => {
@@ -667,11 +752,15 @@ export default function OrganizationSetup() {
                   <SelectValue placeholder="Select an industry" />
                 </SelectTrigger>
                 <SelectContent>
-                  {INDUSTRIES.map((industry) => (
-                    <SelectItem key={industry} value={industry}>
-                      {industry}
-                    </SelectItem>
-                  ))}
+                  {isLoadingIndustries ? (
+                    <SelectItem value="loading" disabled>Loading industries...</SelectItem>
+                  ) : (
+                    industries.map((industryCode) => (
+                      <SelectItem key={industryCode} value={industryCode}>
+                        {industryMap[industryCode] || industryCode}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               {errors.industry && (
