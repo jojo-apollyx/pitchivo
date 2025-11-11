@@ -271,11 +271,33 @@ export function withApiHandler<T = any>(
       return Response.json(result)
     } catch (error: any) {
       console.error(`[${endpoint}] Error:`, error)
-      const status = error.message?.includes('Forbidden') ? 403
-        : error.message?.includes('Unauthorized') ? 401
-        : 500
+      
+      // Determine status code based on error type
+      let status = 500
+      const errorMessage = error.message || 'Internal server error'
+      
+      if (errorMessage.includes('Forbidden')) {
+        status = 403
+      } else if (errorMessage.includes('Unauthorized')) {
+        status = 401
+      } else if (
+        errorMessage.includes('not found') ||
+        errorMessage.includes('No product template found') ||
+        errorMessage.includes('does not exist') ||
+        error.status === 404
+      ) {
+        status = 404
+      } else if (
+        errorMessage.includes('Invalid') ||
+        errorMessage.includes('required') ||
+        errorMessage.includes('missing') ||
+        error.status === 400
+      ) {
+        status = 400
+      }
+      
       return Response.json(
-        { error: error.message || 'Internal server error' },
+        { error: errorMessage },
         { status }
       )
     }

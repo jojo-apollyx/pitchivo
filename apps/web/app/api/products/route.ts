@@ -1,7 +1,6 @@
 import { withApiHandler } from '@/lib/impersonation'
 import { productsResponseSchema, createProductSchema, createProductInitSchema, productSchema, createProductWithTemplateResponseSchema, templateResponseSchema } from '@/lib/api/schemas'
-import { generateIndustryTemplate } from '@/lib/api/template-generation'
-import { validateGeneratedTemplate } from '@/lib/api/template-validation'
+import { detectProductIndustry } from '@/lib/api/industry-detection'
 
 /**
  * EXAMPLE: Get products for current user's organization
@@ -64,23 +63,40 @@ export const POST = withApiHandler(
         throw new Error('Organization not found')
       }
 
-      if (!org.industry) {
-        throw new Error('Organization does not have an industry set')
+      // Get all available industries
+      const { data: availableIndustries, error: industriesError } = await supabase
+        .from('industries')
+        .select('industry_code, industry_name')
+        .eq('is_enabled', true)
+
+      if (industriesError || !availableIndustries || availableIndustries.length === 0) {
+        throw new Error('No industries available')
       }
 
-      const industryCode = org.industry
+      // Use AI to detect the most suitable industry for this product
+      const detectedIndustryCode = await detectProductIndustry({
+        productName: initInput.product_name_raw,
+        orgContext: {
+          orgName: org.name,
+          orgIndustry: org.industry || undefined,
+          orgDescription: org.description || undefined,
+        },
+        availableIndustries,
+      })
 
-      // Get industry details
+      // Get industry details for the detected industry
       const { data: industry, error: industryError } = await supabase
         .from('industries')
         .select('industry_code, industry_name, description')
-        .eq('industry_code', industryCode)
+        .eq('industry_code', detectedIndustryCode)
         .eq('is_enabled', true)
         .single()
 
       if (industryError || !industry) {
-        throw new Error(`Industry ${industryCode} not found or disabled`)
+        throw new Error(`Detected industry ${detectedIndustryCode} not found or disabled`)
       }
+
+      const industryCode = detectedIndustryCode
 
       // Check if template exists
       const { data: existingTemplate, error: templateError } = await supabase
@@ -97,56 +113,19 @@ export const POST = withApiHandler(
         throw new Error(`Failed to check templates: ${templateError.message}`)
       }
 
-      let template: any
-      let templateId: string
-      let templateVersion: string
-
-      if (existingTemplate) {
-        template = existingTemplate.schema_json
-        templateId = existingTemplate.template_id
-        templateVersion = existingTemplate.version || '1.0.0'
-      } else {
-        // Generate new template
-        const generatedTemplate = await generateIndustryTemplate({
-          industryCode,
-          industryName: industry.industry_name,
-          orgContext: {
-            orgName: org.name,
-            orgDescription: org.description || undefined,
-          },
-        })
-
-        // Save template
-        const { data: savedTemplate, error: saveError } = await supabase
-          .from('product_templates')
-          .insert({
-            industry_code: industryCode,
-            template_name: `Default ${industry.industry_name} Template`,
-            schema_json: generatedTemplate,
-            version: generatedTemplate.version,
-            is_active: true,
-            is_default: true,
-          })
-          .select()
-          .single()
-
-        if (saveError) {
-          console.error('[Product Creation] Failed to save template:', saveError)
-          throw new Error(`Failed to save generated template: ${saveError.message}`)
-        }
-        
-        // Template saved successfully
-        template = generatedTemplate
-        templateId = savedTemplate.template_id // UUID from database
-        templateVersion = savedTemplate.version || generatedTemplate.version
+      if (!existingTemplate) {
+        throw new Error(
+          `No product template found for industry "${industry.industry_name}". ` +
+          `Please contact an administrator to create a template for this industry.`
+        )
       }
 
       // Return template response matching TemplateResponse schema
       const templateResponse = {
-        template,
-        template_id: templateId,
-        version: templateVersion,
-        source: existingTemplate ? 'database' : 'ai_generated_and_saved',
+        template: existingTemplate.schema_json,
+        template_id: existingTemplate.template_id,
+        version: existingTemplate.version || '1.0.0',
+        source: 'database' as const,
         industry_code: industryCode,
         industry_name: industry.industry_name,
       }

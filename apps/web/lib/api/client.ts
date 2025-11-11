@@ -42,7 +42,10 @@ export async function apiClient<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }))
-    throw new Error(error.error || `API error: ${response.statusText}`)
+    const errorMessage = error.error || `API error: ${response.statusText}`
+    const apiError = new Error(errorMessage) as Error & { status?: number }
+    apiError.status = response.status
+    throw apiError
   }
 
   return response.json()

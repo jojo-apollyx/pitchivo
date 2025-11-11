@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Package, ArrowLeft, Loader2, CheckCircle2, Sparkles } from 'lucide-react'
+import { Package, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,13 +21,14 @@ type ProductNameFormData = z.infer<typeof productNameSchema>
 
 export default function CreateProductPage() {
   const router = useRouter()
-  const [step, setStep] = useState<'name' | 'loading' | 'form'>('name')
+  const [step, setStep] = useState<'name' | 'loading' | 'form' | 'error'>('name')
+  const [errorMessage, setErrorMessage] = useState<string>('')
   const [template, setTemplate] = useState<TemplateSchema | null>(null)
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [productNameRaw, setProductNameRaw] = useState('')
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [loadingState, setLoadingState] = useState<{
-    stage: 'checking_industry' | 'checking_template' | 'generating_template' | 'ready'
+    stage: 'analyzing_product' | 'checking_template' | 'ready'
     message: string
     industryName?: string
   } | null>(null)
@@ -51,57 +52,39 @@ export default function CreateProductPage() {
     setProductNameRaw(data.product_name_raw)
     setStep('loading')
     setLoadingState({
-      stage: 'checking_industry',
-      message: 'Checking your organization...',
+      stage: 'analyzing_product',
+      message: 'Analyzing product to determine industry...',
     })
 
     try {
-      // Show loading states progressively
-      setLoadingState({
-        stage: 'checking_template',
-        message: 'Looking for existing template...',
-      })
-
-      // Start the API call
+      // Start the API call (this will use AI to detect industry)
       const responsePromise = getTemplateMutation.mutateAsync({
         product_name_raw: data.product_name_raw,
       })
 
-      // After a short delay, if still loading, show that we might be generating
-      // (This gives a better UX - we show generating state during actual generation)
+      // Update state after a moment to show template checking
       setTimeout(() => {
         setLoadingState((prev) => {
-          if (prev?.stage === 'checking_template') {
+          if (prev?.stage === 'analyzing_product') {
             return {
-              stage: 'generating_template',
-              message: 'No template found. Generating a custom template...',
+              stage: 'checking_template',
+              message: 'Loading template for detected industry...',
             }
           }
           return prev
         })
-      }, 1000)
+      }, 1500)
 
       const response = await responsePromise
 
-      // Check if template was generated or found
-      if (response.source === 'database') {
-        // Template was found
-        setLoadingState({
-          stage: 'ready',
-          message: 'Template found!',
-          industryName: response.industry_name,
-        })
-        // Small delay to show success message
-        await new Promise((resolve) => setTimeout(resolve, 600))
-      } else {
-        // Template was generated
-        setLoadingState({
-          stage: 'ready',
-          message: 'Template generated successfully!',
-          industryName: response.industry_name,
-        })
-        await new Promise((resolve) => setTimeout(resolve, 800))
-      }
+      // Template was found for detected industry
+      setLoadingState({
+        stage: 'ready',
+        message: `Template found for ${response.industry_name}!`,
+        industryName: response.industry_name,
+      })
+      // Small delay to show success message
+      await new Promise((resolve) => setTimeout(resolve, 600))
 
       setTemplate(response.template as TemplateSchema)
       setTemplateId(response.template_id)
@@ -110,14 +93,20 @@ export default function CreateProductPage() {
     } catch (error) {
       console.error('Error loading template:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load template'
-      // Extract first line for toast, full message in console
-      const firstLine = errorMessage.split('\n')[0]
-      toast.error(firstLine)
-      // Log full error details to console for debugging
-      if (errorMessage.includes('\n')) {
-        console.error('Full error details:', errorMessage)
+      
+      // Check if it's a "no template found" error
+      if (errorMessage.includes('No product template found')) {
+        setErrorMessage(errorMessage)
+        setStep('error')
+      } else {
+        // Other errors - show toast and go back
+        const firstLine = errorMessage.split('\n')[0]
+        toast.error(firstLine)
+        if (errorMessage.includes('\n')) {
+          console.error('Full error details:', errorMessage)
+        }
+        setStep('name')
       }
-      setStep('name')
       setLoadingState(null)
     }
   }
@@ -353,10 +342,10 @@ export default function CreateProductPage() {
       }
       
       switch (loadingState.stage) {
-        case 'checking_industry':
+        case 'analyzing_product':
           return {
-            title: 'Checking your organization',
-            description: 'Verifying your industry settings...',
+            title: 'Analyzing product',
+            description: 'Using AI to determine the most suitable industry for your product...',
             showSpinner: true,
           }
         case 'checking_template':
@@ -364,15 +353,6 @@ export default function CreateProductPage() {
             title: 'Looking for template',
             description: 'Searching for existing product template...',
             showSpinner: true,
-          }
-        case 'generating_template':
-          return {
-            title: 'Generating template',
-            description: loadingState.industryName
-              ? `Creating a custom template for ${loadingState.industryName}. This may take up to 1 minute on first generation...`
-              : 'Creating a custom template. This may take up to 1 minute on first generation...',
-            showSpinner: true,
-            showWarning: true,
           }
         case 'ready':
           return {
@@ -405,26 +385,13 @@ export default function CreateProductPage() {
                 </div>
               ) : loadingInfo.showSpinner ? (
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  {loadingState?.stage === 'generating_template' ? (
-                    <Sparkles className="h-8 w-8 text-primary animate-pulse" />
-                  ) : (
-                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                  )}
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
                 </div>
               ) : null}
             </div>
 
             <h2 className="text-2xl font-semibold mb-2">{loadingInfo.title}</h2>
             <p className="text-muted-foreground mb-6">{loadingInfo.description}</p>
-
-            {loadingInfo.showWarning && (
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  <strong>First time generation:</strong> We're creating a custom template tailored to your industry. 
-                  This process uses AI and may take 30-60 seconds. Future products will load instantly!
-                </p>
-              </div>
-            )}
 
             {loadingInfo.showSpinner && (
               <div className="space-y-2">
@@ -434,6 +401,50 @@ export default function CreateProductPage() {
                 <p className="text-xs text-muted-foreground">Please wait...</p>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error screen - template not found
+  if (step === 'error') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+        <div className="max-w-md w-full mx-auto px-4">
+          <div className="bg-card/50 backdrop-blur-sm rounded-xl p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="h-16 w-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <AlertCircle className="h-8 w-8 text-amber-500" />
+              </div>
+            </div>
+
+            <h2 className="text-2xl font-semibold mb-2">Template Not Found</h2>
+            <p className="text-muted-foreground mb-6">
+              {errorMessage || 'No product template is available for your industry.'}
+            </p>
+
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-6">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                <strong>Industry not supported:</strong> Product templates need to be created by an administrator 
+                for your industry before you can add products. Please contact support or an administrator.
+              </p>
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStep('name')
+                  setErrorMessage('')
+                }}
+              >
+                Try Again
+              </Button>
+              <Button onClick={() => router.push('/dashboard/products')}>
+                Back to Products
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -480,7 +491,7 @@ export default function CreateProductPage() {
                     <p className="text-sm text-destructive">{errors.product_name_raw.message}</p>
                   )}
                   <p className="text-sm text-muted-foreground">
-                    We'll generate a custom form based on your industry
+                    We'll load a form template based on your industry
                   </p>
                 </div>
 
