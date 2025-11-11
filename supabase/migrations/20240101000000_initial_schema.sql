@@ -233,6 +233,7 @@ BEGIN
   org_id := get_or_create_organization(NEW.email);
   
   -- Create user profile
+  -- org_role is set to NULL by default - user must complete setup form to set their role
   INSERT INTO user_profiles (id, email, domain, organization_id, full_name, is_pitchivo_admin, org_role)
   VALUES (
     NEW.id,
@@ -241,7 +242,7 @@ BEGIN
     org_id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     COALESCE((NEW.raw_user_meta_data->>'is_pitchivo_admin')::boolean, false),
-    COALESCE(NEW.raw_user_meta_data->>'org_role', 'user')
+    NEW.raw_user_meta_data->>'org_role' -- Only set if explicitly provided, otherwise NULL
   );
   
   RETURN NEW;

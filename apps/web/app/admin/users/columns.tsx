@@ -30,7 +30,8 @@ export const createUsersColumns = (
     header: 'Role',
     cell: ({ row }) => {
       const role = row.getValue('org_role') as string
-      return role ? role.charAt(0).toUpperCase() + role.slice(1) : '-'
+      // Display the full role title as stored (e.g., "Sales Manager", "Founder")
+      return role || '-'
     },
   },
   {

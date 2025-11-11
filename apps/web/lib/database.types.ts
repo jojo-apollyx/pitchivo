@@ -159,7 +159,7 @@ export interface Database {
           full_name: string | null
           avatar_url: string | null
           is_pitchivo_admin: boolean
-          org_role: 'marketing' | 'sales' | 'user' | null
+          org_role: string | null
           organization_id: string | null
           domain: string
           metadata: Json
@@ -202,7 +202,7 @@ export interface Database {
           full_name: string | null
           avatar_url: string | null
           is_pitchivo_admin: boolean
-          org_role: 'marketing' | 'sales' | 'user' | null
+          org_role: string | null
           domain: string
           metadata: Json
           created_at: string

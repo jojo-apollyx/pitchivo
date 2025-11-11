@@ -37,10 +37,10 @@ export default function AuthCallback() {
         }
 
         // Check if user has completed organization setup
-        // First get the user profile to get their domain
+        // First get the user profile to get their domain and metadata
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
-          .select('id, domain, organization_id')
+          .select('id, domain, organization_id, metadata, org_role')
           .eq('id', user.id)
           .single()
 
@@ -59,7 +59,6 @@ export default function AuthCallback() {
 
         // Check if there's an organization for the user's domain with completed onboarding
         // This is more reliable than checking organization_id since organizations are domain-based
-        // Query for organizations with completed onboarding for this domain
         const { data: organizations, error: orgError } = await supabase
           .from('organizations')
           .select('id, onboarding_completed_at')
@@ -68,30 +67,43 @@ export default function AuthCallback() {
           .limit(1)
         
         const organization = organizations?.[0]
+        const hasOrgOnboardingCompleted = !!organization?.onboarding_completed_at
 
         console.log('[Auth Callback] Organization check:', {
           domain: profile.domain,
           organization,
           error: orgError,
-          onboarding_completed_at: organization?.onboarding_completed_at
+          onboarding_completed_at: organization?.onboarding_completed_at,
+          hasOrgOnboardingCompleted
         })
 
-        const hasOrganization = !!organization?.onboarding_completed_at
-        
-        console.log('[Auth Callback] Has organization check:', {
-          hasOrganization,
-          hasOnboardingCompleted: !!organization?.onboarding_completed_at,
-          organizationId: organization?.id
+        // Check if user has completed their profile setup
+        // For first user: org onboarding must be completed
+        // For subsequent users: org onboarding must be completed AND user must have org_role set
+        const hasUserCompletedProfile = !!profile.org_role
+
+        console.log('[Auth Callback] User profile check:', {
+          hasOrgOnboardingCompleted,
+          hasUserCompletedProfile,
+          org_role: profile.org_role
         })
-        
-        if (!hasOrganization) {
-          console.log('[Auth Callback] Redirecting to setup - organization not complete')
+
+        // If organization onboarding is not completed, user needs to complete setup
+        if (!hasOrgOnboardingCompleted) {
+          console.log('[Auth Callback] Redirecting to setup - organization onboarding not complete')
           router.push('/setup/organization')
           return
         }
 
-        // Otherwise, redirect to dashboard
-        console.log('[Auth Callback] Redirecting to dashboard - organization setup complete')
+        // If organization onboarding is completed but user hasn't completed their profile, they need to complete it
+        if (hasOrgOnboardingCompleted && !hasUserCompletedProfile) {
+          console.log('[Auth Callback] Redirecting to setup - user profile not complete')
+          router.push('/setup/organization')
+          return
+        }
+
+        // Both organization and user profile are complete, go to dashboard
+        console.log('[Auth Callback] Redirecting to dashboard - both organization and user profile complete')
         router.push('/dashboard')
       } catch (error) {
         console.error('[Auth Callback] Unexpected error:', error)

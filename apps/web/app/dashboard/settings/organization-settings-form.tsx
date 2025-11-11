@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Building2, Save } from 'lucide-react'
+import { Building2, Save, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,18 +39,21 @@ interface OrganizationSettingsFormProps {
     company_size: string | null
     pitchivo_domain: string | null
   }
+  userRole: string | null
 }
 
-export function OrganizationSettingsForm({ organization }: OrganizationSettingsFormProps) {
+export function OrganizationSettingsForm({ organization, userRole }: OrganizationSettingsFormProps) {
   const [companySize, setCompanySize] = useState(organization.company_size || '')
   const [industry, setIndustry] = useState(organization.industry || '')
+  const [role, setRole] = useState(userRole || '')
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
     const hasSizeChange = companySize !== (organization.company_size || '')
     const hasIndustryChange = industry !== (organization.industry || '')
+    const hasRoleChange = role !== (userRole || '')
     
-    if (!hasSizeChange && !hasIndustryChange) {
+    if (!hasSizeChange && !hasIndustryChange && !hasRoleChange) {
       toast.info('No changes to save')
       return
     }
@@ -59,25 +62,49 @@ export function OrganizationSettingsForm({ organization }: OrganizationSettingsF
     try {
       const supabase = createClient()
       
-      const { data: success, error } = await supabase.rpc('update_user_organization', {
-        p_org_id: organization.id,
-        p_company_size: companySize || null,
-        p_industry: industry || null,
-      })
+      // Update organization fields
+      if (hasSizeChange || hasIndustryChange) {
+        const { data: success, error } = await supabase.rpc('update_user_organization', {
+          p_org_id: organization.id,
+          p_company_size: companySize || null,
+          p_industry: industry || null,
+        })
 
-      if (error) {
-        throw error
+        if (error) {
+          throw error
+        }
+
+        if (!success) {
+          throw new Error('Failed to update organization')
+        }
       }
+      
+      // Update user role if changed
+      if (hasRoleChange) {
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          throw new Error('User not found')
+        }
+        
+        const { error: roleError } = await supabase
+          .from('user_profiles')
+          .update({ org_role: role || null })
+          .eq('id', user.id)
 
-      if (!success) {
-        throw new Error('Failed to update organization')
+        if (roleError) {
+          throw roleError
+        }
       }
 
       const changes = []
       if (hasSizeChange) changes.push('company size')
       if (hasIndustryChange) changes.push('industry')
+      if (hasRoleChange) changes.push('role')
       
       toast.success(`${changes.join(' and ').replace(/, ([^,]*)$/, ' and $1')} updated successfully`)
+      
+      // Refresh the page to show updated values
+      window.location.reload()
     } catch (error) {
       console.error('Error updating organization:', error)
       toast.error('Failed to update organization. Please try again.')
@@ -86,7 +113,7 @@ export function OrganizationSettingsForm({ organization }: OrganizationSettingsF
     }
   }
 
-  const hasChanges = companySize !== (organization.company_size || '') || industry !== (organization.industry || '')
+  const hasChanges = companySize !== (organization.company_size || '') || industry !== (organization.industry || '') || role !== (userRole || '')
 
   return (
     <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
@@ -162,6 +189,19 @@ export function OrganizationSettingsForm({ organization }: OrganizationSettingsF
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="role" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            Your Role / Title
+          </Label>
+          <Input
+            id="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            placeholder="e.g., Sales Manager, Founder, CEO"
+            className="transition-all duration-300"
+          />
         </div>
         <div className="flex justify-end pt-4">
           <Button 

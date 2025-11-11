@@ -3,7 +3,7 @@ import { OrganizationSettingsForm } from './organization-settings-form'
 import { ThemeColorSettings } from '@/components/dashboard/theme-color-settings'
 
 export default async function SettingsPage() {
-  const { organization } = await getEffectiveUserAndProfile()
+  const { organization, profile } = await getEffectiveUserAndProfile()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
@@ -26,7 +26,7 @@ export default async function SettingsPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
           {/* Organization Information */}
           {organization && (
-            <OrganizationSettingsForm organization={organization} />
+            <OrganizationSettingsForm organization={organization} userRole={profile?.org_role || null} />
           )}
 
           {/* Team Members */}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -53,20 +53,24 @@ const ROLE_SUGGESTIONS = [
   'Business Owner',
 ]
 
-// Zod schema for form validation
-const organizationSetupSchema = z.object({
-  companyName: z
-    .string()
-    .min(2, 'Company name must be at least 2 characters')
-    .max(100, 'Company name must be less than 100 characters')
-    .regex(/^[a-zA-Z0-9\s&.,'-]+$/, 'Company name contains invalid characters'),
-  domain: z
-    .string()
-    .min(1, 'Domain is required')
-    .regex(
-      /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/,
-      'Please enter a valid domain name'
-    ),
+// Zod schema for form validation - will be made conditional based on isSubsequentUser
+const createOrganizationSetupSchema = (isSubsequentUser: boolean) => z.object({
+  companyName: isSubsequentUser 
+    ? z.string().optional()
+    : z
+        .string()
+        .min(2, 'Company name must be at least 2 characters')
+        .max(100, 'Company name must be less than 100 characters')
+        .regex(/^[a-zA-Z0-9\s&.,'-]+$/, 'Company name contains invalid characters'),
+  domain: isSubsequentUser
+    ? z.string().optional()
+    : z
+        .string()
+        .min(1, 'Domain is required')
+        .regex(
+          /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/,
+          'Please enter a valid domain name'
+        ),
   industry: z.enum(
     [
       'Food & Supplement Ingredients',
@@ -93,7 +97,7 @@ const organizationSetupSchema = z.object({
     .max(500, 'Description must be less than 500 characters'),
 })
 
-type OrganizationSetupFormData = z.infer<typeof organizationSetupSchema>
+type OrganizationSetupFormData = z.infer<ReturnType<typeof createOrganizationSetupSchema>>
 
 export default function OrganizationSetup() {
   const router = useRouter()
@@ -106,7 +110,13 @@ export default function OrganizationSetup() {
   const [logoError, setLogoError] = useState<string | null>(null)
   const [roleSuggestions, setRoleSuggestions] = useState<string[]>([])
   const [showRoleSuggestions, setShowRoleSuggestions] = useState(false)
+  const [isSubsequentUser, setIsSubsequentUser] = useState(false)
+  const [existingOrgId, setExistingOrgId] = useState<string | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Memoize schema to update when isSubsequentUser changes
+  const schema = useMemo(() => createOrganizationSetupSchema(isSubsequentUser), [isSubsequentUser])
 
   const {
     register,
@@ -115,7 +125,7 @@ export default function OrganizationSetup() {
     setValue,
     watch,
   } = useForm<OrganizationSetupFormData>({
-    resolver: zodResolver(organizationSetupSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       companyName: '',
       domain: '',
@@ -131,96 +141,132 @@ export default function OrganizationSetup() {
   // Get user email and auto-fill domain, and load existing organization data
   useEffect(() => {
     const loadUserData = async () => {
-      const supabase = createClient()
-      
-      // Wait a bit for session to be established
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      // First check session
-      let session = null
-      let retries = 0
-      while (!session && retries < 3) {
-        const { data: { session: currentSession } } = await supabase.auth.getSession()
-        session = currentSession
-        if (!session) {
-          await new Promise(resolve => setTimeout(resolve, 500))
-          retries++
-        }
-      }
-      
-      if (!session) {
-        toast.error('Session expired', {
-          description: 'Please sign in again to continue.',
-        })
-        router.push('/')
-        return
-      }
-      
-      // Get user from session
-      const { data: { user }, error } = await supabase.auth.getUser()
-      
-      if (error || !user) {
-        // Clear invalid session
-        await supabase.auth.signOut()
-        // Show toast and redirect
-        toast.error('Session expired', {
-          description: 'Please sign in again to continue.',
-        })
-        router.push('/')
-        return
-      }
-      
-      if (user?.email) {
-        setUserEmail(user.email)
-        const domain = user.email.split('@')[1]
-        if (domain) {
-          setValue('domain', domain)
-        }
-
-        // Load existing organization data if it exists
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('organization_id')
-          .eq('id', user.id)
-          .single()
-
-        if (profile?.organization_id) {
-          const { data: organization } = await supabase
-            .from('organizations')
-            .select('name, industry, company_size, description, logo_url')
-            .eq('id', profile.organization_id)
-            .single()
-
-          if (organization) {
-            // Populate form with existing data
-            if (organization.name) {
-              setValue('companyName', organization.name)
-            }
-            if (organization.industry) {
-              setValue('industry', organization.industry as OrganizationSetupFormData['industry'])
-            }
-            if (organization.company_size) {
-              setValue('companySize', organization.company_size as OrganizationSetupFormData['companySize'])
-            }
-            if (organization.description) {
-              setValue('description', organization.description)
-            }
-            if (organization.logo_url) {
-              setLogoPreview(organization.logo_url)
-              // Note: We can't set the file, but we can show the preview
-            }
+      try {
+        const supabase = createClient()
+        
+        // Wait a bit for session to be established
+        await new Promise(resolve => setTimeout(resolve, 300))
+        
+        // First check session
+        let session = null
+        let retries = 0
+        while (!session && retries < 3) {
+          const { data: { session: currentSession } } = await supabase.auth.getSession()
+          session = currentSession
+          if (!session) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+            retries++
           }
         }
-      } else {
-        // Clear session and show toast
-        await supabase.auth.signOut()
-        toast.error('Session expired', {
-          description: 'Please sign in again to continue.',
-        })
-        router.push('/')
+        
+        if (!session) {
+          toast.error('Session expired', {
+            description: 'Please sign in again to continue.',
+          })
+          router.push('/')
+          return
+        }
+        
+        // Get user from session
+        const { data: { user }, error } = await supabase.auth.getUser()
+        
+        if (error || !user) {
+          // Clear invalid session
+          await supabase.auth.signOut()
+          // Show toast and redirect
+          toast.error('Session expired', {
+            description: 'Please sign in again to continue.',
+          })
+          router.push('/')
+          return
+        }
+        
+        if (user?.email) {
+          setUserEmail(user.email)
+          const domain = user.email.split('@')[1]
+          if (domain) {
+            setValue('domain', domain)
+          }
+
+          // Check if organization exists for this domain and if onboarding is completed
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('organization_id, metadata, org_role')
+            .eq('id', user.id)
+            .single()
+
+          // Check if organization exists for this domain
+          const { data: orgByDomain } = await supabase
+            .from('organizations')
+            .select('id, name, industry, company_size, description, logo_url, onboarding_completed_at')
+            .eq('domain', domain)
+            .single()
+
+          if (orgByDomain) {
+            setExistingOrgId(orgByDomain.id)
+            
+            // If onboarding is already completed, this is a subsequent user
+            if (orgByDomain.onboarding_completed_at) {
+              setIsSubsequentUser(true)
+              
+              // Populate form with existing data (for subsequent users)
+              if (orgByDomain.industry) {
+                setValue('industry', orgByDomain.industry as OrganizationSetupFormData['industry'])
+              }
+              if (orgByDomain.company_size) {
+                setValue('companySize', orgByDomain.company_size as OrganizationSetupFormData['companySize'])
+              }
+              if (orgByDomain.description) {
+                setValue('description', orgByDomain.description)
+              }
+              if (orgByDomain.logo_url) {
+                setLogoPreview(orgByDomain.logo_url)
+              }
+              
+              // Load user's role from org_role if exists
+              if (profile?.org_role) {
+                setValue('role', profile.org_role)
+              }
+            } else if (profile?.organization_id && !orgByDomain.onboarding_completed_at) {
+              // Organization exists but onboarding not completed - populate all fields (first user continuing setup)
+              const { data: organization } = await supabase
+                .from('organizations')
+                .select('name, industry, company_size, description, logo_url')
+                .eq('id', profile.organization_id)
+                .single()
+
+              if (organization) {
+                if (organization.name) {
+                  setValue('companyName', organization.name)
+                }
+                if (organization.industry) {
+                  setValue('industry', organization.industry as OrganizationSetupFormData['industry'])
+                }
+                if (organization.company_size) {
+                  setValue('companySize', organization.company_size as OrganizationSetupFormData['companySize'])
+                }
+                if (organization.description) {
+                  setValue('description', organization.description)
+                }
+                if (organization.logo_url) {
+                  setLogoPreview(organization.logo_url)
+                }
+              }
+            }
+          }
+        } else {
+          // Clear session and show toast
+          await supabase.auth.signOut()
+          toast.error('Session expired', {
+            description: 'Please sign in again to continue.',
+          })
+          router.push('/')
+        }
+      } finally {
+        setIsInitializing(false)
       }
     }
-    
+
     loadUserData()
   }, [router, setValue])
 
@@ -278,8 +324,8 @@ export default function OrganizationSetup() {
   }
 
   const onSubmit = async (data: OrganizationSetupFormData) => {
-    // Validate logo - only required if no existing logo
-    if (!logoFile && !logoPreview) {
+    // For subsequent users, logo is optional
+    if (!isSubsequentUser && !logoFile && !logoPreview) {
       setLogoError('Please upload a company logo')
       toast.error('Please upload a company logo')
       return
@@ -341,70 +387,111 @@ export default function OrganizationSetup() {
         logoUrl = logoPreview
       }
 
-      // Get or create organization
-      const { data: orgId, error: orgError } = await supabase.rpc('get_or_create_organization', {
-        email: user.email!,
-        company_name: data.companyName,
-        industry: data.industry,
-        company_size: data.companySize,
-        description: data.description || null,
-        use_cases: [],
-      })
+      let orgId: string
 
-      if (orgError) {
-        throw orgError
+      if (isSubsequentUser && existingOrgId) {
+        // For subsequent users, just update the existing organization
+        orgId = existingOrgId
+        
+        // Ensure company name is not being updated (safeguard)
+        // Subsequent users cannot change company name
+        if (data.companyName) {
+          console.warn('Subsequent user attempted to update company name - ignoring')
+        }
+        
+        // Update organization (don't mark onboarding as completed, don't update name)
+        const { data: updateSuccess, error: updateError } = await supabase.rpc('update_user_organization', {
+          p_org_id: orgId,
+          p_industry: data.industry,
+          p_company_size: data.companySize,
+          p_description: data.description || null,
+          p_use_cases: [],
+          p_logo_url: logoUrl || null, // Only update if new logo uploaded
+          // Explicitly don't pass p_name to prevent any updates
+        })
+
+        if (updateError) {
+          throw updateError
+        }
+
+        if (!updateSuccess) {
+          throw new Error('Failed to update organization')
+        }
+      } else {
+        // For first user, get or create organization
+        // Ensure companyName is provided for first user
+        if (!data.companyName) {
+          toast.error('Company name is required')
+          setIsLoading(false)
+          return
+        }
+        
+        const { data: createdOrgId, error: orgError } = await supabase.rpc('get_or_create_organization', {
+          email: user.email!,
+          company_name: data.companyName,
+          industry: data.industry,
+          company_size: data.companySize,
+          description: data.description || null,
+          use_cases: [],
+        })
+
+        if (orgError) {
+          throw orgError
+        }
+
+        if (!createdOrgId) {
+          throw new Error('Failed to get or create organization')
+        }
+
+        orgId = createdOrgId
+
+        // Update organization with all setup details and mark as completed
+        const completedAt = new Date().toISOString()
+        const { data: updateSuccess, error: updateError } = await supabase.rpc('update_user_organization', {
+          p_org_id: orgId,
+          p_name: data.companyName || null,
+          p_industry: data.industry,
+          p_company_size: data.companySize,
+          p_description: data.description || null,
+          p_use_cases: [],
+          p_logo_url: logoUrl,
+          p_onboarding_completed_at: completedAt,
+        })
+
+        if (updateError) {
+          throw updateError
+        }
+
+        if (!updateSuccess) {
+          throw new Error('Failed to update organization')
+        }
+
+        // Fetch the updated organization to get pitchivo_domain (only for first user)
+        const { data: updatedOrg } = await supabase
+          .from('organizations')
+          .select('pitchivo_domain')
+          .eq('id', orgId)
+          .single()
+
+        if (updatedOrg?.pitchivo_domain) {
+          setPitchivoDomain(updatedOrg.pitchivo_domain)
+        }
       }
 
-      if (!orgId) {
-        throw new Error('Failed to get or create organization')
-      }
-
-      // Update organization with all setup details and mark as completed
-      // Use RPC function to bypass RLS restrictions
-      const completedAt = new Date().toISOString()
-      const { data: updateSuccess, error: updateError } = await supabase.rpc('update_user_organization', {
-        p_org_id: orgId,
-        p_name: data.companyName,
-        p_industry: data.industry,
-        p_company_size: data.companySize,
-        p_description: data.description || null,
-        p_use_cases: [],
-        p_logo_url: logoUrl,
-        p_onboarding_completed_at: completedAt,
-      })
-
-      if (updateError) {
-        throw updateError
-      }
-
-      if (!updateSuccess) {
-        throw new Error('Failed to update organization')
-      }
-
-      // Fetch the updated organization to get pitchivo_domain
-      const { data: updatedOrg } = await supabase
-        .from('organizations')
-        .select('pitchivo_domain')
-        .eq('id', orgId)
-        .single()
-
-      if (updatedOrg?.pitchivo_domain) {
-        setPitchivoDomain(updatedOrg.pitchivo_domain)
-      }
-
-      // Update user role
+      // Save actual role title to org_role (used for admin display)
       const { error: roleError } = await supabase
         .from('user_profiles')
-        .update({ org_role: data.role.toLowerCase().includes('sales') ? 'sales' : 
-                 data.role.toLowerCase().includes('marketing') ? 'marketing' : 'user' })
+        .update({ 
+          org_role: data.role // Save actual role title (e.g., "Sales Manager", "Founder")
+        })
         .eq('id', user.id)
 
       if (roleError) {
         console.error('Role update error:', roleError)
       }
 
-      // Send organization setup email (non-blocking)
-      if (user.email) {
+      // Send organization setup email (non-blocking) - only for first user
+      if (!isSubsequentUser && user.email && data.companyName) {
         sendOrganizationSetupEmail({
           to: user.email,
           userName: user.user_metadata?.full_name || user.email.split('@')[0],
@@ -415,7 +502,14 @@ export default function OrganizationSetup() {
         })
       }
 
-      // Show completion animation instead of immediate redirect
+      // For subsequent users, redirect directly to dashboard
+      if (isSubsequentUser) {
+        toast.success('Profile updated successfully!')
+        router.push('/dashboard')
+        return
+      }
+
+      // Show completion animation for first user
       setIsLoading(false)
       setShowCompletionAnimation(true)
     } catch (error) {
@@ -435,6 +529,20 @@ export default function OrganizationSetup() {
         onComplete={handleAnimationComplete}
         pitchivoDomain={pitchivoDomain}
       />
+    )
+  }
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-lg text-foreground/70">Loading...</p>
+        </div>
+      </div>
     )
   }
 
@@ -478,10 +586,12 @@ export default function OrganizationSetup() {
             <div className="text-center mb-8 sm:mb-12">
               <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 mb-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">
-                  Set up your organization
+                  {isSubsequentUser ? 'Complete your profile' : 'Set up your organization'}
                 </h1>
                 <p className="text-base sm:text-lg text-foreground/70">
-                  Let's personalize your workspace for your company.
+                  {isSubsequentUser 
+                    ? 'Update your profile information to get started.'
+                    : "Let's personalize your workspace for your company."}
                 </p>
               </div>
             </div>
@@ -489,52 +599,56 @@ export default function OrganizationSetup() {
             {/* Form */}
             <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
-            {/* Company Name */}
-            <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-base font-semibold flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Company Name *
-              </Label>
-                <Input
-                  id="companyName"
-                  placeholder="e.g., ABC Ingredients Co."
-                  {...register('companyName')}
-                  className={`text-base transition-all duration-300 ${errors.companyName ? 'border-destructive' : ''}`}
-                />
-              {errors.companyName && (
-                <p className="text-sm text-destructive">{errors.companyName.message}</p>
-              )}
-              {/* Warning about company name being non-editable */}
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-accent/10 border border-accent/30 text-sm">
-                <AlertTriangle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
-                <p className="text-foreground/80">
-                  <span className="font-semibold text-foreground">Important:</span> Company name cannot be changed after setup. Please pay attention to capitalization and spelling.
-                </p>
-              </div>
-            </div>
+            {/* Company Name - Only show for first user */}
+            {!isSubsequentUser && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="companyName" className="text-base font-semibold flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Company Name *
+                  </Label>
+                    <Input
+                      id="companyName"
+                      placeholder="e.g., ABC Ingredients Co."
+                      {...register('companyName')}
+                      className={`text-base transition-all duration-300 ${errors.companyName ? 'border-destructive' : ''}`}
+                    />
+                  {errors.companyName && (
+                    <p className="text-sm text-destructive">{errors.companyName.message}</p>
+                  )}
+                  {/* Warning about company name being non-editable */}
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-accent/10 border border-accent/30 text-sm">
+                    <AlertTriangle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                    <p className="text-foreground/80">
+                      <span className="font-semibold text-foreground">Important:</span> Company name cannot be changed after setup. Please pay attention to capitalization and spelling.
+                    </p>
+                  </div>
+                </div>
 
-            {/* Company Domain */}
-            <div className="space-y-2">
-              <Label htmlFor="domain" className="text-base font-semibold">
-                Company Domain *
-              </Label>
-                <Input
-                  id="domain"
-                  {...register('domain')}
-                  readOnly
-                  disabled
-                  className={`text-base bg-muted cursor-not-allowed transition-all duration-300 ${errors.domain ? 'border-destructive' : ''}`}
-                  placeholder={userEmail ? `Extracting from ${userEmail}...` : 'Loading...'}
-                />
-              {errors.domain && (
-                <p className="text-sm text-destructive">{errors.domain.message}</p>
-              )}
-              <p className="text-sm text-foreground/60">
-                {userEmail 
-                  ? `Automatically detected from your email (${userEmail}). Users with the same domain will automatically join your workspace.`
-                  : 'Users with the same domain will automatically join your workspace.'}
-              </p>
-            </div>
+                {/* Company Domain - Only show for first user */}
+                <div className="space-y-2">
+                  <Label htmlFor="domain" className="text-base font-semibold">
+                    Company Domain *
+                  </Label>
+                    <Input
+                      id="domain"
+                      {...register('domain')}
+                      readOnly
+                      disabled
+                      className={`text-base bg-muted cursor-not-allowed transition-all duration-300 ${errors.domain ? 'border-destructive' : ''}`}
+                      placeholder={userEmail ? `Extracting from ${userEmail}...` : 'Loading...'}
+                    />
+                  {errors.domain && (
+                    <p className="text-sm text-destructive">{errors.domain.message}</p>
+                  )}
+                  <p className="text-sm text-foreground/60">
+                    {userEmail 
+                      ? `Automatically detected from your email (${userEmail}). Users with the same domain will automatically join your workspace.`
+                      : 'Users with the same domain will automatically join your workspace.'}
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Industry Type */}
             <div className="space-y-2">
@@ -667,14 +781,19 @@ export default function OrganizationSetup() {
               )}
             </div>
 
-            {/* Logo Upload (Required) */}
+            {/* Logo Upload */}
             <div className="space-y-2">
               <Label className="text-base font-semibold">
-                Company Logo {logoPreview ? '' : '*'}
+                Company Logo {isSubsequentUser || logoPreview ? '' : '*'}
               </Label>
               {logoPreview && (
                 <p className="text-sm text-foreground/60">
                   Logo already uploaded. Upload a new one to replace it.
+                </p>
+              )}
+              {isSubsequentUser && (
+                <p className="text-sm text-foreground/60">
+                  Optional: Upload a new logo to update the company logo.
                 </p>
               )}
               <div className="flex items-center gap-4">
@@ -736,7 +855,7 @@ export default function OrganizationSetup() {
                   size="lg"
                   className="w-full min-h-[52px] text-base font-semibold shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
                 >
-                  Create Organization
+                  {isSubsequentUser ? 'Update Profile' : 'Create Organization'}
                   <CheckCircle2 className="ml-2 h-5 w-5" />
                 </Button>
               </div>
