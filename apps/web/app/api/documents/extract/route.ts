@@ -7,7 +7,6 @@ import {
   detectDocumentType
 } from '@/lib/document-extraction'
 import { AzureOpenAI } from 'openai'
-import { Readable } from 'stream'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes for AI processing
@@ -433,7 +432,7 @@ CRITICAL EXTRACTION RULES:
           const openaiClient = new AzureOpenAI({
             apiKey: azureApiKey,
             endpoint: azureEndpoint,
-            apiVersion: '2024-12-01-preview'
+            apiVersion: '2025-03-01-preview'
           })
           
           // Combine system and user prompts for the Responses API
@@ -445,12 +444,13 @@ User Request: Analyze this document (${extraction.filename}) and extract all rel
           console.log(`[Document Extraction] Uploading PDF file...`)
           const fileUploadStart = Date.now()
           
-          // Convert Buffer to File-like object for the SDK
-          const fileStream = Readable.from(buffer)
+          // Convert Buffer to File object with proper filename for the SDK
+          // Azure OpenAI needs the filename with extension to detect file type
+          const fileBlob = new Blob([buffer], { type: mimeType })
+          const fileObject = new File([fileBlob], extraction.filename, { type: mimeType })
           const file = await openaiClient.files.create({
-            file: fileStream as any,
-            purpose: 'assistants', // Note: user_data not supported for PDFs
-            filename: extraction.filename
+            file: fileObject,
+            purpose: 'assistants' // Note: user_data not supported for PDFs
           })
           
           const fileId = file.id
