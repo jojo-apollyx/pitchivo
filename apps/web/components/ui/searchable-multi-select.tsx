@@ -76,8 +76,8 @@ export function SearchableMultiSelect({
           {selected.map((item) => (
             <Badge
               key={item}
-              variant="secondary"
-              className="text-xs pr-1 gap-1"
+              variant="outline"
+              className="text-xs pr-1 gap-1 bg-background"
             >
               <span className="truncate max-w-[200px]">{item}</span>
               <button

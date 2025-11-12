@@ -178,18 +178,19 @@ export function FoodSupplementForm({
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Manufacturer Name */}
-            <div className="flex flex-col">
-              <Label htmlFor="manufacturerName" className="mb-1 whitespace-nowrap">Manufacturer Name</Label>
-              <Input
-                id="manufacturerName"
-                value={formData.manufacturerName}
-                onChange={(e) => onChange({ manufacturerName: e.target.value })}
-                placeholder="e.g., ABC Pharma Co."
-              />
-            </div>
+          {/* Manufacturer Name - Full Width */}
+          <div>
+            <Label htmlFor="manufacturerName">Manufacturer Name</Label>
+            <Input
+              id="manufacturerName"
+              value={formData.manufacturerName}
+              onChange={(e) => onChange({ manufacturerName: e.target.value })}
+              placeholder="e.g., ABC Pharma Co."
+            />
+          </div>
 
+          {/* CAS and FDA Numbers - Share Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* CAS Number */}
             <div className="flex flex-col">
               <Label htmlFor="casNumber" className="mb-1 whitespace-nowrap">CAS Number</Label>
