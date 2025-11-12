@@ -78,7 +78,7 @@ export default function CreateProductPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<FoodSupplementProductData>(initialFormData)
   const [uploadedFiles, setUploadedFiles] = useState<FileWithExtraction[]>([])
-  const [showTechnicalData, setShowTechnicalData] = useState(false)
+  const [visibleTechnicalFields, setVisibleTechnicalFields] = useState<Set<string>>(new Set())
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [extractedGroupedData, setExtractedGroupedData] = useState<any>({})  
@@ -274,14 +274,6 @@ export default function CreateProductPage() {
             ...completedExtraction.extracted_values._grouped
           }))
         }
-
-        // Auto-show technical data if extracted
-        if (
-          completedExtraction.extracted_values?.assay ||
-          completedExtraction.extracted_values?.moisture
-        ) {
-          setShowTechnicalData(true)
-        }
       } catch (error) {
         console.error('Error processing file:', error)
         setUploadedFiles((prev) =>
@@ -352,6 +344,7 @@ export default function CreateProductPage() {
 
         // Apply fields to form
         const updates: Partial<FoodSupplementProductData> = {}
+        const newVisibleFields = new Set<string>(visibleTechnicalFields)
 
         Object.entries(fields).forEach(([key, value]) => {
           // Handle grouped keys (e.g., "basic.product_name", "chemical.assay_min")
@@ -373,6 +366,7 @@ export default function CreateProductPage() {
                     break
                   case 'appearance':
                     updates.appearance = String(value)
+                    newVisibleFields.add('appearance')
                     break
                   case 'origin_country':
                     updates.originCountry = String(value)
@@ -382,6 +376,7 @@ export default function CreateProductPage() {
                     break
                   case 'einecs_number':
                     updates.einecs = String(value)
+                    newVisibleFields.add('einecs')
                     break
                   case 'application':
                     if (Array.isArray(value)) {
@@ -401,20 +396,24 @@ export default function CreateProductPage() {
                   //   break
                   case 'odor':
                     updates.odor = String(value)
+                    newVisibleFields.add('odor')
                     break
                   case 'taste':
                     updates.taste = String(value)
+                    newVisibleFields.add('taste')
                     break
                   case 'solubility_water':
                     updates.solubility = String(value)
+                    newVisibleFields.add('solubility')
                     break
                   case 'particle_size_range':
                     updates.particleSize = String(value)
+                    newVisibleFields.add('particleSize')
                     break
                   case 'bulk_density':
                     if (value) {
                       updates.bulkDensity = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('bulkDensity')
                     }
                     break
                 }
@@ -424,50 +423,52 @@ export default function CreateProductPage() {
                   case 'assay_min':
                     if (value) {
                       updates.assay = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('assay')
                     }
                     break
                   case 'moisture_max':
                     if (value) {
                       updates.moisture = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('moisture')
                     }
                     break
                   case 'ash_max':
                     if (value) {
                       updates.ashContent = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('ashContent')
                     }
                     break
                   case 'ph_value':
                     updates.ph = String(value)
+                    newVisibleFields.add('ph')
                     break
                   case 'lead_max':
                     if (value) {
                       updates.lead = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('lead')
                     }
                     break
                   case 'arsenic_max':
                     if (value) {
                       updates.arsenic = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('arsenic')
                     }
                     break
                   case 'cadmium_max':
                     if (value) {
                       updates.cadmium = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('cadmium')
                     }
                     break
                   case 'mercury_max':
                     if (value) {
                       updates.mercury = parseFloat(String(value))
-                      setShowTechnicalData(true)
+                      newVisibleFields.add('mercury')
                     }
                     break
                   case 'pesticide_residue':
                     updates.pesticideResidue = String(value)
+                    newVisibleFields.add('pesticideResidue')
                     break
                 }
                 break
@@ -476,21 +477,26 @@ export default function CreateProductPage() {
                   case 'total_plate_count_max':
                     if (value) {
                       updates.totalPlateCount = parseInt(String(value))
+                      newVisibleFields.add('totalPlateCount')
                     }
                     break
                   case 'yeast_mold_max':
                     if (value) {
                       updates.yeastMold = parseInt(String(value))
+                      newVisibleFields.add('yeastMold')
                     }
                     break
                   case 'e_coli':
                     updates.eColiPresence = String(value)
+                    newVisibleFields.add('eColiPresence')
                     break
                   case 'salmonella':
                     updates.salmonellaPresence = String(value)
+                    newVisibleFields.add('salmonellaPresence')
                     break
                   case 'staphylococcus_aureus':
                     updates.staphylococcusPresence = String(value)
+                    newVisibleFields.add('staphylococcusPresence')
                     break
                 }
                 break
@@ -506,6 +512,7 @@ export default function CreateProductPage() {
                   case 'shelf_life_months':
                     if (value) {
                       updates.shelfLife = parseInt(String(value))
+                      newVisibleFields.add('shelfLife')
                     }
                     break
                 }
@@ -526,6 +533,7 @@ export default function CreateProductPage() {
                 switch (fieldKey) {
                   case 'allergen_statement':
                     updates.allergenInfo = String(value)
+                    newVisibleFields.add('allergenInfo')
                     break
                 }
                 break
@@ -533,6 +541,7 @@ export default function CreateProductPage() {
                 switch (fieldKey) {
                   case 'is_gmo':
                     updates.gmoStatus = value === 'Yes' ? 'Non-GMO' : value === 'No' ? 'GMO' : 'Unknown'
+                    newVisibleFields.add('gmoStatus')
                     break
                   case 'specification_standard':
                     if (Array.isArray(value)) {
@@ -600,51 +609,75 @@ export default function CreateProductPage() {
             case 'lossOnDrying':
               if (value) {
                 updates[key] = parseFloat(String(value))
-                setShowTechnicalData(true)
+                newVisibleFields.add(key)
               }
               break
             case 'totalPlateCount':
             case 'yeastMold':
               if (value) {
                 updates[key] = parseInt(String(value))
+                newVisibleFields.add(key)
               }
               break
             case 'shelfLife':
               if (value) {
                 updates.shelfLife = parseInt(String(value))
+                newVisibleFields.add('shelfLife')
               }
               break
             case 'particleSize':
             case 'ph':
-            case 'allergenInfo':
-            case 'bseStatement':
             case 'pesticideResidue':
-            case 'packagingType':
-            case 'netWeight':
               if (value) {
                 updates[key] = String(value)
+                newVisibleFields.add(key)
+              }
+              break
+            case 'allergenInfo':
+            case 'bseStatement':
+              if (value) {
+                updates[key] = String(value)
+                newVisibleFields.add(key)
               }
               break
             case 'eColiPresence':
             case 'salmonellaPresence':
             case 'staphylococcusPresence':
+              if (value) {
+                updates[key] = String(value)
+                newVisibleFields.add(key)
+              }
+              break
             case 'gmoStatus':
             case 'irradiationStatus':
               if (value) {
                 updates[key] = String(value)
+                newVisibleFields.add(key)
               }
               break
             case 'storageConditions':
+              if (Array.isArray(value) && value.length > 0) {
+                updates.storageConditions = value
+                newVisibleFields.add('storageConditions')
+              }
+              break
             case 'applications':
             case 'certificates':
               if (Array.isArray(value)) {
                 updates[key] = value
               }
               break
+            case 'certificateExpiryDate':
+              if (value) {
+                updates.certificateExpiryDate = String(value)
+                newVisibleFields.add('certificateExpiryDate')
+              }
+              break
           }
         })
 
         setFormData((prev) => ({ ...prev, ...updates }))
+        setVisibleTechnicalFields(newVisibleFields)
         
         // Store grouped data for additional fields display
         if (fields._grouped) {
@@ -671,6 +704,14 @@ export default function CreateProductPage() {
         [field]: value
       }
     }))
+  }, [])
+
+  const handleAddFields = useCallback((fields: string[]) => {
+    setVisibleTechnicalFields((prev) => {
+      const newSet = new Set(prev)
+      fields.forEach((field) => newSet.add(field))
+      return newSet
+    })
   }, [])
 
   const handleSaveDraft = async () => {
@@ -770,7 +811,8 @@ export default function CreateProductPage() {
                 <FoodSupplementForm
                   formData={formData}
                   onChange={handleFormChange}
-                  showTechnicalData={showTechnicalData}
+                  visibleTechnicalFields={visibleTechnicalFields}
+                  onAddFields={handleAddFields}
                 />
                 
                 {/* Additional Extracted Fields */}
