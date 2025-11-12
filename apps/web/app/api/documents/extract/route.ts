@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAzure } from '@ai-sdk/azure'
 import { generateText } from 'ai'
+import {
+  extractDocumentContent,
+  detectDocumentType
+} from '@/lib/document-extraction'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes for AI processing
@@ -25,16 +29,19 @@ export const maxDuration = 300 // 5 minutes for AI processing
  * POST /api/documents/extract
  */
 export async function POST(request: NextRequest) {
+  // Store fileId early so it's available in error handling
+  let fileId: string | undefined
+  let supabase = await createClient()
+  
   try {
-    const supabase = await createClient()
-    
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { fileId } = await request.json()
+    const body = await request.json()
+    fileId = body.fileId
 
     if (!fileId) {
       return NextResponse.json({ error: 'File ID is required' }, { status: 400 })
@@ -51,11 +58,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Update status to analyzing
-    await supabase
+    // Update status to analyzing (clear any previous error messages)
+    const { error: updateStatusError } = await supabase
       .from('document_extractions')
-      .update({ analysis_status: 'analyzing' })
+      .update({ 
+        analysis_status: 'analyzing',
+        error_message: null // Clear previous error
+      })
       .eq('id', fileId)
+    
+    if (updateStatusError) {
+      console.error('[Document Extraction] Failed to update status to analyzing:', updateStatusError)
+      // Continue anyway - the extraction might still work
+    }
 
     // Get signed URL for file access
     const { data: signedUrlData, error: urlError } = await supabase.storage
@@ -89,49 +104,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to download file' }, { status: 500 })
     }
 
-    // Convert file to base64 for AI
+    // Convert file to buffer
     const arrayBuffer = await fileData.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    const base64File = buffer.toString('base64')
     const mimeType = extraction.mime_type
     
-    // For vision models, we need to ensure the image format is correct
-    // PDFs and documents should be converted to images, but for now we'll try with the data URL
-    // Azure OpenAI gpt-4o supports: image/jpeg, image/png, image/gif, image/webp
-    // For PDFs, we might need to convert pages to images first
-    let fileDataUrl: string
+    // Use document extraction library to handle different file types
+    const docType = detectDocumentType(mimeType, extraction.filename)
+    console.log(`[Document Extraction] Processing ${docType} file: ${extraction.filename}`)
     
-    // Azure OpenAI vision API supports: image/jpeg, image/png, image/gif, image/webp
-    // IMPORTANT: PDFs and other document types are NOT supported directly
-    // They need to be converted to images first (e.g., using pdf2pic or similar)
-    if (mimeType === 'application/pdf') {
-      // Azure OpenAI vision API does NOT support PDFs directly
-      // The error "Invalid Value: 'file'" indicates PDFs are being rejected
-      // TODO: Implement PDF to image conversion (e.g., convert each page to PNG)
-      throw new Error(
-        'PDF files are not supported directly by Azure OpenAI vision API. ' +
-        'Please convert the PDF to images (PNG/JPEG) first, or use a different extraction method. ' +
-        'Azure OpenAI vision API only supports: image/jpeg, image/png, image/gif, image/webp'
-      )
-    } else if (mimeType.startsWith('image/')) {
-      // Direct image files - these should work with Azure OpenAI vision API
-      fileDataUrl = `data:${mimeType};base64,${base64File}`
-      console.log(`[Document Extraction] Processing image file: ${extraction.filename} (${mimeType})`)
-    } else {
-      // Other document types (DOCX, XLSX) also need conversion to images
-      throw new Error(
-        `Document type "${mimeType}" is not supported by Azure OpenAI vision API. ` +
-        'Only image formats are supported: image/jpeg, image/png, image/gif, image/webp. ' +
-        'Please convert your document to images first.'
-      )
-    }
-
-    // Use vision-capable deployment for document extraction
-    // Vision-capable models: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4-vision-preview
-    // Text-only models (NOT supported): gpt-3.5-turbo, gpt-4 (without vision)
-    // 
-    // IMPORTANT: AZURE_OPENAI_VISION_DEPLOYMENT is REQUIRED - no fallback to text-only models
-    // Document extraction requires vision capabilities and will fail with text-only models
+    // Initialize Azure OpenAI for vision processing
     const visionDeploymentName = process.env.AZURE_OPENAI_VISION_DEPLOYMENT
     
     if (!visionDeploymentName) {
@@ -143,31 +125,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Initialize Azure OpenAI with Vercel AI SDK
-    // Note: createAzure from @ai-sdk/azure only supports resourceName and apiKey
-    // The SDK should handle API version automatically based on the model
-    // For gpt-4o vision support, ensure your Azure deployment is configured correctly
-    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview'
-    
-    console.log(`[Document Extraction] Azure OpenAI config:`, {
-      resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME,
-      deployment: visionDeploymentName,
-      apiVersion: apiVersion,
-      hasApiKey: !!process.env.AZURE_OPENAI_API_KEY,
-      note: 'Using @ai-sdk/azure - API version handled by SDK internally',
-      sdkVersion: '2.0.60'
-    })
-    
-    // @ai-sdk/azure only supports resourceName and apiKey
-    // The SDK handles API version internally - it should use the latest compatible version
-    // For gpt-4o vision, ensure your deployment is correctly configured in Azure Portal
     const azure = createAzure({
       resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
       apiKey: process.env.AZURE_OPENAI_API_KEY!,
     })
     
-    console.log(`[Document Extraction] Using Azure OpenAI vision deployment: ${visionDeploymentName} (from AZURE_OPENAI_VISION_DEPLOYMENT)`)
     const model = azure(visionDeploymentName)
+    
+    // Azure OpenAI endpoint for Responses API
+    const azureEndpoint = `https://${process.env.AZURE_OPENAI_RESOURCE_NAME}.openai.azure.com`
+    const azureApiKey = process.env.AZURE_OPENAI_API_KEY!
+    
+    // Extract document content first (for PDF, DOCX, XLSX)
+    let extractedContent: string
+    let extractionMetadata: any = {}
+    let needsVision = false
+    
+    if (docType === 'image' || docType === 'pdf') {
+      // Images and PDFs are handled directly with Azure OpenAI Vision API
+      extractedContent = ''
+      needsVision = true
+    } else {
+      // DOCX, XLSX - extract text content
+      const docExtraction = await extractDocumentContent(buffer, mimeType, extraction.filename)
+      extractedContent = docExtraction.content
+      extractionMetadata = docExtraction.metadata
+      needsVision = false
+    }
 
     // System prompt for extraction - adapts to document type
     const systemPrompt = `You are an AI assistant for extracting structured data from documents. First identify the document type, then extract relevant information using the appropriate schema.
@@ -430,35 +414,143 @@ CRITICAL EXTRACTION RULES:
    - Be precise and accurate - do not make up values
    - If a field doesn't apply to the document type, leave it empty or omit it`
 
-    // Generate extraction using Vercel AI SDK
-    let response
+    // Generate extraction using Azure OpenAI
+    let response: Awaited<ReturnType<typeof generateText>> | { text: string } | undefined
     try {
-      // Vercel AI SDK uses 'image' type - it should convert to Azure's format
-      // For PDFs, Azure OpenAI might not support them directly - we may need to convert to images
-      // For now, try with the data URL format
-      response = await generateText({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: [
+      if (needsVision) {
+        const startTime = Date.now()
+        console.log(`[Document Extraction] Starting vision processing for ${docType} file: ${extraction.filename}`)
+        
+        if (docType === 'pdf') {
+          // Use Azure OpenAI Responses API for PDFs (direct PDF support)
+          console.log(`[Document Extraction] Using Azure Responses API for PDF...`)
+          const visionStart = Date.now()
+          
+          const base64Pdf = buffer.toString('base64')
+          const userPrompt = `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
+          
+          // Call Azure OpenAI Responses API directly
+          const responseUrl = `${azureEndpoint}/openai/responses?api-version=2025-03-01-preview`
+          const azureResponse = await fetch(responseUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'api-key': azureApiKey
+            },
+            body: JSON.stringify({
+              model: visionDeploymentName,
+              input: [
+                {
+                  type: "message",
+                  role: "system",
+                  content: [
+                    {
+                      type: "input_text",
+                      text: systemPrompt
+                    }
+                  ]
+                },
+                {
+                  type: "message",
+                  role: "user",
+                  content: [
+                    {
+                      type: "input_text",
+                      text: userPrompt
+                    },
+                    {
+                      type: "input_file",
+                      source: {
+                        type: "base64",
+                        media_type: "application/pdf",
+                        data: base64Pdf
+                      }
+                    }
+                  ]
+                }
+              ]
+            })
+          })
+          
+          if (!azureResponse.ok) {
+            const errorText = await azureResponse.text()
+            throw new Error(`Azure Responses API error: ${azureResponse.status} ${errorText}`)
+          }
+          
+          const azureResponseData = await azureResponse.json()
+          const visionTime = Date.now() - visionStart
+          console.log(`[Document Extraction] Azure Responses API processing took ${visionTime}ms`)
+          
+          // Extract text from response
+          const responseText = azureResponseData.output?.[0]?.content?.[0]?.text || ''
+          
+          // Create a response-like object for compatibility
+          response = {
+            text: responseText
+          }
+          
+          const totalTime = Date.now() - startTime
+          console.log(`[Document Extraction] Total PDF processing time: ${totalTime}ms`)
+        } else {
+          // Handle images with Vercel AI SDK (Chat Completions API)
+          console.log(`[Document Extraction] Using Chat Completions API for image...`)
+          const visionStart = Date.now()
+          
+          const base64 = buffer.toString('base64')
+          const dataUrl = `data:${mimeType};base64,${base64}`
+          
+          response = await generateText({
+            model,
+            messages: [
               {
-                type: 'text',
-                text: `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
+                role: 'system',
+                content: systemPrompt
               },
               {
-                type: 'image',
-                image: fileDataUrl
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
+                  },
+                  {
+                    type: 'image' as const,
+                    image: dataUrl
+                  }
+                ]
               }
-            ]
-          }
-        ],
-        temperature: 0.1,
-      })
+            ],
+            temperature: 0.1
+          })
+          
+          const visionTime = Date.now() - visionStart
+          console.log(`[Document Extraction] Vision API processing took ${visionTime}ms`)
+          
+          const totalTime = Date.now() - startTime
+          console.log(`[Document Extraction] Total vision processing time: ${totalTime}ms`)
+        }
+      } else {
+        // Handle text-based documents (DOCX, XLSX)
+        const userPrompt = `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.
+
+=== Document Content ===
+${extractedContent}`
+        
+        response = await generateText({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: userPrompt
+            }
+          ],
+          temperature: 0.1
+        })
+      }
     } catch (visionError: any) {
       // Log the full error for debugging
       console.error('[Document Extraction] Azure OpenAI API Error:', {
@@ -466,9 +558,10 @@ CRITICAL EXTRACTION RULES:
         message: visionError?.message,
         cause: visionError?.cause,
         deployment: visionDeploymentName,
-        apiVersion: apiVersion,
         mimeType: mimeType,
-        filename: extraction.filename
+        filename: extraction.filename,
+        docType,
+        needsVision
       })
       
       // Check if error is about unsupported file content types
@@ -483,12 +576,16 @@ CRITICAL EXTRACTION RULES:
           `Document extraction requires a vision-capable model. ` +
           `Please verify: ` +
           `1. The deployment "${visionDeploymentName}" is a vision-capable model (gpt-4o, gpt-4o-mini, gpt-4-turbo, or gpt-4-vision-preview) ` +
-          `2. The API version is set to 2024-12-01-preview or later for gpt-4o (current: ${apiVersion}) ` +
-          `3. The deployment is properly configured in Azure Portal ` +
+          `2. The deployment is properly configured in Azure Portal ` +
           `Original error: ${errorMessage}`
         )
       }
       throw visionError
+    }
+
+    // Ensure response was generated (TypeScript guard)
+    if (!response) {
+      throw new Error('Failed to generate AI response - this should never happen')
     }
 
     // Parse the JSON response
@@ -632,11 +729,14 @@ CRITICAL EXTRACTION RULES:
   } catch (error) {
     console.error('Extraction error:', error)
     
-    // Try to update status to failed
-    try {
-      const { fileId } = await request.json()
-      if (fileId) {
-        const supabase = await createClient()
+    // Try to update status to failed (if we have fileId)
+    if (fileId) {
+      try {
+        // Re-create supabase client in case it was lost
+        if (!supabase) {
+          supabase = await createClient()
+        }
+        
         await supabase
           .from('document_extractions')
           .update({ 
@@ -644,8 +744,14 @@ CRITICAL EXTRACTION RULES:
             error_message: error instanceof Error ? error.message : 'Unknown error'
           })
           .eq('id', fileId)
+        
+        console.log(`[Document Extraction] Updated status to 'failed' for fileId: ${fileId}`)
+      } catch (updateError) {
+        console.error('[Document Extraction] Failed to update status to failed:', updateError)
       }
-    } catch {}
+    } else {
+      console.warn('[Document Extraction] No fileId available to update status')
+    }
 
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

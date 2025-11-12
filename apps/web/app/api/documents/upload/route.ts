@@ -21,13 +21,24 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('organization_id')
       .eq('id', user.id)
       .single()
 
-    if (userError || !userData?.organization_id) {
-      return NextResponse.json({ error: 'User organization not found' }, { status: 400 })
+    if (userError) {
+      console.error('User fetch error:', userError)
+      return NextResponse.json({ 
+        error: 'Failed to fetch user data',
+        details: userError.message 
+      }, { status: 500 })
+    }
+
+    if (!userData?.organization_id) {
+      return NextResponse.json({ 
+        error: 'User organization not found. Please complete organization setup first.',
+        details: 'The user account does not have an organization_id assigned. Please set up your organization before uploading documents.'
+      }, { status: 400 })
     }
 
     const formData = await request.formData()
@@ -38,17 +49,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
+    // Support both document types and image types (for vision API)
     const allowedTypes = [
+      // Document types
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      // Image types (for Azure OpenAI vision API)
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp'
     ]
 
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only PDF, DOC, DOCX, XLS, XLSX are allowed' },
+        { 
+          error: 'Invalid file type',
+          details: `File type "${file.type}" is not allowed. Supported types: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP.`
+        },
         { status: 400 }
       )
     }
@@ -68,9 +90,52 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!checkError && existingFile) {
-      // File already exists - return existing record
+      // Check if file is stuck in "analyzing" state (likely from a failed previous attempt)
+      // Reset to "pending" if it's been analyzing for more than 5 minutes
+      // Use updated_at to check when status was last changed to "analyzing"
+      const now = new Date()
+      const updatedAt = new Date(existingFile.updated_at)
+      const analyzingDuration = now.getTime() - updatedAt.getTime()
+      const fiveMinutes = 5 * 60 * 1000
+      
+      if (existingFile.analysis_status === 'analyzing' && analyzingDuration > fiveMinutes) {
+        console.log(`[Document Upload] Resetting stuck "analyzing" file (${existingFile.id}) to "pending"`)
+        const { data: resetFile, error: resetError } = await supabase
+          .from('document_extractions')
+          .update({
+            analysis_status: 'pending',
+            error_message: null
+          })
+          .eq('id', existingFile.id)
+          .select()
+          .single()
+        
+        if (!resetError && resetFile) {
+          return NextResponse.json({
+            message: 'File found (was stuck in analyzing, reset to pending)',
+            file: resetFile,
+            isExisting: true
+          })
+        }
+      }
+      
+      // If file is completed or recently started analyzing, return as-is
+      if (existingFile.analysis_status === 'completed') {
+        return NextResponse.json({
+          message: 'File already analyzed',
+          file: existingFile,
+          isExisting: true
+        })
+      }
+      
+      // For pending, failed, or analyzing (recent), return existing record
+      // Frontend will handle retrying if needed
       return NextResponse.json({
-        message: 'File already analyzed',
+        message: existingFile.analysis_status === 'failed' 
+          ? 'File found (previous attempt failed, can retry)'
+          : existingFile.analysis_status === 'analyzing'
+          ? 'File is currently being analyzed'
+          : 'File found',
         file: existingFile,
         isExisting: true
       })
@@ -90,7 +155,17 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error('Upload error:', uploadError)
-      return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
+      console.error('Upload error details:', {
+        message: uploadError.message,
+        name: uploadError.name,
+        fileType: file.type,
+        fileName: file.name,
+        storagePath: storagePath
+      })
+      return NextResponse.json({ 
+        error: 'Failed to upload file to storage',
+        details: uploadError.message || 'Storage upload failed. Please check if the documents bucket exists and has proper permissions. If uploading images, ensure the bucket allows image MIME types.'
+      }, { status: 500 })
     }
 
     // Create document extraction record
@@ -113,7 +188,10 @@ export async function POST(request: NextRequest) {
       console.error('Insert error:', insertError)
       // Clean up uploaded file
       await supabase.storage.from('documents').remove([storagePath])
-      return NextResponse.json({ error: 'Failed to create extraction record' }, { status: 500 })
+      return NextResponse.json({ 
+        error: 'Failed to create extraction record',
+        details: insertError.message || 'Database insert failed. Please check the document_extractions table schema.'
+      }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -125,7 +203,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'An unexpected error occurred during file upload'
+      },
       { status: 500 }
     )
   }

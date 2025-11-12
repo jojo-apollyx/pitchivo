@@ -19,13 +19,24 @@ export async function GET(request: NextRequest) {
 
     // Get user's organization
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('organization_id')
       .eq('id', user.id)
       .single()
 
-    if (userError || !userData?.organization_id) {
-      return NextResponse.json({ error: 'User organization not found' }, { status: 400 })
+    if (userError) {
+      console.error('User fetch error:', userError)
+      return NextResponse.json({ 
+        error: 'Failed to fetch user data',
+        details: userError.message 
+      }, { status: 500 })
+    }
+
+    if (!userData?.organization_id) {
+      return NextResponse.json({ 
+        error: 'User organization not found. Please complete organization setup first.',
+        details: 'The user account does not have an organization_id assigned. Please set up your organization before accessing documents.'
+      }, { status: 400 })
     }
 
     // Get all non-deleted documents

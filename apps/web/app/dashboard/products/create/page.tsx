@@ -167,6 +167,8 @@ export default function CreateProductPage() {
             ? 'error' as const
             : extraction.analysis_status === 'analyzing'
             ? 'analyzing' as const
+            : extraction.analysis_status === 'completed'
+            ? 'completed' as const
             : 'analyzing' as const // pending or other statuses show as analyzing
           
           setUploadedFiles((prev) =>
@@ -177,16 +179,49 @@ export default function CreateProductPage() {
             )
           )
           
-          // If it's already analyzing, don't trigger another extraction
-          if (extraction.analysis_status === 'analyzing') {
-            toast.info(`File is already being analyzed: ${file.name}`)
+          // If it's already completed, skip
+          if (extraction.analysis_status === 'completed') {
+            toast.success(`File already analyzed: ${file.name}`)
             continue
           }
           
-          // If it's pending or failed, trigger extraction
-          if (extraction.analysis_status === 'pending' || extraction.analysis_status === 'failed') {
+          // If it's already analyzing, check if it's stuck
+          // Use updated_at to check when status was last changed to "analyzing"
+          if (extraction.analysis_status === 'analyzing') {
+            // Check if it's been analyzing for more than 2 minutes (frontend check - more aggressive)
+            const analyzingTime = new Date().getTime() - new Date(extraction.updated_at).getTime()
+            const twoMinutes = 2 * 60 * 1000
+            
+            if (analyzingTime < twoMinutes) {
+              // Very recently started analyzing (less than 2 min) - don't retry to avoid duplicates
+              toast.info(`File is already being analyzed: ${file.name}`)
+              continue
+            } else {
+              // Been analyzing for a while - allow retry (backend will handle if it's actually running)
+              toast.warning(`File has been analyzing for a while, retrying: ${file.name}`)
+              // Update UI and continue to extraction below
+              setUploadedFiles((prev) =>
+                prev.map((f) =>
+                  f.extraction.id === extraction.id
+                    ? { extraction, displayStatus: 'analyzing' as const }
+                    : f
+                )
+              )
+              // Continue to extraction below - backend will reset if needed
+            }
+          } else if (extraction.analysis_status === 'pending' || extraction.analysis_status === 'failed') {
+            // If it's pending or failed, trigger extraction
+            // Update status to analyzing for UI feedback
+            setUploadedFiles((prev) =>
+              prev.map((f) =>
+                f.extraction.id === extraction.id
+                  ? { extraction, displayStatus: 'analyzing' as const }
+                  : f
+              )
+            )
             // Continue to extraction below
           } else {
+            // Completed or other status - skip
             continue
           }
         } else {

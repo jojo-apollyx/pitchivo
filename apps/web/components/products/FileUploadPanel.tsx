@@ -206,7 +206,7 @@ export function FileUploadPanel({
             Drop files here or click to browse
           </p>
           <p className="text-xs text-muted-foreground mb-3">
-            PDF, DOCX, XLSX • COA, TDS, MSDS, Spec Sheets
+            PDF, DOCX, XLSX, Images (JPG, PNG, GIF, WEBP) • COA, TDS, MSDS, Spec Sheets
           </p>
           <label htmlFor="file-upload">
             <Button
@@ -225,7 +225,7 @@ export function FileUploadPanel({
             id="file-upload"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.xlsx,.xls"
+            accept=".pdf,.doc,.docx,.xlsx,.xls,.jpg,.jpeg,.png,.gif,.webp"
             onChange={handleFileInput}
             className="hidden"
           />
