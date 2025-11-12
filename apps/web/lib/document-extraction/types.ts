@@ -49,19 +49,12 @@ export interface DocumentExtractionOptions {
   maxPages?: number | null
   
   /**
-   * Scale factor for PDF to image conversion (default: 3.0)
-   * Higher values = better quality but larger images
-   * 3.0 = ~300 DPI (high quality)
+   * Image quality/scale for PDF to image conversion (default: 2.5)
    */
-  scale?: number
+  imageScale?: number
   
   /**
-   * Maximum image width for PDF rendering (default: 2048)
-   */
-  maxImageWidth?: number
-  
-  /**
-   * Maximum image height for PDF rendering (default: 2048)
+   * Maximum image height for PDF rendering (default: 1998)
    */
   maxImageHeight?: number
   
