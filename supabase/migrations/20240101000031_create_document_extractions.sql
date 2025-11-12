@@ -1,5 +1,11 @@
+-- Drop dependent table first if it exists (to handle partial migration failures)
+DROP TABLE IF EXISTS public.product_field_applications CASCADE;
+
+-- Drop document_extractions table if it exists (to handle partial migration failures)
+DROP TABLE IF EXISTS public.document_extractions CASCADE;
+
 -- Create document_extractions table
-CREATE TABLE IF NOT EXISTS public.document_extractions (
+CREATE TABLE public.document_extractions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     content_hash TEXT NOT NULL UNIQUE,
     filename TEXT NOT NULL,
@@ -36,11 +42,11 @@ CREATE TABLE IF NOT EXISTS public.document_extractions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Create product_field_applications table
-CREATE TABLE IF NOT EXISTS public.product_field_applications (
+-- Create product_field_applications table (without foreign key to document_extractions first)
+CREATE TABLE public.product_field_applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
-    file_id UUID NOT NULL REFERENCES public.document_extractions(id) ON DELETE SET NULL,
+    product_id UUID NOT NULL REFERENCES public.products(product_id) ON DELETE CASCADE,
+    file_id UUID,
     
     -- Track which fields were applied
     fields_applied TEXT[] NOT NULL DEFAULT '{}',
@@ -52,6 +58,11 @@ CREATE TABLE IF NOT EXISTS public.product_field_applications (
     -- Composite unique constraint to prevent duplicate applications
     UNIQUE(product_id, file_id)
 );
+
+-- Add foreign key constraint to document_extractions after both tables are created
+ALTER TABLE public.product_field_applications
+    ADD CONSTRAINT fk_product_field_applications_file_id
+    FOREIGN KEY (file_id) REFERENCES public.document_extractions(id) ON DELETE SET NULL;
 
 -- Create indexes for better query performance
 CREATE INDEX idx_document_extractions_content_hash ON public.document_extractions(content_hash);
@@ -118,7 +129,7 @@ CREATE POLICY "Users can view document_extractions in their org"
     FOR SELECT
     USING (
         organization_id IN (
-            SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
         )
         AND deleted_at IS NULL
     );
@@ -129,7 +140,7 @@ CREATE POLICY "Users can insert document_extractions in their org"
     FOR INSERT
     WITH CHECK (
         organization_id IN (
-            SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
         )
         AND uploaded_by = auth.uid()
     );
@@ -140,12 +151,12 @@ CREATE POLICY "Users can update document_extractions in their org"
     FOR UPDATE
     USING (
         organization_id IN (
-            SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
         )
     )
     WITH CHECK (
         organization_id IN (
-            SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
         )
     );
 
@@ -155,7 +166,7 @@ CREATE POLICY "Users can soft delete document_extractions in their org"
     FOR UPDATE
     USING (
         organization_id IN (
-            SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
         )
     );
 
@@ -165,9 +176,9 @@ CREATE POLICY "Users can view product_field_applications in their org"
     FOR SELECT
     USING (
         product_id IN (
-            SELECT id FROM public.products 
-            WHERE organization_id IN (
-                SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT product_id FROM public.products 
+            WHERE org_id IN (
+                SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
             )
         )
     );
@@ -177,9 +188,9 @@ CREATE POLICY "Users can insert product_field_applications in their org"
     FOR INSERT
     WITH CHECK (
         product_id IN (
-            SELECT id FROM public.products 
-            WHERE organization_id IN (
-                SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT product_id FROM public.products 
+            WHERE org_id IN (
+                SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
             )
         )
         AND applied_by = auth.uid()
@@ -190,9 +201,9 @@ CREATE POLICY "Users can delete product_field_applications in their org"
     FOR DELETE
     USING (
         product_id IN (
-            SELECT id FROM public.products 
-            WHERE organization_id IN (
-                SELECT organization_id FROM public.users WHERE id = auth.uid()
+            SELECT product_id FROM public.products 
+            WHERE org_id IN (
+                SELECT organization_id FROM public.user_profiles WHERE id = auth.uid()
             )
         )
     );
@@ -215,7 +226,7 @@ CREATE POLICY "Users can upload documents in their org folder"
     WITH CHECK (
         bucket_id = 'documents' 
         AND (storage.foldername(name))[1] IN (
-            SELECT organization_id::text FROM public.users WHERE id = auth.uid()
+            SELECT organization_id::text FROM public.user_profiles WHERE id = auth.uid()
         )
     );
 
@@ -225,7 +236,7 @@ CREATE POLICY "Users can view documents in their org folder"
     USING (
         bucket_id = 'documents' 
         AND (storage.foldername(name))[1] IN (
-            SELECT organization_id::text FROM public.users WHERE id = auth.uid()
+            SELECT organization_id::text FROM public.user_profiles WHERE id = auth.uid()
         )
     );
 
@@ -235,7 +246,7 @@ CREATE POLICY "Users can delete documents in their org folder"
     USING (
         bucket_id = 'documents' 
         AND (storage.foldername(name))[1] IN (
-            SELECT organization_id::text FROM public.users WHERE id = auth.uid()
+            SELECT organization_id::text FROM public.user_profiles WHERE id = auth.uid()
         )
     );
 
