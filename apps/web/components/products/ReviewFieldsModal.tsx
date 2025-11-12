@@ -27,6 +27,24 @@ interface ReviewFieldsModalProps {
   onApply: (reviewedFields: Record<string, any>) => Promise<void>
 }
 
+// Document types that are NOT suitable for product creation
+const NON_PRODUCT_DOCUMENT_TYPES = [
+  'Driver_License',
+  'Passport',
+  'Invoice',
+  'Contract',
+  'Other'
+]
+
+// Product-related document types
+const PRODUCT_DOCUMENT_TYPES = [
+  'COA',
+  'TDS',
+  'MSDS',
+  'Specification_Sheet',
+  'Certificate'
+]
+
 export function ReviewFieldsModal({
   isOpen,
   onClose,
@@ -39,6 +57,9 @@ export function ReviewFieldsModal({
   const [editedFields, setEditedFields] = useState<Record<string, any>>({})
   const [isApplying, setIsApplying] = useState(false)
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
+  
+  // Check if this is a non-product document
+  const isNonProductDocument = documentType && NON_PRODUCT_DOCUMENT_TYPES.includes(documentType)
 
   useEffect(() => {
     if (isOpen && fields.length > 0) {
@@ -175,19 +196,21 @@ export function ReviewFieldsModal({
                 <Sparkles className="h-5 w-5 text-primary" />
                 {isAlreadyReviewed ? 'Review Extracted Fields' : 'Review & Confirm Extracted Fields'}
               </DialogTitle>
-              <DialogDescription className="mt-1.5">
-                <div className="flex items-center gap-2 text-sm">
-                  <span>{filename}</span>
-                  {documentType && (
-                    <>
-                      <span>•</span>
-                      <Badge variant="outline" className="text-xs">
-                        {documentType}
-                      </Badge>
-                    </>
-                  )}
-                </div>
-              </DialogDescription>
+              <div className="mt-1.5">
+                <DialogDescription asChild>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>{filename}</span>
+                    {documentType && (
+                      <>
+                        <span>•</span>
+                        <Badge variant="outline" className="text-xs">
+                          {documentType}
+                        </Badge>
+                      </>
+                    )}
+                  </div>
+                </DialogDescription>
+              </div>
             </div>
           </div>
           {isAlreadyReviewed && (
@@ -198,7 +221,21 @@ export function ReviewFieldsModal({
               </span>
             </div>
           )}
-          {!isAlreadyReviewed && (
+          {isNonProductDocument && (
+            <div className="flex items-start gap-2 mt-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 mb-1">
+                  This document is not suitable for product creation
+                </p>
+                <p className="text-xs text-amber-700">
+                  This appears to be a {documentType?.replace(/_/g, ' ').toLowerCase()} document, which cannot be used to populate product information. 
+                  Please upload product-related documents such as COA, TDS, MSDS, or Specification Sheets.
+                </p>
+              </div>
+            </div>
+          )}
+          {!isAlreadyReviewed && !isNonProductDocument && (
             <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <span className="text-sm text-blue-700">
@@ -208,84 +245,123 @@ export function ReviewFieldsModal({
           )}
         </DialogHeader>
 
-        {/* Action buttons */}
-        <div className="flex items-center justify-between py-3 border-y">
-          <div className="text-sm text-muted-foreground">
-            {selectedFields.size} of {fields.length} fields selected
+        {/* Action buttons - only show for product documents */}
+        {!isNonProductDocument && (
+          <div className="flex items-center justify-between py-3 border-y">
+            <div className="text-sm text-muted-foreground">
+              {selectedFields.size} of {fields.length} fields selected
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+              >
+                Select All
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDeselectAll}
+              >
+                Deselect All
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleSelectAll}
-            >
-              Select All
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDeselectAll}
-            >
-              Deselect All
-            </Button>
-          </div>
-        </div>
+        )}
 
         {/* Fields list */}
         <div className="flex-1 overflow-y-auto pr-2">
-          <div className="space-y-6 py-4">
-            {Object.entries(groupedFields).map(([section, sectionFields]) => (
-              <div key={section}>
-                <h3 className="text-sm font-semibold text-foreground/70 mb-3">
-                  {sectionTitles[section] || section}
+          {isNonProductDocument ? (
+            <div className="py-8 text-center">
+              <div className="max-w-md mx-auto">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center">
+                  <AlertCircle className="h-8 w-8 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Document Not Suitable for Products
                 </h3>
-                <div className="space-y-3">
-                  {sectionFields.map((field) => (
-                    <div
-                      key={field.key}
-                      className={cn(
-                        'border rounded-lg p-3 transition-all',
-                        selectedFields.has(field.key)
-                          ? 'border-primary/50 bg-primary/5'
-                          : 'border-border/30 bg-card'
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedFields.has(field.key)}
-                          onChange={() => toggleFieldSelection(field.key)}
-                          className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <label className="text-sm font-medium text-foreground">
-                              {field.label}
-                            </label>
-                            {!isAlreadyReviewed && getConfidenceBadge(field.confidence)}
+                <p className="text-sm text-muted-foreground mb-6">
+                  This document has been analyzed, but it contains information that is not relevant for product creation. 
+                  The extracted data is shown below for reference only.
+                </p>
+                {fields.length > 0 && (
+                  <div className="mt-6 space-y-4 text-left">
+                    <h4 className="text-sm font-medium text-foreground/70">Extracted Information:</h4>
+                    <div className="space-y-2">
+                      {fields.map((field) => (
+                        <div
+                          key={field.key}
+                          className="border rounded-lg p-3 bg-card"
+                        >
+                          <div className="text-xs font-medium text-muted-foreground mb-1">
+                            {field.label}
                           </div>
+                          <div className="text-sm text-foreground">
+                            {field.value?.toString() || 'N/A'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6 py-4">
+              {Object.entries(groupedFields).map(([section, sectionFields]) => (
+                <div key={section}>
+                  <h3 className="text-sm font-semibold text-foreground/70 mb-3">
+                    {sectionTitles[section] || section}
+                  </h3>
+                  <div className="space-y-3">
+                    {sectionFields.map((field) => (
+                      <div
+                        key={field.key}
+                        className={cn(
+                          'border rounded-lg p-3 transition-all',
+                          selectedFields.has(field.key)
+                            ? 'border-primary/50 bg-primary/5'
+                            : 'border-border/30 bg-card'
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
                           <input
-                            type="text"
-                            value={editedFields[field.key]?.toString() || ''}
-                            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                            className={cn(
-                              'w-full px-3 py-2 text-sm rounded-md border',
-                              'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                              'bg-background',
-                              !selectedFields.has(field.key) && 'opacity-60'
-                            )}
-                            disabled={!selectedFields.has(field.key)}
+                            type="checkbox"
+                            checked={selectedFields.has(field.key)}
+                            onChange={() => toggleFieldSelection(field.key)}
+                            className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                           />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <label className="text-sm font-medium text-foreground">
+                                {field.label}
+                              </label>
+                              {!isAlreadyReviewed && getConfidenceBadge(field.confidence)}
+                            </div>
+                            <input
+                              type="text"
+                              value={editedFields[field.key]?.toString() || ''}
+                              onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                              className={cn(
+                                'w-full px-3 py-2 text-sm rounded-md border',
+                                'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                'bg-background',
+                                !selectedFields.has(field.key) && 'opacity-60'
+                              )}
+                              disabled={!selectedFields.has(field.key)}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Footer actions */}
@@ -296,26 +372,28 @@ export function ReviewFieldsModal({
             onClick={onClose}
             disabled={isApplying}
           >
-            Cancel
+            {isNonProductDocument ? 'Close' : 'Cancel'}
           </Button>
-          <Button
-            type="button"
-            onClick={handleApply}
-            disabled={isApplying || selectedFields.size === 0}
-            className="min-w-32"
-          >
-            {isApplying ? (
-              <>
-                <div className="h-4 w-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Applying...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Apply to Product
-              </>
-            )}
-          </Button>
+          {!isNonProductDocument && (
+            <Button
+              type="button"
+              onClick={handleApply}
+              disabled={isApplying || selectedFields.size === 0}
+              className="min-w-32"
+            >
+              {isApplying ? (
+                <>
+                  <div className="h-4 w-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Apply to Product
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

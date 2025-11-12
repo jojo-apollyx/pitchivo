@@ -140,22 +140,15 @@ export default function CreateProductPage() {
         })
 
         if (!uploadResponse.ok) {
-          throw new Error('Upload failed')
+          const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }))
+          const errorMessage = errorData.error || `Upload failed with status ${uploadResponse.status}`
+          throw new Error(errorMessage)
         }
 
         const uploadData = await uploadResponse.json()
         const extraction = uploadData.file
 
-        // Update with real extraction data
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.extraction.id === tempFile.extraction.id
-              ? { extraction, displayStatus: 'analyzing' as const }
-              : f
-          )
-        )
-
-        // If file already analyzed, skip extraction
+        // Check if file already exists and is completed - show results immediately
         if (uploadData.isExisting && extraction.analysis_status === 'completed') {
           setUploadedFiles((prev) =>
             prev.map((f) =>
@@ -168,6 +161,45 @@ export default function CreateProductPage() {
           continue
         }
 
+        // Check if file already exists but not completed yet - show current status
+        if (uploadData.isExisting) {
+          const displayStatus = extraction.analysis_status === 'failed' 
+            ? 'error' as const
+            : extraction.analysis_status === 'analyzing'
+            ? 'analyzing' as const
+            : 'analyzing' as const // pending or other statuses show as analyzing
+          
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.extraction.id === tempFile.extraction.id
+                ? { extraction, displayStatus }
+                : f
+            )
+          )
+          
+          // If it's already analyzing, don't trigger another extraction
+          if (extraction.analysis_status === 'analyzing') {
+            toast.info(`File is already being analyzed: ${file.name}`)
+            continue
+          }
+          
+          // If it's pending or failed, trigger extraction
+          if (extraction.analysis_status === 'pending' || extraction.analysis_status === 'failed') {
+            // Continue to extraction below
+          } else {
+            continue
+          }
+        } else {
+          // New file - set to analyzing
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.extraction.id === tempFile.extraction.id
+                ? { extraction, displayStatus: 'analyzing' as const }
+                : f
+            )
+          )
+        }
+
         // Trigger AI extraction
         const extractResponse = await fetch('/api/documents/extract', {
           method: 'POST',
@@ -176,7 +208,9 @@ export default function CreateProductPage() {
         })
 
         if (!extractResponse.ok) {
-          throw new Error('Extraction failed')
+          const errorData = await extractResponse.json().catch(() => ({ error: 'Extraction failed' }))
+          const errorMessage = errorData.error || `Extraction failed with status ${extractResponse.status}`
+          throw new Error(errorMessage)
         }
 
         const extractData = await extractResponse.json()
@@ -221,7 +255,8 @@ export default function CreateProductPage() {
               : f
           )
         )
-        toast.error(`Failed to process ${file.name}`)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to process'
+        toast.error(`Failed to process ${file.name}: ${errorMessage}`)
       }
     }
   }, [])

@@ -8,7 +8,20 @@ export const maxDuration = 300 // 5 minutes for AI processing
 
 /**
  * Extract data from uploaded document using Azure OpenAI
- * Supports: GPT-4o, GPT-4.5, GPT-5, o1, o3, or any vision-capable model
+ * 
+ * REQUIRES a vision-capable model deployment (NO FALLBACK):
+ * - gpt-4o (recommended)
+ * - gpt-4o-mini (cost-effective)
+ * - gpt-4-turbo
+ * - gpt-4-vision-preview
+ * 
+ * Does NOT support text-only models (gpt-3.5-turbo, gpt-4 without vision)
+ * 
+ * Environment variables (REQUIRED):
+ * - AZURE_OPENAI_VISION_DEPLOYMENT (MANDATORY - no fallback)
+ * - AZURE_OPENAI_RESOURCE_NAME
+ * - AZURE_OPENAI_API_KEY
+ * 
  * POST /api/documents/extract
  */
 export async function POST(request: NextRequest) {
@@ -81,42 +94,119 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer)
     const base64File = buffer.toString('base64')
     const mimeType = extraction.mime_type
-    const fileDataUrl = `data:${mimeType};base64,${base64File}`
+    
+    // For vision models, we need to ensure the image format is correct
+    // PDFs and documents should be converted to images, but for now we'll try with the data URL
+    // Azure OpenAI gpt-4o supports: image/jpeg, image/png, image/gif, image/webp
+    // For PDFs, we might need to convert pages to images first
+    let fileDataUrl: string
+    
+    // Azure OpenAI vision API supports: image/jpeg, image/png, image/gif, image/webp
+    // IMPORTANT: PDFs and other document types are NOT supported directly
+    // They need to be converted to images first (e.g., using pdf2pic or similar)
+    if (mimeType === 'application/pdf') {
+      // Azure OpenAI vision API does NOT support PDFs directly
+      // The error "Invalid Value: 'file'" indicates PDFs are being rejected
+      // TODO: Implement PDF to image conversion (e.g., convert each page to PNG)
+      throw new Error(
+        'PDF files are not supported directly by Azure OpenAI vision API. ' +
+        'Please convert the PDF to images (PNG/JPEG) first, or use a different extraction method. ' +
+        'Azure OpenAI vision API only supports: image/jpeg, image/png, image/gif, image/webp'
+      )
+    } else if (mimeType.startsWith('image/')) {
+      // Direct image files - these should work with Azure OpenAI vision API
+      fileDataUrl = `data:${mimeType};base64,${base64File}`
+      console.log(`[Document Extraction] Processing image file: ${extraction.filename} (${mimeType})`)
+    } else {
+      // Other document types (DOCX, XLSX) also need conversion to images
+      throw new Error(
+        `Document type "${mimeType}" is not supported by Azure OpenAI vision API. ` +
+        'Only image formats are supported: image/jpeg, image/png, image/gif, image/webp. ' +
+        'Please convert your document to images first.'
+      )
+    }
+
+    // Use vision-capable deployment for document extraction
+    // Vision-capable models: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4-vision-preview
+    // Text-only models (NOT supported): gpt-3.5-turbo, gpt-4 (without vision)
+    // 
+    // IMPORTANT: AZURE_OPENAI_VISION_DEPLOYMENT is REQUIRED - no fallback to text-only models
+    // Document extraction requires vision capabilities and will fail with text-only models
+    const visionDeploymentName = process.env.AZURE_OPENAI_VISION_DEPLOYMENT
+    
+    if (!visionDeploymentName) {
+      throw new Error(
+        'AZURE_OPENAI_VISION_DEPLOYMENT is required for document extraction. ' +
+        'Document extraction requires a vision-capable model and cannot use text-only models. ' +
+        'Please set AZURE_OPENAI_VISION_DEPLOYMENT in .env.local to a vision-capable deployment name. ' +
+        'Supported models: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4-vision-preview'
+      )
+    }
 
     // Initialize Azure OpenAI with Vercel AI SDK
+    // Note: createAzure from @ai-sdk/azure only supports resourceName and apiKey
+    // The SDK should handle API version automatically based on the model
+    // For gpt-4o vision support, ensure your Azure deployment is configured correctly
+    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview'
+    
+    console.log(`[Document Extraction] Azure OpenAI config:`, {
+      resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME,
+      deployment: visionDeploymentName,
+      apiVersion: apiVersion,
+      hasApiKey: !!process.env.AZURE_OPENAI_API_KEY,
+      note: 'Using @ai-sdk/azure - API version handled by SDK internally',
+      sdkVersion: '2.0.60'
+    })
+    
+    // @ai-sdk/azure only supports resourceName and apiKey
+    // The SDK handles API version internally - it should use the latest compatible version
+    // For gpt-4o vision, ensure your deployment is correctly configured in Azure Portal
     const azure = createAzure({
       resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
       apiKey: process.env.AZURE_OPENAI_API_KEY!,
     })
-
-    // Use whatever deployment you have configured (GPT-4o, GPT-4.5, GPT-5, o1, o3, etc.)
-    const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_OPENAI_DEPLOYMENT_NAME
     
-    if (!deploymentName) {
-      throw new Error('AZURE_OPENAI_DEPLOYMENT or AZURE_OPENAI_DEPLOYMENT_NAME not configured in .env.local')
-    }
+    console.log(`[Document Extraction] Using Azure OpenAI vision deployment: ${visionDeploymentName} (from AZURE_OPENAI_VISION_DEPLOYMENT)`)
+    const model = azure(visionDeploymentName)
 
-    console.log(`[Document Extraction] Using Azure OpenAI deployment: ${deploymentName}`)
-    const model = azure(deploymentName)
-
-    // System prompt for extraction based on industry-standard template
-    const systemPrompt = `You are a specialized AI assistant for extracting structured data from technical documents in the food supplement and ingredients industry.
-
-Extract all relevant information from documents (COA, TDS, MSDS, Specification Sheets). Return data grouped by category for better organization.
+    // System prompt for extraction - adapts to document type
+    const systemPrompt = `You are an AI assistant for extracting structured data from documents. First identify the document type, then extract relevant information using the appropriate schema.
 
 CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no code blocks.
 
-Extract into these groups (omit empty groups):
+STEP 1: Identify the document type from these options:
+- "COA" (Certificate of Analysis)
+- "TDS" (Technical Data Sheet)
+- "MSDS" (Material Safety Data Sheet)
+- "Specification_Sheet" (Product Specification)
+- "Certificate" (General certificate)
+- "Driver_License" (Driver's license or ID card)
+- "Passport" (Passport document)
+- "Invoice" (Invoice or bill)
+- "Contract" (Contract or agreement)
+- "Other" (Any other document type)
+
+STEP 2: Extract data based on document type:
+
+For FOOD/SUPPLEMENT documents (COA, TDS, MSDS, Specification_Sheet, Certificate):
+Use the detailed food industry schema below.
+
+For OTHER documents (Driver_License, Passport, Invoice, Contract, Other):
+Only populate fields that are relevant to the document. Leave all food-specific fields empty. Extract what you see:
+- For IDs/Licenses: name, date of birth, issue date, expiration date, ID number, issuing authority, address
+- For Invoices: invoice number, date, items, amounts, vendor, customer
+- For Contracts: parties, dates, terms, amounts
+- For Other: extract key information visible in the document
 
 {
-  "document_type": "COA" | "TDS" | "MSDS" | "Specification_Sheet" | "Certificate" | "Other",
+  "document_type": string (from STEP 1),
   "confidence_score": number (0-1),
   
   "basic": {
-    "product_name": string,
+    "product_name": string (for food docs) | document title/name (for other docs),
     "product_aliases": string,
     "category": string,
-    "description": string,
+    "description": string (document description or summary),
     "application": string[],
     "brand_name": string,
     "origin_country": string,
@@ -281,8 +371,8 @@ Extract into these groups (omit empty groups):
   },
   
   "supplier": {
-    "manufacturer_name": string,
-    "factory_address": string,
+    "manufacturer_name": string (for food docs) | issuing authority/organization (for other docs),
+    "factory_address": string (for food docs) | address/location (for other docs),
     "production_capacity_annual": string,
     "established_year": number,
     "traceability_system": string,
@@ -317,42 +407,89 @@ Extract into these groups (omit empty groups):
     "storage_temperature": string,
     "storage_conditions": string,
     "volume_discount_available": string,
-    "warranty_policy": string
+    "warranty_policy": string,
+    "issue_date": string (for IDs/licenses - use commercial group),
+    "expiration_date": string (for IDs/licenses - use commercial group)
   }
 }
 
-Guidelines:
-- Extract ONLY information clearly visible in the document
-- For numerical values, extract numbers without units
-- For presence/absence tests, use exact enum values
-- Group related fields together
-- Omit fields/groups with no data
-- Be precise with technical specifications`
+CRITICAL EXTRACTION RULES:
+1. For NON-FOOD documents (Driver_License, Passport, Invoice, Contract, Other):
+   - DO NOT populate food-specific fields (origin, chemical, microbial, nutrition, allergen, health_usage, formulation, quality, compliance, packaging, sustainability)
+   - ONLY populate: document_type, confidence_score, basic (description only), supplier (manufacturer_name, factory_address), commercial (dates if applicable)
+   - Extract visible information accurately without forcing it into food-related fields
+
+2. For FOOD documents (COA, TDS, MSDS, Specification_Sheet, Certificate):
+   - Use all relevant groups as appropriate
+   - Extract technical specifications accurately
+
+3. General rules:
+   - Extract ONLY information clearly visible in the document
+   - For numerical values, extract numbers without units when possible
+   - Omit entire groups if they have no relevant data
+   - Be precise and accurate - do not make up values
+   - If a field doesn't apply to the document type, leave it empty or omit it`
 
     // Generate extraction using Vercel AI SDK
-    const response = await generateText({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Analyze this ${extraction.filename} document and extract all relevant product information. Focus on technical specifications, test results, manufacturer details, and safety information.`
-            },
-            {
-              type: 'image',
-              image: fileDataUrl
-            }
-          ]
-        }
-      ],
-      temperature: 0.1,
-    })
+    let response
+    try {
+      // Vercel AI SDK uses 'image' type - it should convert to Azure's format
+      // For PDFs, Azure OpenAI might not support them directly - we may need to convert to images
+      // For now, try with the data URL format
+      response = await generateText({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
+              },
+              {
+                type: 'image',
+                image: fileDataUrl
+              }
+            ]
+          }
+        ],
+        temperature: 0.1,
+      })
+    } catch (visionError: any) {
+      // Log the full error for debugging
+      console.error('[Document Extraction] Azure OpenAI API Error:', {
+        error: visionError,
+        message: visionError?.message,
+        cause: visionError?.cause,
+        deployment: visionDeploymentName,
+        apiVersion: apiVersion,
+        mimeType: mimeType,
+        filename: extraction.filename
+      })
+      
+      // Check if error is about unsupported file content types
+      const errorMessage = visionError?.message || String(visionError)
+      const errorString = JSON.stringify(visionError)
+      
+      if (errorMessage.includes('file content types') || 
+          errorMessage.includes('does not support') ||
+          errorString.includes('file content types')) {
+        throw new Error(
+          `The Azure OpenAI deployment "${visionDeploymentName}" (from AZURE_OPENAI_VISION_DEPLOYMENT) does not support vision/image inputs. ` +
+          `Document extraction requires a vision-capable model. ` +
+          `Please verify: ` +
+          `1. The deployment "${visionDeploymentName}" is a vision-capable model (gpt-4o, gpt-4o-mini, gpt-4-turbo, or gpt-4-vision-preview) ` +
+          `2. The API version is set to 2024-12-01-preview or later for gpt-4o (current: ${apiVersion}) ` +
+          `3. The deployment is properly configured in Azure Portal ` +
+          `Original error: ${errorMessage}`
+        )
+      }
+      throw visionError
+    }
 
     // Parse the JSON response
     let result: any
