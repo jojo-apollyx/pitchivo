@@ -142,23 +142,31 @@ export function ReviewFieldsModal({
 
   const sectionTitles: Record<string, string> = {
     basic: 'Basic Information',
-    origin: 'Origin & Source',
-    physical: 'Physical Properties',
-    chemical: 'Chemical Specifications',
-    microbial: 'Microbiological Data',
-    nutrition: 'Nutritional Values',
-    allergen: 'Allergen Information',
-    health_usage: 'Health Benefits & Usage',
-    formulation: 'Formulation & Technical',
-    quality: 'Quality Standards & Testing',
-    compliance: 'Compliance & Certifications',
-    packaging: 'Packaging Information',
-    supplier: 'Supplier & Traceability',
-    sustainability: 'Sustainability & Ethical Sourcing',
+    physical: 'Physical Characteristics',
+    chemical: 'Chemical Analysis',
+    microbial: 'Microbiological',
+    supplier: 'Supplier Information',
     commercial: 'Commercial & Logistics',
-    technical: 'Technical Data',
-    safety: 'Safety & Compliance',
+    packaging: 'Packaging',
+    allergen: 'Allergen Information',
+    compliance: 'Compliance & Safety',
     other: 'Other Information',
+  }
+
+  // Determine field width - some fields should be half width, others full width
+  const getFieldWidth = (key: string): 'full' | 'half' | 'third' => {
+    // Full width fields
+    const fullWidthFields = ['product_name', 'description', 'appearance', 'manufacturer_name', 
+      'allergen_statement', 'pesticide_residue', 'specification_standard']
+    
+    // Third width fields (for numbers/short values)
+    const thirdWidthFields = ['assay_min', 'moisture_max', 'ash_max', 'ph_value', 'bulk_density',
+      'lead_max', 'arsenic_max', 'cadmium_max', 'mercury_max', 'total_plate_count_max',
+      'yeast_mold_max', 'shelf_life_months', 'particle_size_range']
+    
+    if (fullWidthFields.some(f => key.includes(f))) return 'full'
+    if (thirdWidthFields.some(f => key.includes(f))) return 'third'
+    return 'half'
   }
 
   const getConfidenceColor = (confidence?: number) => {
@@ -188,7 +196,7 @@ export function ReviewFieldsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -313,50 +321,56 @@ export function ReviewFieldsModal({
             <div className="space-y-6 py-4">
               {Object.entries(groupedFields).map(([section, sectionFields]) => (
                 <div key={section}>
-                  <h3 className="text-sm font-semibold text-foreground/70 mb-3">
+                  <h3 className="text-sm font-semibold text-foreground mb-3 pb-2 border-b border-border/50">
                     {sectionTitles[section] || section}
                   </h3>
-                  <div className="space-y-3">
-                    {sectionFields.map((field) => (
-                      <div
-                        key={field.key}
-                        className={cn(
-                          'border rounded-lg p-3 transition-all',
-                          selectedFields.has(field.key)
-                            ? 'border-primary/50 bg-primary/5'
-                            : 'border-border/30 bg-card'
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedFields.has(field.key)}
-                            onChange={() => toggleFieldSelection(field.key)}
-                            className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                              <label className="text-sm font-medium text-foreground">
-                                {field.label}
-                              </label>
-                              {!isAlreadyReviewed && getConfidenceBadge(field.confidence)}
-                            </div>
+                  <div className="grid grid-cols-6 gap-3">
+                    {sectionFields.map((field) => {
+                      const width = getFieldWidth(field.key)
+                      const colSpan = width === 'full' ? 'col-span-6' : width === 'half' ? 'col-span-3' : 'col-span-2'
+                      
+                      return (
+                        <div
+                          key={field.key}
+                          className={cn(
+                            colSpan,
+                            'border rounded-lg p-3 transition-all',
+                            selectedFields.has(field.key)
+                              ? 'border-primary/50 bg-primary/5'
+                              : 'border-border/30 bg-card'
+                          )}
+                        >
+                          <div className="flex items-start gap-2">
                             <input
-                              type="text"
-                              value={editedFields[field.key]?.toString() || ''}
-                              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                              className={cn(
-                                'w-full px-3 py-2 text-sm rounded-md border',
-                                'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                                'bg-background',
-                                !selectedFields.has(field.key) && 'opacity-60'
-                              )}
-                              disabled={!selectedFields.has(field.key)}
+                              type="checkbox"
+                              checked={selectedFields.has(field.key)}
+                              onChange={() => toggleFieldSelection(field.key)}
+                              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary flex-shrink-0"
                             />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <label className="text-xs font-medium text-foreground truncate">
+                                  {field.label}
+                                </label>
+                                {!isAlreadyReviewed && getConfidenceBadge(field.confidence)}
+                              </div>
+                              <input
+                                type="text"
+                                value={editedFields[field.key]?.toString() || ''}
+                                onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                                className={cn(
+                                  'w-full px-2 py-1.5 text-sm rounded-md border',
+                                  'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                  'bg-background',
+                                  !selectedFields.has(field.key) && 'opacity-60'
+                                )}
+                                disabled={!selectedFields.has(field.key)}
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ))}

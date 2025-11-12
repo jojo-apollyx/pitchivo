@@ -281,19 +281,17 @@ export function FileUploadPanel({
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-2">
                         {file.displayStatus === 'completed' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleReview(file.extraction.id)}
-                              className="h-8 w-8 p-0"
-                              title="Review & Apply"
-                            >
-                              <Sparkles className="h-4 w-4 text-primary" />
-                            </Button>
-                          </>
+                          <Button
+                            size="sm"
+                            onClick={() => handleReview(file.extraction.id)}
+                            className="h-8 px-3 bg-yellow-500 hover:bg-yellow-600 text-white"
+                            title="Review & Apply"
+                          >
+                            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                            Review
+                          </Button>
                         )}
                         <Button
                           size="sm"
