@@ -71,8 +71,9 @@ export async function extractPdfContent(
   }
   
   try {
-    // Load PDF with unpdf
-    const pdf = await getDocumentProxy(pdfBuffer)
+    // Load PDF with unpdf - convert Buffer to Uint8Array
+    const uint8Array = new Uint8Array(pdfBuffer)
+    const pdf = await getDocumentProxy(uint8Array)
     const totalPages = pdf.numPages
     
     console.log(`[PDF Handler] Processing PDF with ${totalPages} pages`)
@@ -145,7 +146,9 @@ export async function preparePdfForVision(
   const opts = { ...DEFAULT_OPTIONS, ...options }
   
   try {
-    const pdf = await getDocumentProxy(pdfBuffer)
+    // Load PDF with unpdf - convert Buffer to Uint8Array
+    const uint8Array = new Uint8Array(pdfBuffer)
+    const pdf = await getDocumentProxy(uint8Array)
     const totalPages = pdf.numPages
     const pagesToProcess = opts.maxPages 
       ? Math.min(totalPages, opts.maxPages) 
