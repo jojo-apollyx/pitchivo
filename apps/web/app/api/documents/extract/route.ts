@@ -6,6 +6,8 @@ import {
   extractDocumentContent,
   detectDocumentType
 } from '@/lib/document-extraction'
+import { AzureOpenAI } from 'openai'
+import { Readable } from 'stream'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes for AI processing
@@ -427,61 +429,65 @@ CRITICAL EXTRACTION RULES:
           console.log(`[Document Extraction] Using Azure Responses API for PDF...`)
           const visionStart = Date.now()
           
-          const base64Pdf = buffer.toString('base64')
+          // Initialize Azure OpenAI client
+          const openaiClient = new AzureOpenAI({
+            apiKey: azureApiKey,
+            endpoint: azureEndpoint,
+            apiVersion: '2024-12-01-preview'
+          })
           
           // Combine system and user prompts for the Responses API
           const fullPrompt = `${systemPrompt}
 
 User Request: Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
           
-          // Call Azure OpenAI Responses API directly
-          // Use /v1/responses endpoint as per official documentation
-          const responseUrl = `${azureEndpoint}/openai/v1/responses`
-          const azureResponse = await fetch(responseUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'api-key': azureApiKey
-            },
-            body: JSON.stringify({
-              model: visionDeploymentName,
-              input: [
-                {
-                  type: "message",
-                  role: "user",
-                  content: [
-                    {
-                      type: "input_text",
-                      text: fullPrompt
-                    },
-                    {
-                      type: "input_file",
-                      source: {
-                        type: "base64",
-                        media_type: "application/pdf",
-                        data: base64Pdf
-                      }
-                    }
-                  ]
-                }
-              ]
-            })
+          // Step 1: Upload PDF file to Azure OpenAI using SDK
+          console.log(`[Document Extraction] Uploading PDF file...`)
+          const fileUploadStart = Date.now()
+          
+          // Convert Buffer to File-like object for the SDK
+          const fileStream = Readable.from(buffer)
+          const file = await openaiClient.files.create({
+            file: fileStream as any,
+            purpose: 'assistants', // Note: user_data not supported for PDFs
+            filename: extraction.filename
           })
           
-          if (!azureResponse.ok) {
-            const errorText = await azureResponse.text()
-            console.error(`[Document Extraction] Azure Responses API error response:`, errorText)
-            throw new Error(`Azure Responses API error: ${azureResponse.status} - ${errorText}`)
-          }
+          const fileId = file.id
+          const uploadTime = Date.now() - fileUploadStart
+          console.log(`[Document Extraction] File uploaded with ID: ${fileId} (${uploadTime}ms)`)
           
-          const azureResponseData = await azureResponse.json()
-          const visionTime = Date.now() - visionStart
-          console.log(`[Document Extraction] Azure Responses API processing took ${visionTime}ms`)
+          // Step 2: Call Azure OpenAI Responses API with file_id using SDK
+          console.log(`[Document Extraction] Calling Responses API...`)
+          const responseStart = Date.now()
+          
+          const responsesResult = await openaiClient.responses.create({
+            model: visionDeploymentName,
+            input: [
+              {
+                type: "message",
+                role: "user",
+                content: [
+                  {
+                    type: "input_text",
+                    text: fullPrompt
+                  },
+                  {
+                    type: "input_file",
+                    file_id: fileId
+                  }
+                ]
+              }
+            ]
+          } as any)
+          
+          const responseTime = Date.now() - responseStart
+          console.log(`[Document Extraction] Responses API completed (${responseTime}ms)`)
           
           // Extract text from response
           // Response format: { output: [ { content: [ { text: "..." } ] } ] }
-          const responseText = azureResponseData.output?.[0]?.content?.[0]?.text 
-            || azureResponseData.output_text 
+          const responseText = (responsesResult as any).output?.[0]?.content?.[0]?.text 
+            || (responsesResult as any).output_text 
             || ''
           
           // Create a response-like object for compatibility
@@ -490,7 +496,10 @@ User Request: Analyze this document (${extraction.filename}) and extract all rel
           }
           
           const totalTime = Date.now() - startTime
-          console.log(`[Document Extraction] Total PDF processing time: ${totalTime}ms`)
+          console.log(
+            `[Document Extraction] Total PDF processing: ${totalTime}ms ` +
+            `(upload: ${uploadTime}ms, response: ${responseTime}ms)`
+          )
         } else {
           // Handle images with Vercel AI SDK (Chat Completions API)
           console.log(`[Document Extraction] Using Chat Completions API for image...`)
