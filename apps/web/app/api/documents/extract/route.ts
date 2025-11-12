@@ -422,70 +422,69 @@ CRITICAL EXTRACTION RULES:
         console.log(`[Document Extraction] Starting vision processing for ${docType} file: ${extraction.filename}`)
         
         if (docType === 'pdf') {
-          // Use Azure OpenAI Chat Completions API for PDFs (direct PDF support)
-          console.log(`[Document Extraction] Using Azure Chat Completions API for PDF...`)
-          const visionStart = Date.now()
+          // Convert PDF to high-resolution images for Vision API
+          console.log(`[Document Extraction] Converting PDF to images for Vision API...`)
+          const conversionStart = Date.now()
           
-          const base64Pdf = buffer.toString('base64')
-          const dataUrl = `data:application/pdf;base64,${base64Pdf}`
-          const userPrompt = `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
+          // Import preparePdfForVision dynamically
+          const { preparePdfForVision } = await import('@/lib/document-extraction')
           
-          // Call Azure OpenAI Chat Completions API with PDF support
-          // Azure OpenAI's vision models support PDF files via data URIs
-          const chatUrl = `${azureEndpoint}/openai/deployments/${visionDeploymentName}/chat/completions?api-version=2024-12-01-preview`
-          const azureResponse = await fetch(chatUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'api-key': azureApiKey
-            },
-            body: JSON.stringify({
-              messages: [
-                {
-                  role: "system",
-                  content: systemPrompt
-                },
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "text",
-                      text: userPrompt
-                    },
-                    {
-                      type: "image_url",
-                      image_url: {
-                        url: dataUrl
-                      }
-                    }
-                  ]
-                }
-              ],
-              max_tokens: 4000,
-              temperature: 0.1
-            })
+          // Convert PDF pages to images (high resolution: scale 3.0)
+          const pdfImages = await preparePdfForVision(buffer, {
+            maxPages: 20,
+            scale: 3.0, // High resolution (300 DPI equivalent)
+            maxImageWidth: 2048,
+            maxImageHeight: 2048
           })
           
-          if (!azureResponse.ok) {
-            const errorText = await azureResponse.text()
-            console.error(`[Document Extraction] Azure Chat Completions API error response:`, errorText)
-            throw new Error(`Azure Chat Completions API error: ${azureResponse.status} - ${errorText}`)
+          const conversionTime = Date.now() - conversionStart
+          console.log(
+            `[Document Extraction] Converted ${pdfImages.length} pages to images in ${conversionTime}ms`
+          )
+          
+          const visionStart = Date.now()
+          const userPrompt = `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document. This is a multi-page document - analyze all pages together.`
+          
+          // Build content array with text + all PDF images
+          const contentArray: any[] = [
+            {
+              type: 'text',
+              text: userPrompt
+            }
+          ]
+          
+          // Add all PDF pages as images
+          for (let i = 0; i < pdfImages.length; i++) {
+            contentArray.push({
+              type: 'image' as const,
+              image: pdfImages[i]
+            })
           }
           
-          const azureResponseData = await azureResponse.json()
+          // Call Azure OpenAI Vision API with all PDF page images
+          response = await generateText({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt
+              },
+              {
+                role: 'user',
+                content: contentArray
+              }
+            ],
+            temperature: 0.1
+          })
+          
           const visionTime = Date.now() - visionStart
-          console.log(`[Document Extraction] Azure Chat Completions API processing took ${visionTime}ms`)
-          
-          // Extract text from response
-          const responseText = azureResponseData.choices?.[0]?.message?.content || ''
-          
-          // Create a response-like object for compatibility
-          response = {
-            text: responseText
-          }
+          console.log(`[Document Extraction] Vision API processing took ${visionTime}ms`)
           
           const totalTime = Date.now() - startTime
-          console.log(`[Document Extraction] Total PDF processing time: ${totalTime}ms`)
+          console.log(
+            `[Document Extraction] Total PDF processing time: ${totalTime}ms ` +
+            `(conversion: ${conversionTime}ms, vision: ${visionTime}ms)`
+          )
         } else {
           // Handle images with Vercel AI SDK (Chat Completions API)
           console.log(`[Document Extraction] Using Chat Completions API for image...`)

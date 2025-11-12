@@ -4,9 +4,9 @@ A reusable, industry-agnostic document extraction system that supports multiple 
 
 ## Features
 
-✅ **Direct PDF Support** - PDFs sent directly to Azure OpenAI without conversion  
+✅ **High-Resolution PDF to Image** - Converts PDFs to 300 DPI images for maximum accuracy  
 ✅ **Multiple File Types** - PDF, DOCX, XLSX, XLS, and Images  
-✅ **Vision API Integration** - Azure OpenAI handles both text and scanned PDFs automatically  
+✅ **Vision API Integration** - Processes PDF images with Azure OpenAI Vision API  
 ✅ **Industry Agnostic** - Designed for reuse across multiple industries  
 ✅ **Type Safe** - Full TypeScript support with comprehensive types  
 ✅ **Robust Error Handling** - Comprehensive validation and error messages  
@@ -17,13 +17,16 @@ A reusable, industry-agnostic document extraction system that supports multiple 
 ## Architecture
 
 ```
-Document Upload → Validate Format → Extract/Process → Azure OpenAI → Response
+Document Upload → Validate Format → Convert/Extract → Azure OpenAI Vision → Response
                         ↓
-                   PDF: Direct to Azure OpenAI Chat Completions API
+                   PDF: High-Resolution Image Conversion
                    ├─ Format validation (magic numbers)
-                   ├─ Size validation (20MB max)
+                   ├─ Size validation (50MB max)
                    ├─ Password detection
-                   └─ Sent as base64 data URL to Azure
+                   ├─ Convert to images (unpdf + @napi-rs/canvas)
+                   ├─ Scale: 3.0 (300 DPI equivalent)
+                   ├─ Max dimensions: 2048x2048 per page
+                   └─ Send all pages to Vision API
                        
                    DOCX: Mammoth extraction
                    ├─ Format validation (ZIP magic numbers)
@@ -38,15 +41,22 @@ Document Upload → Validate Format → Extract/Process → Azure OpenAI → Res
                    └─ Per-sheet error handling
                        
                    Images: Direct Vision API
+                   └─ Sent as data URLs
 ```
 
 ## Installation
 
 Dependencies are already installed:
-- `unpdf` - PDF text extraction and rendering
-- `@napi-rs/canvas` - PDF to image conversion
+- `unpdf` - PDF rendering and page extraction
+- `@napi-rs/canvas` - High-performance canvas for PDF to image conversion
 - `mammoth` - DOCX text extraction
-- `xlsx` - Excel file parsing
+- `xlsx` - Excel file parsing (SheetJS)
+
+These libraries provide:
+- **unpdf**: Mozilla PDF.js wrapper for Node.js - industry standard PDF processing
+- **@napi-rs/canvas**: Native Node.js canvas implementation (faster than node-canvas)
+- High-quality image generation at 300 DPI equivalent
+- Memory-efficient processing with configurable limits
 
 ## Usage
 
@@ -66,26 +76,26 @@ console.log(result.content) // Extracted text
 console.log(result.metadata) // Extraction metadata
 ```
 
-### PDF with Vision API
+### PDF to Images for Vision API
 
 ```typescript
 import { 
   extractDocumentContent, 
-  processPdfWithVision 
+  preparePdfForVision 
 } from '@/lib/document-extraction'
 
 const buffer = Buffer.from(pdfData)
-const extraction = await extractDocumentContent(buffer, 'application/pdf')
 
-if (extraction.metadata.method === 'vision-ocr') {
-  // PDF needs vision processing
-  const result = await processPdfWithVision(
-    buffer,
-    'Extract all text from this document',
-    { maxPages: 20 }
-  )
-  console.log(result.response) // OCR text
-}
+// Convert PDF to high-resolution images
+const pdfImages = await preparePdfForVision(buffer, {
+  maxPages: 20,
+  scale: 3.0, // 300 DPI equivalent
+  maxImageWidth: 2048,
+  maxImageHeight: 2048
+})
+
+console.log(`Converted ${pdfImages.length} pages to images`)
+// Each image is a base64 data URL ready for Vision API
 ```
 
 ### Check if Vision is Needed
@@ -116,15 +126,22 @@ console.log(data) // Structured JSON
 
 ## File Type Support
 
-### PDF (Direct Azure OpenAI Processing)
-- **All PDF types**: Sent directly to Azure OpenAI Chat Completions API
-- **No conversion**: Azure handles both text-based and scanned PDFs
-- **Automatic OCR**: Azure extracts text and images automatically
-- **Multi-page support**: Handles documents up to Azure's page limits
+### PDF (High-Resolution Image Conversion)
+- **All PDF types**: Converted to high-resolution images (300 DPI)
+- **Image conversion**: Uses unpdf + @napi-rs/canvas
+- **Multi-page support**: Processes up to 20 pages by default (configurable)
+- **Quality settings**: Scale 3.0 for maximum detail preservation
 - **Format validation**: Checks for valid PDF magic numbers (%PDF-)
-- **Size limit**: 20MB (Azure Vision API limit)
+- **Size limit**: 50MB maximum
 - **Password detection**: Rejects encrypted/password-protected PDFs
-- **Best for**: Certificates, technical documents, forms, scanned documents
+- **Vision API**: All pages sent as images to Azure OpenAI
+- **Best for**: Certificates, technical documents, forms, scanned documents, complex layouts
+
+**Why image conversion?**
+- Azure OpenAI Chat Completions API doesn't natively support PDFs
+- Image conversion ensures compatibility and consistent results
+- High resolution (300 DPI) preserves fine details, small text, and diagrams
+- Works with both text-based and scanned PDFs
 
 ### DOCX (Robust Mammoth Extraction)
 - **Text extraction**: Uses `mammoth` library for accurate text parsing
@@ -158,17 +175,9 @@ Environment variables required:
 ```env
 AZURE_OPENAI_RESOURCE_NAME=your-resource-name
 AZURE_OPENAI_API_KEY=your-api-key
-AZURE_OPENAI_VISION_DEPLOYMENT=gpt-4o  # Must be a vision-capable model
+AZURE_OPENAI_VISION_DEPLOYMENT=gpt-4o
 AZURE_OPENAI_API_VERSION=2024-12-01-preview
 ```
-
-**Important**: The `AZURE_OPENAI_VISION_DEPLOYMENT` must point to a vision-capable model:
-- ✅ gpt-4o (recommended)
-- ✅ gpt-4o-mini
-- ✅ gpt-4-turbo
-- ✅ gpt-4-vision-preview
-- ❌ gpt-3.5-turbo (no vision support)
-- ❌ gpt-4 base (no vision support)
 
 ## Options
 
@@ -177,11 +186,20 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 ```typescript
 {
   maxPages?: number | null        // Max PDF pages (default: 20, null = unlimited)
-  imageScale?: number              // PDF image scale (default: 2.5)
-  maxImageHeight?: number         // Max image height (default: 1998)
+  scale?: number                   // PDF scale factor (default: 3.0 = 300 DPI)
+  maxImageWidth?: number          // Max image width (default: 2048)
+  maxImageHeight?: number         // Max image height (default: 2048)
   extractExcelStructured?: boolean // Extract Excel structured data (default: true)
 }
 ```
+
+**PDF Scale Guidelines:**
+- `1.0` = 100 DPI (low quality, small file size)
+- `2.0` = 200 DPI (medium quality)
+- `3.0` = 300 DPI (high quality, recommended) ⭐
+- `4.0` = 400 DPI (very high quality, larger files)
+
+Higher scale = better quality but larger images and slower processing.
 
 ### AiProcessingOptions
 
@@ -244,7 +262,7 @@ Extract structured JSON data from document.
 
 ## Error Handling
 
-All functions throw descriptive errors with specific messages:
+All functions throw descriptive errors:
 
 ```typescript
 try {
@@ -252,35 +270,9 @@ try {
 } catch (error) {
   if (error instanceof Error) {
     console.error(error.message)
-    // Examples of error messages:
-    // - "Invalid PDF file format. The file may be corrupted..."
-    // - "PDF file is too large (25.3MB). Maximum supported size is 20MB..."
-    // - "PDF file appears to be password-protected..."
-    // - "DOCX extraction failed: File appears to be corrupted..."
-    // - "Excel extraction failed: File is password-protected..."
   }
 }
 ```
-
-### Error Categories
-
-**Format Errors**
-- Invalid file format (magic number check)
-- Corrupted files
-- Unsupported file types
-
-**Size Errors**
-- Files exceeding maximum size limits
-- Memory issues with very large files
-
-**Security Errors**
-- Password-protected files
-- Encrypted documents
-
-**Content Errors**
-- Empty documents
-- No extractable text/data
-- Parsing failures
 
 ## Integration with Existing System
 
@@ -301,75 +293,52 @@ To add industry-specific processing:
 
 ## Performance
 
-- **PDFs**: Variable (depends on Azure API, typically 3-10s)
-  - Azure handles both text and images automatically
-  - Multi-page PDFs take longer
-  - No local processing overhead
+- **PDFs**: Medium to slow depending on pages
+  - Image conversion: ~500-1000ms per page at 300 DPI
+  - Vision API: ~2-5s per page
+  - Total: ~2.5-6s per page
+  - Example: 5-page PDF = ~15-30 seconds
 - **DOCX**: Fast (~100-500ms for typical documents)
 - **XLSX**: Fast to medium (~200ms-2s depending on size)
   - Truncated to 10,000 rows/sheet for performance
 - **Images**: Medium (vision API, ~1-3s)
 
+**Optimization Tips:**
+- Limit pages for faster processing (`maxPages: 5`)
+- Lower scale for speed over quality (`scale: 2.0`)
+- Process in background for large PDFs
+
 ## Limitations
 
 ### PDF
-- Maximum file size: 20MB (Azure Vision API limit)
-- Password-protected PDFs not supported
-- Very large PDFs may timeout (consider page limits)
+- **Maximum file size**: 50MB
+- **Maximum pages processed**: 20 by default (configurable with `maxPages`)
+- **Image size**: 2048x2048 pixels max per page
+- **Processing time**: Increases linearly with page count
+- **Password-protected PDFs**: Not supported
+- **Very large PDFs**: May cause memory issues or timeouts
 
 ### DOCX
-- Maximum file size: 50MB
-- Complex formatting may not be preserved
-- Embedded images/objects not extracted (text only)
+- **Maximum file size**: 50MB
+- **Complex formatting**: May not be preserved
+- **Embedded images/objects**: Not extracted (text only)
 
 ### XLSX
-- Maximum file size: 50MB
-- Row limit: 10,000 rows per sheet (configurable)
-- Complex formulas evaluated to values only
-- Macros and VBA code not processed
+- **Maximum file size**: 50MB
+- **Row limit**: 10,000 rows per sheet (configurable)
+- **Complex formulas**: Evaluated to values only
+- **Macros and VBA code**: Not processed
 
 ### General
-- Vision API costs apply for all PDFs and images
-- Processing time increases with file size
-- Network latency affects Azure API calls
-
-## Best Practices
-
-### File Upload
-1. **Validate before upload**: Check file size client-side
-2. **Show progress**: Long operations need user feedback
-3. **Handle errors gracefully**: Display user-friendly error messages
-
-### PDF Processing
-1. **Use Azure directly**: Don't convert PDFs to images locally
-2. **Monitor costs**: Vision API usage for all PDFs
-3. **Page limits**: Consider limiting pages for very large PDFs
-4. **Quality matters**: Higher quality scans = better extraction
-
-### DOCX Processing
-1. **Check file size**: Reject extremely large files early
-2. **Handle warnings**: Log Mammoth warnings for debugging
-3. **Text-only**: Understand that images are not extracted
-
-### Excel Processing
-1. **Row limits**: Default 10,000 rows per sheet prevents memory issues
-2. **Multiple sheets**: Each sheet processed independently
-3. **Data types**: Dates and numbers are formatted as strings
-4. **Large files**: Consider async processing or streaming
-
-### Error Handling
-1. **Specific messages**: Use error messages to guide users
-2. **Retry logic**: Implement retries for transient API errors
-3. **Logging**: Log full errors for debugging, show simple messages to users
+- **Vision API costs**: Apply for all PDF pages and images
+- **Processing time**: Increases with file size and complexity
+- **Network latency**: Affects Azure API calls
+- **Memory usage**: High-resolution PDFs can be memory-intensive
 
 ## Future Enhancements
 
-- [ ] Support for PPTX files
-- [ ] Batch processing API
+- [ ] Support for more file types (PPTX, RTF, etc.)
+- [ ] Batch processing
 - [ ] Caching extracted content
 - [ ] Progress callbacks for long operations
-- [ ] Streaming for very large files
-- [ ] Configurable row limits per file type
-- [ ] PDF page range selection
-- [ ] Multiple language support
 

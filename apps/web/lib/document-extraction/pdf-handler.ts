@@ -1,30 +1,33 @@
 /**
  * PDF Document Handler
- * Optimized handler for Azure OpenAI Vision API
+ * High-resolution PDF to image conversion for Azure OpenAI Vision API
  * 
+ * Uses unpdf and @napi-rs/canvas for high-quality rendering
  * Best practices:
- * - PDFs are sent directly to Azure OpenAI without conversion
- * - Supports multi-page PDFs (Azure handles pagination)
- * - Works with both text-based and scanned PDFs
- * - Azure extracts text and images automatically
- * - No local OCR needed - reduces processing time
- * 
- * Limitations:
- * - Maximum file size: Check Azure limits (typically 20MB for vision API)
- * - Password-protected PDFs are not supported
- * - Maximum pages: Check Azure model limits
+ * - High DPI (300) for maximum quality
+ * - Validates file format and size
+ * - Handles multi-page PDFs
+ * - Detects password protection
  */
 
+import { getDocumentProxy } from 'unpdf'
+import { createCanvas } from '@napi-rs/canvas'
 import type { 
   ExtractionResult, 
   DocumentExtractionOptions 
 } from './types'
 
+const DEFAULT_OPTIONS = {
+  maxPages: 20,
+  scale: 3.0, // High resolution (300 DPI equivalent)
+  maxImageWidth: 2048,
+  maxImageHeight: 2048
+}
+
 /**
  * Validate PDF file format by checking magic numbers
  */
 function isValidPdf(buffer: Buffer): boolean {
-  // PDF files start with %PDF-
   if (buffer.length < 5) return false
   return buffer[0] === 0x25 && // %
          buffer[1] === 0x50 && // P
@@ -34,14 +37,14 @@ function isValidPdf(buffer: Buffer): boolean {
 }
 
 /**
- * Extract content from PDF
- * PDFs are processed directly by Azure OpenAI Vision API - no local processing needed
- * This approach is optimal for accuracy and handles both text and scanned PDFs
+ * Extract content from PDF by converting to high-resolution images
  */
 export async function extractPdfContent(
   pdfBuffer: Buffer,
   options: DocumentExtractionOptions = {}
 ): Promise<ExtractionResult> {
+  const opts = { ...DEFAULT_OPTIONS, ...options }
+  
   // Validate PDF format
   if (!isValidPdf(pdfBuffer)) {
     throw new Error(
@@ -49,17 +52,17 @@ export async function extractPdfContent(
     )
   }
   
-  // Validate file size (Azure typically has a 20MB limit for vision API)
-  const maxSize = 20 * 1024 * 1024 // 20MB
+  // Validate file size (reasonable limit for processing)
+  const maxSize = 50 * 1024 * 1024 // 50MB
   if (pdfBuffer.length > maxSize) {
     throw new Error(
       `PDF file is too large (${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB). ` +
-      `Maximum supported size is ${maxSize / 1024 / 1024}MB for Azure OpenAI Vision API.`
+      `Maximum supported size is ${maxSize / 1024 / 1024}MB.`
     )
   }
   
-  // Check for password protection by looking for /Encrypt in PDF
-  const pdfString = pdfBuffer.toString('latin1', 0, Math.min(1024, pdfBuffer.length))
+  // Check for password protection
+  const pdfString = pdfBuffer.toString('latin1', 0, Math.min(2048, pdfBuffer.length))
   if (pdfString.includes('/Encrypt')) {
     throw new Error(
       'PDF file appears to be password-protected or encrypted. ' +
@@ -67,16 +70,57 @@ export async function extractPdfContent(
     )
   }
   
-  // Return metadata indicating PDF should be processed with vision API
-  // Azure OpenAI supports PDF files directly via Chat Completions API
-  // The actual extraction happens in the route handler
-  return {
-    content: '', // No text extraction needed - Azure handles it
-    metadata: {
-      method: 'azure-vision-pdf',
-      confidence: 'high'
-      // Azure will handle page detection, OCR, and text extraction automatically
+  try {
+    // Load PDF with unpdf
+    const pdf = await getDocumentProxy(pdfBuffer)
+    const totalPages = pdf.numPages
+    
+    console.log(`[PDF Handler] Processing PDF with ${totalPages} pages`)
+    
+    // Limit pages if specified
+    const pagesToProcess = opts.maxPages 
+      ? Math.min(totalPages, opts.maxPages) 
+      : totalPages
+    
+    if (pagesToProcess < totalPages) {
+      console.warn(
+        `[PDF Handler] Processing ${pagesToProcess} of ${totalPages} pages (limited by maxPages option)`
+      )
     }
+    
+    // Return metadata indicating images need to be generated for vision API
+    return {
+      content: '', // No text - will be extracted by vision API from images
+      metadata: {
+        method: 'vision-ocr',
+        pageCount: totalPages,
+        processedPages: pagesToProcess,
+        confidence: 'high',
+        pdfType: 'mixed'
+      }
+    }
+  } catch (error) {
+    console.error('[PDF Handler] Extraction error:', error)
+    
+    if (error instanceof Error) {
+      if (error.message.includes('password') || error.message.includes('encrypted')) {
+        throw new Error(
+          'PDF extraction failed: File is password-protected. ' +
+          'Please remove the password and try again.'
+        )
+      }
+      if (error.message.includes('Invalid PDF')) {
+        throw new Error(
+          'PDF extraction failed: File appears to be corrupted or is not a valid PDF. ' +
+          'Please verify the file integrity.'
+        )
+      }
+    }
+    
+    throw new Error(
+      `PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+      'Please verify the file is not corrupted or password-protected.'
+    )
   }
 }
 
@@ -86,16 +130,78 @@ export async function extractPdfContent(
 export async function detectPdfType(
   pdfBuffer: Buffer
 ): Promise<'text-based' | 'scanned' | 'mixed'> {
-  // This is a placeholder for future optimization
-  // Currently, we send all PDFs to Azure Vision API which handles both types
-  // In the future, we could detect text-based PDFs and use text extraction
-  // to save vision API costs
+  // Always return mixed since we convert all PDFs to images
   return 'mixed'
 }
 
 /**
- * Prepare PDF for vision processing (converts to base64 data URL)
+ * Convert PDF pages to high-resolution images for vision API
+ * Returns array of base64 encoded image data URLs
  */
-export function preparePdfForVision(pdfBuffer: Buffer): string {
-  return `data:application/pdf;base64,${pdfBuffer.toString('base64')}`
+export async function preparePdfForVision(
+  pdfBuffer: Buffer,
+  options: DocumentExtractionOptions = {}
+): Promise<string[]> {
+  const opts = { ...DEFAULT_OPTIONS, ...options }
+  
+  try {
+    const pdf = await getDocumentProxy(pdfBuffer)
+    const totalPages = pdf.numPages
+    const pagesToProcess = opts.maxPages 
+      ? Math.min(totalPages, opts.maxPages) 
+      : totalPages
+    
+    const images: string[] = []
+    
+    console.log(`[PDF Handler] Converting ${pagesToProcess} pages to images at scale ${opts.scale}`)
+    
+    for (let pageNum = 1; pageNum <= pagesToProcess; pageNum++) {
+      try {
+        const page = await pdf.getPage(pageNum)
+        const viewport = page.getViewport({ scale: opts.scale })
+        
+        // Limit image dimensions to prevent memory issues
+        let { width, height } = viewport
+        if (width > opts.maxImageWidth || height > opts.maxImageHeight) {
+          const scale = Math.min(
+            opts.maxImageWidth / width,
+            opts.maxImageHeight / height
+          )
+          width = Math.floor(width * scale)
+          height = Math.floor(height * scale)
+          console.warn(
+            `[PDF Handler] Page ${pageNum} scaled down to ${width}x${height} to fit limits`
+          )
+        }
+        
+        // Create canvas
+        const canvas = createCanvas(Math.floor(width), Math.floor(height))
+        const context = canvas.getContext('2d')
+        
+        // Render PDF page to canvas
+        await page.render({
+          canvasContext: context as any,
+          viewport: page.getViewport({ 
+            scale: opts.scale * (width / viewport.width) 
+          })
+        }).promise
+        
+        // Convert to base64 data URL
+        const dataUrl = canvas.toDataURL('image/png')
+        images.push(dataUrl)
+        
+        console.log(`[PDF Handler] Page ${pageNum}/${pagesToProcess} converted (${width}x${height})`)
+      } catch (pageError) {
+        console.error(`[PDF Handler] Failed to render page ${pageNum}:`, pageError)
+        throw new Error(`Failed to render page ${pageNum}: ${pageError instanceof Error ? pageError.message : 'Unknown error'}`)
+      }
+    }
+    
+    return images
+  } catch (error) {
+    console.error('[PDF Handler] Failed to convert PDF to images:', error)
+    throw new Error(
+      `Failed to convert PDF to images: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
 }
