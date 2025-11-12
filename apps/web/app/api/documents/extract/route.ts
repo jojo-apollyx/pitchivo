@@ -190,9 +190,9 @@ Only populate fields that are relevant to the document. Leave all food-specific 
   "basic": {
     "product_name": string (for food docs) | document title/name (for other docs),
     "product_aliases": string,
-    "category": string,
+    "category": string (IMPORTANT: Extract product category/type from document, e.g., "Vitamin C", "Antioxidant", "Preservative", "Emulsifier", "Thickener", "Sweetener", "Colorant", "Flavor", "Probiotic", "Enzyme", "Amino Acid", "Mineral", "Herbal Extract", etc.),
     "description": string (document description or summary),
-    "application": string[],
+    "application": string[] (IMPORTANT: Extract all applications/uses mentioned in the document, e.g., ["Food additive", "Dietary supplement", "Pharmaceutical", "Cosmetic", "Beverage", "Bakery", "Dairy", "Confectionery", "Meat processing", "Functional food", etc.]),
     "brand_name": string,
     "origin_country": string,
     "hs_code": string,
@@ -413,7 +413,10 @@ CRITICAL EXTRACTION RULES:
    - For numerical values, extract numbers without units when possible
    - Omit entire groups if they have no relevant data
    - Be precise and accurate - do not make up values
-   - If a field doesn't apply to the document type, leave it empty or omit it`
+   - If a field doesn't apply to the document type, leave it empty or omit it
+   - CRITICAL: Always extract "category" and "application" fields when available in the document:
+     * "category": Look for product type, classification, or category mentioned (e.g., "Vitamin C", "Antioxidant", "Preservative")
+     * "application": Extract ALL uses/applications mentioned (e.g., sections titled "Applications", "Uses", "Recommended for", or any mention of where/how the product is used)`
 
     // Generate extraction using Azure OpenAI
     let response: Awaited<ReturnType<typeof generateText>> | { text: string } | undefined

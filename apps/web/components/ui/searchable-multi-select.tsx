@@ -68,7 +68,7 @@ export function SearchableMultiSelect({
 
   return (
     <div className={cn('space-y-2', className)} ref={containerRef}>
-      <Label>{label}</Label>
+      <Label className="text-foreground">{label}</Label>
       
       {/* Selected Items Display */}
       {selected.length > 0 && (

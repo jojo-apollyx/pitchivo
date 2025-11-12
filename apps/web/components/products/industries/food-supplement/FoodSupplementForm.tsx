@@ -180,8 +180,8 @@ export function FoodSupplementForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Manufacturer Name */}
-            <div>
-              <Label htmlFor="manufacturerName">Manufacturer Name</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="manufacturerName" className="mb-1 whitespace-nowrap">Manufacturer Name</Label>
               <Input
                 id="manufacturerName"
                 value={formData.manufacturerName}
@@ -191,8 +191,8 @@ export function FoodSupplementForm({
             </div>
 
             {/* CAS Number */}
-            <div>
-              <Label htmlFor="casNumber">CAS Number</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="casNumber" className="mb-1 whitespace-nowrap">CAS Number</Label>
               <Input
                 id="casNumber"
                 value={formData.casNumber}
@@ -202,8 +202,8 @@ export function FoodSupplementForm({
             </div>
 
             {/* FDA Number */}
-            <div>
-              <Label htmlFor="fdaNumber">FDA Number</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="fdaNumber" className="mb-1 whitespace-nowrap">FDA Number</Label>
               <Input
                 id="fdaNumber"
                 value={formData.fdaNumber}
@@ -227,8 +227,8 @@ export function FoodSupplementForm({
 
           {/* Form & Grade */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="form">Physical Form</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="form" className="mb-1 whitespace-nowrap">Physical Form</Label>
               <Select value={formData.form} onValueChange={(value) => onChange({ form: value })}>
                 <SelectTrigger className="h-11 rounded-xl">
                   <SelectValue placeholder="Select form" />
@@ -242,8 +242,8 @@ export function FoodSupplementForm({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="grade">Grade</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="grade" className="mb-1 whitespace-nowrap">Grade</Label>
               <Select value={formData.grade} onValueChange={(value) => onChange({ grade: value })}>
                 <SelectTrigger className="h-11 rounded-xl">
                   <SelectValue placeholder="Select grade" />
@@ -310,8 +310,8 @@ export function FoodSupplementForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Net Weight */}
-            <div>
-              <Label htmlFor="netWeight">Net Weight per Package</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package</Label>
               <Input
                 id="netWeight"
                 value={formData.netWeight}
@@ -404,8 +404,8 @@ export function FoodSupplementForm({
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="sampleQuantity">Sample Quantity (kg)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="sampleQuantity" className="mb-1 whitespace-nowrap">Sample Quantity (kg)</Label>
                   <Input
                     id="sampleQuantity"
                     type="number"
@@ -415,8 +415,8 @@ export function FoodSupplementForm({
                     placeholder="e.g., 0.5"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="sampleLeadTime">Sample Lead Time</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="sampleLeadTime" className="mb-1 whitespace-nowrap">Sample Lead Time</Label>
                   <Input
                     id="sampleLeadTime"
                     value={formData.sampleLeadTime}
@@ -453,27 +453,27 @@ export function FoodSupplementForm({
           {formData.warehouseLocations.map((location) => (
             <div key={location.id} className="flex gap-3 items-end">
               <div className="flex-1 grid grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-xs">Country</Label>
+                <div className="flex flex-col">
+                  <Label className="text-xs mb-1 whitespace-nowrap">Country</Label>
                   <CountrySelect
                     value={location.country}
                     onValueChange={(value) => updateWarehouseLocation(location.id, { country: value })}
                     countries={FOOD_SUPPLEMENT_COUNTRIES}
                     placeholder="Select"
-                    className="mt-1"
+                    className="h-11"
                   />
                 </div>
-                <div>
-                  <Label className="text-xs">City</Label>
+                <div className="flex flex-col">
+                  <Label className="text-xs mb-1 whitespace-nowrap">City</Label>
                   <Input
                     value={location.city}
                     onChange={(e) => updateWarehouseLocation(location.id, { city: e.target.value })}
                     placeholder="City"
-                    className="h-11 mt-1"
+                    className="h-11"
                   />
                 </div>
-                <div>
-                  <Label className="text-xs">Quantity (kg)</Label>
+                <div className="flex flex-col">
+                  <Label className="text-xs mb-1 whitespace-nowrap">Quantity (kg)</Label>
                   <Input
                     type="number"
                     value={location.quantity}
@@ -481,7 +481,7 @@ export function FoodSupplementForm({
                       updateWarehouseLocation(location.id, { quantity: parseInt(e.target.value) || 0 })
                     }
                     placeholder="0"
-                    className="h-11 mt-1"
+                    className="h-11"
                   />
                 </div>
               </div>
@@ -516,8 +516,8 @@ export function FoodSupplementForm({
               <h3 className="text-sm font-semibold mb-3">Basic Specifications</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* EINECS */}
-                <div>
-                  <Label htmlFor="einecs">EINECS Number</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="einecs" className="mb-1 whitespace-nowrap">EINECS Number</Label>
                   <Input
                     id="einecs"
                     value={formData.einecs}
@@ -527,8 +527,8 @@ export function FoodSupplementForm({
                 </div>
 
                 {/* Shelf Life */}
-                <div>
-                  <Label htmlFor="shelfLife">Shelf Life (months)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="shelfLife" className="mb-1 whitespace-nowrap">Shelf Life (months)</Label>
                   <Input
                     id="shelfLife"
                     type="number"
@@ -544,8 +544,8 @@ export function FoodSupplementForm({
             <div>
               <h3 className="text-sm font-semibold mb-3">Physical Characteristics</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="appearance">Appearance</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="appearance" className="mb-1 whitespace-nowrap">Appearance</Label>
                   <Input
                     id="appearance"
                     value={formData.appearance}
@@ -553,8 +553,8 @@ export function FoodSupplementForm({
                     placeholder="e.g., White to off-white powder"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="odor">Odor</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="odor" className="mb-1 whitespace-nowrap">Odor</Label>
                   <Input
                     id="odor"
                     value={formData.odor}
@@ -562,8 +562,8 @@ export function FoodSupplementForm({
                     placeholder="e.g., Mild"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="taste">Taste</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="taste" className="mb-1 whitespace-nowrap">Taste</Label>
                   <Input
                     id="taste"
                     value={formData.taste}
@@ -571,8 +571,8 @@ export function FoodSupplementForm({
                     placeholder="e.g., Slightly acidic"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="solubility">Solubility</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="solubility" className="mb-1 whitespace-nowrap">Solubility</Label>
                   <Input
                     id="solubility"
                     value={formData.solubility}
@@ -599,8 +599,8 @@ export function FoodSupplementForm({
               <h3 className="text-sm font-semibold mb-3">Chemical Analysis</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Assay */}
-              <div>
-                <Label htmlFor="assay">Assay / Purity (%)</Label>
+              <div className="flex flex-col">
+                <Label htmlFor="assay" className="mb-1 whitespace-nowrap">Assay / Purity (%)</Label>
                 <Input
                   id="assay"
                   type="number"
@@ -611,8 +611,8 @@ export function FoodSupplementForm({
                 />
               </div>
               {/* Moisture */}
-              <div>
-                <Label htmlFor="moisture">Moisture (%)</Label>
+              <div className="flex flex-col">
+                <Label htmlFor="moisture" className="mb-1 whitespace-nowrap">Moisture (%)</Label>
                 <Input
                   id="moisture"
                   type="number"
@@ -623,8 +623,8 @@ export function FoodSupplementForm({
                 />
               </div>
               {/* Ash Content */}
-              <div>
-                <Label htmlFor="ashContent">Ash Content (%)</Label>
+              <div className="flex flex-col">
+                <Label htmlFor="ashContent" className="mb-1 whitespace-nowrap">Ash Content (%)</Label>
                 <Input
                   id="ashContent"
                   type="number"
@@ -635,8 +635,8 @@ export function FoodSupplementForm({
                 />
               </div>
               {/* Loss on Drying */}
-              <div>
-                <Label htmlFor="lossOnDrying">Loss on Drying (%)</Label>
+              <div className="flex flex-col">
+                <Label htmlFor="lossOnDrying" className="mb-1 whitespace-nowrap">Loss on Drying (%)</Label>
                 <Input
                   id="lossOnDrying"
                   type="number"
@@ -647,8 +647,8 @@ export function FoodSupplementForm({
                 />
               </div>
               {/* pH */}
-              <div>
-                <Label htmlFor="ph">pH</Label>
+              <div className="flex flex-col">
+                <Label htmlFor="ph" className="mb-1 whitespace-nowrap">pH</Label>
                 <Input
                   id="ph"
                   value={formData.ph}
@@ -657,8 +657,8 @@ export function FoodSupplementForm({
                 />
               </div>
               {/* Bulk Density */}
-              <div>
-                <Label htmlFor="bulkDensity">Bulk Density (g/ml)</Label>
+              <div className="flex flex-col">
+                <Label htmlFor="bulkDensity" className="mb-1 whitespace-nowrap">Bulk Density (g/ml)</Label>
                 <Input
                   id="bulkDensity"
                   type="number"
@@ -669,8 +669,8 @@ export function FoodSupplementForm({
                 />
               </div>
               {/* Particle Size */}
-              <div>
-                <Label htmlFor="particleSize">Particle Size</Label>
+              <div className="flex flex-col">
+                <Label htmlFor="particleSize" className="mb-1 whitespace-nowrap">Particle Size</Label>
                 <Input
                   id="particleSize"
                   value={formData.particleSize}
@@ -685,8 +685,8 @@ export function FoodSupplementForm({
             <div>
               <h3 className="text-sm font-semibold mb-3">Heavy Metals (ppm)</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <Label htmlFor="lead" className="text-xs">Lead (Pb)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="lead" className="text-xs mb-1 whitespace-nowrap">Lead (Pb)</Label>
                   <Input
                     id="lead"
                     type="number"
@@ -696,8 +696,8 @@ export function FoodSupplementForm({
                     placeholder="0.5"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="arsenic" className="text-xs">Arsenic (As)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="arsenic" className="text-xs mb-1 whitespace-nowrap">Arsenic (As)</Label>
                   <Input
                     id="arsenic"
                     type="number"
@@ -707,8 +707,8 @@ export function FoodSupplementForm({
                     placeholder="0.5"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="cadmium" className="text-xs">Cadmium (Cd)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="cadmium" className="text-xs mb-1 whitespace-nowrap">Cadmium (Cd)</Label>
                   <Input
                     id="cadmium"
                     type="number"
@@ -718,8 +718,8 @@ export function FoodSupplementForm({
                     placeholder="0.5"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="mercury" className="text-xs">Mercury (Hg)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="mercury" className="text-xs mb-1 whitespace-nowrap">Mercury (Hg)</Label>
                   <Input
                     id="mercury"
                     type="number"
@@ -736,8 +736,8 @@ export function FoodSupplementForm({
             <div>
               <h3 className="text-sm font-semibold mb-3">Microbiological</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="totalPlateCount">Total Plate Count (cfu/g)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="totalPlateCount" className="mb-1 whitespace-nowrap">Total Plate Count (cfu/g)</Label>
                   <Input
                     id="totalPlateCount"
                     type="number"
@@ -746,8 +746,8 @@ export function FoodSupplementForm({
                     placeholder="e.g., 1000"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="yeastMold">Yeast & Mold (cfu/g)</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="yeastMold" className="mb-1 whitespace-nowrap">Yeast & Mold (cfu/g)</Label>
                   <Input
                     id="yeastMold"
                     type="number"
@@ -756,8 +756,8 @@ export function FoodSupplementForm({
                     placeholder="e.g., 100"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="eColiPresence">E. Coli</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="eColiPresence" className="mb-1 whitespace-nowrap">E. Coli</Label>
                   <Select value={formData.eColiPresence} onValueChange={(value) => onChange({ eColiPresence: value })}>
                     <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue placeholder="Select" />
@@ -768,8 +768,8 @@ export function FoodSupplementForm({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="salmonellaPresence">Salmonella</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="salmonellaPresence" className="mb-1 whitespace-nowrap">Salmonella</Label>
                   <Select value={formData.salmonellaPresence} onValueChange={(value) => onChange({ salmonellaPresence: value })}>
                     <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue placeholder="Select" />
@@ -780,8 +780,8 @@ export function FoodSupplementForm({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="staphylococcusPresence">Staphylococcus</Label>
+                <div className="flex flex-col">
+                  <Label htmlFor="staphylococcusPresence" className="mb-1 whitespace-nowrap">Staphylococcus</Label>
                   <Select value={formData.staphylococcusPresence} onValueChange={(value) => onChange({ staphylococcusPresence: value })}>
                     <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue placeholder="Select" />
@@ -822,8 +822,8 @@ export function FoodSupplementForm({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="gmoStatus">GMO Status</Label>
+                  <div className="flex flex-col">
+                    <Label htmlFor="gmoStatus" className="mb-1 whitespace-nowrap">GMO Status</Label>
                     <Select value={formData.gmoStatus} onValueChange={(value) => onChange({ gmoStatus: value })}>
                       <SelectTrigger className="h-11 rounded-xl">
                         <SelectValue placeholder="Select" />
@@ -835,8 +835,8 @@ export function FoodSupplementForm({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="irradiationStatus">Irradiation Status</Label>
+                  <div className="flex flex-col">
+                    <Label htmlFor="irradiationStatus" className="mb-1 whitespace-nowrap">Irradiation Status</Label>
                     <Select value={formData.irradiationStatus} onValueChange={(value) => onChange({ irradiationStatus: value })}>
                       <SelectTrigger className="h-11 rounded-xl">
                         <SelectValue placeholder="Select" />

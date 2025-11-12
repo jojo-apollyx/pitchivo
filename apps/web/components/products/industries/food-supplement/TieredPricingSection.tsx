@@ -76,7 +76,7 @@ export function TieredPricingSection({
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                 {/* MOQ */}
                 <div className="flex flex-col min-w-0">
-                  <Label className="text-xs text-muted-foreground mb-1">
+                  <Label className="text-xs text-muted-foreground mb-1 whitespace-nowrap">
                     MOQ (kg) *
                   </Label>
                   <Input
@@ -92,7 +92,7 @@ export function TieredPricingSection({
 
                 {/* Price per kg */}
                 <div className="flex flex-col min-w-0">
-                  <Label className="text-xs text-muted-foreground mb-1">
+                  <Label className="text-xs text-muted-foreground mb-1 whitespace-nowrap">
                     Price (USD/kg) *
                   </Label>
                   <Input
@@ -109,7 +109,7 @@ export function TieredPricingSection({
 
                 {/* Lead Time */}
                 <div className="flex flex-col min-w-0">
-                  <Label className="text-xs text-muted-foreground mb-1">
+                  <Label className="text-xs text-muted-foreground mb-1 whitespace-nowrap">
                     Lead Time (days) *
                   </Label>
                   <Input

@@ -261,11 +261,19 @@ export default function CreateProductPage() {
 
         const fieldCount = completedExtraction.extracted_values
           ? Object.keys(completedExtraction.extracted_values).filter(
-              (k) => completedExtraction.extracted_values![k] !== null
+              (k) => completedExtraction.extracted_values![k] !== null && k !== '_grouped'
             ).length
           : 0
 
         toast.success(`Extracted ${fieldCount} fields from ${file.name}`, { icon: '✨' })
+
+        // Store grouped data for display (but don't auto-apply - user must click Apply)
+        if (completedExtraction.extracted_values?._grouped) {
+          setExtractedGroupedData((prev: any) => ({
+            ...prev,
+            ...completedExtraction.extracted_values._grouped
+          }))
+        }
 
         // Auto-show technical data if extracted
         if (
@@ -346,7 +354,198 @@ export default function CreateProductPage() {
         const updates: Partial<FoodSupplementProductData> = {}
 
         Object.entries(fields).forEach(([key, value]) => {
-          // Map API fields to form fields
+          // Handle grouped keys (e.g., "basic.product_name", "chemical.assay_min")
+          if (key.includes('.')) {
+            const [group, fieldKey] = key.split('.')
+            
+            // Map grouped fields to form fields
+            switch (group) {
+              case 'basic':
+                switch (fieldKey) {
+                  case 'product_name':
+                    updates.productName = String(value)
+                    break
+                  case 'category':
+                    updates.category = String(value)
+                    break
+                  case 'description':
+                    updates.description = String(value)
+                    break
+                  case 'appearance':
+                    updates.appearance = String(value)
+                    break
+                  case 'origin_country':
+                    updates.originCountry = String(value)
+                    break
+                  case 'cas_number':
+                    updates.casNumber = String(value)
+                    break
+                  case 'einecs_number':
+                    updates.einecs = String(value)
+                    break
+                  case 'application':
+                    if (Array.isArray(value)) {
+                      updates.applications = value
+                    }
+                    break
+                }
+                break
+              case 'physical':
+                switch (fieldKey) {
+                  case 'form':
+                    updates.form = String(value)
+                    break
+                  // Note: color field doesn't exist in form, skip it
+                  // case 'color':
+                  //   updates.color = String(value)
+                  //   break
+                  case 'odor':
+                    updates.odor = String(value)
+                    break
+                  case 'taste':
+                    updates.taste = String(value)
+                    break
+                  case 'solubility_water':
+                    updates.solubility = String(value)
+                    break
+                  case 'particle_size_range':
+                    updates.particleSize = String(value)
+                    break
+                  case 'bulk_density':
+                    if (value) {
+                      updates.bulkDensity = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                }
+                break
+              case 'chemical':
+                switch (fieldKey) {
+                  case 'assay_min':
+                    if (value) {
+                      updates.assay = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                  case 'moisture_max':
+                    if (value) {
+                      updates.moisture = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                  case 'ash_max':
+                    if (value) {
+                      updates.ashContent = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                  case 'ph_value':
+                    updates.ph = String(value)
+                    break
+                  case 'lead_max':
+                    if (value) {
+                      updates.lead = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                  case 'arsenic_max':
+                    if (value) {
+                      updates.arsenic = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                  case 'cadmium_max':
+                    if (value) {
+                      updates.cadmium = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                  case 'mercury_max':
+                    if (value) {
+                      updates.mercury = parseFloat(String(value))
+                      setShowTechnicalData(true)
+                    }
+                    break
+                  case 'pesticide_residue':
+                    updates.pesticideResidue = String(value)
+                    break
+                }
+                break
+              case 'microbial':
+                switch (fieldKey) {
+                  case 'total_plate_count_max':
+                    if (value) {
+                      updates.totalPlateCount = parseInt(String(value))
+                    }
+                    break
+                  case 'yeast_mold_max':
+                    if (value) {
+                      updates.yeastMold = parseInt(String(value))
+                    }
+                    break
+                  case 'e_coli':
+                    updates.eColiPresence = String(value)
+                    break
+                  case 'salmonella':
+                    updates.salmonellaPresence = String(value)
+                    break
+                  case 'staphylococcus_aureus':
+                    updates.staphylococcusPresence = String(value)
+                    break
+                }
+                break
+              case 'supplier':
+                switch (fieldKey) {
+                  case 'manufacturer_name':
+                    updates.manufacturerName = String(value)
+                    break
+                }
+                break
+              case 'commercial':
+                switch (fieldKey) {
+                  case 'shelf_life_months':
+                    if (value) {
+                      updates.shelfLife = parseInt(String(value))
+                    }
+                    break
+                }
+                break
+              case 'packaging':
+                switch (fieldKey) {
+                  case 'packaging_type':
+                    if (Array.isArray(value) && value.length > 0) {
+                      updates.packagingType = value[0]
+                    }
+                    break
+                  case 'net_weight_per_package':
+                    updates.netWeight = String(value)
+                    break
+                }
+                break
+              case 'allergen':
+                switch (fieldKey) {
+                  case 'allergen_statement':
+                    updates.allergenInfo = String(value)
+                    break
+                }
+                break
+              case 'compliance':
+                switch (fieldKey) {
+                  case 'is_gmo':
+                    updates.gmoStatus = value === 'Yes' ? 'Non-GMO' : value === 'No' ? 'GMO' : 'Unknown'
+                    break
+                  case 'specification_standard':
+                    if (Array.isArray(value)) {
+                      updates.certificates = value
+                    }
+                    break
+                }
+                break
+            }
+            return // Skip the flat key processing below
+          }
+          
+          // Map flat API fields to form fields (for backward compatibility)
           switch (key) {
             case 'productName':
               updates.productName = String(value)
@@ -368,6 +567,9 @@ export default function CreateProductPage() {
               break
             case 'description':
               updates.description = String(value)
+              break
+            case 'category':
+              updates.category = String(value)
               break
             case 'appearance':
               updates.appearance = String(value)
