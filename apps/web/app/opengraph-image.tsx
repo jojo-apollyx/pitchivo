@@ -1,5 +1,9 @@
 import { ImageResponse } from 'next/og'
 
+// Force dynamic rendering to avoid build-time issues
+export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
+
 // Image metadata
 export const alt = 'Pitchivo - AI-Powered B2B Outreach'
 export const size = {
