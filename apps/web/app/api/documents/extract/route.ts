@@ -423,14 +423,20 @@ CRITICAL EXTRACTION RULES:
         
         if (docType === 'pdf') {
           // Use Azure OpenAI Responses API for PDFs (direct PDF support)
+          // Documentation: https://learn.microsoft.com/en-us/azure/ai-foundry/openai/how-to/responses
           console.log(`[Document Extraction] Using Azure Responses API for PDF...`)
           const visionStart = Date.now()
           
           const base64Pdf = buffer.toString('base64')
-          const userPrompt = `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
+          
+          // Combine system and user prompts for the Responses API
+          const fullPrompt = `${systemPrompt}
+
+User Request: Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
           
           // Call Azure OpenAI Responses API directly
-          const responseUrl = `${azureEndpoint}/openai/responses?api-version=2025-03-01-preview`
+          // Use /v1/responses endpoint as per official documentation
+          const responseUrl = `${azureEndpoint}/openai/v1/responses`
           const azureResponse = await fetch(responseUrl, {
             method: 'POST',
             headers: {
@@ -442,21 +448,11 @@ CRITICAL EXTRACTION RULES:
               input: [
                 {
                   type: "message",
-                  role: "system",
-                  content: [
-                    {
-                      type: "input_text",
-                      text: systemPrompt
-                    }
-                  ]
-                },
-                {
-                  type: "message",
                   role: "user",
                   content: [
                     {
                       type: "input_text",
-                      text: userPrompt
+                      text: fullPrompt
                     },
                     {
                       type: "input_file",
@@ -474,7 +470,8 @@ CRITICAL EXTRACTION RULES:
           
           if (!azureResponse.ok) {
             const errorText = await azureResponse.text()
-            throw new Error(`Azure Responses API error: ${azureResponse.status} ${errorText}`)
+            console.error(`[Document Extraction] Azure Responses API error response:`, errorText)
+            throw new Error(`Azure Responses API error: ${azureResponse.status} - ${errorText}`)
           }
           
           const azureResponseData = await azureResponse.json()
@@ -482,7 +479,10 @@ CRITICAL EXTRACTION RULES:
           console.log(`[Document Extraction] Azure Responses API processing took ${visionTime}ms`)
           
           // Extract text from response
-          const responseText = azureResponseData.output?.[0]?.content?.[0]?.text || ''
+          // Response format: { output: [ { content: [ { text: "..." } ] } ] }
+          const responseText = azureResponseData.output?.[0]?.content?.[0]?.text 
+            || azureResponseData.output_text 
+            || ''
           
           // Create a response-like object for compatibility
           response = {
