@@ -1,7 +1,8 @@
 import { withApiHandler } from '@/lib/impersonation'
-import { productsResponseSchema, createProductSchema, createProductInitSchema, productSchema, createProductWithTemplateResponseSchema, templateResponseSchema } from '@/lib/api/schemas'
+import { productsResponseSchema, createProductSchema, productSchema } from '@/lib/api/schemas'
 import { detectProductIndustry } from '@/lib/api/industry-detection'
-import { validateGeneratedTemplate } from '@/lib/api/template-validation'
+import { getIndustriesForAI, getIndustryByCode } from '@/lib/constants/industries'
+import { z } from 'zod'
 
 /**
  * EXAMPLE: Get products for current user's organization
@@ -35,11 +36,22 @@ export const GET = withApiHandler(
   { requireOrg: true }
 )
 
+// Schema for industry detection response
+const industryDetectionResponseSchema = z.object({
+  industry_code: z.string(),
+  industry_name: z.string(),
+})
+
+// Schema for initial product creation request (just product name)
+const productNameInitSchema = z.object({
+  product_name_raw: z.string().min(1, 'Product name is required'),
+})
+
 /**
  * Create a product for current user's organization
  * Flow:
- * 1. If product_name_raw provided, get/generate template and return it
- * 2. If full product data provided, create product with template
+ * 1. If product_name_raw provided, detect industry and return it
+ * 2. If full product data provided, create product
  */
 export const POST = withApiHandler(
   '/api/products',
@@ -50,8 +62,8 @@ export const POST = withApiHandler(
     
     // Check if this is initial request (just product name) or full product creation
     if (rawBody.product_name_raw && !rawBody.product_name) {
-      // Step 1: Get or generate template
-      const initInput = createProductInitSchema.parse(rawBody)
+      // Step 1: Detect industry for the product
+      const initInput = productNameInitSchema.parse(rawBody)
       
       // Get organization info
       const { data: org, error: orgError } = await supabase
@@ -64,13 +76,10 @@ export const POST = withApiHandler(
         throw new Error('Organization not found')
       }
 
-      // Get all available industries
-      const { data: availableIndustries, error: industriesError } = await supabase
-        .from('industries')
-        .select('industry_code, industry_name')
-        .eq('is_enabled', true)
+      // Get available industries from hardcoded constants
+      const availableIndustries = getIndustriesForAI()
 
-      if (industriesError || !availableIndustries || availableIndustries.length === 0) {
+      if (availableIndustries.length === 0) {
         throw new Error('No industries available')
       }
 
@@ -85,64 +94,18 @@ export const POST = withApiHandler(
         availableIndustries,
       })
 
-      // Get industry details for the detected industry
-      const { data: industry, error: industryError } = await supabase
-        .from('industries')
-        .select('industry_code, industry_name, description')
-        .eq('industry_code', detectedIndustryCode)
-        .eq('is_enabled', true)
-        .single()
+      // Get industry details from hardcoded constants
+      const industry = getIndustryByCode(detectedIndustryCode)
 
-      if (industryError || !industry) {
-        throw new Error(`Detected industry ${detectedIndustryCode} not found or disabled`)
+      if (!industry || !industry.enabled) {
+        throw new Error(`Detected industry ${detectedIndustryCode} is not available`)
       }
 
-      const industryCode = detectedIndustryCode
-
-      // Check if template exists
-      const { data: existingTemplate, error: templateError } = await supabase
-        .from('product_templates')
-        .select('template_id, industry_code, schema_json, version, template_name, is_default')
-        .eq('industry_code', industryCode)
-        .eq('is_active', true)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (templateError && templateError.code !== 'PGRST116') {
-        throw new Error(`Failed to check templates: ${templateError.message}`)
-      }
-
-      if (!existingTemplate) {
-        throw new Error(
-          `No product template found for industry "${industry.industry_name}". ` +
-          `Please contact an administrator to create a template for this industry.`
-        )
-      }
-
-      // Validate template schema at runtime
-      const validation = validateGeneratedTemplate(existingTemplate.schema_json)
-      if (!validation.valid) {
-        console.error('[Product Creation] Template validation failed:', validation.errors)
-        throw new Error(
-          `Template validation failed: ${validation.errors.join('; ')}. ` +
-          `Please contact an administrator to fix the template.`
-        )
-      }
-
-      // Return template response matching TemplateResponse schema
-      const templateResponse = {
-        template: existingTemplate.schema_json,
-        template_id: existingTemplate.template_id,
-        version: existingTemplate.version || '1.0.0',
-        source: 'database' as const,
-        industry_code: industryCode,
-        industry_name: industry.industry_name,
-      }
-      
-      // Validate response with Zod
-      return templateResponseSchema.parse(templateResponse)
+      // Return industry detection response
+      return industryDetectionResponseSchema.parse({
+        industry_code: industry.code,
+        industry_name: industry.name,
+      })
     }
 
     // Step 2: Create product with full data
@@ -164,31 +127,13 @@ export const POST = withApiHandler(
       throw new Error('Industry code is required')
     }
 
-    // Get template if template_id provided, to get template_version_snapshot
-    let templateVersionSnapshot = validatedInput.template_version_snapshot
-    let templateId = validatedInput.template_id
-
-    if (templateId && !templateVersionSnapshot) {
-      const { data: templateData, error: templateErr } = await supabase
-        .from('product_templates')
-        .select('schema_json')
-        .eq('template_id', templateId)
-        .single()
-
-      if (!templateErr && templateData) {
-        templateVersionSnapshot = templateData.schema_json
-      }
-    }
-
-    // Create product
+    // Create product (no template fields)
     const { data: product, error: insertError } = await supabase
       .from('products')
       .insert({
         org_id: context.organizationId,
         product_name: validatedInput.product_name,
         industry_code: industryCode,
-        template_id: templateId || null,
-        template_version_snapshot: templateVersionSnapshot || null,
         status: validatedInput.status || 'draft',
       })
       .select()
@@ -199,25 +144,12 @@ export const POST = withApiHandler(
     // Validate response
     const validatedProduct = productSchema.parse(product)
 
-    // Get template for response
-    let template: any = null
-    if (templateId) {
-      const { data: templateData } = await supabase
-        .from('product_templates')
-        .select('schema_json')
-        .eq('template_id', templateId)
-        .single()
-      template = templateData?.schema_json || null
-    }
-
-    return createProductWithTemplateResponseSchema.parse({
+    return {
       product: validatedProduct,
-      template,
-      template_id: templateId || '',
       context: {
         isImpersonating: context.isImpersonating,
       },
-    })
+    }
   },
   { requireOrg: true }
 )

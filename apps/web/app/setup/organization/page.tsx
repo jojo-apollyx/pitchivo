@@ -20,6 +20,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { sendOrganizationSetupEmail } from '@/lib/emails'
 import { SetupCompletionAnimation } from '@/components/setup/setup-completion-animation'
+import { getAllIndustries, getEnabledIndustries, type Industry } from '@/lib/constants/industries'
 
 const COMPANY_SIZES = [
   { value: '1-5', label: '1-5' },
@@ -98,10 +99,12 @@ export default function OrganizationSetup() {
   const [isSubsequentUser, setIsSubsequentUser] = useState(false)
   const [existingOrgId, setExistingOrgId] = useState<string | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
-  const [industries, setIndustries] = useState<string[]>([])
-  const [industryMap, setIndustryMap] = useState<Record<string, string>>({}) // code -> name mapping
-  const [isLoadingIndustries, setIsLoadingIndustries] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Use hardcoded industries instead of loading from database
+  const allIndustries = getAllIndustries()
+  const industries = getEnabledIndustries().map((ind) => ind.code)
+  const industryMap = Object.fromEntries(allIndustries.map((ind) => [ind.code, ind.name]))
 
   // Memoize schema to update when isSubsequentUser or industries change
   const schema = useMemo(() => createOrganizationSetupSchema(isSubsequentUser, industries), [isSubsequentUser, industries])
@@ -126,98 +129,12 @@ export default function OrganizationSetup() {
 
   const formData = watch()
 
-  // Update default industry value when industries are loaded
+  // Update default industry value when industries are available
   useEffect(() => {
     if (industries.length > 0 && !formData.industry) {
       setValue('industry', industries[0] as OrganizationSetupFormData['industry'])
     }
   }, [industries, setValue, formData.industry])
-
-  // Load supported industries from database
-  useEffect(() => {
-    const loadIndustries = async () => {
-      try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from('industries')
-          .select('industry_code, industry_name')
-          .eq('is_enabled', true)
-          .order('industry_name', { ascending: true })
-
-        if (error) {
-          console.error('Error loading industries:', error)
-          // Fallback to default industries if database query fails
-          const fallbackCodes = [
-            'supplements_food_ingredients',
-            'chemicals_raw_materials',
-            'pharmaceuticals',
-            'cosmetics_personal_care',
-            'other',
-          ]
-          const fallbackMap: Record<string, string> = {
-            'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
-            'chemicals_raw_materials': 'Chemicals & Raw Materials',
-            'pharmaceuticals': 'Pharmaceuticals',
-            'cosmetics_personal_care': 'Cosmetics & Personal Care',
-            'other': 'Other',
-          }
-          setIndustries(fallbackCodes)
-          setIndustryMap(fallbackMap)
-        } else {
-          const industryCodes = data?.map((item) => item.industry_code) || []
-          const map: Record<string, string> = {}
-          data?.forEach((item) => {
-            map[item.industry_code] = item.industry_name
-          })
-          if (industryCodes.length > 0) {
-            setIndustries(industryCodes)
-            setIndustryMap(map)
-          } else {
-            // Fallback
-            const fallbackCodes = [
-              'supplements_food_ingredients',
-              'chemicals_raw_materials',
-              'pharmaceuticals',
-              'cosmetics_personal_care',
-              'other',
-            ]
-            const fallbackMap: Record<string, string> = {
-              'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
-              'chemicals_raw_materials': 'Chemicals & Raw Materials',
-              'pharmaceuticals': 'Pharmaceuticals',
-              'cosmetics_personal_care': 'Cosmetics & Personal Care',
-              'other': 'Other',
-            }
-            setIndustries(fallbackCodes)
-            setIndustryMap(fallbackMap)
-          }
-        }
-      } catch (error) {
-        console.error('Error loading industries:', error)
-        // Fallback to default industries
-        const fallbackCodes = [
-          'supplements_food_ingredients',
-          'chemicals_raw_materials',
-          'pharmaceuticals',
-          'cosmetics_personal_care',
-          'other',
-        ]
-        const fallbackMap: Record<string, string> = {
-          'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
-          'chemicals_raw_materials': 'Chemicals & Raw Materials',
-          'pharmaceuticals': 'Pharmaceuticals',
-          'cosmetics_personal_care': 'Cosmetics & Personal Care',
-          'other': 'Other',
-        }
-        setIndustries(fallbackCodes)
-        setIndustryMap(fallbackMap)
-      } finally {
-        setIsLoadingIndustries(false)
-      }
-    }
-
-    loadIndustries()
-  }, [])
 
   // Get user email and auto-fill domain, and load existing organization data
   useEffect(() => {
@@ -743,6 +660,14 @@ export default function OrganizationSetup() {
               <Select
                 value={formData.industry}
                 onValueChange={(value) => {
+                  // Check if industry is disabled
+                  const selectedIndustry = allIndustries.find((ind) => ind.code === value)
+                  if (selectedIndustry && !selectedIndustry.enabled) {
+                    toast.info('Coming Soon', {
+                      description: `${selectedIndustry.name} will be available soon!`,
+                    })
+                    return
+                  }
                   setValue('industry', value as OrganizationSetupFormData['industry'], {
                     shouldValidate: true,
                   })
@@ -752,15 +677,16 @@ export default function OrganizationSetup() {
                   <SelectValue placeholder="Select an industry" />
                 </SelectTrigger>
                 <SelectContent>
-                  {isLoadingIndustries ? (
-                    <SelectItem value="loading" disabled>Loading industries...</SelectItem>
-                  ) : (
-                    industries.map((industryCode) => (
-                      <SelectItem key={industryCode} value={industryCode}>
-                        {industryMap[industryCode] || industryCode}
-                      </SelectItem>
-                    ))
-                  )}
+                  {allIndustries.map((industry) => (
+                    <SelectItem 
+                      key={industry.code} 
+                      value={industry.code}
+                      disabled={!industry.enabled}
+                    >
+                      {industryMap[industry.code] || industry.code}
+                      {industry.comingSoon && ' (Coming Soon)'}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {errors.industry && (
