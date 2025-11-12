@@ -422,67 +422,62 @@ CRITICAL EXTRACTION RULES:
         console.log(`[Document Extraction] Starting vision processing for ${docType} file: ${extraction.filename}`)
         
         if (docType === 'pdf') {
-          // Use Azure OpenAI Responses API for PDFs (direct PDF support)
-          console.log(`[Document Extraction] Using Azure Responses API for PDF...`)
+          // Use Azure OpenAI Chat Completions API for PDFs (direct PDF support)
+          console.log(`[Document Extraction] Using Azure Chat Completions API for PDF...`)
           const visionStart = Date.now()
           
           const base64Pdf = buffer.toString('base64')
+          const dataUrl = `data:application/pdf;base64,${base64Pdf}`
           const userPrompt = `Analyze this document (${extraction.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
           
-          // Call Azure OpenAI Responses API directly
-          const responseUrl = `${azureEndpoint}/openai/responses?api-version=2025-03-01-preview`
-          const azureResponse = await fetch(responseUrl, {
+          // Call Azure OpenAI Chat Completions API with PDF support
+          // Azure OpenAI's vision models support PDF files via data URIs
+          const chatUrl = `${azureEndpoint}/openai/deployments/${visionDeploymentName}/chat/completions?api-version=2024-12-01-preview`
+          const azureResponse = await fetch(chatUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'api-key': azureApiKey
             },
             body: JSON.stringify({
-              model: visionDeploymentName,
-              input: [
+              messages: [
                 {
-                  type: "message",
                   role: "system",
-                  content: [
-                    {
-                      type: "input_text",
-                      text: systemPrompt
-                    }
-                  ]
+                  content: systemPrompt
                 },
                 {
-                  type: "message",
                   role: "user",
                   content: [
                     {
-                      type: "input_text",
+                      type: "text",
                       text: userPrompt
                     },
                     {
-                      type: "input_file",
-                      source: {
-                        type: "base64",
-                        media_type: "application/pdf",
-                        data: base64Pdf
+                      type: "image_url",
+                      image_url: {
+                        url: dataUrl
                       }
                     }
                   ]
                 }
-              ]
+              ],
+              max_tokens: 4000,
+              temperature: 0.1
             })
           })
           
           if (!azureResponse.ok) {
             const errorText = await azureResponse.text()
-            throw new Error(`Azure Responses API error: ${azureResponse.status} ${errorText}`)
+            console.error(`[Document Extraction] Azure Chat Completions API error response:`, errorText)
+            throw new Error(`Azure Chat Completions API error: ${azureResponse.status} - ${errorText}`)
           }
           
           const azureResponseData = await azureResponse.json()
           const visionTime = Date.now() - visionStart
-          console.log(`[Document Extraction] Azure Responses API processing took ${visionTime}ms`)
+          console.log(`[Document Extraction] Azure Chat Completions API processing took ${visionTime}ms`)
           
           // Extract text from response
-          const responseText = azureResponseData.output?.[0]?.content?.[0]?.text || ''
+          const responseText = azureResponseData.choices?.[0]?.message?.content || ''
           
           // Create a response-like object for compatibility
           response = {
