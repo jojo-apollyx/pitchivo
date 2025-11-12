@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Upload as UploadIcon, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { FileUploadPanel, type UploadedFile, type ExtractedField } from '@/components/products/FileUploadPanel'
+import { FileUploadPanel, type FileWithExtraction } from '@/components/products/FileUploadPanel'
 import { FoodSupplementForm } from '@/components/products/industries/food-supplement/FoodSupplementForm'
-import type { FoodSupplementProductData, PriceTier } from '@/components/products/industries/food-supplement/types'
+import { ExtractedFieldsDisplay } from '@/components/products/ExtractedFieldsDisplay'
+import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { cn } from '@/lib/utils'
 
 const initialFormData: FoodSupplementProductData = {
@@ -76,186 +77,329 @@ const initialFormData: FoodSupplementProductData = {
 export default function CreateProductPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<FoodSupplementProductData>(initialFormData)
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
+  const [uploadedFiles, setUploadedFiles] = useState<FileWithExtraction[]>([])
   const [showTechnicalData, setShowTechnicalData] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
-  const [fieldSources, setFieldSources] = useState<Record<string, string>>({})
+  const [extractedGroupedData, setExtractedGroupedData] = useState<any>({})  
 
   const handleFormChange = useCallback((updates: Partial<FoodSupplementProductData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))
   }, [])
 
   const handleFilesUpload = useCallback(async (files: File[]) => {
-    const newFiles: UploadedFile[] = files.map((file) => ({
-      id: `file-${Date.now()}-${Math.random()}`,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      status: 'uploading' as const,
-      progress: 0,
-    }))
-
-    setUploadedFiles((prev) => [...prev, ...newFiles])
-
-    for (const newFile of newFiles) {
+    for (const file of files) {
       try {
+        // Create temporary file entry
+        const tempFile: FileWithExtraction = {
+          extraction: {
+            id: `temp-${Date.now()}-${Math.random()}`,
+            content_hash: '',
+            filename: file.name,
+            file_size: file.size,
+            mime_type: file.type,
+            storage_path: '',
+            organization_id: '',
+            uploaded_by: '',
+            raw_extracted_data: null,
+            file_summary: null,
+            extracted_values: null,
+            reviewed_values: null,
+            user_corrections: null,
+            analysis_status: 'pending',
+            review_status: 'pending_review',
+            error_message: null,
+            reviewed_by: null,
+            reviewed_at: null,
+            reference_count: 0,
+            deleted_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          displayStatus: 'uploading',
+          progress: 0,
+        }
+
+        setUploadedFiles((prev) => [...prev, tempFile])
+
         // Simulate upload progress
         for (let progress = 0; progress <= 100; progress += 20) {
-          await new Promise((resolve) => setTimeout(resolve, 200))
+          await new Promise((resolve) => setTimeout(resolve, 150))
           setUploadedFiles((prev) =>
-            prev.map((f) => (f.id === newFile.id ? { ...f, progress } : f))
+            prev.map((f) => (f.extraction.id === tempFile.extraction.id ? { ...f, progress } : f))
           )
         }
 
-        // Change to analyzing status
-        setUploadedFiles((prev) =>
-          prev.map((f) => (f.id === newFile.id ? { ...f, status: 'analyzing' } : f))
-        )
+        // Upload file
+        const formData = new FormData()
+        formData.append('file', file)
 
-        await new Promise((resolve) => setTimeout(resolve, 2000))
+        const uploadResponse = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        })
 
-        // Simulate AI extraction
-        const mockExtractedFields: ExtractedField[] = [
-          { fieldName: 'productName', value: 'Ascorbic Acid 99%', confidence: 0.98, section: 'basic' },
-          { fieldName: 'casNumber', value: '50-81-7', confidence: 0.95, section: 'basic' },
-          { fieldName: 'assay', value: '99.5', confidence: 0.92, section: 'technical' },
-          { fieldName: 'moisture', value: '0.5', confidence: 0.88, section: 'technical' },
-          { fieldName: 'lead', value: '0.5', confidence: 0.85, section: 'technical' },
-          { fieldName: 'originCountry', value: 'China', confidence: 0.93, section: 'basic' },
-          { fieldName: 'manufacturerName', value: 'ABC Pharma', confidence: 0.90, section: 'basic' },
-          { fieldName: 'shelfLife', value: '24', confidence: 0.87, section: 'packaging' },
-        ]
+        if (!uploadResponse.ok) {
+          throw new Error('Upload failed')
+        }
 
-        let documentType = 'Other'
-        if (newFile.name.toLowerCase().includes('coa')) documentType = 'COA'
-        else if (newFile.name.toLowerCase().includes('tds')) documentType = 'TDS'
-        else if (newFile.name.toLowerCase().includes('msds')) documentType = 'MSDS'
-        else if (newFile.name.toLowerCase().includes('spec')) documentType = 'Specification Sheet'
+        const uploadData = await uploadResponse.json()
+        const extraction = uploadData.file
 
+        // Update with real extraction data
         setUploadedFiles((prev) =>
           prev.map((f) =>
-            f.id === newFile.id
-              ? {
-                  ...f,
-                  status: 'completed',
-                  extractedFields: mockExtractedFields,
-                  documentType,
-                }
+            f.extraction.id === tempFile.extraction.id
+              ? { extraction, displayStatus: 'analyzing' as const }
               : f
           )
         )
 
-        const hasTechnicalData = mockExtractedFields.some((field) => field.section === 'technical')
-        if (hasTechnicalData) {
-          setShowTechnicalData(true)
+        // If file already analyzed, skip extraction
+        if (uploadData.isExisting && extraction.analysis_status === 'completed') {
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.extraction.id === tempFile.extraction.id
+                ? { extraction, displayStatus: 'completed' as const }
+                : f
+            )
+          )
+          toast.success(`File already analyzed: ${file.name}`, { icon: '✨' })
+          continue
         }
 
-        toast.success(`Extracted ${mockExtractedFields.length} fields from ${newFile.name}`, {
-          icon: '✨',
+        // Trigger AI extraction
+        const extractResponse = await fetch('/api/documents/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileId: extraction.id }),
         })
+
+        if (!extractResponse.ok) {
+          throw new Error('Extraction failed')
+        }
+
+        const extractData = await extractResponse.json()
+        const completedExtraction = extractData.extraction
+
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.extraction.id === extraction.id
+              ? { extraction: completedExtraction, displayStatus: 'completed' as const }
+              : f
+          )
+        )
+
+        const fieldCount = completedExtraction.extracted_values
+          ? Object.keys(completedExtraction.extracted_values).filter(
+              (k) => completedExtraction.extracted_values![k] !== null
+            ).length
+          : 0
+
+        toast.success(`Extracted ${fieldCount} fields from ${file.name}`, { icon: '✨' })
+
+        // Auto-show technical data if extracted
+        if (
+          completedExtraction.extracted_values?.assay ||
+          completedExtraction.extracted_values?.moisture
+        ) {
+          setShowTechnicalData(true)
+        }
       } catch (error) {
         console.error('Error processing file:', error)
         setUploadedFiles((prev) =>
           prev.map((f) =>
-            f.id === newFile.id
-              ? { ...f, status: 'error', error: 'Failed to process file' }
+            f.extraction.filename === file.name
+              ? {
+                  ...f,
+                  displayStatus: 'error' as const,
+                  extraction: {
+                    ...f.extraction,
+                    error_message: error instanceof Error ? error.message : 'Failed to process',
+                  },
+                }
               : f
           )
         )
-        toast.error(`Failed to process ${newFile.name}`)
+        toast.error(`Failed to process ${file.name}`)
       }
     }
   }, [])
 
-  const handleFileDelete = useCallback(
-    (fileId: string) => {
-      const file = uploadedFiles.find((f) => f.id === fileId)
-      if (!file) return
+  const handleFileDelete = useCallback(async (fileId: string) => {
+    try {
+      const response = await fetch('/api/documents/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      })
 
-      setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId))
-
-      const fieldsToRemove = Object.entries(fieldSources)
-        .filter(([_, source]) => source === fileId)
-        .map(([field, _]) => field)
-
-      if (fieldsToRemove.length > 0) {
-        const updates: Partial<FoodSupplementProductData> = {}
-        fieldsToRemove.forEach((field) => {
-          ;(updates as any)[field] = null
-        })
-        setFormData((prev) => ({ ...prev, ...updates }))
-
-        setFieldSources((prev) => {
-          const newSources = { ...prev }
-          fieldsToRemove.forEach((field) => delete newSources[field])
-          return newSources
-        })
-
-        toast.info(`Removed ${fieldsToRemove.length} fields linked to deleted file`)
+      if (!response.ok) {
+        throw new Error('Delete failed')
       }
 
+      setUploadedFiles((prev) => prev.filter((f) => f.extraction.id !== fileId))
       toast.success('File deleted')
-    },
-    [uploadedFiles, fieldSources]
-  )
-
-  const handleFileReanalyze = useCallback(async (fileId: string) => {
-    setUploadedFiles((prev) =>
-      prev.map((f) => (f.id === fileId ? { ...f, status: 'analyzing' } : f))
-    )
-
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    setUploadedFiles((prev) =>
-      prev.map((f) => (f.id === fileId ? { ...f, status: 'completed' } : f))
-    )
-
-    toast.success('File re-analyzed successfully')
+    } catch (error) {
+      console.error('Error deleting file:', error)
+      toast.error('Failed to delete file')
+    }
   }, [])
 
   const handleApplyFields = useCallback(
-    (fileId: string, fields: ExtractedField[]) => {
-      const updates: Partial<FoodSupplementProductData> = {}
-      const newSources: Record<string, string> = {}
+    async (fileId: string, fields: Record<string, any>) => {
+      try {
+        // First, save reviewed values if not already reviewed
+        const file = uploadedFiles.find((f) => f.extraction.id === fileId)
+        if (file?.extraction.review_status !== 'reviewed') {
+          const reviewResponse = await fetch('/api/documents/review', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileId, reviewedValues: fields }),
+          })
 
-      fields.forEach((field) => {
-        const fieldName = field.fieldName as keyof FoodSupplementProductData
-        switch (fieldName) {
-          case 'productName':
-          case 'casNumber':
-          case 'originCountry':
-          case 'manufacturerName':
-            updates[fieldName] = String(field.value)
-            newSources[fieldName] = fileId
-            break
-          case 'assay':
-          case 'moisture':
-          case 'lead':
-          case 'arsenic':
-          case 'cadmium':
-          case 'mercury':
-          case 'ashContent':
-          case 'bulkDensity':
-          case 'lossOnDrying':
-            updates[fieldName] = parseFloat(String(field.value))
-            newSources[fieldName] = fileId
-            setShowTechnicalData(true)
-            break
-          case 'shelfLife':
-          case 'totalPlateCount':
-          case 'yeastMold':
-            updates[fieldName] = parseInt(String(field.value))
-            newSources[fieldName] = fileId
-            break
+          if (!reviewResponse.ok) {
+            throw new Error('Failed to save review')
+          }
+
+          const reviewData = await reviewResponse.json()
+          
+          // Update local state with reviewed extraction
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.extraction.id === fileId ? { ...f, extraction: reviewData.extraction } : f
+            )
+          )
         }
-      })
 
-      setFormData((prev) => ({ ...prev, ...updates }))
-      setFieldSources((prev) => ({ ...prev, ...newSources }))
+        // Apply fields to form
+        const updates: Partial<FoodSupplementProductData> = {}
+
+        Object.entries(fields).forEach(([key, value]) => {
+          // Map API fields to form fields
+          switch (key) {
+            case 'productName':
+              updates.productName = String(value)
+              break
+            case 'casNumber':
+              updates.casNumber = String(value)
+              break
+            case 'originCountry':
+              updates.originCountry = String(value)
+              break
+            case 'manufacturerName':
+              updates.manufacturerName = String(value)
+              break
+            case 'einecs':
+              updates.einecs = String(value)
+              break
+            case 'fdaNumber':
+              updates.fdaNumber = String(value)
+              break
+            case 'description':
+              updates.description = String(value)
+              break
+            case 'appearance':
+              updates.appearance = String(value)
+              break
+            case 'odor':
+              updates.odor = String(value)
+              break
+            case 'taste':
+              updates.taste = String(value)
+              break
+            case 'form':
+              updates.form = String(value)
+              break
+            case 'grade':
+              updates.grade = String(value)
+              break
+            case 'solubility':
+              updates.solubility = String(value)
+              break
+            case 'assay':
+            case 'moisture':
+            case 'ashContent':
+            case 'bulkDensity':
+            case 'lead':
+            case 'arsenic':
+            case 'cadmium':
+            case 'mercury':
+            case 'lossOnDrying':
+              if (value) {
+                updates[key] = parseFloat(String(value))
+                setShowTechnicalData(true)
+              }
+              break
+            case 'totalPlateCount':
+            case 'yeastMold':
+              if (value) {
+                updates[key] = parseInt(String(value))
+              }
+              break
+            case 'shelfLife':
+              if (value) {
+                updates.shelfLife = parseInt(String(value))
+              }
+              break
+            case 'particleSize':
+            case 'ph':
+            case 'allergenInfo':
+            case 'bseStatement':
+            case 'pesticideResidue':
+            case 'packagingType':
+            case 'netWeight':
+              if (value) {
+                updates[key] = String(value)
+              }
+              break
+            case 'eColiPresence':
+            case 'salmonellaPresence':
+            case 'staphylococcusPresence':
+            case 'gmoStatus':
+            case 'irradiationStatus':
+              if (value) {
+                updates[key] = String(value)
+              }
+              break
+            case 'storageConditions':
+            case 'applications':
+            case 'certificates':
+              if (Array.isArray(value)) {
+                updates[key] = value
+              }
+              break
+          }
+        })
+
+        setFormData((prev) => ({ ...prev, ...updates }))
+        
+        // Store grouped data for additional fields display
+        if (fields._grouped) {
+          setExtractedGroupedData((prev: any) => ({
+            ...prev,
+            ...fields._grouped
+          }))
+        }
+        
+        toast.success('Fields applied to form successfully', { icon: '✨' })
+      } catch (error) {
+        console.error('Error applying fields:', error)
+        toast.error('Failed to apply fields')
+      }
     },
-    []
+    [uploadedFiles]
   )
+  
+  const handleGroupedFieldUpdate = useCallback((group: string, field: string, value: any) => {
+    setExtractedGroupedData((prev: any) => ({
+      ...prev,
+      [group]: {
+        ...prev[group],
+        [field]: value
+      }
+    }))
+  }, [])
 
   const handleSaveDraft = async () => {
     setIsSaving(true)
@@ -268,17 +412,6 @@ export default function CreateProductPage() {
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const handleUpdateFromFiles = () => {
-    uploadedFiles
-      .filter((f) => f.status === 'completed' && f.extractedFields)
-      .forEach((file) => {
-        if (file.extractedFields) {
-          handleApplyFields(file.id, file.extractedFields)
-        }
-      })
-    toast.success('Form updated from all uploaded files')
   }
 
   const handlePublish = async () => {
@@ -307,6 +440,8 @@ export default function CreateProductPage() {
       setIsPublishing(false)
     }
   }
+
+  const completedFilesCount = uploadedFiles.filter((f) => f.displayStatus === 'completed').length
 
   return (
     <div className="min-h-screen bg-background">
@@ -343,30 +478,37 @@ export default function CreateProductPage() {
       {/* Main Content - Split Layout */}
       <main className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
-          {/* Left: Product Form */}
+          {/* Right: File Upload Panel (first on mobile, second on desktop) */}
+          <div className="order-1 lg:order-2 lg:border-l border-border/30 lg:pl-6">
+            <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)]">
+              <FileUploadPanel
+                files={uploadedFiles}
+                onFilesUpload={handleFilesUpload}
+                onFileDelete={handleFileDelete}
+                onApplyFields={handleApplyFields}
+                isProcessing={isSaving || isPublishing}
+              />
+            </div>
+          </div>
+
+          {/* Left: Product Form (second on mobile, first on desktop) */}
           <div className="order-2 lg:order-1">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            <div className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
               <div className="px-1 pr-6">
                 <FoodSupplementForm
                   formData={formData}
                   onChange={handleFormChange}
                   showTechnicalData={showTechnicalData}
                 />
+                
+                {/* Additional Extracted Fields */}
+                {Object.keys(extractedGroupedData).length > 0 && (
+                  <ExtractedFieldsDisplay
+                    groupedData={extractedGroupedData}
+                    onFieldUpdate={handleGroupedFieldUpdate}
+                  />
+                )}
               </div>
-            </div>
-          </div>
-
-          {/* Right: File Upload Panel */}
-          <div className="lg:border-l border-border/30 lg:pl-6 order-1 lg:order-2">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
-              <FileUploadPanel
-                files={uploadedFiles}
-                onFilesUpload={handleFilesUpload}
-                onFileDelete={handleFileDelete}
-                onFileReanalyze={handleFileReanalyze}
-                onApplyFields={handleApplyFields}
-                isProcessing={isSaving || isPublishing}
-              />
             </div>
           </div>
         </div>
@@ -377,10 +519,10 @@ export default function CreateProductPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 max-w-7xl mx-auto">
             <div className="text-sm text-muted-foreground">
-              {uploadedFiles.filter((f) => f.status === 'completed').length > 0 && (
+              {completedFilesCount > 0 && (
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  {uploadedFiles.filter((f) => f.status === 'completed').length} file(s) processed
+                  {completedFilesCount} file(s) processed
                 </span>
               )}
             </div>
@@ -403,17 +545,6 @@ export default function CreateProductPage() {
                   </>
                 )}
               </Button>
-              {uploadedFiles.some((f) => f.status === 'completed') && (
-                <Button
-                  variant="secondary"
-                  onClick={handleUpdateFromFiles}
-                  disabled={isSaving || isPublishing}
-                  className="w-full sm:w-auto"
-                >
-                  <UploadIcon className="h-4 w-4 mr-2" />
-                  Update from Files
-                </Button>
-              )}
               <Button
                 onClick={handlePublish}
                 disabled={isSaving || isPublishing || !formData.productName}

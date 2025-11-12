@@ -289,6 +289,106 @@ export interface Database {
           updated_at?: string
         }
       }
+      document_extractions: {
+        Row: {
+          id: string
+          content_hash: string
+          filename: string
+          file_size: number
+          mime_type: string
+          storage_path: string
+          organization_id: string
+          uploaded_by: string
+          raw_extracted_data: Json | null
+          file_summary: Json | null
+          extracted_values: Json | null
+          reviewed_values: Json | null
+          user_corrections: Json | null
+          analysis_status: 'pending' | 'analyzing' | 'completed' | 'failed'
+          review_status: 'pending_review' | 'reviewed'
+          error_message: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          reference_count: number
+          deleted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          content_hash: string
+          filename: string
+          file_size: number
+          mime_type: string
+          storage_path: string
+          organization_id: string
+          uploaded_by: string
+          raw_extracted_data?: Json | null
+          file_summary?: Json | null
+          extracted_values?: Json | null
+          reviewed_values?: Json | null
+          user_corrections?: Json | null
+          analysis_status?: 'pending' | 'analyzing' | 'completed' | 'failed'
+          review_status?: 'pending_review' | 'reviewed'
+          error_message?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          reference_count?: number
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          content_hash?: string
+          filename?: string
+          file_size?: number
+          mime_type?: string
+          storage_path?: string
+          organization_id?: string
+          uploaded_by?: string
+          raw_extracted_data?: Json | null
+          file_summary?: Json | null
+          extracted_values?: Json | null
+          reviewed_values?: Json | null
+          user_corrections?: Json | null
+          analysis_status?: 'pending' | 'analyzing' | 'completed' | 'failed'
+          review_status?: 'pending_review' | 'reviewed'
+          error_message?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          reference_count?: number
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      product_field_applications: {
+        Row: {
+          id: string
+          product_id: string
+          file_id: string
+          fields_applied: string[]
+          applied_by: string
+          applied_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          file_id: string
+          fields_applied?: string[]
+          applied_by: string
+          applied_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          file_id?: string
+          fields_applied?: string[]
+          applied_by?: string
+          applied_at?: string
+        }
+      }
     }
     Views: {
       user_profile_with_org: {
@@ -430,6 +530,8 @@ export type EmailDomainPolicy = Database['public']['Tables']['email_domain_polic
 export type Industry = Database['public']['Tables']['industries']['Row']
 export type ProductTemplate = Database['public']['Tables']['product_templates']['Row']
 export type Product = Database['public']['Tables']['products']['Row']
+export type DocumentExtraction = Database['public']['Tables']['document_extractions']['Row']
+export type ProductFieldApplication = Database['public']['Tables']['product_field_applications']['Row']
 
 export type UserProfileWithOrg = Database['public']['Views']['user_profile_with_org']['Row']
 export type OrganizationMember = Database['public']['Views']['organization_members']['Row']

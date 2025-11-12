@@ -91,7 +91,7 @@ export default function AdminTemplatesPage() {
 
       // Validate template schema before saving
       const validation = validateGeneratedTemplate(parsedSchema)
-      if (!validation.valid) {
+      if (!validation.isValid) {
         const errorMsg = `Template validation failed: ${validation.errors.join('; ')}`
         toast.error(errorMsg, { duration: 10000 })
         return
