@@ -73,10 +73,10 @@ export function TieredPricingSection({
             )}
           >
             <div className="flex items-start gap-3">
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                 {/* MOQ */}
-                <div>
-                  <Label className="text-xs text-muted-foreground">
+                <div className="flex flex-col min-w-0">
+                  <Label className="text-xs text-muted-foreground mb-1">
                     MOQ (kg) *
                   </Label>
                   <Input
@@ -87,13 +87,12 @@ export function TieredPricingSection({
                       updateTier(tier.id, { moq: parseInt(e.target.value) || 0 })
                     }
                     placeholder="e.g., 100"
-                    className="mt-1"
                   />
                 </div>
 
                 {/* Price per kg */}
-                <div>
-                  <Label className="text-xs text-muted-foreground">
+                <div className="flex flex-col min-w-0">
+                  <Label className="text-xs text-muted-foreground mb-1">
                     Price (USD/kg) *
                   </Label>
                   <Input
@@ -105,13 +104,12 @@ export function TieredPricingSection({
                       updateTier(tier.id, { price: parseFloat(e.target.value) || 0 })
                     }
                     placeholder="e.g., 15.50"
-                    className="mt-1"
                   />
                 </div>
 
                 {/* Lead Time */}
-                <div>
-                  <Label className="text-xs text-muted-foreground">
+                <div className="flex flex-col min-w-0">
+                  <Label className="text-xs text-muted-foreground mb-1">
                     Lead Time (days) *
                   </Label>
                   <Input
@@ -122,7 +120,6 @@ export function TieredPricingSection({
                       updateTier(tier.id, { leadTime: parseInt(e.target.value) || 0 })
                     }
                     placeholder="e.g., 10"
-                    className="mt-1"
                   />
                 </div>
               </div>
