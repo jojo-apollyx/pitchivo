@@ -324,7 +324,24 @@ export default function CreateProductPage() {
 
         if (!extractResponse.ok) {
           const errorData = await extractResponse.json().catch(() => ({ error: 'Extraction failed' }))
-          const errorMessage = errorData.error || `Extraction failed with status ${extractResponse.status}`
+          const errorMessage = errorData.error || errorData.details || `Extraction failed with status ${extractResponse.status}`
+          
+          // Update UI with error state immediately
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.extraction.id === extraction.id
+                ? {
+                    ...f,
+                    displayStatus: 'error' as const,
+                    extraction: {
+                      ...f.extraction,
+                      analysis_status: 'failed',
+                      error_message: errorMessage,
+                    },
+                  }
+                : f
+            )
+          )
           throw new Error(errorMessage)
         }
 
@@ -448,6 +465,109 @@ export default function CreateProductPage() {
       toast.error('Failed to delete file')
     }
   }, [])
+
+  const handleRetryExtraction = useCallback(async (fileId: string) => {
+    const file = uploadedFiles.find((f) => f.extraction.id === fileId)
+    if (!file) return
+
+    try {
+      // Update UI to show retrying
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.extraction.id === fileId
+            ? {
+                ...f,
+                displayStatus: 'analyzing' as const,
+                extraction: {
+                  ...f.extraction,
+                  analysis_status: 'analyzing' as const,
+                  error_message: null,
+                },
+              }
+            : f
+        )
+      )
+
+      // Trigger extraction again
+      const extractResponse = await fetch('/api/documents/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      })
+
+      if (!extractResponse.ok) {
+        const errorData = await extractResponse.json().catch(() => ({ error: 'Extraction failed' }))
+        const errorMessage = errorData.error || errorData.details || `Extraction failed with status ${extractResponse.status}`
+        
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.extraction.id === fileId
+              ? {
+                  ...f,
+                  displayStatus: 'error' as const,
+                  extraction: {
+                    ...f.extraction,
+                    analysis_status: 'failed',
+                    error_message: errorMessage,
+                  },
+                }
+              : f
+          )
+        )
+        toast.error(`Retry failed: ${errorMessage}`)
+        return
+      }
+
+      // Parse response
+      let extractData
+      try {
+        const responseText = await extractResponse.text()
+        extractData = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Failed to parse extract response:', parseError)
+        throw new Error(`Failed to parse extraction response: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`)
+      }
+      
+      if (!extractData.extraction) {
+        throw new Error('Extraction response missing extraction data')
+      }
+      
+      const completedExtraction = extractData.extraction
+
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.extraction.id === fileId
+            ? { extraction: completedExtraction, displayStatus: 'completed' as const }
+            : f
+        )
+      )
+
+      const fieldCount = completedExtraction.extracted_values
+        ? Object.keys(completedExtraction.extracted_values).filter(
+            (k) => completedExtraction.extracted_values![k] !== null && k !== '_grouped'
+          ).length
+        : 0
+
+      toast.success(`Extracted ${fieldCount} fields (retry successful)`, { icon: '✨' })
+    } catch (error) {
+      console.error('Error retrying extraction:', error)
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.extraction.id === fileId
+            ? {
+                ...f,
+                displayStatus: 'error' as const,
+                extraction: {
+                  ...f.extraction,
+                  error_message: error instanceof Error ? error.message : 'Retry failed',
+                },
+              }
+            : f
+        )
+      )
+      toast.error(`Retry failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }, [uploadedFiles])
 
   const handleApplyFields = useCallback(
     async (fileId: string, fields: Record<string, any>) => {
@@ -777,6 +897,7 @@ export default function CreateProductPage() {
                 files={uploadedFiles}
                 onFilesUpload={handleFilesUpload}
                 onFileDelete={handleFileDelete}
+                onRetryExtraction={handleRetryExtraction}
                 onApplyFields={handleApplyFields}
                 onApplyAll={handleApplyAll}
                 isProcessing={isSaving || isPublishing}

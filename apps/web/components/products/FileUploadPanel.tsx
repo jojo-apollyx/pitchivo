@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Upload, FileText, Loader2, CheckCircle, XCircle, Trash2, Eye, Sparkles, Zap } from 'lucide-react'
+import { Upload, FileText, Loader2, CheckCircle, XCircle, Trash2, Eye, Sparkles, Zap, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -21,6 +21,7 @@ interface FileUploadPanelProps {
   onFileDelete: (fileId: string) => void
   onApplyFields: (fileId: string, fields: Record<string, any>) => Promise<void>
   onApplyAll?: () => Promise<void>
+  onRetryExtraction?: (fileId: string) => Promise<void>
   isProcessing?: boolean
 }
 
@@ -30,6 +31,7 @@ export function FileUploadPanel({
   onFileDelete,
   onApplyFields,
   onApplyAll,
+  onRetryExtraction,
   isProcessing = false,
 }: FileUploadPanelProps) {
   const [isDragging, setIsDragging] = useState(false)
@@ -344,6 +346,19 @@ export function FileUploadPanel({
                               </Button>
                             )}
                           </>
+                        )}
+                        {file.displayStatus === 'error' && onRetryExtraction && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onRetryExtraction(file.extraction.id)}
+                            className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                            title="Click to retry extraction"
+                            disabled={isProcessing}
+                          >
+                            <RotateCw className="h-3.5 w-3.5 mr-1.5" />
+                            <span className="text-xs">Retry</span>
+                          </Button>
                         )}
                         <Button
                           size="sm"

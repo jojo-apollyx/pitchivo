@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAzure } from '@ai-sdk/azure'
 import { generateText } from 'ai'
 import { AzureOpenAI } from 'openai'
+import { jsonrepair } from 'jsonrepair'
 import {
   extractDocumentContent,
   detectDocumentType
@@ -293,34 +294,47 @@ ${context.extractedContent}`
       cleanedResponse = jsonMatch[0]
     }
     
-    // Fix common JSON issues: trailing commas
-    cleanedResponse = cleanedResponse
-      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas before } or ]
-      .trim()
-
-    // Parse JSON with better error handling
+    // Parse JSON with better error handling using jsonrepair library
     let extractedData
     try {
+      // First try standard JSON.parse
       extractedData = JSON.parse(cleanedResponse)
     } catch (parseError) {
       console.error('[AI Extraction] JSON Parse Error:', parseError)
       console.error('[AI Extraction] Response length:', cleanedResponse.length)
       console.error('[AI Extraction] Response preview:', cleanedResponse.substring(0, 500))
-      console.error('[AI Extraction] Response around error position:', cleanedResponse.substring(Math.max(0, 8700), Math.min(cleanedResponse.length, 8750)))
       
-      // Try to fix common issues and retry
+      // Extract error position if available
+      const errorMatch = parseError instanceof Error ? parseError.message.match(/position (\d+)/) : null
+      const errorPos = errorMatch ? parseInt(errorMatch[1], 10) : -1
+      
+      if (errorPos > 0) {
+        console.error('[AI Extraction] Response around error position:', cleanedResponse.substring(Math.max(0, errorPos - 50), Math.min(cleanedResponse.length, errorPos + 50)))
+      }
+      
+      // Try to fix JSON using jsonrepair library
       try {
-        // More aggressive cleaning: remove any text before first { and after last }
-        const firstBrace = cleanedResponse.indexOf('{')
-        const lastBrace = cleanedResponse.lastIndexOf('}')
-        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-          const jsonOnly = cleanedResponse.substring(firstBrace, lastBrace + 1)
-          extractedData = JSON.parse(jsonOnly)
-        } else {
-          throw parseError
+        console.log('[AI Extraction] Attempting to repair JSON using jsonrepair...')
+        const repairedJson = jsonrepair(cleanedResponse)
+        extractedData = JSON.parse(repairedJson)
+        console.log('[AI Extraction] Successfully repaired and parsed JSON')
+      } catch (repairError) {
+        // If jsonrepair also fails, try extracting just the JSON object portion
+        try {
+          const firstBrace = cleanedResponse.indexOf('{')
+          const lastBrace = cleanedResponse.lastIndexOf('}')
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            const jsonOnly = cleanedResponse.substring(firstBrace, lastBrace + 1)
+            const repairedJson = jsonrepair(jsonOnly)
+            extractedData = JSON.parse(repairedJson)
+            console.log('[AI Extraction] Successfully repaired JSON after extracting object portion')
+          } else {
+            throw repairError
+          }
+        } catch (finalError) {
+          console.error('[AI Extraction] All JSON repair attempts failed:', finalError)
+          throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}. Response may contain invalid JSON syntax that could not be repaired.`)
         }
-      } catch (retryError) {
-        throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}. Response may contain invalid JSON syntax.`)
       }
     }
 
