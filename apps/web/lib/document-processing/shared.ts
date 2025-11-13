@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAzure } from '@ai-sdk/azure'
 import { generateText } from 'ai'
 import { AzureOpenAI } from 'openai'
+import { Readable } from 'stream'
 import {
   extractDocumentContent,
   detectDocumentType
@@ -128,6 +129,7 @@ export async function prepareDocumentForExtraction(
 
 /**
  * Run AI extraction with given system prompt
+ * EXACT copy from working implementation (commit c4febae)
  */
 export async function runAIExtraction(
   context: DocumentExtractionContext,
@@ -143,41 +145,45 @@ export async function runAIExtraction(
 
   const azureEndpoint = `https://${process.env.AZURE_OPENAI_RESOURCE_NAME}.openai.azure.com`
   const azureApiKey = process.env.AZURE_OPENAI_API_KEY!
+  
+  const azure = createAzure({
+    resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
+    apiKey: azureApiKey,
+  })
+  
+  const model = azure(visionDeploymentName)
 
   try {
     let rawExtraction: string
 
-    // Handle PDFs with Azure OpenAI Responses API (supports PDF natively)
+    // Handle PDFs with Azure OpenAI Responses API
     if (context.mimeType === 'application/pdf') {
       console.log(`[AI Extraction] Using Azure Responses API for PDF...`)
       
-      // Initialize Azure OpenAI client
+      // Initialize Azure OpenAI client - EXACT from working version
       const openaiClient = new AzureOpenAI({
         apiKey: azureApiKey,
         endpoint: azureEndpoint,
         apiVersion: '2024-12-01-preview'
       })
       
-      // Combine system and user prompts for the Responses API
+      // Combine system and user prompts
       const fullPrompt = `${options.systemPrompt}
 
 User Request: Analyze this document (${context.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
       
-      // Upload PDF file to Azure OpenAI
+      // Upload PDF file - EXACT from working version
       console.log(`[AI Extraction] Uploading PDF file...`)
-      const { Readable } = await import('stream')
       const fileStream = Readable.from(context.buffer)
-      
       const file = await openaiClient.files.create({
         file: fileStream as any,
-        purpose: 'assistants',
-        filename: context.filename
+        purpose: 'assistants'
       })
       
       const fileId = file.id
       console.log(`[AI Extraction] File uploaded with ID: ${fileId}`)
       
-      // Call Azure OpenAI Responses API with file_id
+      // Call Responses API - EXACT from working version
       console.log(`[AI Extraction] Calling Responses API...`)
       const responsesResult = await openaiClient.responses.create({
         model: visionDeploymentName,
@@ -206,16 +212,10 @@ User Request: Analyze this document (${context.filename}) and extract all releva
       
       console.log(`[AI Extraction] Responses API completed`)
     } 
-    // Handle images with AI SDK (Chat Completions API)
+    // Handle images
     else if (context.mimeType.startsWith('image/')) {
       console.log(`[AI Extraction] Using Chat Completions API for image...`)
       
-      const azure = createAzure({
-        resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
-        apiKey: azureApiKey,
-      })
-      
-      const model = azure(visionDeploymentName)
       const base64Data = context.buffer.toString('base64')
       const dataUrl = `data:${context.mimeType};base64,${base64Data}`
       
@@ -240,22 +240,15 @@ User Request: Analyze this document (${context.filename}) and extract all releva
             ]
           }
         ],
-        temperature: options.temperature ?? 0.1,
-        maxTokens: options.maxTokens ?? 4000,
+        temperature: options.temperature ?? 0.1
       })
       
       rawExtraction = response.text
     }
-    // Handle text-based documents (DOCX, XLSX)
+    // Handle text documents
     else if (context.extractedContent) {
       console.log(`[AI Extraction] Using text extraction...`)
       
-      const azure = createAzure({
-        resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
-        apiKey: azureApiKey,
-      })
-      
-      const model = azure(visionDeploymentName)
       const userPrompt = `Analyze this document (${context.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema.
 
 === Document Content ===
@@ -273,8 +266,7 @@ ${context.extractedContent}`
             content: userPrompt
           }
         ],
-        temperature: options.temperature ?? 0.1,
-        maxTokens: options.maxTokens ?? 4000,
+        temperature: options.temperature ?? 0.1
       })
       
       rawExtraction = response.text
@@ -282,7 +274,7 @@ ${context.extractedContent}`
       return { error: 'No content available for extraction' }
     }
 
-    // Clean up response (remove markdown code blocks if present)
+    // Clean up response
     let cleanedResponse = rawExtraction.trim()
     if (cleanedResponse.startsWith('```json')) {
       cleanedResponse = cleanedResponse.replace(/^```json\n?/, '').replace(/\n?```$/, '')
@@ -312,11 +304,10 @@ export async function saveExtractionResults(
 ): Promise<{ success: boolean; extraction?: any; error?: string }> {
   const supabase = await createClient()
 
-  // Flatten grouped data for easier access
+  // Flatten grouped data
   const flattenedData: Record<string, any> = {}
   
   if (extractedData._grouped) {
-    // Flatten grouped data
     Object.entries(extractedData._grouped as Record<string, any>).forEach(([groupKey, groupData]) => {
       if (groupData && typeof groupData === 'object') {
         Object.entries(groupData).forEach(([fieldKey, fieldValue]) => {
@@ -328,20 +319,17 @@ export async function saveExtractionResults(
     })
   }
 
-  // Also include top-level fields
   Object.entries(extractedData).forEach(([key, value]) => {
     if (key !== '_grouped' && value !== null && value !== undefined && value !== '') {
       flattenedData[key] = value
     }
   })
 
-  // Store both grouped and flat data
   const extractedValues = {
     ...flattenedData,
     _grouped: extractedData._grouped || {}
   }
 
-  // Update database with results
   const { data: updatedExtraction, error: updateError } = await supabase
     .from('document_extractions')
     .update({
