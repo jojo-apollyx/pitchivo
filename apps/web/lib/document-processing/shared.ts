@@ -368,6 +368,13 @@ ${context.extractedContent}`
     // Normalize extracted data to convert any complex objects to plain text
     extractedData = normalizeExtractedData(extractedData)
 
+    // Final validation: ensure we're returning an object, not a string
+    if (typeof extractedData !== 'object' || extractedData === null || Array.isArray(extractedData)) {
+      console.error('[AI Extraction] Post-normalization data is not a valid object:', typeof extractedData)
+      console.error('[AI Extraction] Post-normalization value:', extractedData)
+      throw new Error(`Normalized data is not a valid object: got ${typeof extractedData}`)
+    }
+
     return { extractedData, rawResponse: rawExtraction }
   } catch (error) {
     console.error('[AI Extraction] Error:', error)
@@ -583,6 +590,30 @@ export async function saveExtractionResults(
   rawResponse: string
 ): Promise<{ success: boolean; extraction?: any; error?: string }> {
   const supabase = await createClient()
+
+  // Validate that extractedData is an object (not a string or other type)
+  if (typeof extractedData !== 'object' || extractedData === null || Array.isArray(extractedData)) {
+    console.error('[Save Results] extractedData is not a valid object:', typeof extractedData)
+    console.error('[Save Results] extractedData value:', extractedData)
+    return { 
+      success: false, 
+      error: `Invalid extracted data type: expected object, got ${typeof extractedData}` 
+    }
+  }
+
+  // Additional check: if it's a string that was accidentally passed as object
+  if (typeof extractedData === 'string') {
+    console.error('[Save Results] extractedData is a string, attempting to parse...')
+    try {
+      extractedData = JSON.parse(extractedData)
+    } catch (e) {
+      console.error('[Save Results] Failed to parse extractedData string:', e)
+      return { 
+        success: false, 
+        error: 'Extracted data is a string and could not be parsed as JSON' 
+      }
+    }
+  }
 
   // Process extracted data - keep only valid fields (flat snake_case structure)
   const cleanedData: Record<string, any> = {}
