@@ -348,7 +348,11 @@ IMPORTANT EXTRACTION GUIDELINES:
 4. The response should have BOTH flat fields (for backward compatibility) AND grouped fields (in "_grouped" property)
 5. For arrays (like application, specification_standard, etc.), extract ALL relevant values mentioned
 6. For confidence_score, rate your confidence in the document type identification (0-1)
-7. Leave fields empty/null if not found in the document
+7. CRITICAL: Only output fields with actual meaningful data. DO NOT output fields if:
+   - The information is not known, unavailable, or not found in the document
+   - The value is a placeholder such as "None Known", "not available", "N/A", "Unknown", "Not Specified", "Not Applicable", "Not Available", "None", or similar placeholder text
+   - The field would contain empty strings, null values, or meaningless placeholder data
+8. If a field is not found in the document or contains only placeholder/unavailable indicators, completely omit that field from the output (do not include it with null, empty string, or placeholder values)
 
 Example response structure:
 {

@@ -334,6 +334,68 @@ ${context.extractedContent}`
 }
 
 /**
+ * Check if a value is a placeholder indicating unavailable/unknown data
+ */
+function isPlaceholderValue(value: any): boolean {
+  if (typeof value !== 'string') return false
+  
+  const normalized = value.trim().toLowerCase()
+  const placeholders = [
+    'none known',
+    'not available',
+    'n/a',
+    'unknown',
+    'not specified',
+    'not applicable',
+    'none',
+    'na',
+    'unavailable',
+    'n.d.',
+    'n.d',
+    'nd'
+  ]
+  
+  return placeholders.includes(normalized)
+}
+
+/**
+ * Clean grouped data structure by removing placeholder values
+ */
+function cleanGroupedData(groupedData: any): any {
+  if (!groupedData || typeof groupedData !== 'object') return groupedData
+  
+  const cleaned: any = {}
+  
+  Object.entries(groupedData).forEach(([groupKey, groupValue]) => {
+    if (groupValue && typeof groupValue === 'object' && !Array.isArray(groupValue)) {
+      const cleanedGroup: any = {}
+      Object.entries(groupValue).forEach(([fieldKey, fieldValue]) => {
+        // Only include fields with meaningful values (not null, undefined, empty, or placeholders)
+        if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '' && !isPlaceholderValue(fieldValue)) {
+          cleanedGroup[fieldKey] = fieldValue
+        }
+      })
+      // Only include groups that have at least one field
+      if (Object.keys(cleanedGroup).length > 0) {
+        cleaned[groupKey] = cleanedGroup
+      }
+    } else if (Array.isArray(groupValue)) {
+      // For arrays, filter out placeholder values
+      const cleanedArray = groupValue.filter(item => 
+        item !== null && item !== undefined && item !== '' && !isPlaceholderValue(item)
+      )
+      if (cleanedArray.length > 0) {
+        cleaned[groupKey] = cleanedArray
+      }
+    } else if (groupValue !== null && groupValue !== undefined && groupValue !== '' && !isPlaceholderValue(groupValue)) {
+      cleaned[groupKey] = groupValue
+    }
+  })
+  
+  return cleaned
+}
+
+/**
  * Save extraction results to database
  */
 export async function saveExtractionResults(
@@ -350,7 +412,8 @@ export async function saveExtractionResults(
     Object.entries(extractedData._grouped as Record<string, any>).forEach(([groupKey, groupData]) => {
       if (groupData && typeof groupData === 'object') {
         Object.entries(groupData).forEach(([fieldKey, fieldValue]) => {
-          if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
+          // Filter out null, undefined, empty strings, and placeholder values
+          if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '' && !isPlaceholderValue(fieldValue)) {
             flattenedData[`${groupKey}.${fieldKey}`] = fieldValue
           }
         })
@@ -359,14 +422,18 @@ export async function saveExtractionResults(
   }
 
   Object.entries(extractedData).forEach(([key, value]) => {
-    if (key !== '_grouped' && value !== null && value !== undefined && value !== '') {
+    // Filter out null, undefined, empty strings, placeholder values, and the _grouped key
+    if (key !== '_grouped' && value !== null && value !== undefined && value !== '' && !isPlaceholderValue(value)) {
       flattenedData[key] = value
     }
   })
 
+  // Clean the grouped data structure to remove placeholder values
+  const cleanedGrouped = extractedData._grouped ? cleanGroupedData(extractedData._grouped) : {}
+  
   const extractedValues = {
     ...flattenedData,
-    _grouped: extractedData._grouped || {}
+    _grouped: cleanedGrouped
   }
 
   const { data: updatedExtraction, error: updateError } = await supabase
