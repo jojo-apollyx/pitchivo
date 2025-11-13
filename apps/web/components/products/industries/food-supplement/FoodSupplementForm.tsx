@@ -1,14 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Upload, X } from 'lucide-react'
+import { Plus, Trash2, Upload, X, Loader2, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { CountrySelect } from '@/components/ui/country-select'
 import { DatePicker } from '@/components/ui/date-picker'
+import { toast } from 'sonner'
 import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
@@ -53,6 +60,7 @@ export function FoodSupplementForm({
   onAddFields = () => {},
 }: FoodSupplementFormProps) {
   const [imagePreview, setImagePreview] = useState<string[]>([])
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -72,6 +80,105 @@ export function FoodSupplementForm({
     const newPreviews = imagePreview.filter((_, i) => i !== index)
     onChange({ product_images: newImages } as any)
     setImagePreview(newPreviews)
+  }
+
+  // Check if we have enough data to generate an image
+  const canGenerateImage = () => {
+    if (!formData.product_name || formData.product_name.trim().length < 3) {
+      return { canGenerate: false, reason: 'Product name is required (minimum 3 characters)' }
+    }
+
+    const hasEnoughData = formData.description || formData.category || formData.form || formData.appearance
+    if (!hasEnoughData) {
+      return { 
+        canGenerate: false, 
+        reason: 'Please add at least one of: description, category, form, or appearance' 
+      }
+    }
+
+    return { canGenerate: true, reason: '' }
+  }
+
+  const imageGenerationCheck = canGenerateImage()
+
+  const handleGenerateImage = async () => {
+    // Double-check validation
+    if (!imageGenerationCheck.canGenerate) {
+      toast.error(imageGenerationCheck.reason)
+      return
+    }
+
+    setIsGeneratingImage(true)
+    toast.info('Generating product image with AI...', { icon: '🎨' })
+
+    try {
+      const response = await fetch('/api/products/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productData: {
+            product_name: formData.product_name,
+            description: formData.description,
+            category: formData.category,
+            form: formData.form,
+            grade: formData.grade,
+            appearance: formData.appearance,
+            applications: formData.applications,
+          },
+          industryCode: 'food_supplement'
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate image')
+      }
+
+      const result = await response.json()
+
+      if (result.success && result.image) {
+        // Convert to File and add to form
+        let imageFile: File
+
+        if (result.image.b64_json) {
+          // Convert base64 to File
+          const base64 = result.image.b64_json
+          const byteString = atob(base64.replace(/^data:image\/\w+;base64,/, ''))
+          const bytes = new Uint8Array(byteString.length)
+          for (let i = 0; i < byteString.length; i++) {
+            bytes[i] = byteString.charCodeAt(i)
+          }
+          const blob = new Blob([bytes], { type: 'image/png' })
+          imageFile = new File([blob], result.image.filename || 'ai-generated.png', { type: 'image/png' })
+        } else if (result.image.url) {
+          // Fetch from URL and convert to File
+          const imageResponse = await fetch(result.image.url)
+          const blob = await imageResponse.blob()
+          imageFile = new File([blob], result.image.filename || 'ai-generated.png', { type: 'image/png' })
+        } else {
+          throw new Error('No image data received')
+        }
+
+        // Add to product images
+        onChange({ product_images: [...(formData.product_images || []), imageFile] } as any)
+
+        // Add preview
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setImagePreview((prev) => [...prev, reader.result as string])
+        }
+        reader.readAsDataURL(imageFile)
+
+        toast.success('Product image generated successfully!', { icon: '✨' })
+      } else {
+        throw new Error('Failed to generate image')
+      }
+    } catch (error) {
+      console.error('Error generating image:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to generate image')
+    } finally {
+      setIsGeneratingImage(false)
+    }
   }
 
   const toggleItem = (array: string[], item: string) => {
@@ -120,7 +227,49 @@ export function FoodSupplementForm({
         <div className="space-y-4">
           {/* Product Images */}
           <div>
-            <Label>Product Images *</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label>Product Images *</Label>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateImage}
+                        disabled={isGeneratingImage || !imageGenerationCheck.canGenerate}
+                        className="h-8 gap-2"
+                      >
+                        {isGeneratingImage ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-3.5 w-3.5" />
+                            AI Generate
+                          </>
+                        )}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    {imageGenerationCheck.canGenerate ? (
+                      <p className="text-sm">
+                        ✨ Generate a professional product image using AI based on your product details
+                      </p>
+                    ) : (
+                      <div className="text-sm space-y-1">
+                        <p className="font-medium text-yellow-400">⚠️ Cannot generate image yet</p>
+                        <p className="text-muted-foreground">{imageGenerationCheck.reason}</p>
+                      </div>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <div className="mt-2">
               {imagePreview.length > 0 && (
                 <div className="grid grid-cols-3 gap-3 mb-3">
