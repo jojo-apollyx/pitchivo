@@ -16,89 +16,105 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Sparkles, Loader2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { FileUploadPanel, type FileWithExtraction } from '@/components/products/FileUploadPanel'
 import { FoodSupplementForm } from '@/components/products/industries/food-supplement/FoodSupplementForm'
-import { ExtractedFieldsDisplay } from '@/components/products/ExtractedFieldsDisplay'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { cn } from '@/lib/utils'
 
 const initialFormData: FoodSupplementProductData = {
-  productImages: [],
-  productName: '',
-  originCountry: '',
-  manufacturerName: '',
-  casNumber: '',
-  fdaNumber: '',
+  // Core Product Information
+  product_images: [],
+  product_name: '',
+  origin_country: '',
+  manufacturer_name: '',
+  cas_number: '',
+  fda_number: '',
   einecs: '',
   description: '',
   category: '',
   applications: [],
   form: '',
   grade: '',
-  botanicalName: '',
-  extractionRatio: '',
-  carrierMaterial: '',
+  
+  // Origin & Source
+  botanical_name: '',
+  extraction_ratio: '',
+  carrier_material: '',
+  
+  // Physical & Sensory Properties
   appearance: '',
   odor: '',
   taste: '',
   solubility: '',
-  meshSize: '',
-  priceTiers: [
-    { id: '1', moq: 0, price: 0, leadTime: 0 },
-  ],
-  packagingType: '',
-  netWeight: '',
-  grossWeight: '',
-  packagesPerPallet: null,
-  paymentTerms: '',
-  shelfLife: null,
-  incoterm: '',
-  storageConditions: [],
-  storageTemperature: '',
-  provideSample: '',
-  sampleType: '',
-  samplePrice: null,
-  sampleQuantity: null,
-  sampleLeadTime: '',
-  sampleAvailability: '',
-  moq: null,
-  certificates: [],
-  certificateFiles: [],
-  allergenInfo: '',
-  gmoStatus: '',
-  irradiationStatus: '',
-  bseStatement: '',
-  halalCertified: '',
-  kosherCertified: '',
-  organicCertificationBody: '',
-  warehouseLocations: [],
-  coaFile: null,
-  tdsFile: null,
-  msdsFile: null,
-  specSheet: null,
-  otherFiles: [],
-  assay: null,
-  moisture: null,
-  ashContent: null,
-  bulkDensity: null,
-  particleSize: '',
-  lead: null,
-  arsenic: null,
-  cadmium: null,
-  mercury: null,
-  aflatoxins: null,
-  totalPlateCount: null,
-  yeastMold: null,
-  eColiPresence: '',
-  salmonellaPresence: '',
-  staphylococcusPresence: '',
-  pesticideResidue: '',
-  residualSolvents: '',
+  particle_size: '',
+  mesh_size: '',
+  bulk_density: '',
+  
+  // Chemical Analysis
+  assay: '',
   ph: '',
-  lossOnDrying: null,
+  moisture: '',
+  ash_content: '',
+  loss_on_drying: '',
+  residual_solvents: '',
+  
+  // Heavy Metals
+  lead: '',
+  arsenic: '',
+  cadmium: '',
+  mercury: '',
+  
+  // Contaminants
+  pesticide_residue: '',
+  aflatoxins: '',
+  
+  // Microbiological
+  total_plate_count: '',
+  yeast_mold: '',
+  e_coli_presence: '',
+  salmonella_presence: '',
+  staphylococcus_presence: '',
+  
+  // Pricing & MOQ
+  price_lead_time: [],
+  
+  // Packaging & Logistics
+  packaging_type: '',
+  net_weight: '',
+  gross_weight: '',
+  packages_per_pallet: '',
+  shelf_life: '',
+  storage_conditions: [],
+  storage_temperature: '',
+  payment_terms: '',
+  incoterm: '',
+  
+  // Sample Options
+  samples: [],
+  
+  // Certificates & Compliance
+  certificates: [],
+  allergen_info: '',
+  gmo_status: '',
+  irradiation_status: '',
+  bse_statement: '',
+  halal_certified: '',
+  kosher_certified: '',
+  organic_certification_body: '',
+  
+  // Inventory Locations
+  inventory_locations: [],
+  
+  // File Attachments
+  certificate_files: [],
+  coa_file: '',
+  tds_file: '',
+  msds_file: '',
+  spec_sheet: '',
+  other_files: [],
 }
 
 export default function CreateProductPage() {
@@ -487,487 +503,34 @@ export default function CreateProductPage() {
         const mergeData = await mergeResponse.json()
         const mergedFields = mergeData.mergedData
 
-        // Apply merged fields to form
+        // Apply merged fields to form (snake_case data from merge API)
         const updates: Partial<FoodSupplementProductData> = {}
         const newVisibleFields = new Set<string>(visibleTechnicalFields)
 
-        // Check document type and handle special cases
-        const documentType = mergedFields.document_type
-        const complianceDocTypes = [
-          'Allergen_Statement', 'Non_GMO_Statement', 'Prop65_Statement', 
-          'BSE_Statement', 'Irradiation_Statement', 'Organic_Certificate',
-          'Halal_Certificate', 'Kosher_Certificate', 'GMP_Certificate',
-          'ISO_Certificate', 'Gluten_Free_Certificate', 'Quality_Certificate',
-          'COO', 'FDA_Letter', 'GRAS_Notice'
-        ]
-        
-        // If document is a certificate/statement, add it to certificates array
-        if (documentType && complianceDocTypes.includes(documentType)) {
-          const currentCerts = formData.certificates || []
-          const certName = documentType.replace(/_/g, ' ')
-          if (!currentCerts.includes(certName)) {
-            updates.certificates = [...currentCerts, certName]
-          }
-          
-          // Update specific compliance fields based on document type
-          if (documentType === 'Non_GMO_Statement') {
-            updates.gmoStatus = 'Non-GMO'
-            newVisibleFields.add('gmoStatus')
-          } else if (documentType === 'Irradiation_Statement') {
-            updates.irradiationStatus = 'Non-Irradiated'
-            newVisibleFields.add('irradiationStatus')
-          } else if (documentType === 'BSE_Statement') {
-            updates.bseStatement = 'BSE-Free'
-            newVisibleFields.add('bseStatement')
-          } else if (documentType === 'Halal_Certificate') {
-            updates.halalCertified = 'Yes'
-            newVisibleFields.add('halalCertified')
-          } else if (documentType === 'Kosher_Certificate') {
-            updates.kosherCertified = 'Yes'
-            newVisibleFields.add('kosherCertified')
-          } else if (documentType === 'Organic_Certificate') {
-            // The organic certification body should be in the extracted data
-          }
-        }
-
-        // Priority fields to auto-fill: category, applications, description
-        const priorityFields: Record<string, string> = {}
-        
+        // Directly apply snake_case merged data
+        // The merge API now returns snake_case fields matching PRODUCT_FIELDS
         Object.entries(mergedFields).forEach(([key, value]) => {
-          // Handle grouped keys (e.g., "basic.product_name", "chemical.assay_min")
-          if (key.includes('.')) {
-            const [group, fieldKey] = key.split('.')
+          if (value !== null && value !== undefined && value !== '') {
+            // Apply the field directly (already in snake_case)
+            (updates as any)[key] = value
             
-            // Map grouped fields to form fields
-            switch (group) {
-              case 'basic':
-                switch (fieldKey) {
-                  case 'product_name':
-                    updates.productName = String(value)
-                    break
-                  case 'category':
-                    updates.category = String(value)
-                    break
-                  case 'description':
-                    updates.description = String(value)
-                    break
-                  case 'appearance':
-                    updates.appearance = String(value)
-                    newVisibleFields.add('appearance')
-                    break
-                  case 'origin_country':
-                    updates.originCountry = String(value)
-                    break
-                  case 'cas_number':
-                    updates.casNumber = String(value)
-                    break
-                  case 'einecs_number':
-                    updates.einecs = String(value)
-                    newVisibleFields.add('einecs')
-                    break
-                  case 'application':
-                    if (Array.isArray(value)) {
-                      updates.applications = value
-                    }
-                    break
-                }
-                break
-              case 'origin':
-                switch (fieldKey) {
-                  case 'botanical_name':
-                    updates.botanicalName = String(value)
-                    newVisibleFields.add('botanicalName')
-                    break
-                  case 'extraction_ratio':
-                    updates.extractionRatio = String(value)
-                    newVisibleFields.add('extractionRatio')
-                    break
-                  case 'carrier_material':
-                    updates.carrierMaterial = String(value)
-                    newVisibleFields.add('carrierMaterial')
-                    break
-                }
-                break
-              case 'physical':
-                switch (fieldKey) {
-                  case 'form':
-                    updates.form = String(value)
-                    break
-                  case 'mesh_size':
-                    updates.meshSize = String(value)
-                    newVisibleFields.add('meshSize')
-                    break
-                  // Note: color field doesn't exist in form, skip it
-                  // case 'color':
-                  //   updates.color = String(value)
-                  //   break
-                  case 'odor':
-                    updates.odor = String(value)
-                    newVisibleFields.add('odor')
-                    break
-                  case 'taste':
-                    updates.taste = String(value)
-                    newVisibleFields.add('taste')
-                    break
-                  case 'solubility_water':
-                    updates.solubility = String(value)
-                    newVisibleFields.add('solubility')
-                    break
-                  case 'particle_size_range':
-                    updates.particleSize = String(value)
-                    newVisibleFields.add('particleSize')
-                    break
-                  case 'bulk_density':
-                    if (value) {
-                      updates.bulkDensity = parseFloat(String(value))
-                      newVisibleFields.add('bulkDensity')
-                    }
-                    break
-                }
-                break
-              case 'chemical':
-                switch (fieldKey) {
-                  case 'assay_min':
-                    if (value) {
-                      updates.assay = parseFloat(String(value))
-                      newVisibleFields.add('assay')
-                    }
-                    break
-                  case 'moisture_max':
-                    if (value) {
-                      updates.moisture = parseFloat(String(value))
-                      newVisibleFields.add('moisture')
-                    }
-                    break
-                  case 'ash_max':
-                    if (value) {
-                      updates.ashContent = parseFloat(String(value))
-                      newVisibleFields.add('ashContent')
-                    }
-                    break
-                  case 'ph_value':
-                    updates.ph = String(value)
-                    newVisibleFields.add('ph')
-                    break
-                  case 'lead_max':
-                    if (value) {
-                      updates.lead = parseFloat(String(value))
-                      newVisibleFields.add('lead')
-                    }
-                    break
-                  case 'arsenic_max':
-                    if (value) {
-                      updates.arsenic = parseFloat(String(value))
-                      newVisibleFields.add('arsenic')
-                    }
-                    break
-                  case 'cadmium_max':
-                    if (value) {
-                      updates.cadmium = parseFloat(String(value))
-                      newVisibleFields.add('cadmium')
-                    }
-                    break
-                  case 'mercury_max':
-                    if (value) {
-                      updates.mercury = parseFloat(String(value))
-                      newVisibleFields.add('mercury')
-                    }
-                    break
-                  case 'pesticide_residue':
-                    updates.pesticideResidue = String(value)
-                    newVisibleFields.add('pesticideResidue')
-                    break
-                  case 'aflatoxins_max':
-                    if (value) {
-                      updates.aflatoxins = parseFloat(String(value))
-                      newVisibleFields.add('aflatoxins')
-                    }
-                    break
-                  case 'residual_solvents':
-                    updates.residualSolvents = String(value)
-                    newVisibleFields.add('residualSolvents')
-                    break
-                }
-                break
-              case 'microbial':
-                switch (fieldKey) {
-                  case 'total_plate_count_max':
-                    if (value) {
-                      updates.totalPlateCount = parseInt(String(value))
-                      newVisibleFields.add('totalPlateCount')
-                    }
-                    break
-                  case 'yeast_mold_max':
-                    if (value) {
-                      updates.yeastMold = parseInt(String(value))
-                      newVisibleFields.add('yeastMold')
-                    }
-                    break
-                  case 'e_coli':
-                    if (hasMeaningfulValue(value)) {
-                      updates.eColiPresence = String(value)
-                      newVisibleFields.add('eColiPresence')
-                    }
-                    break
-                  case 'salmonella':
-                    if (hasMeaningfulValue(value)) {
-                      updates.salmonellaPresence = String(value)
-                      newVisibleFields.add('salmonellaPresence')
-                    }
-                    break
-                  case 'staphylococcus_aureus':
-                    if (hasMeaningfulValue(value)) {
-                      updates.staphylococcusPresence = String(value)
-                      newVisibleFields.add('staphylococcusPresence')
-                    }
-                    break
-                }
-                break
-              case 'supplier':
-                switch (fieldKey) {
-                  case 'manufacturer_name':
-                    updates.manufacturerName = String(value)
-                    break
-                }
-                break
-              case 'commercial':
-                switch (fieldKey) {
-                  case 'shelf_life_months':
-                    if (value) {
-                      updates.shelfLife = parseInt(String(value))
-                      newVisibleFields.add('shelfLife')
-                    }
-                    break
-                  case 'storage_temperature':
-                    if (hasMeaningfulValue(value)) {
-                      updates.storageTemperature = String(value)
-                      newVisibleFields.add('storageTemperature')
-                    }
-                    break
-                  case 'sample_availability':
-                    if (hasMeaningfulValue(value)) {
-                      updates.sampleAvailability = String(value)
-                      newVisibleFields.add('sampleAvailability')
-                    }
-                    break
-                  case 'moq':
-                    if (value) {
-                      updates.moq = parseInt(String(value))
-                      newVisibleFields.add('moq')
-                    }
-                    break
-                }
-                break
-              case 'packaging':
-                switch (fieldKey) {
-                  case 'packaging_type':
-                    if (Array.isArray(value) && value.length > 0) {
-                      updates.packagingType = value[0]
-                    }
-                    break
-                  case 'net_weight_per_package':
-                    if (hasMeaningfulValue(value)) {
-                      updates.netWeight = String(value)
-                    }
-                    break
-                  case 'gross_weight_per_package':
-                    if (hasMeaningfulValue(value)) {
-                      updates.grossWeight = String(value)
-                      newVisibleFields.add('grossWeight')
-                    }
-                    break
-                  case 'packages_per_pallet':
-                    if (value) {
-                      updates.packagesPerPallet = parseInt(String(value))
-                      newVisibleFields.add('packagesPerPallet')
-                    }
-                    break
-                }
-                break
-              case 'allergen':
-                switch (fieldKey) {
-                  case 'allergen_statement':
-                    if (hasMeaningfulValue(value)) {
-                      updates.allergenInfo = String(value)
-                      newVisibleFields.add('allergenInfo')
-                    }
-                    break
-                }
-                break
-              case 'compliance':
-                switch (fieldKey) {
-                  case 'is_gmo':
-                    const gmoValue = value === 'Yes' ? 'Non-GMO' : value === 'No' ? 'GMO' : 'Unknown'
-                    if (hasMeaningfulValue(gmoValue) && gmoValue !== 'Unknown') {
-                      updates.gmoStatus = gmoValue
-                      newVisibleFields.add('gmoStatus')
-                    }
-                    break
-                  case 'irradiation_status':
-                    if (hasMeaningfulValue(value) && String(value).trim().toLowerCase() !== 'unknown') {
-                      updates.irradiationStatus = String(value)
-                      newVisibleFields.add('irradiationStatus')
-                    }
-                    break
-                  case 'bse_free_status':
-                    if (hasMeaningfulValue(value)) {
-                      updates.bseStatement = String(value)
-                      newVisibleFields.add('bseStatement')
-                    }
-                    break
-                  case 'prop65_compliance':
-                    if (hasMeaningfulValue(value)) {
-                      // Store in description or create a specific field for it
-                      // For now, we can add it to allergenInfo as a workaround or description
-                      // You might want to add a specific field for this
-                    }
-                    break
-                  case 'halal_certified':
-                    if (hasMeaningfulValue(value)) {
-                      updates.halalCertified = String(value)
-                      newVisibleFields.add('halalCertified')
-                    }
-                    break
-                  case 'kosher_certified':
-                    if (hasMeaningfulValue(value)) {
-                      updates.kosherCertified = String(value)
-                      newVisibleFields.add('kosherCertified')
-                    }
-                    break
-                  case 'organic_certification_body':
-                    if (hasMeaningfulValue(value)) {
-                      updates.organicCertificationBody = String(value)
-                      newVisibleFields.add('organicCertificationBody')
-                    }
-                    break
-                  case 'specification_standard':
-                    if (Array.isArray(value)) {
-                      updates.certificates = value
-                    }
-                    break
-                }
-                break
+            // Add technical fields to visible set
+            const technicalFields = [
+              'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
+              'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
+              'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
+              'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
+              'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
+              'particle_size', 'einecs', 'fda_number'
+            ]
+            
+            if (technicalFields.includes(key)) {
+              newVisibleFields.add(key)
             }
-            return // Skip the flat key processing below
-          }
-          
-          // Map flat API fields to form fields (for backward compatibility)
-          switch (key) {
-            case 'productName':
-              updates.productName = String(value)
-              break
-            case 'casNumber':
-              updates.casNumber = String(value)
-              break
-            case 'originCountry':
-              updates.originCountry = String(value)
-              break
-            case 'manufacturerName':
-              updates.manufacturerName = String(value)
-              break
-            case 'einecs':
-              updates.einecs = String(value)
-              break
-            case 'fdaNumber':
-              updates.fdaNumber = String(value)
-              break
-            case 'description':
-              updates.description = String(value)
-              break
-            case 'category':
-              updates.category = String(value)
-              break
-            case 'appearance':
-              updates.appearance = String(value)
-              break
-            case 'odor':
-              updates.odor = String(value)
-              break
-            case 'taste':
-              updates.taste = String(value)
-              break
-            case 'form':
-              updates.form = String(value)
-              break
-            case 'grade':
-              updates.grade = String(value)
-              break
-            case 'solubility':
-              updates.solubility = String(value)
-              break
-            case 'assay':
-            case 'moisture':
-            case 'ashContent':
-            case 'bulkDensity':
-            case 'lead':
-            case 'arsenic':
-            case 'cadmium':
-            case 'mercury':
-            case 'lossOnDrying':
-              if (value) {
-                updates[key] = parseFloat(String(value))
-                newVisibleFields.add(key)
-              }
-              break
-            case 'totalPlateCount':
-            case 'yeastMold':
-              if (value) {
-                updates[key] = parseInt(String(value))
-                newVisibleFields.add(key)
-              }
-              break
-            case 'shelfLife':
-              if (value) {
-                updates.shelfLife = parseInt(String(value))
-                newVisibleFields.add('shelfLife')
-              }
-              break
-            case 'particleSize':
-            case 'ph':
-            case 'pesticideResidue':
-              if (value) {
-                updates[key] = String(value)
-                newVisibleFields.add(key)
-              }
-              break
-            case 'allergenInfo':
-            case 'bseStatement':
-              if (value) {
-                updates[key] = String(value)
-                newVisibleFields.add(key)
-              }
-              break
-            case 'eColiPresence':
-            case 'salmonellaPresence':
-            case 'staphylococcusPresence':
-              if (hasMeaningfulValue(value)) {
-                updates[key] = String(value)
-                newVisibleFields.add(key)
-              }
-              break
-            case 'gmoStatus':
-            case 'irradiationStatus':
-              const statusValue = String(value)
-              if (hasMeaningfulValue(statusValue) && statusValue.trim().toLowerCase() !== 'unknown') {
-                updates[key] = statusValue
-                newVisibleFields.add(key)
-              }
-              break
-            case 'storageConditions':
-              if (Array.isArray(value) && value.length > 0) {
-                updates.storageConditions = value
-                newVisibleFields.add('storageConditions')
-              }
-              break
-            case 'applications':
-            case 'certificates':
-              if (Array.isArray(value)) {
-                updates[key] = value
-              }
-              break
           }
         })
 
+        // Apply updates to form data
         setFormData((prev) => {
           const updatedData = { ...prev, ...updates }
           
@@ -976,15 +539,7 @@ export default function CreateProductPage() {
           newVisibleFields.forEach((fieldName) => {
             const fieldValue = updatedData[fieldName as keyof FoodSupplementProductData]
             if (hasMeaningfulValue(fieldValue)) {
-              // Additional check for status fields
-              if (fieldName === 'gmoStatus' || fieldName === 'irradiationStatus') {
-                const strValue = String(fieldValue).trim().toLowerCase()
-                if (strValue !== 'unknown') {
-                  cleanedVisibleFields.add(fieldName)
-                }
-              } else {
-                cleanedVisibleFields.add(fieldName)
-              }
+              cleanedVisibleFields.add(fieldName)
             }
           })
           
@@ -992,21 +547,13 @@ export default function CreateProductPage() {
           return updatedData
         })
         
-        // Store grouped data for additional fields display
-        if (mergedFields._grouped) {
-          setExtractedGroupedData((prev: any) => ({
-            ...prev,
-            ...mergedFields._grouped
-          }))
-        }
-        
         toast.success('Fields merged and applied successfully', { icon: '✨' })
       } catch (error) {
         console.error('Error applying fields:', error)
         toast.error('Failed to apply fields')
       }
     },
-    [uploadedFiles, formData, visibleTechnicalFields]
+    [formData, uploadedFiles, visibleTechnicalFields, hasMeaningfulValue]
   )
   
   const handleGroupedFieldUpdate = useCallback((group: string, field: string, value: any) => {
@@ -1037,604 +584,79 @@ export default function CreateProductPage() {
         return
       }
 
-      // Collect all extracted values from all completed files
-      const allFields: Record<string, any> = {}
-      
-      // Fields that should collect all values from all files for AI to merge intelligently
-      const textFieldsToCollect = new Set(['description', 'allergen_statement', 'health_benefits'])
-      
-      completedFiles.forEach((file) => {
-        const fields = (file.extraction.reviewed_values || file.extraction.extracted_values || {}) as Record<string, any>
-        
-        // Merge fields from this file into allFields
-        Object.entries(fields).forEach(([key, value]) => {
-          // Skip _grouped metadata key - we'll handle it separately
-          if (key === '_grouped') {
-            // Merge grouped data
-            if (value && typeof value === 'object') {
-              if (!allFields._grouped) {
-                allFields._grouped = {}
-              }
-              Object.entries(value as Record<string, any>).forEach(([groupKey, groupData]) => {
-                if (!allFields._grouped[groupKey]) {
-                  allFields._grouped[groupKey] = {}
-                }
-                Object.entries(groupData as Record<string, any>).forEach(([fieldKey, fieldValue]) => {
-                  // For arrays, merge them
-                  if (Array.isArray(fieldValue) && Array.isArray(allFields._grouped[groupKey][fieldKey])) {
-                    allFields._grouped[groupKey][fieldKey] = [...new Set([...allFields._grouped[groupKey][fieldKey], ...fieldValue])]
-                  } else if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
-                    // For text fields that need AI merging, collect all values
-                    if (textFieldsToCollect.has(fieldKey)) {
-                      const existingValue = allFields._grouped[groupKey][fieldKey]
-                      if (existingValue && existingValue !== fieldValue) {
-                        // Collect multiple values separated by " | " for AI to merge
-                        allFields._grouped[groupKey][fieldKey] = `${existingValue} | ${fieldValue}`
-                      } else if (!existingValue) {
-                        allFields._grouped[groupKey][fieldKey] = fieldValue
-                      }
-                    } else {
-                      // For other fields, prefer non-empty values, or keep existing if new is empty
-                      if (!allFields._grouped[groupKey][fieldKey] || allFields._grouped[groupKey][fieldKey] === '') {
-                        allFields._grouped[groupKey][fieldKey] = fieldValue
-                      }
-                    }
-                  }
-                })
-              })
-            }
-          } else {
-            // Handle flat fields
-            if (Array.isArray(value) && Array.isArray(allFields[key])) {
-              // Merge arrays and remove duplicates
-              allFields[key] = [...new Set([...allFields[key], ...value])]
-            } else if (value !== null && value !== undefined && value !== '') {
-              // For text fields that need AI merging, collect all values
-              if (textFieldsToCollect.has(key)) {
-                const existingValue = allFields[key]
-                if (existingValue && existingValue !== value) {
-                  // Collect multiple values separated by " | " for AI to merge
-                  allFields[key] = `${existingValue} | ${value}`
-                } else if (!existingValue) {
-                  allFields[key] = value
-                }
-              } else {
-                // For other fields, prefer non-empty values, or keep existing if new is empty
-                if (!allFields[key] || allFields[key] === '') {
-                  allFields[key] = value
-                }
-              }
+      toast.info('Merging data from all documents...', { icon: '🤖' })
+
+      // Collect all extracted data and merge into single object
+      const allExtractedData = completedFiles.map((f) => {
+        return f.extraction.reviewed_values || f.extraction.extracted_values
+      })
+
+      // Combine all extracted data into a single object for merging
+      const combinedFields: Record<string, any> = {}
+      allExtractedData.forEach((data: any) => {
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            if (Array.isArray(value) && Array.isArray(combinedFields[key])) {
+              // Merge arrays and deduplicate
+              combinedFields[key] = [...new Set([...combinedFields[key], ...value])]
+            } else if (!combinedFields[key]) {
+              // Set value if not already present
+              combinedFields[key] = value
             }
           }
         })
       })
 
-      if (Object.keys(allFields).length === 0 || (Object.keys(allFields).length === 1 && allFields._grouped && Object.keys(allFields._grouped).length === 0)) {
-        toast.error('No extracted fields found in completed files')
-        return
-      }
-
-      // Use AI to merge all fields with existing form data
-      toast.info(`Merging data from ${completedFiles.length} file(s) intelligently...`, { icon: '🤖' })
-      
+      // Use merge API to intelligently combine with current form data
       const mergeResponse = await fetch('/api/documents/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentData: formData,
-          newFields: allFields,
+          newFields: combinedFields,
         }),
       })
 
       if (!mergeResponse.ok) {
-        throw new Error('Failed to merge data')
+        throw new Error('Failed to merge documents')
       }
 
       const mergeData = await mergeResponse.json()
       const mergedFields = mergeData.mergedData
 
-      // Apply merged fields to form (reuse the same logic from handleApplyFields)
+      // Apply merged fields (snake_case from API)
       const updates: Partial<FoodSupplementProductData> = {}
       const newVisibleFields = new Set<string>(visibleTechnicalFields)
 
-      // Collect all document types from completed files for certificates
-      const documentTypes = completedFiles
-        .map(f => {
-          const summary = f.extraction.file_summary as any
-          return summary?.document_type
-        })
-        .filter(Boolean)
-      
-      const complianceDocTypes = [
-        'Allergen_Statement', 'Non_GMO_Statement', 'Prop65_Statement', 
-        'BSE_Statement', 'Irradiation_Statement', 'Organic_Certificate',
-        'Halal_Certificate', 'Kosher_Certificate', 'GMP_Certificate',
-        'ISO_Certificate', 'Gluten_Free_Certificate', 'Quality_Certificate',
-        'COO', 'FDA_Letter', 'GRAS_Notice'
-      ]
-      
-      // Add certificate documents to certificates array
-      const certDocuments = documentTypes.filter(dt => complianceDocTypes.includes(dt))
-      if (certDocuments.length > 0) {
-        const currentCerts = formData.certificates || []
-        const newCerts = certDocuments
-          .map(dt => dt.replace(/_/g, ' '))
-          .filter(cert => !currentCerts.includes(cert))
-        if (newCerts.length > 0) {
-          updates.certificates = [...currentCerts, ...newCerts]
-        }
-        
-        // Update specific compliance fields based on document types
-        if (documentTypes.includes('Non_GMO_Statement')) {
-          updates.gmoStatus = 'Non-GMO'
-          newVisibleFields.add('gmoStatus')
-        }
-        if (documentTypes.includes('Irradiation_Statement')) {
-          updates.irradiationStatus = 'Non-Irradiated'
-          newVisibleFields.add('irradiationStatus')
-        }
-        if (documentTypes.includes('BSE_Statement')) {
-          updates.bseStatement = 'BSE-Free'
-          newVisibleFields.add('bseStatement')
-        }
-        if (documentTypes.includes('Halal_Certificate')) {
-          updates.halalCertified = 'Yes'
-          newVisibleFields.add('halalCertified')
-        }
-        if (documentTypes.includes('Kosher_Certificate')) {
-          updates.kosherCertified = 'Yes'
-          newVisibleFields.add('kosherCertified')
-        }
-      }
-
       Object.entries(mergedFields).forEach(([key, value]) => {
-        // Handle grouped keys (e.g., "basic.product_name", "chemical.assay_min")
-        if (key.includes('.')) {
-          const [group, fieldKey] = key.split('.')
+        if (value !== null && value !== undefined && value !== '') {
+          (updates as any)[key] = value
           
-          // Map grouped fields to form fields
-          switch (group) {
-            case 'basic':
-              switch (fieldKey) {
-                case 'product_name':
-                  updates.productName = String(value)
-                  break
-                case 'category':
-                  updates.category = String(value)
-                  break
-                case 'description':
-                  updates.description = String(value)
-                  break
-                case 'appearance':
-                  updates.appearance = String(value)
-                  newVisibleFields.add('appearance')
-                  break
-                case 'origin_country':
-                  updates.originCountry = String(value)
-                  break
-                case 'cas_number':
-                  updates.casNumber = String(value)
-                  break
-                case 'einecs_number':
-                  updates.einecs = String(value)
-                  newVisibleFields.add('einecs')
-                  break
-                case 'application':
-                  if (Array.isArray(value)) {
-                    updates.applications = value
-                  }
-                  break
-              }
-              break
-            case 'origin':
-              switch (fieldKey) {
-                case 'botanical_name':
-                  updates.botanicalName = String(value)
-                  newVisibleFields.add('botanicalName')
-                  break
-                case 'extraction_ratio':
-                  updates.extractionRatio = String(value)
-                  newVisibleFields.add('extractionRatio')
-                  break
-                case 'carrier_material':
-                  updates.carrierMaterial = String(value)
-                  newVisibleFields.add('carrierMaterial')
-                  break
-              }
-              break
-            case 'physical':
-              switch (fieldKey) {
-                case 'form':
-                  updates.form = String(value)
-                  break
-                case 'mesh_size':
-                  updates.meshSize = String(value)
-                  newVisibleFields.add('meshSize')
-                  break
-                case 'odor':
-                  updates.odor = String(value)
-                  newVisibleFields.add('odor')
-                  break
-                case 'taste':
-                  updates.taste = String(value)
-                  newVisibleFields.add('taste')
-                  break
-                case 'solubility_water':
-                  updates.solubility = String(value)
-                  newVisibleFields.add('solubility')
-                  break
-                case 'particle_size_range':
-                  updates.particleSize = String(value)
-                  newVisibleFields.add('particleSize')
-                  break
-                case 'bulk_density':
-                  if (value) {
-                    updates.bulkDensity = parseFloat(String(value))
-                    newVisibleFields.add('bulkDensity')
-                  }
-                  break
-              }
-              break
-            case 'chemical':
-              switch (fieldKey) {
-                case 'assay_min':
-                  if (value) {
-                    updates.assay = parseFloat(String(value))
-                    newVisibleFields.add('assay')
-                  }
-                  break
-                case 'moisture_max':
-                  if (value) {
-                    updates.moisture = parseFloat(String(value))
-                    newVisibleFields.add('moisture')
-                  }
-                  break
-                case 'ash_max':
-                  if (value) {
-                    updates.ashContent = parseFloat(String(value))
-                    newVisibleFields.add('ashContent')
-                  }
-                  break
-                case 'ph_value':
-                  updates.ph = String(value)
-                  newVisibleFields.add('ph')
-                  break
-                case 'lead_max':
-                  if (value) {
-                    updates.lead = parseFloat(String(value))
-                    newVisibleFields.add('lead')
-                  }
-                  break
-                case 'arsenic_max':
-                  if (value) {
-                    updates.arsenic = parseFloat(String(value))
-                    newVisibleFields.add('arsenic')
-                  }
-                  break
-                case 'cadmium_max':
-                  if (value) {
-                    updates.cadmium = parseFloat(String(value))
-                    newVisibleFields.add('cadmium')
-                  }
-                  break
-                case 'mercury_max':
-                  if (value) {
-                    updates.mercury = parseFloat(String(value))
-                    newVisibleFields.add('mercury')
-                  }
-                  break
-                case 'pesticide_residue':
-                  updates.pesticideResidue = String(value)
-                  newVisibleFields.add('pesticideResidue')
-                  break
-                case 'aflatoxins_max':
-                  if (value) {
-                    updates.aflatoxins = parseFloat(String(value))
-                    newVisibleFields.add('aflatoxins')
-                  }
-                  break
-                case 'residual_solvents':
-                  updates.residualSolvents = String(value)
-                  newVisibleFields.add('residualSolvents')
-                  break
-              }
-              break
-            case 'microbial':
-              switch (fieldKey) {
-                case 'total_plate_count_max':
-                  if (value) {
-                    updates.totalPlateCount = parseInt(String(value))
-                    newVisibleFields.add('totalPlateCount')
-                  }
-                  break
-                case 'yeast_mold_max':
-                  if (value) {
-                    updates.yeastMold = parseInt(String(value))
-                    newVisibleFields.add('yeastMold')
-                  }
-                  break
-                case 'e_coli':
-                  if (hasMeaningfulValue(value)) {
-                    updates.eColiPresence = String(value)
-                    newVisibleFields.add('eColiPresence')
-                  }
-                  break
-                case 'salmonella':
-                  if (hasMeaningfulValue(value)) {
-                    updates.salmonellaPresence = String(value)
-                    newVisibleFields.add('salmonellaPresence')
-                  }
-                  break
-                case 'staphylococcus_aureus':
-                  if (hasMeaningfulValue(value)) {
-                    updates.staphylococcusPresence = String(value)
-                    newVisibleFields.add('staphylococcusPresence')
-                  }
-                  break
-              }
-              break
-            case 'supplier':
-              switch (fieldKey) {
-                case 'manufacturer_name':
-                  updates.manufacturerName = String(value)
-                  break
-              }
-              break
-            case 'commercial':
-              switch (fieldKey) {
-                case 'shelf_life_months':
-                  if (value) {
-                    updates.shelfLife = parseInt(String(value))
-                    newVisibleFields.add('shelfLife')
-                  }
-                  break
-                case 'storage_temperature':
-                  if (hasMeaningfulValue(value)) {
-                    updates.storageTemperature = String(value)
-                    newVisibleFields.add('storageTemperature')
-                  }
-                  break
-                case 'sample_availability':
-                  if (hasMeaningfulValue(value)) {
-                    updates.sampleAvailability = String(value)
-                    newVisibleFields.add('sampleAvailability')
-                  }
-                  break
-                case 'moq':
-                  if (value) {
-                    updates.moq = parseInt(String(value))
-                    newVisibleFields.add('moq')
-                  }
-                  break
-              }
-              break
-            case 'packaging':
-              switch (fieldKey) {
-                case 'packaging_type':
-                  if (Array.isArray(value) && value.length > 0) {
-                    updates.packagingType = value[0]
-                  }
-                  break
-                case 'net_weight_per_package':
-                  if (hasMeaningfulValue(value)) {
-                    updates.netWeight = String(value)
-                  }
-                  break
-                case 'gross_weight_per_package':
-                  if (hasMeaningfulValue(value)) {
-                    updates.grossWeight = String(value)
-                    newVisibleFields.add('grossWeight')
-                  }
-                  break
-                case 'packages_per_pallet':
-                  if (value) {
-                    updates.packagesPerPallet = parseInt(String(value))
-                    newVisibleFields.add('packagesPerPallet')
-                  }
-                  break
-              }
-              break
-            case 'allergen':
-              switch (fieldKey) {
-                case 'allergen_statement':
-                  if (hasMeaningfulValue(value)) {
-                    updates.allergenInfo = String(value)
-                    newVisibleFields.add('allergenInfo')
-                  }
-                  break
-              }
-              break
-            case 'compliance':
-              switch (fieldKey) {
-                case 'is_gmo':
-                  const gmoValue = value === 'Yes' ? 'Non-GMO' : value === 'No' ? 'GMO' : 'Unknown'
-                  if (hasMeaningfulValue(gmoValue) && gmoValue !== 'Unknown') {
-                    updates.gmoStatus = gmoValue
-                    newVisibleFields.add('gmoStatus')
-                  }
-                  break
-                case 'irradiation_status':
-                  if (hasMeaningfulValue(value) && String(value).trim().toLowerCase() !== 'unknown') {
-                    updates.irradiationStatus = String(value)
-                    newVisibleFields.add('irradiationStatus')
-                  }
-                  break
-                case 'bse_free_status':
-                  if (hasMeaningfulValue(value)) {
-                    updates.bseStatement = String(value)
-                    newVisibleFields.add('bseStatement')
-                  }
-                  break
-                case 'prop65_compliance':
-                  if (hasMeaningfulValue(value)) {
-                    // Store in description or create a specific field for it
-                    // For now, we can add it to allergenInfo as a workaround or description
-                    // You might want to add a specific field for this
-                  }
-                  break
-                case 'halal_certified':
-                  if (hasMeaningfulValue(value)) {
-                    updates.halalCertified = String(value)
-                    newVisibleFields.add('halalCertified')
-                  }
-                  break
-                case 'kosher_certified':
-                  if (hasMeaningfulValue(value)) {
-                    updates.kosherCertified = String(value)
-                    newVisibleFields.add('kosherCertified')
-                  }
-                  break
-                case 'organic_certification_body':
-                  if (hasMeaningfulValue(value)) {
-                    updates.organicCertificationBody = String(value)
-                    newVisibleFields.add('organicCertificationBody')
-                  }
-                  break
-                case 'specification_standard':
-                  if (Array.isArray(value)) {
-                    updates.certificates = value
-                  }
-                  break
-              }
-              break
+          // Add technical fields to visible set
+          const technicalFields = [
+            'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
+            'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
+            'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
+            'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
+            'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
+            'particle_size', 'einecs', 'fda_number'
+          ]
+          
+          if (technicalFields.includes(key)) {
+            newVisibleFields.add(key)
           }
-          return // Skip the flat key processing below
-        }
-        
-        // Map flat API fields to form fields (for backward compatibility)
-        switch (key) {
-          case 'productName':
-            updates.productName = String(value)
-            break
-          case 'casNumber':
-            updates.casNumber = String(value)
-            break
-          case 'originCountry':
-            updates.originCountry = String(value)
-            break
-          case 'manufacturerName':
-            updates.manufacturerName = String(value)
-            break
-          case 'einecs':
-            updates.einecs = String(value)
-            break
-          case 'fdaNumber':
-            updates.fdaNumber = String(value)
-            break
-          case 'description':
-            updates.description = String(value)
-            break
-          case 'category':
-            updates.category = String(value)
-            break
-          case 'appearance':
-            updates.appearance = String(value)
-            break
-          case 'odor':
-            updates.odor = String(value)
-            break
-          case 'taste':
-            updates.taste = String(value)
-            break
-          case 'form':
-            updates.form = String(value)
-            break
-          case 'grade':
-            updates.grade = String(value)
-            break
-          case 'solubility':
-            updates.solubility = String(value)
-            break
-          case 'assay':
-          case 'moisture':
-          case 'ashContent':
-          case 'bulkDensity':
-          case 'lead':
-          case 'arsenic':
-          case 'cadmium':
-          case 'mercury':
-          case 'lossOnDrying':
-            if (value) {
-              updates[key] = parseFloat(String(value))
-              newVisibleFields.add(key)
-            }
-            break
-          case 'totalPlateCount':
-          case 'yeastMold':
-            if (value) {
-              updates[key] = parseInt(String(value))
-              newVisibleFields.add(key)
-            }
-            break
-          case 'shelfLife':
-            if (value) {
-              updates.shelfLife = parseInt(String(value))
-              newVisibleFields.add('shelfLife')
-            }
-            break
-          case 'particleSize':
-          case 'ph':
-          case 'pesticideResidue':
-            if (value) {
-              updates[key] = String(value)
-              newVisibleFields.add(key)
-            }
-            break
-          case 'allergenInfo':
-          case 'bseStatement':
-            if (value) {
-              updates[key] = String(value)
-              newVisibleFields.add(key)
-            }
-            break
-          case 'eColiPresence':
-          case 'salmonellaPresence':
-          case 'staphylococcusPresence':
-            if (hasMeaningfulValue(value)) {
-              updates[key] = String(value)
-              newVisibleFields.add(key)
-            }
-            break
-          case 'gmoStatus':
-          case 'irradiationStatus':
-            const statusValue = String(value)
-            if (hasMeaningfulValue(statusValue) && statusValue.trim().toLowerCase() !== 'unknown') {
-              updates[key] = statusValue
-              newVisibleFields.add(key)
-            }
-            break
-          case 'storageConditions':
-            if (Array.isArray(value) && value.length > 0) {
-              updates.storageConditions = value
-              newVisibleFields.add('storageConditions')
-            }
-            break
-          case 'applications':
-          case 'certificates':
-            if (Array.isArray(value)) {
-              updates[key] = value
-            }
-            break
         }
       })
 
+      // Apply updates
       setFormData((prev) => {
         const updatedData = { ...prev, ...updates }
         
-        // Clean up visibleFields: remove fields that have empty/unknown values
         const cleanedVisibleFields = new Set<string>()
         newVisibleFields.forEach((fieldName) => {
           const fieldValue = updatedData[fieldName as keyof FoodSupplementProductData]
           if (hasMeaningfulValue(fieldValue)) {
-            // Additional check for status fields
-            if (fieldName === 'gmoStatus' || fieldName === 'irradiationStatus') {
-              const strValue = String(fieldValue).trim().toLowerCase()
-              if (strValue !== 'unknown') {
-                cleanedVisibleFields.add(fieldName)
-              }
-            } else {
-              cleanedVisibleFields.add(fieldName)
-            }
+            cleanedVisibleFields.add(fieldName)
           }
         })
         
@@ -1642,20 +664,12 @@ export default function CreateProductPage() {
         return updatedData
       })
       
-      // Store grouped data for additional fields display
-      if (mergedFields._grouped) {
-        setExtractedGroupedData((prev: any) => ({
-          ...prev,
-          ...mergedFields._grouped
-        }))
-      }
-      
       toast.success(`Successfully merged data from ${completedFiles.length} file(s)`, { icon: '✨' })
     } catch (error) {
       console.error('Error applying all fields:', error)
       toast.error('Failed to apply all fields')
     }
-  }, [uploadedFiles, formData, visibleTechnicalFields])
+  }, [uploadedFiles, formData, visibleTechnicalFields, hasMeaningfulValue])
 
   const handleSaveDraft = async () => {
     setIsSaving(true)
@@ -1671,21 +685,43 @@ export default function CreateProductPage() {
   }
 
   const handlePublish = async () => {
-    if (!formData.productName.trim()) {
+    // Validate required fields
+    if (!formData.product_name?.trim()) {
       toast.error('Product name is required')
       return
     }
-    if (!formData.originCountry) {
+    if (!formData.origin_country) {
       toast.error('Origin country is required')
       return
     }
-    if (formData.priceTiers.length === 0 || formData.priceTiers[0].moq === 0) {
+    if (!formData.price_lead_time || formData.price_lead_time.length === 0) {
       toast.error('At least one pricing tier is required')
       return
     }
 
     setIsPublishing(true)
     try {
+      // Prepare product data for save
+      const productData = {
+        product_name: formData.product_name,
+        origin_country: formData.origin_country,
+        manufacturer_name: formData.manufacturer_name,
+        category: formData.category,
+        form: formData.form,
+        grade: formData.grade,
+        applications: formData.applications,
+        product_data: formData, // Full data in JSONB
+        status: 'published',
+        industry_code: 'food_supplement',
+      }
+
+      // TODO: Implement actual database save
+      // const response = await fetch('/api/products', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(productData),
+      // })
+
       await new Promise((resolve) => setTimeout(resolve, 2000))
       toast.success('Product published successfully!')
       router.push('/dashboard/products')
@@ -1789,36 +825,28 @@ export default function CreateProductPage() {
                 variant="outline"
                 onClick={handleSaveDraft}
                 disabled={isSaving || isPublishing}
-                className="w-full sm:w-auto"
-              >
+                className="w-full sm:w-auto">
                 {isSaving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Saving...
                   </>
                 ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Draft
-                  </>
+                  'Save as Draft'
                 )}
               </Button>
               <Button
                 onClick={handlePublish}
-                disabled={isSaving || isPublishing || !formData.productName}
-                className={cn(
-                  'w-full sm:w-auto',
-                  'bg-primary hover:bg-primary-dark text-primary-foreground'
-                )}
-              >
+                disabled={!formData.product_name || isSaving || isPublishing}
+                className="w-full sm:w-auto">
                 {isPublishing ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Publishing...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 mr-2" />
                     Publish Product
                   </>
                 )}
@@ -1827,9 +855,17 @@ export default function CreateProductPage() {
           </div>
         </div>
       </footer>
-
-      {/* Spacer for fixed footer */}
-      <div className="h-20" />
     </div>
   )
+}
+
+// Placeholder component for additional extracted fields
+function ExtractedFieldsDisplay({
+  groupedData,
+  onFieldUpdate,
+}: {
+  groupedData: any
+  onFieldUpdate: (group: string, field: string, value: any) => void
+}) {
+  return null // Currently not displaying additional fields
 }

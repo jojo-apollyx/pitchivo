@@ -585,6 +585,7 @@ export async function saveExtractionResults(
       extracted_values: extractedValues,
       file_summary: {
         document_type: extractedData.document_type,
+        summary: extractedData.summary,
         confidence_score: extractedData.confidence_score,
       },
       raw_extracted_data: rawResponse,

@@ -23,6 +23,7 @@ interface ReviewFieldsModalProps {
   fields: ReviewField[]
   filename: string
   documentType?: string
+  summary?: string // Document summary from AI extraction
   isAlreadyReviewed?: boolean
   onApply: (reviewedFields: Record<string, any>) => Promise<void>
 }
@@ -71,6 +72,7 @@ export function ReviewFieldsModal({
   fields,
   filename,
   documentType,
+  summary,
   isAlreadyReviewed = false,
   onApply,
 }: ReviewFieldsModalProps) {
@@ -182,8 +184,10 @@ export function ReviewFieldsModal({
     }
   }
 
+  // Simplify: just show fields as a flat list with no complex grouping
+  // Group by section only for organization, but keep it simple
   const groupedFields = fields.reduce((acc, field) => {
-    const section = field.section || 'other'
+    const section = field.section || 'extracted'
     if (!acc[section]) {
       acc[section] = []
     }
@@ -192,6 +196,7 @@ export function ReviewFieldsModal({
   }, {} as Record<string, ReviewField[]>)
 
   const sectionTitles: Record<string, string> = {
+    extracted: 'Extracted Information',
     basic: 'Basic Information',
     physical: 'Physical Characteristics',
     chemical: 'Chemical Analysis',
@@ -302,6 +307,16 @@ export function ReviewFieldsModal({
               <span className="text-sm text-blue-700">
                 Review AI-extracted fields. Edit any incorrect values before applying.
               </span>
+            </div>
+          )}
+          {summary && !isNonProductDocument && (
+            <div className="mt-3 p-4 bg-muted/30 border rounded-lg">
+              <h4 className="text-xs font-semibold text-foreground/70 uppercase tracking-wide mb-2">
+                Document Summary
+              </h4>
+              <p className="text-sm text-foreground leading-relaxed">
+                {summary}
+              </p>
             </div>
           )}
         </DialogHeader>

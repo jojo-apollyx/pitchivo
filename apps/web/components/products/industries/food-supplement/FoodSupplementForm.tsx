@@ -56,7 +56,7 @@ export function FoodSupplementForm({
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    onChange({ productImages: [...formData.productImages, ...files] })
+    onChange({ product_images: [...(formData.product_images || []), ...files] })
     
     files.forEach((file) => {
       const reader = new FileReader()
@@ -68,9 +68,9 @@ export function FoodSupplementForm({
   }
 
   const removeImage = (index: number) => {
-    const newImages = formData.productImages.filter((_, i) => i !== index)
+    const newImages = (formData.product_images || []).filter((_, i) => i !== index)
     const newPreviews = imagePreview.filter((_, i) => i !== index)
-    onChange({ productImages: newImages })
+    onChange({ product_images: newImages })
     setImagePreview(newPreviews)
   }
 
@@ -82,24 +82,24 @@ export function FoodSupplementForm({
 
   const addWarehouseLocation = () => {
     onChange({
-      warehouseLocations: [
-        ...formData.warehouseLocations,
-        { id: Date.now().toString(), country: '', city: '', quantity: 0 },
+      inventory_locations: [
+        ...(formData.inventory_locations || []),
+        { country: '', city: '', quantity: '' },
       ],
     })
   }
 
-  const updateWarehouseLocation = (id: string, updates: Partial<WarehouseLocation>) => {
+  const updateWarehouseLocation = (index: number, updates: Partial<{ country?: string; city?: string; quantity?: string }>) => {
     onChange({
-      warehouseLocations: formData.warehouseLocations.map((loc) =>
-        loc.id === id ? { ...loc, ...updates } : loc
+      inventory_locations: (formData.inventory_locations || []).map((loc, i) =>
+        i === index ? { ...loc, ...updates } : loc
       ),
     })
   }
 
-  const removeWarehouseLocation = (id: string) => {
+  const removeWarehouseLocation = (index: number) => {
     onChange({
-      warehouseLocations: formData.warehouseLocations.filter((loc) => loc.id !== id),
+      inventory_locations: (formData.inventory_locations || []).filter((_, i) => i !== index),
     })
   }
 
@@ -157,8 +157,8 @@ export function FoodSupplementForm({
             <Label htmlFor="productName">Product Name *</Label>
             <Input
               id="productName"
-              value={formData.productName}
-              onChange={(e) => onChange({ productName: e.target.value })}
+              value={formData.product_name || ''}
+              onChange={(e) => onChange({ product_name: e.target.value })}
               placeholder="e.g., Ascorbic Acid 99%"
               className={cn(errors.productName && 'border-destructive')}
             />
@@ -171,8 +171,8 @@ export function FoodSupplementForm({
           <div>
             <Label htmlFor="originCountry">Origin Country *</Label>
             <CountrySelect
-              value={formData.originCountry}
-              onValueChange={(value) => onChange({ originCountry: value })}
+              value={formData.origin_country || ''}
+              onValueChange={(value) => onChange({ origin_country: value })}
               countries={FOOD_SUPPLEMENT_COUNTRIES}
               placeholder="Select origin country..."
               className="mt-1"
@@ -187,8 +187,8 @@ export function FoodSupplementForm({
             <Label htmlFor="manufacturerName">Manufacturer Name *</Label>
             <Input
               id="manufacturerName"
-              value={formData.manufacturerName}
-              onChange={(e) => onChange({ manufacturerName: e.target.value })}
+              value={formData.manufacturer_name || ''}
+              onChange={(e) => onChange({ manufacturer_name: e.target.value })}
               placeholder="e.g., ABC Pharma Co."
               className={cn(errors.manufacturerName && 'border-destructive')}
             />
@@ -204,8 +204,8 @@ export function FoodSupplementForm({
               <Label htmlFor="casNumber" className="mb-1 whitespace-nowrap">CAS Number *</Label>
               <Input
                 id="casNumber"
-                value={formData.casNumber}
-                onChange={(e) => onChange({ casNumber: e.target.value })}
+                value={formData.cas_number || ''}
+                onChange={(e) => onChange({ cas_number: e.target.value })}
                 placeholder="e.g., 50-81-7"
                 className={cn(errors.casNumber && 'border-destructive')}
               />
@@ -219,8 +219,8 @@ export function FoodSupplementForm({
               <Label htmlFor="fdaNumber" className="mb-1 whitespace-nowrap">FDA Number *</Label>
               <Input
                 id="fdaNumber"
-                value={formData.fdaNumber}
-                onChange={(e) => onChange({ fdaNumber: e.target.value })}
+                value={formData.fda_number || ''}
+                onChange={(e) => onChange({ fda_number: e.target.value })}
                 placeholder="e.g., 21CFR182.8013"
                 className={cn(errors.fdaNumber && 'border-destructive')}
               />
@@ -234,7 +234,7 @@ export function FoodSupplementForm({
           <div>
             <Label htmlFor="category">Category *</Label>
             <SearchableSelect
-              value={formData.category}
+              value={formData.category || ''}
               onValueChange={(value) => onChange({ category: value })}
               options={FOOD_SUPPLEMENT_CATEGORIES}
               placeholder="Select category"
@@ -290,7 +290,7 @@ export function FoodSupplementForm({
             <SearchableMultiSelect
               label="Applications *"
               options={FOOD_SUPPLEMENT_APPLICATIONS}
-              selected={formData.applications}
+              selected={formData.applications || []}
               onChange={(selected) => onChange({ applications: selected })}
               placeholder="Search applications..."
             />
@@ -321,8 +321,8 @@ export function FoodSupplementForm({
       <section className="pb-8 border-b border-border/30">
         <h2 className="text-lg font-semibold mb-4">Pricing & Lead Time</h2>
         <TieredPricingSection
-          priceTiers={formData.priceTiers}
-          onChange={(tiers) => onChange({ priceTiers: tiers })}
+          priceTiers={formData.price_lead_time || []}
+          onChange={(tiers) => onChange({ price_lead_time: tiers })}
           errors={errors}
         />
       </section>
@@ -335,8 +335,8 @@ export function FoodSupplementForm({
           <div>
             <Label htmlFor="packagingType">Packaging Type *</Label>
             <SearchableSelect
-              value={formData.packagingType}
-              onValueChange={(value) => onChange({ packagingType: value })}
+              value={formData.packaging_type || ''}
+              onValueChange={(value) => onChange({ packaging_type: value })}
               options={FOOD_SUPPLEMENT_PACKAGING}
               placeholder="Select packaging"
               searchPlaceholder="Search packaging types..."
@@ -352,8 +352,8 @@ export function FoodSupplementForm({
               <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package *</Label>
               <Input
                 id="netWeight"
-                value={formData.netWeight}
-                onChange={(e) => onChange({ netWeight: e.target.value })}
+                value={formData.net_weight || ''}
+                onChange={(e) => onChange({ net_weight: e.target.value })}
                 placeholder="e.g., 25kg per drum"
                 className={cn(errors.netWeight && 'border-destructive')}
               />
@@ -367,8 +367,8 @@ export function FoodSupplementForm({
           <div>
             <Label htmlFor="paymentTerms">Payment Terms *</Label>
             <SearchableSelect
-              value={formData.paymentTerms}
-              onValueChange={(value) => onChange({ paymentTerms: value })}
+              value={formData.payment_terms || ''}
+              onValueChange={(value) => onChange({ payment_terms: value })}
               options={FOOD_SUPPLEMENT_PAYMENT_TERMS}
               placeholder="Select payment terms"
               searchPlaceholder="Search payment terms..."
@@ -407,7 +407,7 @@ export function FoodSupplementForm({
           {/* Provide Sample */}
           <div>
             <Label htmlFor="provideSample">Provide Sample *</Label>
-            <Select value={formData.provideSample} onValueChange={(value) => onChange({ provideSample: value })}>
+            <Select value={formData.provide_sample || 'no'} onValueChange={(value) => onChange({ provide_sample: value })}>
               <SelectTrigger className={cn("h-11 rounded-xl", errors.provideSample && 'border-destructive')}>
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
@@ -421,12 +421,12 @@ export function FoodSupplementForm({
             )}
           </div>
 
-          {formData.provideSample === 'yes' && (
+          {formData.provide_sample === 'yes' && (
             <>
               {/* Sample Type */}
               <div>
                 <Label htmlFor="sampleType">Sample Type *</Label>
-                <Select value={formData.sampleType} onValueChange={(value) => onChange({ sampleType: value })}>
+                <Select value={formData.sample_type || ''} onValueChange={(value) => onChange({ sample_type: value })}>
                   <SelectTrigger className={cn("h-11 rounded-xl", errors.sampleType && 'border-destructive')}>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -443,15 +443,15 @@ export function FoodSupplementForm({
                 )}
               </div>
 
-              {formData.sampleType.includes('Paid') && (
+              {(formData.sample_type || '').includes('Paid') && (
                 <div>
                   <Label htmlFor="samplePrice">Sample Price (USD/kg) *</Label>
                   <Input
                     id="samplePrice"
                     type="number"
                     step="0.01"
-                    value={formData.samplePrice || ''}
-                    onChange={(e) => onChange({ samplePrice: parseFloat(e.target.value) || null })}
+                    value={formData.sample_price || ''}
+                    onChange={(e) => onChange({ sample_price: e.target.value })}
                     placeholder="e.g., 5.00"
                     className={cn(errors.samplePrice && 'border-destructive')}
                   />
@@ -468,8 +468,8 @@ export function FoodSupplementForm({
                     id="sampleQuantity"
                     type="number"
                     step="0.01"
-                    value={formData.sampleQuantity || ''}
-                    onChange={(e) => onChange({ sampleQuantity: parseFloat(e.target.value) || null })}
+                    value={formData.sample_quantity || ''}
+                    onChange={(e) => onChange({ sample_quantity: e.target.value })}
                     placeholder="e.g., 0.5"
                     className={cn(errors.sampleQuantity && 'border-destructive')}
                   />
@@ -481,8 +481,8 @@ export function FoodSupplementForm({
                   <Label htmlFor="sampleLeadTime" className="mb-1 whitespace-nowrap">Sample Lead Time *</Label>
                   <Input
                     id="sampleLeadTime"
-                    value={formData.sampleLeadTime}
-                    onChange={(e) => onChange({ sampleLeadTime: e.target.value })}
+                    value={formData.sample_lead_time || ''}
+                    onChange={(e) => onChange({ sample_lead_time: e.target.value })}
                     placeholder="e.g., 3-5 business days"
                     className={cn(errors.sampleLeadTime && 'border-destructive')}
                   />
@@ -504,7 +504,7 @@ export function FoodSupplementForm({
           <SearchableMultiSelect
             label="Select Certificates"
             options={FOOD_SUPPLEMENT_CERTIFICATES}
-            selected={formData.certificates}
+            selected={formData.certificates || []}
             onChange={(selected) => onChange({ certificates: selected })}
             placeholder="Search certificates..."
             maxHeight="max-h-96"
@@ -516,14 +516,14 @@ export function FoodSupplementForm({
       <section className="pb-8 border-b border-border/30">
         <h2 className="text-lg font-semibold mb-4">Warehouse Inventory</h2>
         <div className="space-y-3">
-          {formData.warehouseLocations.map((location) => (
-            <div key={location.id} className="flex gap-3 items-end">
+          {(formData.inventory_locations || []).map((location, index) => (
+            <div key={index} className="flex gap-3 items-end">
               <div className="flex-1 grid grid-cols-3 gap-3">
                 <div className="flex flex-col">
                   <Label className="text-xs mb-1 whitespace-nowrap">Country</Label>
                   <CountrySelect
-                    value={location.country}
-                    onValueChange={(value) => updateWarehouseLocation(location.id, { country: value })}
+                    value={location.country || ''}
+                    onValueChange={(value) => updateWarehouseLocation(index, { country: value })}
                     countries={FOOD_SUPPLEMENT_COUNTRIES}
                     placeholder="Select"
                     className="h-11"
@@ -532,8 +532,8 @@ export function FoodSupplementForm({
                 <div className="flex flex-col">
                   <Label className="text-xs mb-1 whitespace-nowrap">City</Label>
                   <Input
-                    value={location.city}
-                    onChange={(e) => updateWarehouseLocation(location.id, { city: e.target.value })}
+                    value={location.city || ''}
+                    onChange={(e) => updateWarehouseLocation(index, { city: e.target.value })}
                     placeholder="City"
                     className="h-11"
                   />
@@ -541,11 +541,9 @@ export function FoodSupplementForm({
                 <div className="flex flex-col">
                   <Label className="text-xs mb-1 whitespace-nowrap">Quantity (kg)</Label>
                   <Input
-                    type="number"
-                    value={location.quantity}
-                    onChange={(e) =>
-                      updateWarehouseLocation(location.id, { quantity: parseInt(e.target.value) || 0 })
-                    }
+                    type="text"
+                    value={location.quantity || ''}
+                    onChange={(e) => updateWarehouseLocation(index, { quantity: e.target.value })}
                     placeholder="0"
                     className="h-11"
                   />
@@ -555,7 +553,7 @@ export function FoodSupplementForm({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => removeWarehouseLocation(location.id)}
+                onClick={() => removeWarehouseLocation(index)}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />

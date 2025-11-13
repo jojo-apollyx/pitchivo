@@ -262,6 +262,13 @@ export interface Database {
           industry_code: string
           template_id: string | null
           template_version_snapshot: Json | null
+          product_data: Json | null
+          origin_country: string | null
+          manufacturer_name: string | null
+          category: string | null
+          form: string | null
+          grade: string | null
+          applications: string[] | null
           status: 'draft' | 'published'
           created_at: string
           updated_at: string
@@ -273,6 +280,13 @@ export interface Database {
           industry_code: string
           template_id?: string | null
           template_version_snapshot?: Json | null
+          product_data?: Json | null
+          origin_country?: string | null
+          manufacturer_name?: string | null
+          category?: string | null
+          form?: string | null
+          grade?: string | null
+          applications?: string[] | null
           status?: 'draft' | 'published'
           created_at?: string
           updated_at?: string
@@ -284,6 +298,13 @@ export interface Database {
           industry_code?: string
           template_id?: string | null
           template_version_snapshot?: Json | null
+          product_data?: Json | null
+          origin_country?: string | null
+          manufacturer_name?: string | null
+          category?: string | null
+          form?: string | null
+          grade?: string | null
+          applications?: string[] | null
           status?: 'draft' | 'published'
           created_at?: string
           updated_at?: string

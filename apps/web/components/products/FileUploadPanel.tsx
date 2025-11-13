@@ -398,6 +398,7 @@ export function FileUploadPanel({
           fields={reviewFields}
           filename={reviewingFile.extraction.filename}
           documentType={(reviewingFile.extraction.file_summary as any)?.document_type}
+          summary={(reviewingFile.extraction.file_summary as any)?.summary}
           isAlreadyReviewed={reviewingFile.extraction.review_status === 'reviewed'}
           onApply={(fields) => handleApply(reviewingFile.extraction.id, fields)}
         />

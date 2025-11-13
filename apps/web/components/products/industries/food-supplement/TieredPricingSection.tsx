@@ -5,11 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import type { PriceTier } from './types'
+
+type PriceLeadTimeTier = {
+  moq?: string
+  price?: string
+  lead_time?: string
+}
 
 interface TieredPricingSectionProps {
-  priceTiers: PriceTier[]
-  onChange: (tiers: PriceTier[]) => void
+  priceTiers: PriceLeadTimeTier[]
+  onChange: (tiers: PriceLeadTimeTier[]) => void
   errors?: Record<string, string>
 }
 
@@ -19,26 +24,25 @@ export function TieredPricingSection({
   errors = {},
 }: TieredPricingSectionProps) {
   const addTier = () => {
-    const newTier: PriceTier = {
-      id: Date.now().toString(),
-      moq: 0,
-      price: 0,
-      leadTime: 0,
+    const newTier: PriceLeadTimeTier = {
+      moq: '',
+      price: '',
+      lead_time: '',
     }
     onChange([...priceTiers, newTier])
   }
 
-  const updateTier = (id: string, updates: Partial<PriceTier>) => {
+  const updateTier = (index: number, updates: Partial<PriceLeadTimeTier>) => {
     onChange(
-      priceTiers.map((tier) =>
-        tier.id === id ? { ...tier, ...updates } : tier
+      priceTiers.map((tier, i) =>
+        i === index ? { ...tier, ...updates } : tier
       )
     )
   }
 
-  const removeTier = (id: string) => {
+  const removeTier = (index: number) => {
     if (priceTiers.length > 1) {
-      onChange(priceTiers.filter((tier) => tier.id !== id))
+      onChange(priceTiers.filter((_, i) => i !== index))
     }
   }
 
@@ -66,7 +70,7 @@ export function TieredPricingSection({
       <div className="space-y-3">
         {priceTiers.map((tier, index) => (
           <div
-            key={tier.id}
+            key={index}
             className={cn(
               'rounded-xl border border-border/30 p-4 bg-card/50',
               'hover:border-primary/30 transition-colors'
@@ -80,11 +84,10 @@ export function TieredPricingSection({
                     MOQ (kg) *
                   </Label>
                   <Input
-                    type="number"
-                    min="0"
+                    type="text"
                     value={tier.moq || ''}
                     onChange={(e) =>
-                      updateTier(tier.id, { moq: parseInt(e.target.value) || 0 })
+                      updateTier(index, { moq: e.target.value })
                     }
                     placeholder="e.g., 100"
                   />
@@ -96,12 +99,10 @@ export function TieredPricingSection({
                     Price (USD/kg) *
                   </Label>
                   <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
                     value={tier.price || ''}
                     onChange={(e) =>
-                      updateTier(tier.id, { price: parseFloat(e.target.value) || 0 })
+                      updateTier(index, { price: e.target.value })
                     }
                     placeholder="e.g., 15.50"
                   />
@@ -113,11 +114,10 @@ export function TieredPricingSection({
                     Lead Time (days) *
                   </Label>
                   <Input
-                    type="number"
-                    min="0"
-                    value={tier.leadTime || ''}
+                    type="text"
+                    value={tier.lead_time || ''}
                     onChange={(e) =>
-                      updateTier(tier.id, { leadTime: parseInt(e.target.value) || 0 })
+                      updateTier(index, { lead_time: e.target.value })
                     }
                     placeholder="e.g., 10"
                   />
@@ -129,7 +129,7 @@ export function TieredPricingSection({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => removeTier(tier.id)}
+                onClick={() => removeTier(index)}
                 disabled={priceTiers.length === 1}
                 className={cn(
                   'flex-shrink-0 text-destructive hover:text-destructive mt-5',
@@ -141,14 +141,16 @@ export function TieredPricingSection({
             </div>
 
             {/* Summary */}
-            {tier.moq > 0 && tier.price > 0 && (
+            {tier.moq && tier.price && parseFloat(tier.moq) > 0 && parseFloat(tier.price) > 0 && (
               <div className="mt-3 pt-3 border-t border-border/30">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium">Summary:</span> Orders of{' '}
                   <span className="text-foreground font-medium">{tier.moq}kg+</span> at{' '}
-                  <span className="text-foreground font-medium">${tier.price}/kg</span>,{' '}
-                  delivered in{' '}
-                  <span className="text-foreground font-medium">{tier.leadTime} days</span>
+                  <span className="text-foreground font-medium">${tier.price}/kg</span>
+                  {tier.lead_time && (
+                    <>, delivered in{' '}
+                    <span className="text-foreground font-medium">{tier.lead_time} days</span></>
+                  )}
                 </p>
               </div>
             )}
