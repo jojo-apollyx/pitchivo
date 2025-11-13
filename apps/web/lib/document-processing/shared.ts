@@ -324,6 +324,9 @@ ${context.extractedContent}`
       }
     }
 
+    // Normalize extracted data to convert any complex objects to plain text
+    extractedData = normalizeExtractedData(extractedData)
+
     return { extractedData, rawResponse: rawExtraction }
   } catch (error) {
     console.error('[AI Extraction] Error:', error)
@@ -331,6 +334,137 @@ ${context.extractedContent}`
       error: error instanceof Error ? error.message : 'Failed to extract data'
     }
   }
+}
+
+/**
+ * Convert complex objects to plain text strings
+ * Recursively processes nested objects and converts them to readable plain text
+ */
+function convertObjectToPlainText(obj: any, depth: number = 0): string {
+  if (depth > 3) {
+    // Prevent infinite recursion, return a summary
+    return '[Complex data structure]'
+  }
+  
+  if (obj === null || obj === undefined) {
+    return ''
+  }
+  
+  if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
+    return String(obj)
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj
+      .map(item => convertObjectToPlainText(item, depth + 1))
+      .filter(item => item !== '')
+      .join(', ')
+  }
+  
+  if (typeof obj === 'object') {
+    const parts: string[] = []
+    Object.entries(obj).forEach(([key, value]) => {
+      const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      const formattedValue = convertObjectToPlainText(value, depth + 1)
+      if (formattedValue !== '') {
+        parts.push(`${formattedKey}: ${formattedValue}`)
+      }
+    })
+    return parts.join('. ')
+  }
+  
+  return String(obj)
+}
+
+/**
+ * Recursively transform extracted data to ensure all values are simple types
+ * Converts any complex objects to plain text strings
+ */
+function normalizeExtractedData(data: any, path: string = '', isGrouped: boolean = false): any {
+  if (data === null || data === undefined) {
+    return data
+  }
+  
+  // If it's already a simple type, return as is
+  if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') {
+    return data
+  }
+  
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map((item, index) => {
+      // Arrays should only contain simple types
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        // Convert complex object in array to plain text
+        return convertObjectToPlainText(item)
+      }
+      return normalizeExtractedData(item, `${path}[${index}]`, isGrouped)
+    })
+  }
+  
+  // Handle objects
+  if (typeof data === 'object') {
+    // Special handling for _grouped structure - we want to preserve the group structure
+    // but normalize all values within each group
+    if (path === '' && data._grouped) {
+      const normalized: any = { ...data }
+      // Normalize the _grouped structure
+      normalized._grouped = normalizeExtractedData(data._grouped, '_grouped', true)
+      // Normalize other top-level fields
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== '_grouped') {
+          normalized[key] = normalizeExtractedData(value, key, false)
+        }
+      })
+      return normalized
+    }
+    
+    // For grouped data (like basic, physical, chemical, etc.), preserve the structure
+    // but ensure all values are simple types
+    if (isGrouped || path.startsWith('_grouped.')) {
+      const normalized: any = {}
+      Object.entries(data).forEach(([key, value]) => {
+        // If value is an object, check if it's a complex nested structure
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // Check if it has nested objects (complex nesting)
+          const hasNestedObjects = Object.values(value).some(
+            v => typeof v === 'object' && v !== null && !Array.isArray(v)
+          )
+          if (hasNestedObjects) {
+            // Convert complex nested object to plain text
+            normalized[key] = convertObjectToPlainText(value)
+          } else {
+            // It's a simple flat object - this shouldn't happen in grouped data,
+            // but if it does, convert to plain text to be safe
+            normalized[key] = convertObjectToPlainText(value)
+          }
+        } else {
+          // Recursively normalize simple values
+          normalized[key] = normalizeExtractedData(value, path ? `${path}.${key}` : key, isGrouped)
+        }
+      })
+      return normalized
+    }
+    
+    // For other objects, check if they have complex nesting
+    const hasComplexNesting = Object.values(data).some(
+      value => typeof value === 'object' && value !== null && !Array.isArray(value)
+    )
+    
+    if (hasComplexNesting) {
+      // Convert entire object to plain text
+      return convertObjectToPlainText(data)
+    }
+    
+    // Otherwise, recursively normalize each property
+    const normalized: any = {}
+    Object.entries(data).forEach(([key, value]) => {
+      normalized[key] = normalizeExtractedData(value, path ? `${path}.${key}` : key, isGrouped)
+    })
+    return normalized
+  }
+  
+  return data
 }
 
 /**
@@ -370,6 +504,10 @@ function cleanGroupedData(groupedData: any): any {
     if (groupValue && typeof groupValue === 'object' && !Array.isArray(groupValue)) {
       const cleanedGroup: any = {}
       Object.entries(groupValue).forEach(([fieldKey, fieldValue]) => {
+        // Skip objects (they can't be displayed properly and cause "[object Object]" issues)
+        if (typeof fieldValue === 'object' && !Array.isArray(fieldValue) && fieldValue !== null) {
+          return
+        }
         // Only include fields with meaningful values (not null, undefined, empty, or placeholders)
         if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '' && !isPlaceholderValue(fieldValue)) {
           cleanedGroup[fieldKey] = fieldValue
@@ -422,6 +560,10 @@ export async function saveExtractionResults(
   }
 
   Object.entries(extractedData).forEach(([key, value]) => {
+    // Skip objects (they can't be displayed properly and cause "[object Object]" issues)
+    if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+      return
+    }
     // Filter out null, undefined, empty strings, placeholder values, and the _grouped key
     if (key !== '_grouped' && value !== null && value !== undefined && value !== '' && !isPlaceholderValue(value)) {
       flattenedData[key] = value

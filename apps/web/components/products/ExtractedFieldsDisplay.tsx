@@ -56,7 +56,88 @@ function formatValue(value: any): string {
   if (value === null || value === undefined) {
     return ''
   }
+  // Handle objects - skip them as they're not displayable in a simple input field
+  if (typeof value === 'object') {
+    return ''
+  }
   return String(value)
+}
+
+/**
+ * Mapping of grouped fields that are already shown in the main form
+ * Format: { group: Set<fieldKeys> }
+ */
+const FORM_MAPPED_FIELDS: Record<string, Set<string>> = {
+  basic: new Set([
+    'product_name',
+    'category',
+    'description',
+    'appearance',
+    'origin_country',
+    'cas_number',
+    'einecs_number',
+    'application',
+  ]),
+  origin: new Set([
+    'botanical_name',
+    'extraction_ratio',
+    'carrier_material',
+  ]),
+  physical: new Set([
+    'form',
+    'mesh_size',
+    'odor',
+    'taste',
+    'solubility_water',
+    'particle_size_range',
+    'bulk_density',
+  ]),
+  chemical: new Set([
+    'assay_min',
+    'moisture_max',
+    'ash_max',
+    'ph_value',
+    'lead_max',
+    'arsenic_max',
+    'cadmium_max',
+    'mercury_max',
+    'pesticide_residue',
+    'aflatoxins_max',
+    'residual_solvents',
+  ]),
+  microbial: new Set([
+    'total_plate_count_max',
+    'yeast_mold_max',
+    'e_coli',
+    'salmonella',
+    'staphylococcus_aureus',
+  ]),
+  supplier: new Set([
+    'manufacturer_name',
+  ]),
+  commercial: new Set([
+    'shelf_life_months',
+    'storage_temperature',
+    'sample_availability',
+    'moq',
+  ]),
+  packaging: new Set([
+    'packaging_type',
+    'net_weight_per_package',
+    'gross_weight_per_package',
+    'packages_per_pallet',
+  ]),
+  allergen: new Set([
+    'allergen_statement',
+  ]),
+  compliance: new Set([
+    'is_gmo',
+    'irradiation_status',
+    'bse_free_status',
+    'halal_certified',
+    'kosher_certified',
+    'organic_certification_body',
+  ]),
 }
 
 export function ExtractedFieldsDisplay({ groupedData, onFieldUpdate }: ExtractedFieldsDisplayProps) {
@@ -85,8 +166,21 @@ export function ExtractedFieldsDisplay({ groupedData, onFieldUpdate }: Extracted
       <h2 className="text-lg font-semibold mb-4">Additional Extracted Data</h2>
       <div className="space-y-6">
         {nonEmptyGroups.map(([groupKey, groupData]) => {
+          // Get fields that are already mapped to the form
+          const mappedFields = FORM_MAPPED_FIELDS[groupKey] || new Set()
+          
           const fields = Object.entries(groupData as Record<string, any>).filter(
-            ([_, value]) => value !== null && value !== undefined && value !== ''
+            ([fieldKey, value]) => {
+              // Skip if value is null, undefined, empty, or an object
+              if (value === null || value === undefined || value === '' || typeof value === 'object') {
+                return false
+              }
+              // Skip if this field is already mapped to the form
+              if (mappedFields.has(fieldKey)) {
+                return false
+              }
+              return true
+            }
           )
 
           if (fields.length === 0) return null
