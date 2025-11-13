@@ -557,40 +557,21 @@ export async function saveExtractionResults(
 ): Promise<{ success: boolean; extraction?: any; error?: string }> {
   const supabase = await createClient()
 
-  // Flatten grouped data
-  const flattenedData: Record<string, any> = {}
+  // Process extracted data - keep only valid fields (flat snake_case structure)
+  const cleanedData: Record<string, any> = {}
   
-  if (extractedData._grouped) {
-    Object.entries(extractedData._grouped as Record<string, any>).forEach(([groupKey, groupData]) => {
-      if (groupData && typeof groupData === 'object') {
-        Object.entries(groupData).forEach(([fieldKey, fieldValue]) => {
-          // Filter out null, undefined, empty strings, and placeholder values
-          if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '' && !isPlaceholderValue(fieldValue)) {
-            flattenedData[`${groupKey}.${fieldKey}`] = fieldValue
-          }
-        })
-      }
-    })
-  }
-
   Object.entries(extractedData).forEach(([key, value]) => {
-    // Skip objects (they can't be displayed properly and cause "[object Object]" issues)
+    // Skip objects (except arrays which are valid for fields like applications, certificates, etc.)
     if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
       return
     }
-    // Filter out null, undefined, empty strings, placeholder values, and the _grouped key
-    if (key !== '_grouped' && value !== null && value !== undefined && value !== '' && !isPlaceholderValue(value)) {
-      flattenedData[key] = value
+    // Filter out null, undefined, empty strings, and placeholder values
+    if (value !== null && value !== undefined && value !== '' && !isPlaceholderValue(value)) {
+      cleanedData[key] = value
     }
   })
-
-  // Clean the grouped data structure to remove placeholder values
-  const cleanedGrouped = extractedData._grouped ? cleanGroupedData(extractedData._grouped) : {}
   
-  const extractedValues = {
-    ...flattenedData,
-    _grouped: cleanedGrouped
-  }
+  const extractedValues = cleanedData
 
   const { data: updatedExtraction, error: updateError } = await supabase
     .from('document_extractions')

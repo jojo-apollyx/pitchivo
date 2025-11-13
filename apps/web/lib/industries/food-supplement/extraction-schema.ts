@@ -480,13 +480,26 @@ If the document doesn't fit any of these categories, use "Other".
 STEP 2: Write a brief summary
 Write 2-3 sentences describing what this document is about.
 
-STEP 3: Extract all important details
-Capture ALL important information from the document as key-value pairs in a flat JSON structure.
-- Extract every relevant detail you can find
+STEP 3: Extract ONLY product-related information
+Extract information that is RELEVANT TO THE PRODUCT ITSELF:
+- Product identification (name, codes, manufacturer, origin)
+- Product specifications (appearance, form, grade, category, composition)
+- Technical data (assay, purity, test results, heavy metals, microbial counts)
+- Compliance & certifications (GMO status, allergens, certificates)
+- Packaging & logistics (packaging type, shelf life, storage, MOQ, pricing)
+
+DO NOT EXTRACT:
+- Contact information (emails, phone numbers, websites, addresses)
+- Document metadata (issuer names, job titles, dates unless relevant to product)
+- Legal disclaimers or confidentiality statements
+- Generic company information unrelated to the product
+
+Guidelines:
 - Store everything as text (string values)
 - For numbers, include them with their units as text (e.g., "99.5%", "5.0 ppm", "25 kg")
-- Use clear, descriptive field names in snake_case
-- Only include fields where you found actual data (omit fields with no information, N/A, unknown, etc.)
+- Use snake_case field names matching the product schema
+- Only include fields where you found actual meaningful product data
+- If multiple products are listed, extract common product information (not individual product codes)
 
 Example of a good extraction:
 {
