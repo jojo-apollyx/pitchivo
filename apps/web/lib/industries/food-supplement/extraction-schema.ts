@@ -547,9 +547,15 @@ ${schemaDoc}
 RULES:
 1. **Omit Empty Values**: Never include fields without data. No "Unknown", "N/A", or empty strings.
 
-2. **Generate & Infer**:
-   - Generate: description, applications, category (if enough data available)
-   - Infer certificates from: gmo_status, kosher_certified, halal_certified, organic_certification_body, ISO mentions
+2. **Generate & Infer (CONSERVATIVE)**:
+   - Generate ONLY: description, applications, category (if you have sufficient product data)
+   - For certificates: ONLY add if EXPLICITLY mentioned in extracted data
+     - If gmo_status = "Non-GMO" → add "Non-GMO" to certificates array
+     - If kosher_certified = "Yes" → add "Kosher" to certificates array  
+     - If halal_certified = "Yes" → add "Halal" to certificates array
+     - If organic_certification_body exists → add "Organic" to certificates array
+     - If document contains "ISO 9001" text → add "ISO 9001" to certificates array
+     - DO NOT add GMP, HACCP, FDA, or other certificates unless explicitly found in the data
    
 3. **Standardized Value Formats** (for UI dropdowns):
    - origin_country: "China", "USA", "Germany", "India", "Japan" (proper case, no abbreviations)
