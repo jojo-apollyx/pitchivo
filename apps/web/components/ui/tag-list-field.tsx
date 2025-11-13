@@ -65,7 +65,7 @@ export function TagListField({
 
       {/* Display items as badges */}
       {items.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-2 border border-border/30 rounded-lg bg-muted/30">
+        <div className="flex flex-wrap gap-2 p-2 border border-border/30 rounded-lg bg-muted/30 mb-2">
           {items.map((item) => (
             <Badge
               key={item}
@@ -121,16 +121,18 @@ export function TagListField({
         </div>
       ) : (
         allowCustomInput && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setIsAdding(true)}
-            className="h-9"
-          >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add
-          </Button>
+          <div className="mt-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setIsAdding(true)}
+              className="h-9"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Add
+            </Button>
+          </div>
         )
       )}
 

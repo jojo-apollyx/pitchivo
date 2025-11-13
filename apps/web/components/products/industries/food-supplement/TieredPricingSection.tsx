@@ -23,26 +23,32 @@ export function TieredPricingSection({
   onChange,
   errors = {},
 }: TieredPricingSectionProps) {
+  // Ensure priceTiers is always an array
+  const safePriceTiers = priceTiers || []
+  
+  // Ensure at least one tier exists
+  const tiers = safePriceTiers.length > 0 ? safePriceTiers : [{ moq: '', price: '', lead_time: '' }]
+  
   const addTier = () => {
     const newTier: PriceLeadTimeTier = {
       moq: '',
       price: '',
       lead_time: '',
     }
-    onChange([...priceTiers, newTier])
+    onChange([...tiers, newTier])
   }
 
   const updateTier = (index: number, updates: Partial<PriceLeadTimeTier>) => {
     onChange(
-      priceTiers.map((tier, i) =>
+      tiers.map((tier, i) =>
         i === index ? { ...tier, ...updates } : tier
       )
     )
   }
 
   const removeTier = (index: number) => {
-    if (priceTiers.length > 1) {
-      onChange(priceTiers.filter((_, i) => i !== index))
+    if (tiers.length > 1) {
+      onChange(tiers.filter((_, i) => i !== index))
     }
   }
 
@@ -68,7 +74,7 @@ export function TieredPricingSection({
       </div>
 
       <div className="space-y-3">
-        {priceTiers.map((tier, index) => (
+        {tiers.map((tier, index) => (
           <div
             key={index}
             className={cn(
@@ -130,10 +136,10 @@ export function TieredPricingSection({
                 variant="ghost"
                 size="icon"
                 onClick={() => removeTier(index)}
-                disabled={priceTiers.length === 1}
+                disabled={tiers.length === 1}
                 className={cn(
                   'flex-shrink-0 text-destructive hover:text-destructive mt-5',
-                  priceTiers.length === 1 && 'opacity-50 cursor-not-allowed'
+                  tiers.length === 1 && 'opacity-50 cursor-not-allowed'
                 )}
               >
                 <Trash2 className="h-4 w-4" />

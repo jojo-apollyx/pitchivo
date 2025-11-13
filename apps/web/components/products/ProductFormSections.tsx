@@ -19,7 +19,7 @@ import {
   SAMPLE_TYPES,
 } from '@/lib/constants/product-options'
 
-export interface WarehouseLocation {
+export interface InventoryLocation {
   id: string
   country: string
   city: string
@@ -60,7 +60,7 @@ export interface ProductFormData {
   certificateExpiryDate: string
 
   // Inventory
-  warehouseLocations: WarehouseLocation[]
+  inventoryLocation: InventoryLocation[]
 
   // Documents
   coaFile: File | null
@@ -136,16 +136,16 @@ export function ProductFormSections({
 
   const addWarehouseLocation = () => {
     onChange({
-      warehouseLocations: [
-        ...formData.warehouseLocations,
+      inventoryLocation: [
+        ...(formData.inventoryLocation || []),
         { id: Date.now().toString(), country: '', city: '', quantity: 0 },
       ],
     })
   }
 
-  const updateWarehouseLocation = (id: string, updates: Partial<WarehouseLocation>) => {
+  const updateWarehouseLocation = (id: string, updates: Partial<InventoryLocation>) => {
     onChange({
-      warehouseLocations: formData.warehouseLocations.map((loc) =>
+      inventoryLocation: (formData.inventoryLocation || []).map((loc) =>
         loc.id === id ? { ...loc, ...updates } : loc
       ),
     })
@@ -153,7 +153,7 @@ export function ProductFormSections({
 
   const removeWarehouseLocation = (id: string) => {
     onChange({
-      warehouseLocations: formData.warehouseLocations.filter((loc) => loc.id !== id),
+      inventoryLocation: (formData.inventoryLocation || []).filter((loc) => loc.id !== id),
     })
   }
 
@@ -549,7 +549,7 @@ export function ProductFormSections({
       <section className="pb-8 border-b border-border/30">
         <h2 className="text-lg font-semibold mb-4">Warehouse Inventory</h2>
         <div className="space-y-3">
-          {formData.warehouseLocations.map((location) => (
+          {(formData.inventoryLocation || []).map((location) => (
             <div key={location.id} className="flex gap-3 items-end">
               <div className="flex-1 grid grid-cols-3 gap-3">
                 <div>

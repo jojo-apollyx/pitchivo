@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 import { TieredPricingSection } from './TieredPricingSection'
 import { TechnicalFieldsSection } from './TechnicalFieldsSection'
 import { AddFieldsModal } from './AddFieldsModal'
-import type { FoodSupplementProductData, WarehouseLocation, PriceTier } from './types'
+import type { FoodSupplementProductData, InventoryLocation, PriceTier } from './types'
 import {
   FOOD_SUPPLEMENT_COUNTRIES,
   FOOD_SUPPLEMENT_CERTIFICATES,
@@ -56,7 +56,7 @@ export function FoodSupplementForm({
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    onChange({ product_images: [...(formData.product_images || []), ...files] })
+    onChange({ product_images: [...(formData.product_images || []), ...files] } as any)
     
     files.forEach((file) => {
       const reader = new FileReader()
@@ -68,9 +68,9 @@ export function FoodSupplementForm({
   }
 
   const removeImage = (index: number) => {
-    const newImages = (formData.product_images || []).filter((_, i) => i !== index)
+    const newImages = (formData.product_images || []).filter((_: any, i: number) => i !== index)
     const newPreviews = imagePreview.filter((_, i) => i !== index)
-    onChange({ product_images: newImages })
+    onChange({ product_images: newImages } as any)
     setImagePreview(newPreviews)
   }
 
@@ -80,27 +80,36 @@ export function FoodSupplementForm({
       : [...array, item]
   }
 
+  // Get inventory locations from formData (use camelCase: inventoryLocation)
+  // Map from snake_case (inventory_locations) for backward compatibility
+  const inventoryLocation = (formData as any).inventoryLocation || formData.inventory_locations || []
+  
+  // Ensure all locations have an id for React keys
+  const locationsWithId = inventoryLocation.map((loc: any, index: number) => ({
+    ...loc,
+    id: loc.id || `loc-${index}`,
+    quantity: loc.quantity ?? 0,
+  }))
+
   const addWarehouseLocation = () => {
+    const newLocation = { id: Date.now().toString(), country: '', city: '', quantity: 0 }
     onChange({
-      inventory_locations: [
-        ...(formData.inventory_locations || []),
-        { country: '', city: '', quantity: '' },
-      ],
-    })
+      inventoryLocation: [...locationsWithId, newLocation],
+    } as any)
   }
 
-  const updateWarehouseLocation = (index: number, updates: Partial<{ country?: string; city?: string; quantity?: string }>) => {
+  const updateWarehouseLocation = (id: string, updates: Partial<InventoryLocation>) => {
     onChange({
-      inventory_locations: (formData.inventory_locations || []).map((loc, i) =>
-        i === index ? { ...loc, ...updates } : loc
+      inventoryLocation: locationsWithId.map((loc: any) =>
+        loc.id === id ? { ...loc, ...updates } : loc
       ),
-    })
+    } as any)
   }
 
-  const removeWarehouseLocation = (index: number) => {
+  const removeWarehouseLocation = (id: string) => {
     onChange({
-      inventory_locations: (formData.inventory_locations || []).filter((_, i) => i !== index),
-    })
+      inventoryLocation: locationsWithId.filter((loc: any) => loc.id !== id),
+    } as any)
   }
 
   return (
@@ -111,7 +120,7 @@ export function FoodSupplementForm({
         <div className="space-y-4">
           {/* Product Images */}
           <div>
-            <Label>Product Images</Label>
+            <Label>Product Images *</Label>
             <div className="mt-2">
               {imagePreview.length > 0 && (
                 <div className="grid grid-cols-3 gap-3 mb-3">
@@ -150,6 +159,9 @@ export function FoodSupplementForm({
                 className="hidden"
               />
             </div>
+            {errors.productImages && (
+              <p className="text-xs text-destructive mt-1">{errors.productImages}</p>
+            )}
           </div>
 
           {/* Product Name */}
@@ -304,7 +316,7 @@ export function FoodSupplementForm({
             <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
-              value={formData.description}
+              value={formData.description || ''}
               onChange={(e) => onChange({ description: e.target.value })}
               placeholder="Brief product description..."
               rows={4}
@@ -321,7 +333,7 @@ export function FoodSupplementForm({
       <section className="pb-8 border-b border-border/30">
         <h2 className="text-lg font-semibold mb-4">Pricing & Lead Time</h2>
         <TieredPricingSection
-          priceTiers={formData.price_lead_time || []}
+          priceTiers={(formData as any).priceTiers || formData.price_lead_time || []}
           onChange={(tiers) => onChange({ price_lead_time: tiers })}
           errors={errors}
         />
@@ -349,7 +361,7 @@ export function FoodSupplementForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Net Weight */}
             <div className="flex flex-col">
-              <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package *</Label>
+              <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package</Label>
               <Input
                 id="netWeight"
                 value={formData.net_weight || ''}
@@ -365,7 +377,7 @@ export function FoodSupplementForm({
 
           {/* Payment Terms */}
           <div>
-            <Label htmlFor="paymentTerms">Payment Terms *</Label>
+            <Label htmlFor="paymentTerms">Payment Terms</Label>
             <SearchableSelect
               value={formData.payment_terms || ''}
               onValueChange={(value) => onChange({ payment_terms: value })}
@@ -380,7 +392,7 @@ export function FoodSupplementForm({
 
           {/* Incoterm */}
           <div>
-            <Label htmlFor="incoterm">Incoterm *</Label>
+            <Label htmlFor="incoterm">Incoterm</Label>
             <Select value={formData.incoterm} onValueChange={(value) => onChange({ incoterm: value })}>
               <SelectTrigger className={cn("h-11 rounded-xl", errors.incoterm && 'border-destructive')}>
                 <SelectValue placeholder="Select incoterm" />
@@ -407,7 +419,7 @@ export function FoodSupplementForm({
           {/* Provide Sample */}
           <div>
             <Label htmlFor="provideSample">Provide Sample *</Label>
-            <Select value={formData.provide_sample || 'no'} onValueChange={(value) => onChange({ provide_sample: value })}>
+            <Select value={formData.provide_sample || ''} onValueChange={(value) => onChange({ provide_sample: value })}>
               <SelectTrigger className={cn("h-11 rounded-xl", errors.provideSample && 'border-destructive')}>
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
@@ -443,7 +455,7 @@ export function FoodSupplementForm({
                 )}
               </div>
 
-              {(formData.sample_type || '').includes('Paid') && (
+              {formData.sample_type?.includes('Paid') && (
                 <div>
                   <Label htmlFor="samplePrice">Sample Price (USD/kg) *</Label>
                   <Input
@@ -451,7 +463,7 @@ export function FoodSupplementForm({
                     type="number"
                     step="0.01"
                     value={formData.sample_price || ''}
-                    onChange={(e) => onChange({ sample_price: e.target.value })}
+                    onChange={(e) => onChange({ sample_price: parseFloat(e.target.value) || null } as any)}
                     placeholder="e.g., 5.00"
                     className={cn(errors.samplePrice && 'border-destructive')}
                   />
@@ -469,7 +481,7 @@ export function FoodSupplementForm({
                     type="number"
                     step="0.01"
                     value={formData.sample_quantity || ''}
-                    onChange={(e) => onChange({ sample_quantity: e.target.value })}
+                    onChange={(e) => onChange({ sample_quantity: parseFloat(e.target.value) || null } as any)}
                     placeholder="e.g., 0.5"
                     className={cn(errors.sampleQuantity && 'border-destructive')}
                   />
@@ -504,8 +516,8 @@ export function FoodSupplementForm({
           <SearchableMultiSelect
             label="Select Certificates"
             options={FOOD_SUPPLEMENT_CERTIFICATES}
-            selected={formData.certificates || []}
-            onChange={(selected) => onChange({ certificates: selected })}
+              selected={formData.certificates || []}
+              onChange={(selected) => onChange({ certificates: selected })}
             placeholder="Search certificates..."
             maxHeight="max-h-96"
           />
@@ -516,14 +528,14 @@ export function FoodSupplementForm({
       <section className="pb-8 border-b border-border/30">
         <h2 className="text-lg font-semibold mb-4">Warehouse Inventory</h2>
         <div className="space-y-3">
-          {(formData.inventory_locations || []).map((location, index) => (
-            <div key={index} className="flex gap-3 items-end">
+          {locationsWithId.map((location: any) => (
+            <div key={location.id} className="flex gap-3 items-end">
               <div className="flex-1 grid grid-cols-3 gap-3">
                 <div className="flex flex-col">
                   <Label className="text-xs mb-1 whitespace-nowrap">Country</Label>
                   <CountrySelect
-                    value={location.country || ''}
-                    onValueChange={(value) => updateWarehouseLocation(index, { country: value })}
+                    value={location.country}
+                    onValueChange={(value) => updateWarehouseLocation(location.id, { country: value })}
                     countries={FOOD_SUPPLEMENT_COUNTRIES}
                     placeholder="Select"
                     className="h-11"
@@ -532,8 +544,8 @@ export function FoodSupplementForm({
                 <div className="flex flex-col">
                   <Label className="text-xs mb-1 whitespace-nowrap">City</Label>
                   <Input
-                    value={location.city || ''}
-                    onChange={(e) => updateWarehouseLocation(index, { city: e.target.value })}
+                    value={location.city}
+                    onChange={(e) => updateWarehouseLocation(location.id, { city: e.target.value })}
                     placeholder="City"
                     className="h-11"
                   />
@@ -541,9 +553,11 @@ export function FoodSupplementForm({
                 <div className="flex flex-col">
                   <Label className="text-xs mb-1 whitespace-nowrap">Quantity (kg)</Label>
                   <Input
-                    type="text"
-                    value={location.quantity || ''}
-                    onChange={(e) => updateWarehouseLocation(index, { quantity: e.target.value })}
+                    type="number"
+                    value={location.quantity ?? 0}
+                    onChange={(e) =>
+                      updateWarehouseLocation(location.id, { quantity: parseInt(e.target.value) || 0 })
+                    }
                     placeholder="0"
                     className="h-11"
                   />
@@ -553,7 +567,7 @@ export function FoodSupplementForm({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => removeWarehouseLocation(index)}
+                onClick={() => removeWarehouseLocation(location.id)}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />

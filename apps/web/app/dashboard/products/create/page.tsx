@@ -19,13 +19,16 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save, Sparkles, Loader2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { FileUploadPanel, type FileWithExtraction } from '@/components/products/FileUploadPanel'
 import { FoodSupplementForm } from '@/components/products/industries/food-supplement/FoodSupplementForm'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { cn } from '@/lib/utils'
 import { useProduct } from '@/lib/api/products'
+import { productPublishSchema, validateProductForPublish } from './validation'
 
-const initialFormData: FoodSupplementProductData = {
+const initialFormData: FoodSupplementProductData & { inventoryLocation?: any[] } = {
   // Core Product Information
   product_images: [],
   product_name: '',
@@ -106,8 +109,8 @@ const initialFormData: FoodSupplementProductData = {
   kosher_certified: '',
   organic_certification_body: '',
   
-  // Inventory Locations
-  inventory_locations: [],
+  // Inventory Locations (use camelCase in frontend, map to snake_case when saving)
+  inventoryLocation: [] as any,
   
   // File Attachments
   certificate_files: [],
@@ -156,6 +159,8 @@ export default function CreateProductPage() {
         form: productData.form || prev.form,
         grade: productData.grade || prev.grade,
         applications: productData.applications || prev.applications,
+        // Map inventory_locations (snake_case from DB) to inventoryLocation (camelCase for frontend)
+        inventoryLocation: (productDataObj.inventory_locations || productDataObj.inventoryLocation || []) as any,
       }))
       
       setProductId(productData.product_id)
@@ -198,6 +203,25 @@ export default function CreateProductPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [extractedGroupedData, setExtractedGroupedData] = useState<any>({})
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
+  // React Hook Form for validation
+  const {
+    trigger,
+    setValue,
+    formState: { errors: rhfErrors },
+  } = useForm<FoodSupplementProductData>({
+    resolver: zodResolver(productPublishSchema),
+    mode: 'onChange',
+    defaultValues: formData,
+  })
+
+  // Sync formData with React Hook Form when it changes
+  useEffect(() => {
+    Object.entries(formData).forEach(([key, value]) => {
+      setValue(key as keyof FoodSupplementProductData, value as any, { shouldValidate: false })
+    })
+  }, [formData, setValue])
 
   // Clean up visibleFields based on current form data values
   // Remove fields that have empty/unknown values
@@ -1053,7 +1077,17 @@ export default function CreateProductPage() {
   const handleSaveDraft = async () => {
     setIsSaving(true)
     try {
-      // Prepare product data for save
+      // Prepare product data for save - map camelCase to snake_case for database
+      const productDataForSave = {
+        ...formData,
+        // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
+        inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
+      }
+      // Remove camelCase version if it exists
+      if ((productDataForSave as any).inventoryLocation) {
+        delete (productDataForSave as any).inventoryLocation
+      }
+      
       const productData = {
         product_name: formData.product_name || 'Untitled Product',
         origin_country: formData.origin_country || null,
@@ -1062,7 +1096,7 @@ export default function CreateProductPage() {
         form: formData.form || null,
         grade: formData.grade || null,
         applications: formData.applications || null,
-        product_data: formData, // Full data in JSONB
+        product_data: productDataForSave, // Full data in JSONB (with snake_case)
         status: 'draft' as const,
         industry_code: 'food_supplement',
       }
@@ -1111,22 +1145,65 @@ export default function CreateProductPage() {
   }
 
   const handlePublish = async () => {
-    // Validate required fields
-    if (!formData.product_name?.trim()) {
-      toast.error('Product name is required')
-      return
-    }
-    if (!formData.origin_country) {
-      toast.error('Origin country is required')
-      return
-    }
-    if (!formData.price_lead_time || formData.price_lead_time.length === 0) {
-      toast.error('At least one pricing tier is required')
+    // Validate using Zod schema (pass uploadedFiles for document validation)
+    const validation = validateProductForPublish(formData, uploadedFiles)
+    
+    if (!validation.isValid) {
+      setFormErrors(validation.errors)
+      
+      // Show first error in toast
+      const firstError = Object.values(validation.errors)[0]
+      if (firstError) {
+        toast.error(firstError)
+      }
+      
+      // Trigger React Hook Form validation to show field errors
+      await trigger()
+      
+      // Scroll to first error field
+      const firstErrorField = Object.keys(validation.errors)[0]
+      if (firstErrorField) {
+        // Try multiple selectors to find the field
+        const selectors = [
+          `[name="${firstErrorField}"]`,
+          `[id="${firstErrorField}"]`,
+          `#${firstErrorField}`,
+        ]
+        
+        let element: Element | null = null
+        for (const selector of selectors) {
+          element = document.querySelector(selector)
+          if (element) break
+        }
+        
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          // Focus the element if it's an input
+          if (element instanceof HTMLElement && 'focus' in element) {
+            setTimeout(() => (element as HTMLElement).focus(), 300)
+          }
+        }
+      }
+      
       return
     }
 
+    // Clear errors if validation passes
+    setFormErrors({})
+
     setIsPublishing(true)
     try {
+      // Prepare product data for save - map camelCase to snake_case for database
+      const productDataForSave = {
+        ...formData,
+        // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
+        inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
+      }
+      // Remove camelCase version if it exists
+      if ((productDataForSave as any).inventoryLocation) {
+        delete (productDataForSave as any).inventoryLocation
+      }
+      
       // Prepare product data for save
       const productData = {
         product_name: formData.product_name,
@@ -1136,7 +1213,7 @@ export default function CreateProductPage() {
         form: formData.form,
         grade: formData.grade,
         applications: formData.applications,
-        product_data: formData, // Full data in JSONB
+        product_data: productDataForSave, // Full data in JSONB (with snake_case)
         status: 'published' as const,
         industry_code: 'food_supplement',
       }
@@ -1246,6 +1323,9 @@ export default function CreateProductPage() {
                 onApplyAll={handleApplyAll}
                 isProcessing={isSaving || isPublishing}
               />
+              {formErrors.documents && (
+                <p className="text-xs text-destructive mt-2 px-2">{formErrors.documents}</p>
+              )}
             </div>
           </div>
 
@@ -1258,6 +1338,7 @@ export default function CreateProductPage() {
                   onChange={handleFormChange}
                   visibleTechnicalFields={cleanedVisibleFields}
                   onAddFields={handleAddFields}
+                  errors={formErrors}
                 />
                 
                 {/* Additional Extracted Fields */}

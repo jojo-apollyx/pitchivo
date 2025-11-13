@@ -14,7 +14,7 @@ export interface PriceTier {
   leadTime: number // Lead time in days
 }
 
-export interface WarehouseLocation {
+export interface InventoryLocation {
   id: string
   country: string
   city: string

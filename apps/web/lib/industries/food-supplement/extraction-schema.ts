@@ -437,7 +437,7 @@ export const FIELD_NAME_MAPPING = {
   halalCertified: 'halal_certified',
   kosherCertified: 'kosher_certified',
   organicCertificationBody: 'organic_certification_body',
-  warehouseLocations: 'inventory_locations',
+  inventoryLocation: 'inventory_locations',
 } as const
 
 /**

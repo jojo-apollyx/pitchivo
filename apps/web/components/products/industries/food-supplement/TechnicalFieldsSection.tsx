@@ -38,6 +38,11 @@ export function TechnicalFieldsSection({
     // Check if field has a meaningful value
     if (value === null || value === undefined) return false
     
+    // For arrays, check if empty
+    if (Array.isArray(value)) {
+      return value.length > 0
+    }
+    
     // For strings, check if empty or "unknown"
     if (typeof value === 'string') {
       const trimmed = value.trim()
@@ -662,14 +667,16 @@ export function TechnicalFieldsSection({
                   </div>
                 )}
               </div>
-              {visibleFields.has('allergen_info') && (
-                <TagListField
-                  label="Allergen Information"
-                  value={formData.allergen_info || []}
-                  onChange={(value) => onChange({ allergen_info: value })}
-                  placeholder="Enter allergen name..."
-                  emptyMessage="No allergens specified. Click 'Add' to add allergen information."
-                />
+              {shouldShowField('allergen_info', formData.allergen_info) && (
+                <div className="mt-4">
+                  <TagListField
+                    label="Allergen Information"
+                    value={formData.allergen_info || []}
+                    onChange={(value) => onChange({ allergen_info: value })}
+                    placeholder="Enter allergen name..."
+                    emptyMessage="No allergens specified. Click 'Add' to add allergen information."
+                  />
+                </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {visibleFields.has('bse_statement') && (
