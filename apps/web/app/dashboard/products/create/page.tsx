@@ -1242,7 +1242,7 @@ export default function CreateProductPage() {
         delete (productDataForSave as any).inventoryLocation
       }
       
-      // Prepare product data for save
+      // Prepare product data for save as DRAFT (not published yet)
       const productData = {
         product_name: formData.product_name,
         origin_country: formData.origin_country,
@@ -1252,11 +1252,13 @@ export default function CreateProductPage() {
         grade: formData.grade,
         applications: formData.applications,
         product_data: productDataForSave, // Full data in JSONB (with snake_case)
-        status: 'published' as const,
+        status: 'draft' as const, // Save as draft before going to preview-publish page
         industry_code: 'food_supplement',
       }
 
       let response
+      let savedProductId = productId
+      
       if (productId) {
         // Update existing product
         response = await fetch('/api/products', {
@@ -1277,8 +1279,8 @@ export default function CreateProductPage() {
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Publish failed' }))
-        const errorMessage = errorData.error || errorData.details || `Publish failed with status ${response.status}`
+        const errorData = await response.json().catch(() => ({ error: 'Save failed' }))
+        const errorMessage = errorData.error || errorData.details || `Save failed with status ${response.status}`
         throw new Error(errorMessage)
       }
 
@@ -1286,14 +1288,16 @@ export default function CreateProductPage() {
       
       // Store product_id if this was a new product
       if (result.product?.product_id) {
-        setProductId(result.product.product_id)
+        savedProductId = result.product.product_id
+        setProductId(savedProductId)
       }
 
-      toast.success('Product published successfully!')
-      router.push('/dashboard/products')
+      // Navigate to preview-publish page instead of directly publishing
+      toast.success('Product saved! Configure visibility & publish...')
+      router.push(`/dashboard/products/${savedProductId}/preview-publish`)
     } catch (error) {
-      console.error('Error publishing product:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to publish product'
+      console.error('Error saving product:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save product'
       toast.error(errorMessage)
     } finally {
       setIsPublishing(false)
@@ -1426,12 +1430,12 @@ export default function CreateProductPage() {
                 {isPublishing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Publishing...
+                    Preparing...
                   </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Publish Product
+                    Next: Preview & Publish
                   </>
                 )}
               </Button>
