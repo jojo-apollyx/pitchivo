@@ -64,7 +64,6 @@ export interface FoodSupplementProductData {
   // Certificates & Compliance
   certificates: string[]
   certificateFiles: File[]
-  certificateExpiryDate: string
   allergenInfo: string
   gmoStatus: string // Non-GMO, GMO, etc.
   irradiationStatus: string // Irradiated, Non-irradiated

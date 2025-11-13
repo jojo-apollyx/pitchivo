@@ -81,7 +81,6 @@ const TECHNICAL_FIELD_GROUPS: TechnicalFieldCategory[] = [
     name: 'Compliance & Certifications',
     fields: [
       { key: 'pesticideResidue', label: 'Pesticide Residue Status' },
-      { key: 'certificateExpiryDate', label: 'Certificate Expiry Date' },
       { key: 'gmoStatus', label: 'GMO Status' },
       { key: 'irradiationStatus', label: 'Irradiation Status' },
       { key: 'allergenInfo', label: 'Allergen Information' },

@@ -54,7 +54,6 @@ export function TechnicalFieldsSection({
   ]
   const complianceFields = [
     'pesticideResidue',
-    'certificateExpiryDate',
     'gmoStatus',
     'irradiationStatus',
     'allergenInfo',
@@ -582,17 +581,6 @@ export function TechnicalFieldsSection({
                     value={formData.pesticideResidue}
                     onChange={(e) => onChange({ pesticideResidue: e.target.value })}
                     placeholder="e.g., Complies with EU/USP/JP standards"
-                  />
-                </div>
-              )}
-              {visibleFields.has('certificateExpiryDate') && (
-                <div>
-                  <Label htmlFor="certificateExpiryDate">Certificate Expiry Date</Label>
-                  <DatePicker
-                    value={formData.certificateExpiryDate}
-                    onChange={(value) => onChange({ certificateExpiryDate: value })}
-                    placeholder="Select expiry date"
-                    className="mt-1"
                   />
                 </div>
               )}

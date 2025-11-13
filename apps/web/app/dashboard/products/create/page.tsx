@@ -53,7 +53,6 @@ const initialFormData: FoodSupplementProductData = {
   moq: null,
   certificates: [],
   certificateFiles: [],
-  certificateExpiryDate: '',
   allergenInfo: '',
   gmoStatus: '',
   irradiationStatus: '',
@@ -745,12 +744,6 @@ export default function CreateProductPage() {
             case 'certificates':
               if (Array.isArray(value)) {
                 updates[key] = value
-              }
-              break
-            case 'certificateExpiryDate':
-              if (value) {
-                updates.certificateExpiryDate = String(value)
-                newVisibleFields.add('certificateExpiryDate')
               }
               break
           }
