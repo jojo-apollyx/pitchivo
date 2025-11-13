@@ -175,7 +175,8 @@ User Request: Analyze this document (${context.filename}) and extract all releva
       console.log(`[AI Extraction] Uploading PDF file...`)
       // Convert Buffer to File object with proper filename for the SDK
       // Azure OpenAI needs the filename with extension to detect file type
-      const fileBlob = new Blob([context.buffer], { type: context.mimeType })
+      const uint8Array = new Uint8Array(context.buffer)
+      const fileBlob = new Blob([uint8Array], { type: context.mimeType })
       const fileObject = new File([fileBlob], context.filename, { type: context.mimeType })
       const file = await openaiClient.files.create({
         file: fileObject,
