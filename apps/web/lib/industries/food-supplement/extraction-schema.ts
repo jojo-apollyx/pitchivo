@@ -82,6 +82,10 @@ TECHNICAL & QUALITY DOCUMENTS:
 
 COMPLIANCE & REGULATORY:
 - Allergen_Statement - Allergen information and declarations
+- Non_GMO_Statement - Non-GMO certification or statement
+- Prop65_Statement - California Proposition 65 compliance statement
+- BSE_Statement - BSE (Bovine Spongiform Encephalopathy) free statement
+- Irradiation_Statement - Irradiation status statement
 - Nutritional_Info - Nutritional facts and analysis
 - Organic_Certificate - Organic certification documents
 - Halal_Certificate - Halal certification
@@ -90,6 +94,7 @@ COMPLIANCE & REGULATORY:
 - ISO_Certificate - ISO standard certifications
 - FDA_Letter - FDA notifications or approvals
 - GRAS_Notice - Generally Recognized as Safe notices
+- Gluten_Free_Certificate - Gluten-free certification
 
 PRODUCT INFORMATION:
 - Product_Specification - Detailed product specifications
@@ -104,10 +109,15 @@ BUSINESS DOCUMENTS:
 
 If the document doesn't fit any of these categories or is not relevant to B2B food/supplement trading, classify it as "Other".
 
+IMPORTANT: All statement documents (Allergen_Statement, Non_GMO_Statement, Prop65_Statement, BSE_Statement, Irradiation_Statement, etc.) and certificates (Organic_Certificate, Halal_Certificate, Kosher_Certificate, etc.) are PRODUCT-RELATED compliance documents. They should be treated as product documents and extract all relevant product information mentioned in them.
+
 STEP 2: Extract data based on document relevance:
 
 For PRODUCT-RELATED documents (technical, compliance, product info categories above):
-Extract comprehensive product information using the detailed schema below. Be thorough and extract all available data.
+Extract comprehensive product information using the detailed schema below. Be thorough and extract all available data. For statement and certificate documents, make sure to extract:
+- Product name (if mentioned)
+- The specific compliance information (GMO status, irradiation status, allergen info, etc.)
+- Any other product details mentioned
 
 For NON-PRODUCT documents (Other):
 Set document_type to "Other" and only extract basic information visible in the document. Leave all product-specific fields empty.
@@ -257,12 +267,14 @@ Set document_type to "Other" and only extract basic information visible in the d
   },
   
   "compliance": {
-    "is_gmo": "Yes" | "No",
+    "is_gmo": "Yes" | "No" (IMPORTANT: For Non-GMO statements, set to "No"),
     "is_organic": "Yes" | "No",
     "organic_certification_body": string,
     "regulatory_compliance": string[],
-    "prop65_compliance": string,
+    "prop65_compliance": string (IMPORTANT: Extract Prop 65 compliance status from Prop65 statements),
     "regulatory_restrictions": string,
+    "irradiation_status": string (IMPORTANT: Extract irradiation status - "Non-Irradiated", "Irradiated", or specific details),
+    "bse_free_status": string (IMPORTANT: Extract BSE-free status from BSE statements),
     "halal_certified": "Yes" | "No",
     "kosher_certified": "Yes" | "No",
     "vegan_certified": "Yes" | "No",
@@ -356,13 +368,14 @@ Example response structure:
  * Get merge strategy prompt for food supplement documents
  */
 export function getMergeSystemPrompt(): string {
-  return `You are an intelligent data merger for a B2B food supplement product information system. Your task is to merge existing product form data with newly extracted fields from a document.
+  return `You are an intelligent data merger for a B2B food supplement product information system. Your task is to merge existing product form data with newly extracted fields from documents.
 
 MERGE RULES:
 1. **Text Fields (strings)**:
    - If current field is empty/null, use new value
    - If current field has value and new field has DIFFERENT value:
-     * For descriptions: Combine both intelligently, removing duplicates
+     * For descriptions: Combine both intelligently into a coherent, professional product description. Remove duplicates, redundant phrases, and create a flowing narrative.
+     * For fields with " | " separator: These contain multiple values from different documents. Intelligently merge them into a single coherent value, removing duplicates and creating proper grammar.
      * For single-value fields (like product name, manufacturer): Keep current value if they're similar, otherwise prefer the more complete one
      * For technical specs: Prefer the newer/more specific value
 
@@ -383,6 +396,18 @@ MERGE RULES:
    - If a field appears in both flat and grouped format, consolidate to grouped format
    - Preserve field types (don't convert numbers to strings)
    - For certifications and compliance data, merge and deduplicate
+   - When merging descriptions or text fields with " | " separators, create professional, grammatically correct text
+
+IMPORTANT FOR DESCRIPTIONS:
+When you see a description field with multiple values separated by " | ", this means multiple documents provided different information. Your job is to:
+- Extract the key information from each part
+- Remove redundant or duplicate information
+- Create a single, coherent, professional product description
+- Ensure proper grammar and sentence structure
+- Make it suitable for a B2B product catalog
+
+Example: "irradiation statement for American Elderberry Ingredients | American Elderberry Ingredients allergen-free certification"
+Should become: "American Elderberry Ingredients is a non-irradiated product with allergen-free certification."
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object with the merged data. Include BOTH flat fields and a "_grouped" property if grouped data exists.

@@ -308,7 +308,7 @@ export function FileUploadPanel({
                               variant="ghost"
                               onClick={() => handleQuickApply(file.extraction.id)}
                               className="h-8 w-8 p-0 text-primary hover:text-primary hover:bg-primary/10"
-                              title="Apply extracted fields"
+                              title="Quick Apply - Apply all extracted fields from this file to the form"
                               disabled={isProcessing}
                             >
                               <Zap className="h-4 w-4" />
