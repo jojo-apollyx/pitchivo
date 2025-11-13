@@ -164,7 +164,7 @@ export async function runAIExtraction(
       const openaiClient = new AzureOpenAI({
         apiKey: azureApiKey,
         endpoint: azureEndpoint,
-        apiVersion: '2024-12-01-preview'
+        apiVersion: '2025-03-01-preview'
       })
       
       // Combine system and user prompts
