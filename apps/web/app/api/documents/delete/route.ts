@@ -23,15 +23,44 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'File ID is required' }, { status: 400 })
     }
 
-    // Get document
+    // Get user's organization for permission check
+    const { data: userData, error: userError } = await supabase
+      .from('user_profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (userError || !userData?.organization_id) {
+      return NextResponse.json({ error: 'User organization not found' }, { status: 400 })
+    }
+
+    // Get document (including soft-deleted ones for cleanup)
     const { data: extraction, error: fetchError } = await supabase
       .from('document_extractions')
-      .select('reference_count, storage_path')
+      .select('reference_count, storage_path, organization_id, deleted_at')
       .eq('id', fileId)
       .single()
 
     if (fetchError || !extraction) {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+      // If document not found, it might have been deleted already or never existed
+      // Return success to allow UI cleanup
+      return NextResponse.json({
+        message: 'Document not found (may have been already deleted)',
+        type: 'not_found'
+      })
+    }
+
+    // Check organization permission
+    if (extraction.organization_id !== userData.organization_id) {
+      return NextResponse.json({ error: 'Unauthorized to delete this document' }, { status: 403 })
+    }
+
+    // If already soft-deleted, just return success
+    if (extraction.deleted_at) {
+      return NextResponse.json({
+        message: 'Document already deleted',
+        type: 'already_deleted'
+      })
     }
 
     if (extraction.reference_count > 0) {

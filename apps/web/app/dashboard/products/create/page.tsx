@@ -447,24 +447,49 @@ export default function CreateProductPage() {
   }, [])
 
   const handleFileDelete = useCallback(async (fileId: string) => {
+    // Cache the file before deletion so we can restore it if deletion fails
+    const fileToDelete = uploadedFiles.find((f) => f.extraction.id === fileId)
+    if (!fileToDelete) {
+      toast.error('File not found')
+      return
+    }
+
     try {
+      // Optimistically remove from UI immediately for better UX
+      setUploadedFiles((prev) => prev.filter((f) => f.extraction.id !== fileId))
+      
       const response = await fetch('/api/documents/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId }),
       })
 
+      const responseData = await response.json().catch(() => ({}))
+
       if (!response.ok) {
-        throw new Error('Delete failed')
+        const errorMessage = responseData.error || responseData.details || 'Delete failed'
+        
+        // Restore the file to UI if deletion failed
+        setUploadedFiles((prev) => {
+          // Check if file is already in the list (avoid duplicates)
+          if (prev.find((f) => f.extraction.id === fileId)) {
+            return prev
+          }
+          return [...prev, fileToDelete]
+        })
+        
+        throw new Error(errorMessage)
       }
 
-      setUploadedFiles((prev) => prev.filter((f) => f.extraction.id !== fileId))
-      toast.success('File deleted')
+      // Success - show appropriate message
+      const successMessage = responseData.message || 'File deleted successfully'
+      toast.success(successMessage)
     } catch (error) {
       console.error('Error deleting file:', error)
-      toast.error('Failed to delete file')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete file'
+      toast.error(errorMessage)
     }
-  }, [])
+  }, [uploadedFiles])
 
   const handleRetryExtraction = useCallback(async (fileId: string) => {
     const file = uploadedFiles.find((f) => f.extraction.id === fileId)
