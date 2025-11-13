@@ -44,8 +44,12 @@ npm run dev
 
 1. Import from GitHub → choose `pitchivo`
 2. Set **Root Directory:** `apps/web`
-3. Add environment variables from `.env.example`
+3. Add environment variables (see [PRODUCTION_ENV_SETUP.md](./PRODUCTION_ENV_SETUP.md) for complete list)
 4. Deploy ✅
+
+**Important:** Make sure to add all required environment variables, especially:
+- `AZURE_FLUX_DEPLOYMENT` for AI image generation
+- `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_RESOURCE_NAME` for Azure OpenAI services
 
 ## 📝 Scripts
 

@@ -27,11 +27,15 @@ export async function generateProductImage(
   options: ImageGenerationOptions
 ): Promise<{ success: boolean; data?: ImageGenerationResult; error?: string }> {
   try {
-    const azureEndpoint = `https://${process.env.AZURE_OPENAI_RESOURCE_NAME}.openai.azure.com`
+    // Support custom endpoint format (services.ai.azure.com) or default (openai.azure.com)
+    const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME
+    const customEndpoint = process.env.AZURE_OPENAI_IMAGE_ENDPOINT
+    const azureEndpoint = customEndpoint || `https://${resourceName}.services.ai.azure.com`
     const azureApiKey = process.env.AZURE_OPENAI_API_KEY
     const fluxDeploymentName = process.env.AZURE_FLUX_DEPLOYMENT || 'flux-1-knotext-prod'
+    const apiVersion = process.env.AZURE_OPENAI_IMAGE_API_VERSION || '2025-04-01-preview'
 
-    if (!azureApiKey || !process.env.AZURE_OPENAI_RESOURCE_NAME) {
+    if (!azureApiKey || !resourceName) {
       return {
         success: false,
         error: 'Azure OpenAI configuration is missing'
@@ -42,7 +46,7 @@ export async function generateProductImage(
     const client = new AzureOpenAI({
       apiKey: azureApiKey,
       endpoint: azureEndpoint,
-      apiVersion: '2024-07-01-preview', // Latest API version for image generation
+      apiVersion: apiVersion, // API version for image generation
       deployment: fluxDeploymentName, // Set deployment at client level for Azure
     })
 
