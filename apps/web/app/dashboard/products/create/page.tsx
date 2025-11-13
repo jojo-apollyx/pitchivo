@@ -14,7 +14,7 @@
  * - /api/documents/merge → /api/food_supplement/documents/merge
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -108,7 +108,36 @@ export default function CreateProductPage() {
   const [visibleTechnicalFields, setVisibleTechnicalFields] = useState<Set<string>>(new Set())
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
-  const [extractedGroupedData, setExtractedGroupedData] = useState<any>({})  
+  const [extractedGroupedData, setExtractedGroupedData] = useState<any>({})
+
+  // Helper to check if a value is meaningful (not empty, null, undefined, or "Unknown")
+  const hasMeaningfulValue = (value: any): boolean => {
+    if (value === null || value === undefined) return false
+    if (typeof value === 'string' && value.trim() === '') return false
+    if (typeof value === 'string' && value.trim().toLowerCase() === 'unknown') return false
+    return true
+  }
+
+  // Clean up visibleFields based on current form data values
+  // Remove fields that have empty/unknown values
+  const cleanedVisibleFields = useMemo(() => {
+    const cleaned = new Set<string>()
+    visibleTechnicalFields.forEach((fieldName) => {
+      const fieldValue = formData[fieldName as keyof FoodSupplementProductData]
+      if (hasMeaningfulValue(fieldValue)) {
+        // Additional check for status fields
+        if (fieldName === 'gmoStatus' || fieldName === 'irradiationStatus') {
+          const strValue = String(fieldValue).trim().toLowerCase()
+          if (strValue !== 'unknown') {
+            cleaned.add(fieldName)
+          }
+        } else {
+          cleaned.add(fieldName)
+        }
+      }
+    })
+    return cleaned
+  }, [formData, visibleTechnicalFields])
 
   const handleFormChange = useCallback((updates: Partial<FoodSupplementProductData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))
@@ -636,16 +665,22 @@ export default function CreateProductPage() {
                     }
                     break
                   case 'e_coli':
-                    updates.eColiPresence = String(value)
-                    newVisibleFields.add('eColiPresence')
+                    if (hasMeaningfulValue(value)) {
+                      updates.eColiPresence = String(value)
+                      newVisibleFields.add('eColiPresence')
+                    }
                     break
                   case 'salmonella':
-                    updates.salmonellaPresence = String(value)
-                    newVisibleFields.add('salmonellaPresence')
+                    if (hasMeaningfulValue(value)) {
+                      updates.salmonellaPresence = String(value)
+                      newVisibleFields.add('salmonellaPresence')
+                    }
                     break
                   case 'staphylococcus_aureus':
-                    updates.staphylococcusPresence = String(value)
-                    newVisibleFields.add('staphylococcusPresence')
+                    if (hasMeaningfulValue(value)) {
+                      updates.staphylococcusPresence = String(value)
+                      newVisibleFields.add('staphylococcusPresence')
+                    }
                     break
                 }
                 break
@@ -713,8 +748,11 @@ export default function CreateProductPage() {
               case 'compliance':
                 switch (fieldKey) {
                   case 'is_gmo':
-                    updates.gmoStatus = value === 'Yes' ? 'Non-GMO' : value === 'No' ? 'GMO' : 'Unknown'
-                    newVisibleFields.add('gmoStatus')
+                    const gmoValue = value === 'Yes' ? 'Non-GMO' : value === 'No' ? 'GMO' : 'Unknown'
+                    if (hasMeaningfulValue(gmoValue) && gmoValue !== 'Unknown') {
+                      updates.gmoStatus = gmoValue
+                      newVisibleFields.add('gmoStatus')
+                    }
                     break
                   case 'halal_certified':
                     updates.halalCertified = String(value)
@@ -828,15 +866,16 @@ export default function CreateProductPage() {
             case 'eColiPresence':
             case 'salmonellaPresence':
             case 'staphylococcusPresence':
-              if (value) {
+              if (hasMeaningfulValue(value)) {
                 updates[key] = String(value)
                 newVisibleFields.add(key)
               }
               break
             case 'gmoStatus':
             case 'irradiationStatus':
-              if (value) {
-                updates[key] = String(value)
+              const statusValue = String(value)
+              if (hasMeaningfulValue(statusValue) && statusValue.trim().toLowerCase() !== 'unknown') {
+                updates[key] = statusValue
                 newVisibleFields.add(key)
               }
               break
@@ -855,8 +894,29 @@ export default function CreateProductPage() {
           }
         })
 
-        setFormData((prev) => ({ ...prev, ...updates }))
-        setVisibleTechnicalFields(newVisibleFields)
+        setFormData((prev) => {
+          const updatedData = { ...prev, ...updates }
+          
+          // Clean up visibleFields: remove fields that have empty/unknown values
+          const cleanedVisibleFields = new Set<string>()
+          newVisibleFields.forEach((fieldName) => {
+            const fieldValue = updatedData[fieldName as keyof FoodSupplementProductData]
+            if (hasMeaningfulValue(fieldValue)) {
+              // Additional check for status fields
+              if (fieldName === 'gmoStatus' || fieldName === 'irradiationStatus') {
+                const strValue = String(fieldValue).trim().toLowerCase()
+                if (strValue !== 'unknown') {
+                  cleanedVisibleFields.add(fieldName)
+                }
+              } else {
+                cleanedVisibleFields.add(fieldName)
+              }
+            }
+          })
+          
+          setVisibleTechnicalFields(cleanedVisibleFields)
+          return updatedData
+        })
         
         // Store grouped data for additional fields display
         if (mergedFields._grouped) {
@@ -1337,15 +1397,16 @@ export default function CreateProductPage() {
           case 'eColiPresence':
           case 'salmonellaPresence':
           case 'staphylococcusPresence':
-            if (value) {
+            if (hasMeaningfulValue(value)) {
               updates[key] = String(value)
               newVisibleFields.add(key)
             }
             break
           case 'gmoStatus':
           case 'irradiationStatus':
-            if (value) {
-              updates[key] = String(value)
+            const statusValue = String(value)
+            if (hasMeaningfulValue(statusValue) && statusValue.trim().toLowerCase() !== 'unknown') {
+              updates[key] = statusValue
               newVisibleFields.add(key)
             }
             break
@@ -1364,8 +1425,29 @@ export default function CreateProductPage() {
         }
       })
 
-      setFormData((prev) => ({ ...prev, ...updates }))
-      setVisibleTechnicalFields(newVisibleFields)
+      setFormData((prev) => {
+        const updatedData = { ...prev, ...updates }
+        
+        // Clean up visibleFields: remove fields that have empty/unknown values
+        const cleanedVisibleFields = new Set<string>()
+        newVisibleFields.forEach((fieldName) => {
+          const fieldValue = updatedData[fieldName as keyof FoodSupplementProductData]
+          if (hasMeaningfulValue(fieldValue)) {
+            // Additional check for status fields
+            if (fieldName === 'gmoStatus' || fieldName === 'irradiationStatus') {
+              const strValue = String(fieldValue).trim().toLowerCase()
+              if (strValue !== 'unknown') {
+                cleanedVisibleFields.add(fieldName)
+              }
+            } else {
+              cleanedVisibleFields.add(fieldName)
+            }
+          }
+        })
+        
+        setVisibleTechnicalFields(cleanedVisibleFields)
+        return updatedData
+      })
       
       // Store grouped data for additional fields display
       if (mergedFields._grouped) {
@@ -1480,7 +1562,7 @@ export default function CreateProductPage() {
                 <FoodSupplementForm
                   formData={formData}
                   onChange={handleFormChange}
-                  visibleTechnicalFields={visibleTechnicalFields}
+                  visibleTechnicalFields={cleanedVisibleFields}
                   onAddFields={handleAddFields}
                 />
                 

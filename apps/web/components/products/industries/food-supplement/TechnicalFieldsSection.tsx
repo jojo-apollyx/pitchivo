@@ -30,6 +30,29 @@ export function TechnicalFieldsSection({
     return fields.some((field) => visibleFields.has(field))
   }
 
+  // Helper to check if a field is visible AND has a value
+  const shouldShowField = (fieldName: string, value: any): boolean => {
+    if (!visibleFields.has(fieldName)) return false
+    
+    // Check if field has a meaningful value
+    if (value === null || value === undefined) return false
+    
+    // For strings, check if empty or "unknown"
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (trimmed === '' || trimmed.toLowerCase() === 'unknown') {
+        return false
+      }
+    }
+    
+    // For numbers, check if 0 or null
+    if (typeof value === 'number' && value === 0) {
+      return false
+    }
+    
+    return true
+  }
+
   // Define field groups
   const basicSpecFields = ['einecs', 'shelfLife']
   const originSourceFields = ['botanicalName', 'extractionRatio', 'carrierMaterial']
@@ -507,7 +530,7 @@ export function TechnicalFieldsSection({
                   />
                 </div>
               )}
-              {visibleFields.has('eColiPresence') && (
+              {shouldShowField('eColiPresence', formData.eColiPresence) && (
                 <div className="flex flex-col">
                   <Label htmlFor="eColiPresence" className="mb-1 whitespace-nowrap">
                     E. Coli
@@ -526,7 +549,7 @@ export function TechnicalFieldsSection({
                   </Select>
                 </div>
               )}
-              {visibleFields.has('salmonellaPresence') && (
+              {shouldShowField('salmonellaPresence', formData.salmonellaPresence) && (
                 <div className="flex flex-col">
                   <Label htmlFor="salmonellaPresence" className="mb-1 whitespace-nowrap">
                     Salmonella
@@ -545,7 +568,7 @@ export function TechnicalFieldsSection({
                   </Select>
                 </div>
               )}
-              {visibleFields.has('staphylococcusPresence') && (
+              {shouldShowField('staphylococcusPresence', formData.staphylococcusPresence) && (
                 <div className="flex flex-col">
                   <Label htmlFor="staphylococcusPresence" className="mb-1 whitespace-nowrap">
                     Staphylococcus
@@ -585,7 +608,7 @@ export function TechnicalFieldsSection({
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {visibleFields.has('gmoStatus') && (
+                {shouldShowField('gmoStatus', formData.gmoStatus) && (
                   <div className="flex flex-col">
                     <Label htmlFor="gmoStatus" className="mb-1 whitespace-nowrap">
                       GMO Status
@@ -605,7 +628,7 @@ export function TechnicalFieldsSection({
                     </Select>
                   </div>
                 )}
-                {visibleFields.has('irradiationStatus') && (
+                {shouldShowField('irradiationStatus', formData.irradiationStatus) && (
                   <div className="flex flex-col">
                     <Label htmlFor="irradiationStatus" className="mb-1 whitespace-nowrap">
                       Irradiation Status
