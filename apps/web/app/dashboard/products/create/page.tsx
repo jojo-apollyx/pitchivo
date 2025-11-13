@@ -101,47 +101,56 @@ export default function CreateProductPage() {
   }, [])
 
   const handleFilesUpload = useCallback(async (files: File[]) => {
-    for (const file of files) {
+    // Create temporary entries for all files immediately
+    const tempFiles: FileWithExtraction[] = files.map((file) => ({
+      extraction: {
+        id: `temp-${Date.now()}-${Math.random()}-${file.name}`,
+        content_hash: '',
+        filename: file.name,
+        file_size: file.size,
+        mime_type: file.type,
+        storage_path: '',
+        organization_id: '',
+        uploaded_by: '',
+        raw_extracted_data: null,
+        file_summary: null,
+        extracted_values: null,
+        reviewed_values: null,
+        user_corrections: null,
+        analysis_status: 'pending',
+        review_status: 'pending_review',
+        error_message: null,
+        reviewed_by: null,
+        reviewed_at: null,
+        reference_count: 0,
+        deleted_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      displayStatus: 'uploading' as const,
+      progress: 0,
+    }))
+
+    // Add all files to UI at once
+    setUploadedFiles((prev) => [...prev, ...tempFiles])
+
+    // Process all files in parallel
+    const uploadPromises = files.map(async (file, index) => {
+      const tempFile = tempFiles[index]
+      
       try {
-        // Create temporary file entry
-        const tempFile: FileWithExtraction = {
-          extraction: {
-            id: `temp-${Date.now()}-${Math.random()}`,
-            content_hash: '',
-            filename: file.name,
-            file_size: file.size,
-            mime_type: file.type,
-            storage_path: '',
-            organization_id: '',
-            uploaded_by: '',
-            raw_extracted_data: null,
-            file_summary: null,
-            extracted_values: null,
-            reviewed_values: null,
-            user_corrections: null,
-            analysis_status: 'pending',
-            review_status: 'pending_review',
-            error_message: null,
-            reviewed_by: null,
-            reviewed_at: null,
-            reference_count: 0,
-            deleted_at: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          displayStatus: 'uploading',
-          progress: 0,
-        }
-
-        setUploadedFiles((prev) => [...prev, tempFile])
-
         // Simulate upload progress
-        for (let progress = 0; progress <= 100; progress += 20) {
-          await new Promise((resolve) => setTimeout(resolve, 150))
+        const progressInterval = setInterval(() => {
           setUploadedFiles((prev) =>
-            prev.map((f) => (f.extraction.id === tempFile.extraction.id ? { ...f, progress } : f))
+            prev.map((f) => {
+              if (f.extraction.id === tempFile.extraction.id && f.progress !== undefined) {
+                const newProgress = Math.min((f.progress || 0) + 10, 90)
+                return { ...f, progress: newProgress }
+              }
+              return f
+            })
           )
-        }
+        }, 200)
 
         // Upload file
         const formData = new FormData()
@@ -152,6 +161,8 @@ export default function CreateProductPage() {
           body: formData,
         })
 
+        clearInterval(progressInterval)
+
         if (!uploadResponse.ok) {
           const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }))
           const errorMessage = errorData.error || `Upload failed with status ${uploadResponse.status}`
@@ -160,6 +171,13 @@ export default function CreateProductPage() {
 
         const uploadData = await uploadResponse.json()
         const extraction = uploadData.file
+
+        // Set progress to 100% after upload
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.extraction.id === tempFile.extraction.id ? { ...f, progress: 100 } : f
+          )
+        )
 
         // Check if file already exists and is completed - show results immediately
         if (uploadData.isExisting && extraction.analysis_status === 'completed') {
@@ -171,7 +189,7 @@ export default function CreateProductPage() {
             )
           )
           toast.success(`File already analyzed: ${file.name}`, { icon: '✨' })
-          continue
+          return
         }
 
         // Check if file already exists but not completed yet - show current status
@@ -195,24 +213,19 @@ export default function CreateProductPage() {
           // If it's already completed, skip
           if (extraction.analysis_status === 'completed') {
             toast.success(`File already analyzed: ${file.name}`)
-            continue
+            return
           }
           
           // If it's already analyzing, check if it's stuck
-          // Use updated_at to check when status was last changed to "analyzing"
           if (extraction.analysis_status === 'analyzing') {
-            // Check if it's been analyzing for more than 2 minutes (frontend check - more aggressive)
             const analyzingTime = new Date().getTime() - new Date(extraction.updated_at).getTime()
             const twoMinutes = 2 * 60 * 1000
             
             if (analyzingTime < twoMinutes) {
-              // Very recently started analyzing (less than 2 min) - don't retry to avoid duplicates
               toast.info(`File is already being analyzed: ${file.name}`)
-              continue
+              return
             } else {
-              // Been analyzing for a while - allow retry (backend will handle if it's actually running)
               toast.warning(`File has been analyzing for a while, retrying: ${file.name}`)
-              // Update UI and continue to extraction below
               setUploadedFiles((prev) =>
                 prev.map((f) =>
                   f.extraction.id === extraction.id
@@ -220,11 +233,8 @@ export default function CreateProductPage() {
                     : f
                 )
               )
-              // Continue to extraction below - backend will reset if needed
             }
           } else if (extraction.analysis_status === 'pending' || extraction.analysis_status === 'failed') {
-            // If it's pending or failed, trigger extraction
-            // Update status to analyzing for UI feedback
             setUploadedFiles((prev) =>
               prev.map((f) =>
                 f.extraction.id === extraction.id
@@ -232,10 +242,8 @@ export default function CreateProductPage() {
                   : f
               )
             )
-            // Continue to extraction below
           } else {
-            // Completed or other status - skip
-            continue
+            return
           }
         } else {
           // New file - set to analyzing
@@ -280,7 +288,7 @@ export default function CreateProductPage() {
 
         toast.success(`Extracted ${fieldCount} fields from ${file.name}`, { icon: '✨' })
 
-        // Store grouped data for display (but don't auto-apply - user must click Apply)
+        // Store grouped data for display
         if (completedExtraction.extracted_values?._grouped) {
           setExtractedGroupedData((prev: any) => ({
             ...prev,
@@ -291,7 +299,7 @@ export default function CreateProductPage() {
         console.error('Error processing file:', error)
         setUploadedFiles((prev) =>
           prev.map((f) =>
-            f.extraction.filename === file.name
+            f.extraction.id === tempFile.extraction.id
               ? {
                   ...f,
                   displayStatus: 'error' as const,
@@ -306,7 +314,10 @@ export default function CreateProductPage() {
         const errorMessage = error instanceof Error ? error.message : 'Failed to process'
         toast.error(`Failed to process ${file.name}: ${errorMessage}`)
       }
-    }
+    })
+
+    // Wait for all uploads to complete
+    await Promise.allSettled(uploadPromises)
   }, [])
 
   const handleFileDelete = useCallback(async (fileId: string) => {
@@ -355,11 +366,30 @@ export default function CreateProductPage() {
           )
         }
 
-        // Apply fields to form
+        // Use AI to merge new fields with existing form data
+        toast.info('Merging data intelligently...', { icon: '🤖' })
+        
+        const mergeResponse = await fetch('/api/documents/merge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentData: formData,
+            newFields: fields,
+          }),
+        })
+
+        if (!mergeResponse.ok) {
+          throw new Error('Failed to merge data')
+        }
+
+        const mergeData = await mergeResponse.json()
+        const mergedFields = mergeData.mergedData
+
+        // Apply merged fields to form
         const updates: Partial<FoodSupplementProductData> = {}
         const newVisibleFields = new Set<string>(visibleTechnicalFields)
 
-        Object.entries(fields).forEach(([key, value]) => {
+        Object.entries(mergedFields).forEach(([key, value]) => {
           // Handle grouped keys (e.g., "basic.product_name", "chemical.assay_min")
           if (key.includes('.')) {
             const [group, fieldKey] = key.split('.')
@@ -753,20 +783,20 @@ export default function CreateProductPage() {
         setVisibleTechnicalFields(newVisibleFields)
         
         // Store grouped data for additional fields display
-        if (fields._grouped) {
+        if (mergedFields._grouped) {
           setExtractedGroupedData((prev: any) => ({
             ...prev,
-            ...fields._grouped
+            ...mergedFields._grouped
           }))
         }
         
-        toast.success('Fields applied to form successfully', { icon: '✨' })
+        toast.success('Fields merged and applied successfully', { icon: '✨' })
       } catch (error) {
         console.error('Error applying fields:', error)
         toast.error('Failed to apply fields')
       }
     },
-    [uploadedFiles]
+    [uploadedFiles, formData, visibleTechnicalFields]
   )
   
   const handleGroupedFieldUpdate = useCallback((group: string, field: string, value: any) => {

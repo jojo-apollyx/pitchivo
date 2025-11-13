@@ -178,9 +178,9 @@ export function FileUploadPanel({
   })() : []
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Sticky Upload Zone */}
-      <div className="sticky top-0 z-10 bg-background pb-4">
+      <div className="flex-shrink-0 pb-4">
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -240,7 +240,7 @@ export function FileUploadPanel({
 
       {/* File List - Scrollable */}
       {files.length > 0 && (
-        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
           {files.map((file) => (
             <div
               key={file.extraction.id}
