@@ -121,6 +121,18 @@ export default function CreateProductPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<FoodSupplementProductData>(initialFormData)
   const [uploadedFiles, setUploadedFiles] = useState<FileWithExtraction[]>([])
+
+  // Helper to deduplicate files by extraction.id
+  const deduplicateFiles = (files: FileWithExtraction[]): FileWithExtraction[] => {
+    const seen = new Map<string, FileWithExtraction>()
+    for (const file of files) {
+      const id = file.extraction.id
+      if (!seen.has(id)) {
+        seen.set(id, file)
+      }
+    }
+    return Array.from(seen.values())
+  }
   const [visibleTechnicalFields, setVisibleTechnicalFields] = useState<Set<string>>(new Set())
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
@@ -191,7 +203,14 @@ export default function CreateProductPage() {
     }))
 
     // Add all files to UI at once
-    setUploadedFiles((prev) => [...prev, ...tempFiles])
+    // Filter out duplicates before adding (by extraction.id)
+    setUploadedFiles((prev) => {
+      const existingIds = new Set(prev.map(f => f.extraction.id))
+      const newFiles = tempFiles.filter(f => !existingIds.has(f.extraction.id))
+      const combined = [...prev, ...newFiles]
+      // Safety check: deduplicate in case of any edge cases
+      return deduplicateFiles(combined)
+    })
 
     // Process all files in parallel
     const uploadPromises = files.map(async (file, index) => {
@@ -306,13 +325,20 @@ export default function CreateProductPage() {
           }
         } else {
           // New file - set to analyzing
-          setUploadedFiles((prev) =>
-            prev.map((f) =>
+          // Check if a file with this extraction.id already exists (duplicate upload)
+          setUploadedFiles((prev) => {
+            const existingFile = prev.find(f => f.extraction.id === extraction.id && f.extraction.id !== tempFile.extraction.id)
+            if (existingFile) {
+              // File already exists with this ID, remove the temp entry
+              return prev.filter(f => f.extraction.id !== tempFile.extraction.id)
+            }
+            // Update temp entry with real extraction
+            return prev.map((f) =>
               f.extraction.id === tempFile.extraction.id
                 ? { extraction, displayStatus: 'analyzing' as const }
                 : f
             )
-          )
+          })
         }
 
         // Trigger AI extraction
@@ -361,13 +387,30 @@ export default function CreateProductPage() {
         
         const completedExtraction = extractData.extraction
 
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
+        // Update file when extraction completes - handle duplicates
+        setUploadedFiles((prev) => {
+          // Find all entries with this extraction ID (could be duplicates from multiple uploads)
+          const matchingFiles = prev.filter(f => f.extraction.id === extraction.id)
+          
+          if (matchingFiles.length > 1) {
+            // Remove duplicates, keep only the first one and update it
+            const firstMatch = matchingFiles[0]
+            return prev
+              .filter(f => f.extraction.id !== extraction.id || f === firstMatch)
+              .map((f) =>
+                f.extraction.id === extraction.id && f === firstMatch
+                  ? { extraction: completedExtraction, displayStatus: 'completed' as const }
+                  : f
+              )
+          }
+          
+          // Single match, just update it
+          return prev.map((f) =>
             f.extraction.id === extraction.id
               ? { extraction: completedExtraction, displayStatus: 'completed' as const }
               : f
           )
-        )
+        })
 
         const fieldCount = completedExtraction.extracted_values
           ? Object.keys(completedExtraction.extracted_values).filter(
