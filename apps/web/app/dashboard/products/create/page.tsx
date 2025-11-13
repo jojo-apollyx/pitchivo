@@ -572,37 +572,53 @@ export default function CreateProductPage() {
   const handleApplyFields = useCallback(
     async (fileId: string, fields: Record<string, any>) => {
       try {
-        // First, save reviewed values if not already reviewed
+        // Get the file and its extracted values
         const file = uploadedFiles.find((f) => f.extraction.id === fileId)
-        if (file?.extraction.review_status !== 'reviewed') {
-          const reviewResponse = await fetch('/api/documents/review', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileId, reviewedValues: fields }),
-          })
-
-          if (!reviewResponse.ok) {
-            throw new Error('Failed to save review')
-          }
-
-          const reviewData = await reviewResponse.json()
-          
-          // Update local state with reviewed extraction
-          setUploadedFiles((prev) =>
-            prev.map((f) =>
-              f.extraction.id === fileId 
-                ? { 
-                    ...f, 
-                    extraction: {
-                      ...f.extraction,
-                      ...reviewData.extraction,
-                      review_status: 'reviewed' as const
-                    }
-                  } 
-                : f
-            )
-          )
+        if (!file) {
+          throw new Error('File not found')
         }
+
+        // Parse extracted values
+        let extractedData: any = {}
+        try {
+          const extracted = file.extraction.extracted_values || {}
+          extractedData = typeof extracted === 'string' ? JSON.parse(extracted) : extracted
+        } catch (e) {
+          // Ignore parse errors
+        }
+
+        // Merge user-selected/modified fields with all extracted values
+        // This ensures we save ALL extracted values as reviewed, with user modifications applied
+        const reviewedValues = { ...extractedData, ...fields }
+
+        // Always save reviewed values when applying (mark as reviewed)
+        const reviewResponse = await fetch('/api/documents/review', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileId, reviewedValues }),
+        })
+
+        if (!reviewResponse.ok) {
+          throw new Error('Failed to save review')
+        }
+
+        const reviewData = await reviewResponse.json()
+        
+        // Update local state with reviewed extraction
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.extraction.id === fileId 
+              ? { 
+                  ...f, 
+                  extraction: {
+                    ...f.extraction,
+                    ...reviewData.extraction,
+                    review_status: 'reviewed' as const
+                  }
+                } 
+              : f
+          )
+        )
 
         // Use AI to merge new fields with existing form data
         toast.info('Merging data intelligently...', { icon: '🤖' })
@@ -726,9 +742,68 @@ export default function CreateProductPage() {
 
       toast.info('Merging data from all documents...', { icon: '🤖' })
 
+      // First, mark all files as reviewed by saving their extracted values to reviewed_values
+      const reviewResults = await Promise.allSettled(
+        completedFiles.map(async (f) => {
+          // Skip if already reviewed
+          if (f.extraction.review_status === 'reviewed') {
+            return { fileId: f.extraction.id, extraction: f.extraction }
+          }
+
+          const extracted = f.extraction.extracted_values || {}
+          let extractedData: any = {}
+          try {
+            extractedData = typeof extracted === 'string' ? JSON.parse(extracted) : extracted
+          } catch (e) {
+            // Ignore parse errors
+          }
+
+          // Save all extracted values as reviewed values
+          const reviewResponse = await fetch('/api/documents/review', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileId: f.extraction.id, reviewedValues: extractedData }),
+          })
+
+          if (reviewResponse.ok) {
+            const reviewData = await reviewResponse.json()
+            return { fileId: f.extraction.id, extraction: reviewData.extraction }
+          }
+          return { fileId: f.extraction.id, extraction: f.extraction }
+        })
+      )
+
+      // Update local state with all reviewed files in one batch and collect updated files
+      const updatedFilesMap = new Map<string, any>()
+      reviewResults.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value) {
+          updatedFilesMap.set(result.value.fileId, result.value.extraction)
+        }
+      })
+
+      setUploadedFiles((prev) => {
+        return prev.map((file) => {
+          const update = updatedFilesMap.get(file.extraction.id)
+          if (update) {
+            return {
+              ...file,
+              extraction: {
+                ...file.extraction,
+                ...update,
+                review_status: 'reviewed' as const
+              }
+            }
+          }
+          return file
+        })
+      })
+
       // Collect all extracted data and merge into single object
+      // Use updated reviewed_values if available, otherwise use extracted_values
       const allExtractedData = completedFiles.map((f) => {
-        const reviewed = f.extraction.reviewed_values || {}
+        // Check if we have updated reviewed values from the save operation
+        const updatedExtraction = updatedFilesMap.get(f.extraction.id)
+        const reviewed = updatedExtraction?.reviewed_values || f.extraction.reviewed_values || {}
         const extracted = f.extraction.extracted_values || {}
         
         // Parse if strings
@@ -741,9 +816,12 @@ export default function CreateProductPage() {
           // Ignore parse errors
         }
         
-        // Always include document_type and summary from original extraction for merge inference
-        // This is needed for the AI to infer certificates (e.g., Prop65_Statement → California Prop 65 Compliant)
-        const combined = { ...reviewedData }
+        // Use reviewed values if available, otherwise use extracted values
+        // Always ensure document_type and summary are included
+        const hasReviewedData = reviewedData && Object.keys(reviewedData).length > 0
+        const combined = hasReviewedData ? { ...reviewedData } : { ...extractedData }
+        
+        // Always ensure document_type and summary are included from extracted data
         if (extractedData.document_type && !combined.document_type) {
           combined.document_type = extractedData.document_type
         }
@@ -755,16 +833,32 @@ export default function CreateProductPage() {
       })
 
       // Combine all extracted data into a single object for merging
+      // Use intelligent merging: prefer more complete values, merge arrays, combine strings
       const combinedFields: Record<string, any> = {}
       allExtractedData.forEach((data: any) => {
         Object.entries(data).forEach(([key, value]) => {
           if (value !== null && value !== undefined && value !== '') {
-            if (Array.isArray(value) && Array.isArray(combinedFields[key])) {
+            if (Array.isArray(value)) {
               // Merge arrays and deduplicate
-              combinedFields[key] = [...new Set([...combinedFields[key], ...value])]
+              if (!combinedFields[key]) {
+                combinedFields[key] = []
+              }
+              if (Array.isArray(combinedFields[key])) {
+                combinedFields[key] = [...new Set([...combinedFields[key], ...value])]
+              } else {
+                combinedFields[key] = value
+              }
+            } else if (typeof value === 'string' && typeof combinedFields[key] === 'string') {
+              // If both are strings, prefer the longer/more complete one
+              if (value.length > combinedFields[key].length) {
+                combinedFields[key] = value
+              }
             } else if (!combinedFields[key]) {
               // Set value if not already present
               combinedFields[key] = value
+            } else if (typeof value === 'object' && typeof combinedFields[key] === 'object') {
+              // For objects, merge them (though this shouldn't happen often)
+              combinedFields[key] = { ...combinedFields[key], ...value }
             }
           }
         })

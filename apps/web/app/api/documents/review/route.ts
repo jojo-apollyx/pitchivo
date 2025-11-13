@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import isEqual from 'fast-deep-equal'
 
 export const runtime = 'nodejs'
 
@@ -37,14 +38,26 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
+    // Parse extracted_values if it's a string (sometimes stored as JSON string)
+    let extractedValues = extraction.extracted_values
+    if (typeof extractedValues === 'string') {
+      try {
+        extractedValues = JSON.parse(extractedValues)
+      } catch (e) {
+        // If parsing fails, use as-is
+      }
+    }
+
     // Calculate corrections (what changed)
+    // Use fast-deep-equal for accurate deep comparison of objects and arrays
     const userCorrections: Record<string, any> = {}
     
     Object.keys(reviewedValues).forEach(key => {
-      const originalValue = extraction.extracted_values?.[key]
+      const originalValue = extractedValues?.[key]
       const reviewedValue = reviewedValues[key]
       
-      if (originalValue !== reviewedValue && originalValue !== undefined) {
+      // Only record as correction if values are actually different (deep comparison)
+      if (originalValue !== undefined && !isEqual(originalValue, reviewedValue)) {
         userCorrections[key] = {
           original: originalValue,
           corrected: reviewedValue,
