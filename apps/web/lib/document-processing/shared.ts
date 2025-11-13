@@ -500,8 +500,33 @@ function normalizeExtractedData(data: any, path: string = '', isGrouped: boolean
     )
     
     if (hasComplexNesting) {
-      // Convert entire object to plain text
-      return convertObjectToPlainText(data)
+      // If this is the top-level object (path === ''), we must preserve it as an object
+      // Convert complex nested values to plain text, but keep the structure
+      if (path === '') {
+        const normalized: any = {}
+        Object.entries(data).forEach(([key, value]) => {
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            // Check if it has nested objects (complex nesting)
+            const hasNestedObjects = Object.values(value).some(
+              v => typeof v === 'object' && v !== null && !Array.isArray(v)
+            )
+            if (hasNestedObjects) {
+              // Convert complex nested object to plain text
+              normalized[key] = convertObjectToPlainText(value)
+            } else {
+              // It's a simple flat object, preserve it
+              normalized[key] = normalizeExtractedData(value, key, false)
+            }
+          } else {
+            // Recursively normalize simple values
+            normalized[key] = normalizeExtractedData(value, key, false)
+          }
+        })
+        return normalized
+      } else {
+        // For nested objects, convert to plain text
+        return convertObjectToPlainText(data)
+      }
     }
     
     // Otherwise, recursively normalize each property
