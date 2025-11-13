@@ -161,7 +161,14 @@ export function FileUploadPanel({
     // Helper to check if value is valid (not null, undefined, empty, or "Unknown")
     const isValidValue = (value: any): boolean => {
       if (value === null || value === undefined || value === '') return false
-      if (typeof value === 'string' && value.trim().toLowerCase() === 'unknown') return false
+      if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (trimmed === '' || trimmed.toLowerCase() === 'unknown') return false
+      }
+      // Skip objects (they should be processed differently or extracted to specific values)
+      if (typeof value === 'object' && !Array.isArray(value)) return false
+      // Empty arrays are not valid
+      if (Array.isArray(value) && value.length === 0) return false
       return true
     }
     

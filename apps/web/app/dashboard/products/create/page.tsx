@@ -516,6 +516,9 @@ export default function CreateProductPage() {
           } else if (documentType === 'Irradiation_Statement') {
             updates.irradiationStatus = 'Non-Irradiated'
             newVisibleFields.add('irradiationStatus')
+          } else if (documentType === 'BSE_Statement') {
+            updates.bseStatement = 'BSE-Free'
+            newVisibleFields.add('bseStatement')
           } else if (documentType === 'Halal_Certificate') {
             updates.halalCertified = 'Yes'
             newVisibleFields.add('halalCertified')
@@ -1169,6 +1172,10 @@ export default function CreateProductPage() {
         if (documentTypes.includes('Irradiation_Statement')) {
           updates.irradiationStatus = 'Non-Irradiated'
           newVisibleFields.add('irradiationStatus')
+        }
+        if (documentTypes.includes('BSE_Statement')) {
+          updates.bseStatement = 'BSE-Free'
+          newVisibleFields.add('bseStatement')
         }
         if (documentTypes.includes('Halal_Certificate')) {
           updates.halalCertified = 'Yes'
