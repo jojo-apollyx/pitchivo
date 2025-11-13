@@ -4,8 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 export const runtime = 'nodejs'
 
 /**
- * Delete a document (soft delete if referenced, hard delete if not)
+ * Delete a document from a product or permanently
  * DELETE /api/documents/delete
+ * 
+ * Body: { fileId: string, productId?: string }
+ * - If productId is provided: Remove file from that product's uploaded_files array only
+ * - If productId is not provided: Check all products and soft/hard delete based on references
  */
 export async function DELETE(request: NextRequest) {
   try {
@@ -17,7 +21,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { fileId } = await request.json()
+    const { fileId, productId } = await request.json()
 
     if (!fileId) {
       return NextResponse.json({ error: 'File ID is required' }, { status: 400 })
@@ -34,10 +38,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User organization not found' }, { status: 400 })
     }
 
-    // Get document (including soft-deleted ones for cleanup)
+    // Get document
     const { data: extraction, error: fetchError } = await supabase
       .from('document_extractions')
-      .select('reference_count, storage_path, organization_id, deleted_at')
+      .select('storage_path, organization_id, deleted_at')
       .eq('id', fileId)
       .single()
 
@@ -63,7 +67,109 @@ export async function DELETE(request: NextRequest) {
       })
     }
 
-    if (extraction.reference_count > 0) {
+    // If productId is provided, only remove from that product
+    if (productId) {
+      // Get the product
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('product_data, org_id')
+        .eq('product_id', productId)
+        .eq('org_id', userData.organization_id)
+        .single()
+
+      if (productError || !product) {
+        return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+      }
+
+      // Parse product_data
+      const productData = typeof product.product_data === 'string' 
+        ? JSON.parse(product.product_data) 
+        : product.product_data || {}
+
+      // Remove file from uploaded_files array
+      const uploadedFiles = (productData.uploaded_files || []).filter(
+        (f: any) => f.file_id !== fileId
+      )
+
+      // Update product_data
+      const updatedProductData = {
+        ...productData,
+        uploaded_files: uploadedFiles
+      }
+
+      // Update product
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ product_data: updatedProductData })
+        .eq('product_id', productId)
+        .eq('org_id', userData.organization_id)
+
+      if (updateError) {
+        console.error('Error removing file from product:', updateError)
+        return NextResponse.json({ error: 'Failed to remove file from product' }, { status: 500 })
+      }
+
+      // Check if document is still referenced in any other product
+      const { data: allProducts, error: productsError } = await supabase
+        .from('products')
+        .select('product_data')
+        .eq('org_id', userData.organization_id)
+
+      if (productsError) {
+        console.error('Error checking product references:', productsError)
+        // Continue anyway - we've removed from the requested product
+      } else {
+        // Check if file is referenced in any other product
+        const isReferencedElsewhere = allProducts?.some((p: any) => {
+          const pd = typeof p.product_data === 'string' 
+            ? JSON.parse(p.product_data) 
+            : p.product_data || {}
+          const files = pd.uploaded_files || []
+          return files.some((f: any) => f.file_id === fileId)
+        }) || false
+
+        // If not referenced anywhere, soft delete the document
+        if (!isReferencedElsewhere) {
+          const { error: softDeleteError } = await supabase
+            .from('document_extractions')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', fileId)
+
+          if (softDeleteError) {
+            console.error('Soft delete error:', softDeleteError)
+            // Don't fail the request, we've already removed from product
+          }
+        }
+      }
+
+      return NextResponse.json({
+        message: 'Document removed from product',
+        type: 'removed_from_product',
+        productId
+      })
+    }
+
+    // No productId provided - check all products for references
+    const { data: allProducts, error: productsError } = await supabase
+      .from('products')
+      .select('product_data')
+      .eq('org_id', userData.organization_id)
+
+    if (productsError) {
+      console.error('Error checking product references:', productsError)
+      // Continue with deletion check
+    }
+
+    // Check if file is referenced in any product's uploaded_files
+    const isReferenced = allProducts?.some((p: any) => {
+      const pd = typeof p.product_data === 'string' 
+        ? JSON.parse(p.product_data) 
+        : p.product_data || {}
+      const files = pd.uploaded_files || []
+      return files.some((f: any) => f.file_id === fileId)
+    }) || false
+
+    if (isReferenced) {
       // Soft delete - still referenced by products
       const { error: softDeleteError } = await supabase
         .from('document_extractions')
@@ -77,8 +183,7 @@ export async function DELETE(request: NextRequest) {
 
       return NextResponse.json({
         message: 'Document marked as deleted (still referenced by products)',
-        type: 'soft_delete',
-        reference_count: extraction.reference_count
+        type: 'soft_delete'
       })
     } else {
       // Hard delete - not referenced, can fully remove

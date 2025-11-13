@@ -6,6 +6,7 @@ export const runtime = 'nodejs'
 /**
  * List all documents for the current user's organization
  * GET /api/documents/list
+ * GET /api/documents/list?fileIds=id1,id2,id3 (fetch specific documents by IDs)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -39,12 +40,24 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Get all non-deleted documents
-    const { data: documents, error: fetchError } = await supabase
+    // Check if specific file IDs are requested
+    const fileIdsParam = request.nextUrl.searchParams.get('fileIds')
+    let query = supabase
       .from('document_extractions')
       .select('*')
       .eq('organization_id', userData.organization_id)
       .is('deleted_at', null)
+
+    if (fileIdsParam) {
+      // Parse comma-separated file IDs
+      const fileIds = fileIdsParam.split(',').map(id => id.trim()).filter(Boolean)
+      if (fileIds.length > 0) {
+        query = query.in('id', fileIds)
+      }
+    }
+
+    // Get documents
+    const { data: documents, error: fetchError } = await query
       .order('created_at', { ascending: false })
 
     if (fetchError) {

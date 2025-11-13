@@ -166,6 +166,44 @@ export default function CreateProductPage() {
       
       setProductId(productData.product_id)
       
+      // Restore uploaded files from product_data.uploaded_files
+      const uploadedFilesData = productDataObj.uploaded_files || []
+      if (uploadedFilesData.length > 0) {
+        // Fetch the actual document extraction records
+        const fileIds = uploadedFilesData.map((f: any) => f.file_id).filter(Boolean)
+        if (fileIds.length > 0) {
+          fetch(`/api/documents/list?fileIds=${fileIds.join(',')}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.documents && data.documents.length > 0) {
+                // Map documents to FileWithExtraction format
+                const restoredFiles: FileWithExtraction[] = data.documents.map((doc: any) => {
+                  // Determine display status based on analysis_status
+                  let displayStatus: 'uploading' | 'analyzing' | 'completed' | 'error' = 'analyzing'
+                  if (doc.analysis_status === 'completed') {
+                    displayStatus = 'completed'
+                  } else if (doc.analysis_status === 'failed') {
+                    displayStatus = 'error'
+                  } else if (doc.analysis_status === 'pending' || doc.analysis_status === 'analyzing') {
+                    displayStatus = 'analyzing'
+                  }
+                  
+                  return {
+                    extraction: doc,
+                    displayStatus,
+                  }
+                })
+                
+                setUploadedFiles(restoredFiles)
+              }
+            })
+            .catch(error => {
+              console.error('Error restoring uploaded files:', error)
+              // Don't show error to user, just log it
+            })
+        }
+      }
+      
       // Show visible technical fields that have values when loading existing product
       const newVisibleFields = new Set<string>()
       const technicalFields = [
@@ -568,10 +606,15 @@ export default function CreateProductPage() {
       // Optimistically remove from UI immediately for better UX
       setUploadedFiles((prev) => prev.filter((f) => f.extraction.id !== fileId))
       
+      // If we have a productId, only remove from this product
+      // Otherwise, delete the document entirely
       const response = await fetch('/api/documents/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId }),
+        body: JSON.stringify({ 
+          fileId,
+          productId: productId || undefined // Only include if we have a productId
+        }),
       })
 
       const responseData = await response.json().catch(() => ({}))
@@ -592,14 +635,14 @@ export default function CreateProductPage() {
       }
 
       // Success - show appropriate message
-      const successMessage = responseData.message || 'File deleted successfully'
+      const successMessage = responseData.message || 'File removed successfully'
       toast.success(successMessage)
     } catch (error) {
       console.error('Error deleting file:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete file'
       toast.error(errorMessage)
     }
-  }, [uploadedFiles])
+  }, [uploadedFiles, productId])
 
   const handleRetryExtraction = useCallback(async (fileId: string) => {
     const file = uploadedFiles.find((f) => f.extraction.id === fileId)
