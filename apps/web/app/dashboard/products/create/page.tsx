@@ -607,12 +607,31 @@ export default function CreateProductPage() {
         // Use AI to merge new fields with existing form data
         toast.info('Merging data intelligently...', { icon: '🤖' })
         
+        // Always include document_type and summary from original extraction for merge inference
+        // This is needed for the AI to infer certificates (e.g., Prop65_Statement → California Prop 65 Compliant)
+        const fieldsForMerge = { ...fields }
+        if (file?.extraction.extracted_values) {
+          try {
+            const extractedData = typeof file.extraction.extracted_values === 'string'
+              ? JSON.parse(file.extraction.extracted_values)
+              : file.extraction.extracted_values
+            if (extractedData.document_type && !fieldsForMerge.document_type) {
+              fieldsForMerge.document_type = extractedData.document_type
+            }
+            if (extractedData.summary && !fieldsForMerge.summary) {
+              fieldsForMerge.summary = extractedData.summary
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+        
         const mergeResponse = await fetch('/api/documents/merge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             currentData: formData,
-            newFields: fields,
+            newFields: fieldsForMerge,
           }),
         })
 
@@ -641,7 +660,8 @@ export default function CreateProductPage() {
               'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
               'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
               'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
-              'particle_size', 'einecs', 'fda_number', 'allergen_info'
+              'particle_size', 'einecs', 'fda_number', 'allergen_info',
+              'gmo_status', 'irradiation_status', 'bse_statement'
             ]
             
             if (technicalFields.includes(key)) {
@@ -708,7 +728,30 @@ export default function CreateProductPage() {
 
       // Collect all extracted data and merge into single object
       const allExtractedData = completedFiles.map((f) => {
-        return f.extraction.reviewed_values || f.extraction.extracted_values
+        const reviewed = f.extraction.reviewed_values || {}
+        const extracted = f.extraction.extracted_values || {}
+        
+        // Parse if strings
+        let reviewedData: any = {}
+        let extractedData: any = {}
+        try {
+          reviewedData = typeof reviewed === 'string' ? JSON.parse(reviewed) : reviewed
+          extractedData = typeof extracted === 'string' ? JSON.parse(extracted) : extracted
+        } catch (e) {
+          // Ignore parse errors
+        }
+        
+        // Always include document_type and summary from original extraction for merge inference
+        // This is needed for the AI to infer certificates (e.g., Prop65_Statement → California Prop 65 Compliant)
+        const combined = { ...reviewedData }
+        if (extractedData.document_type && !combined.document_type) {
+          combined.document_type = extractedData.document_type
+        }
+        if (extractedData.summary && !combined.summary) {
+          combined.summary = extractedData.summary
+        }
+        
+        return combined
       })
 
       // Combine all extracted data into a single object for merging
@@ -759,7 +802,8 @@ export default function CreateProductPage() {
             'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
             'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
             'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
-            'particle_size', 'einecs', 'fda_number', 'allergen_info'
+            'particle_size', 'einecs', 'fda_number', 'allergen_info',
+            'gmo_status', 'irradiation_status', 'bse_statement'
           ]
           
           if (technicalFields.includes(key)) {

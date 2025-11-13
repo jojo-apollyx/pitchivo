@@ -356,7 +356,7 @@ export const FIELD_OPTIONS = {
     'Room temperature', 'Refrigerated', 'Frozen'
   ],
   gmo_status: ['Non-GMO', 'GMO-Free', 'GMO'],
-  irradiation_status: ['Not Irradiated', 'Irradiated', 'Irradiation Free'],
+  irradiation_status: ['Non-Irradiated', 'Irradiated'],
   halal_certified: ['Yes', 'No', 'In Progress'],
   kosher_certified: ['Yes', 'No', 'In Progress'],
   provide_sample: ['Yes', 'No'],
@@ -571,6 +571,8 @@ export function getMergeSystemPrompt(): string {
 
 IMPORTANT: Actively STANDARDIZE all values, names, and formats - even when no new information is added.
 
+IMPORTANT: Check the "document_type" field in the NEW EXTRACTED FIELDS to determine what type of document was processed. Use this to infer certificates and other compliance fields.
+
 SCHEMA (arrays: price_lead_time, samples, inventory_locations, applications, certificates, storage_conditions, allergen_info):
 ${schemaDoc}
 
@@ -579,22 +581,27 @@ RULES:
 
 2. **Generate & Infer (CONSERVATIVE)**:
    - Generate ONLY: description, applications, category (if you have sufficient product data)
-   - For certificates: ONLY add if EXPLICITLY mentioned in extracted data
+   - For certificates: Check the "document_type" field in NEW EXTRACTED FIELDS and add certificates accordingly:
+     - If document_type = "Prop65_Statement" in NEW EXTRACTED FIELDS → ALWAYS add "California Prop 65 Compliant" to certificates array
+     - If document_type = "Vegan_Certificate" in NEW EXTRACTED FIELDS → ALWAYS add "Vegan" to certificates array
+     - If document_type = "Non_GMO_Statement" in NEW EXTRACTED FIELDS AND gmo_status = "Non-GMO" → add "Non-GMO" to certificates array
      - If gmo_status = "Non-GMO" → add "Non-GMO" to certificates array
      - If kosher_certified = "Yes" → add "Kosher" to certificates array  
      - If halal_certified = "Yes" → add "Halal" to certificates array
      - If organic_certification_body exists → add "Organic" to certificates array
      - If document contains "ISO 9001" text → add "ISO 9001" to certificates array
-     - If document_type = "Vegan_Certificate" → add "Vegan" to certificates array
      - If document contains "vegan" text, vegan statement, vegan_certified = "Yes", or vegan_statement field exists → add "Vegan" to certificates array
+     - If document contains "Prop 65", "Proposition 65", "California Prop 65", or prop65-related text → add "California Prop 65 Compliant" to certificates array
      - DO NOT add GMP, HACCP, FDA, or other certificates unless explicitly found in the data
    
 3. **Standardized Value Formats** (for UI dropdowns):
    - origin_country: "China", "USA", "Germany", "India", "Japan" (proper case, no abbreviations)
    - form: "Powder", "Liquid", "Capsule", "Tablet", "Extract", "Oil" (capitalize first letter)
    - category: "Vitamin", "Mineral", "Amino Acid", "Botanical Extract", "Probiotic", "Enzyme" (proper case)
-   - certificates: "Non-GMO", "Kosher", "Halal", "Organic", "ISO 9001", "ISO 22000", "GMP", "HACCP", "FDA Registered", "GRAS", "Gluten-Free", "Vegan" (exact names)
-   - Status fields: "Yes" or "No" (e.g., kosher_certified, halal_certified, gmo_status)
+   - certificates: "Non-GMO", "Kosher", "Halal", "Organic", "ISO 9001", "ISO 22000", "GMP", "HACCP", "FDA Registered", "GRAS", "Gluten-Free", "Vegan", "California Prop 65 Compliant" (exact names)
+   - Status fields: "Yes" or "No" (e.g., kosher_certified, halal_certified)
+   - gmo_status: "Non-GMO", "GMO-Free", or "GMO"
+   - irradiation_status: "Non-Irradiated" or "Irradiated"
    - Microbiological tests: "Negative" or "Positive" (e.g., e_coli_presence, salmonella_presence)
 
 4. **Merge Strategy**: Prefer more complete/specific values. Merge arrays and deduplicate. Always include units with measurements.
@@ -603,6 +610,12 @@ RULES:
    - Understand that fields like "allergens_free", "allergen_statement", "allergen_info" are all related to allergen information
    - If extracted data contains allergen-related information (e.g., "allergens_free" array, "allergen_statement" text, or mentions of specific allergens), infer and populate the "allergen_info" array
    - Extract individual allergen names from text or arrays and populate as an array of strings (e.g., ["Milk", "Eggs", "Wheat"])
+   - Understand that "irradiation_statement", "irradiation_free", "not_irradiated", "non_irradiated" are related to "irradiation_status" field
+   - If extracted data contains irradiation-related information, map to "irradiation_status" using standardized values: "Non-Irradiated" or "Irradiated"
+   - If document states product is free from irradiation, not irradiated, or irradiation-free → use "Non-Irradiated"
+   - If document states product is irradiated → use "Irradiated"
+   - Understand that "gmo_statement", "non_gmo_statement", "gmo_free" are related to "gmo_status" field
+   - If extracted data contains GMO-related information, map to "gmo_status" using standardized values: "Non-GMO", "GMO-Free", or "GMO"
    - Use your understanding of the data to intelligently map related fields
 
 EXAMPLE 1:
@@ -627,6 +640,26 @@ Output:
 {
   "allergen_info": ["Milk", "Eggs", "Fish", "Shellfish", "Tree Nuts", "Peanuts", "Wheat", "Soybeans"]
 }
+
+EXAMPLE 3 (Irradiation Statement):
+Input extracted: { "document_type": "Irradiation_Statement", "irradiation_statement": "This product is not irradiated and is irradiation-free" }
+
+Output:
+{
+  "irradiation_status": "Non-Irradiated"
+}
+
+EXAMPLE 4 (Prop 65 Statement):
+Input currentData: { "product_name": "American Elderberry", "certificates": [] }
+Input newFields: { "document_type": "Prop65_Statement", "summary": "This document is a Letter of Compliance stating that products comply with California Proposition 65 regulations" }
+
+Output:
+{
+  "product_name": "American Elderberry",
+  "certificates": ["California Prop 65 Compliant"]
+}
+
+Note: Even though newFields doesn't contain a "certificates" field, you MUST add "California Prop 65 Compliant" to the certificates array because document_type = "Prop65_Statement".
 
 OUTPUT: Return ONLY valid JSON (no markdown, no code blocks)
 `
