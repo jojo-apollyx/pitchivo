@@ -165,6 +165,9 @@ STEP 1: Identify the document type from these options:
 - "MSDS" (Material Safety Data Sheet)
 - "Specification_Sheet" (Product Specification)
 - "Certificate" (General certificate)
+- "Allergen_Statement" (Allergen statement or allergen info document)
+- "Nutritional_Info" (Nutritional information document)
+- "Product_Label" (Product label or packaging information)
 - "Driver_License" (Driver's license or ID card)
 - "Passport" (Passport document)
 - "Invoice" (Invoice or bill)
@@ -173,10 +176,10 @@ STEP 1: Identify the document type from these options:
 
 STEP 2: Extract data based on document type:
 
-For FOOD/SUPPLEMENT documents (COA, TDS, MSDS, Specification_Sheet, Certificate):
-Use the detailed food industry schema below.
+For PRODUCT-RELATED documents (COA, TDS, MSDS, Specification_Sheet, Certificate, Allergen_Statement, Nutritional_Info, Product_Label):
+Use the detailed food industry schema below. Extract all relevant product information.
 
-For OTHER documents (Driver_License, Passport, Invoice, Contract, Other):
+For NON-PRODUCT documents (Driver_License, Passport, Invoice, Contract, Other):
 Only populate fields that are relevant to the document. Leave all food-specific fields empty. Extract what you see:
 - For IDs/Licenses: name, date of birth, issue date, expiration date, ID number, issuing authority, address
 - For Invoices: invoice number, date, items, amounts, vendor, customer

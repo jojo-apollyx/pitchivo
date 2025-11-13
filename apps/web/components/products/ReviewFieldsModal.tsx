@@ -42,7 +42,10 @@ const PRODUCT_DOCUMENT_TYPES = [
   'TDS',
   'MSDS',
   'Specification_Sheet',
-  'Certificate'
+  'Certificate',
+  'Allergen_Statement',
+  'Nutritional_Info',
+  'Product_Label'
 ]
 
 export function ReviewFieldsModal({
@@ -310,7 +313,12 @@ export function ReviewFieldsModal({
                             {field.label}
                           </div>
                           <div className="text-sm text-foreground">
-                            {field.value?.toString() || 'N/A'}
+                            {(() => {
+                              if (field.value === null || field.value === undefined) return 'N/A'
+                              if (Array.isArray(field.value)) return field.value.join(', ')
+                              if (typeof field.value === 'object') return JSON.stringify(field.value, null, 2)
+                              return field.value.toString()
+                            })()}
                           </div>
                         </div>
                       ))}
@@ -356,18 +364,46 @@ export function ReviewFieldsModal({
                                 </label>
                                 {!isAlreadyReviewed && getConfidenceBadge(field.confidence)}
                               </div>
-                              <input
-                                type="text"
-                                value={editedFields[field.key]?.toString() || ''}
-                                onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                                className={cn(
-                                  'w-full px-2 py-1.5 text-sm rounded-md border',
-                                  'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                                  'bg-background',
-                                  !selectedFields.has(field.key) && 'opacity-60'
-                                )}
-                                disabled={!selectedFields.has(field.key)}
-                              />
+                              {Array.isArray(editedFields[field.key]) || (typeof editedFields[field.key] === 'object' && editedFields[field.key] !== null) ? (
+                                <textarea
+                                  value={(() => {
+                                    const val = editedFields[field.key]
+                                    if (Array.isArray(val)) return val.join(', ')
+                                    if (typeof val === 'object') return JSON.stringify(val, null, 2)
+                                    return val?.toString() || ''
+                                  })()}
+                                  onChange={(e) => {
+                                    const val = e.target.value
+                                    // Try to parse as array if comma-separated
+                                    if (val.includes(',')) {
+                                      handleFieldChange(field.key, val.split(',').map(s => s.trim()))
+                                    } else {
+                                      handleFieldChange(field.key, val)
+                                    }
+                                  }}
+                                  className={cn(
+                                    'w-full px-2 py-1.5 text-sm rounded-md border',
+                                    'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                    'bg-background resize-none',
+                                    !selectedFields.has(field.key) && 'opacity-60'
+                                  )}
+                                  rows={3}
+                                  disabled={!selectedFields.has(field.key)}
+                                />
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={editedFields[field.key]?.toString() || ''}
+                                  onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                                  className={cn(
+                                    'w-full px-2 py-1.5 text-sm rounded-md border',
+                                    'focus:outline-none focus:ring-2 focus:ring-primary/20',
+                                    'bg-background',
+                                    !selectedFields.has(field.key) && 'opacity-60'
+                                  )}
+                                  disabled={!selectedFields.has(field.key)}
+                                />
+                              )}
                             </div>
                           </div>
                         </div>
