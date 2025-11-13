@@ -91,7 +91,7 @@ export function TechnicalFieldsSection({
         {/* Basic Specifications */}
         {hasVisibleFields(basicSpecFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Basic Specifications</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Basic Specifications</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('einecs') && (
                 <div className="flex flex-col">
@@ -139,7 +139,7 @@ export function TechnicalFieldsSection({
         {/* Origin & Source */}
         {hasVisibleFields(originSourceFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Origin & Source</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Origin & Source</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('botanical_name') && (
                 <div className="flex flex-col">
@@ -187,7 +187,7 @@ export function TechnicalFieldsSection({
         {/* Physical Characteristics */}
         {hasVisibleFields(physicalCharFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Physical Characteristics</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Physical Characteristics</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('appearance') && (
                 <div className="flex flex-col">
@@ -300,7 +300,7 @@ export function TechnicalFieldsSection({
         {/* Chemical Analysis */}
         {hasVisibleFields(chemicalAnalysisFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Chemical Analysis</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Chemical Analysis</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('assay') && (
                 <div className="flex flex-col">
@@ -387,7 +387,7 @@ export function TechnicalFieldsSection({
         {/* Heavy Metals & Mycotoxins */}
         {hasVisibleFields(heavyMetalsFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Heavy Metals & Contaminants</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Heavy Metals & Contaminants</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('lead') && (
                 <div className="flex flex-col">
@@ -487,7 +487,7 @@ export function TechnicalFieldsSection({
         {/* Microbiological */}
         {hasVisibleFields(microbiologicalFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Microbiological</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Microbiological</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('total_plate_count') && (
                 <div className="flex flex-col">
@@ -596,7 +596,7 @@ export function TechnicalFieldsSection({
         {/* Compliance & Safety */}
         {hasVisibleFields(complianceFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Compliance & Safety</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Compliance & Safety</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {visibleFields.has('gmo_status') && (
@@ -717,7 +717,7 @@ export function TechnicalFieldsSection({
         {/* Packaging & Logistics */}
         {hasVisibleFields(logisticsFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Packaging & Logistics</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Packaging & Logistics</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {visibleFields.has('gross_weight') && (
@@ -765,7 +765,7 @@ export function TechnicalFieldsSection({
         {/* Commercial Terms */}
         {hasVisibleFields(commercialFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Commercial Terms</h3>
+            <h3 className="text-base font-bold text-foreground mb-4 pb-2 border-b border-border/20">Commercial Terms</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('sample_availability') && (
                 <div className="flex flex-col">
