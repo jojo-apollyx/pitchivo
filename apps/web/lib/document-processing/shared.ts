@@ -279,14 +279,50 @@ ${context.extractedContent}`
 
     // Clean up response
     let cleanedResponse = rawExtraction.trim()
+    
+    // Remove markdown code blocks
     if (cleanedResponse.startsWith('```json')) {
-      cleanedResponse = cleanedResponse.replace(/^```json\n?/, '').replace(/\n?```$/, '')
+      cleanedResponse = cleanedResponse.replace(/^```json\n?/i, '').replace(/\n?```$/i, '')
     } else if (cleanedResponse.startsWith('```')) {
-      cleanedResponse = cleanedResponse.replace(/^```\n?/, '').replace(/\n?```$/, '')
+      cleanedResponse = cleanedResponse.replace(/^```\n?/, '').replace(/\n?```$/i, '')
     }
+    
+    // Try to extract JSON object if there's extra text
+    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      cleanedResponse = jsonMatch[0]
+    }
+    
+    // Fix common JSON issues: trailing commas
+    cleanedResponse = cleanedResponse
+      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas before } or ]
+      .trim()
 
-    // Parse JSON
-    const extractedData = JSON.parse(cleanedResponse)
+    // Parse JSON with better error handling
+    let extractedData
+    try {
+      extractedData = JSON.parse(cleanedResponse)
+    } catch (parseError) {
+      console.error('[AI Extraction] JSON Parse Error:', parseError)
+      console.error('[AI Extraction] Response length:', cleanedResponse.length)
+      console.error('[AI Extraction] Response preview:', cleanedResponse.substring(0, 500))
+      console.error('[AI Extraction] Response around error position:', cleanedResponse.substring(Math.max(0, 8700), Math.min(cleanedResponse.length, 8750)))
+      
+      // Try to fix common issues and retry
+      try {
+        // More aggressive cleaning: remove any text before first { and after last }
+        const firstBrace = cleanedResponse.indexOf('{')
+        const lastBrace = cleanedResponse.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          const jsonOnly = cleanedResponse.substring(firstBrace, lastBrace + 1)
+          extractedData = JSON.parse(jsonOnly)
+        } else {
+          throw parseError
+        }
+      } catch (retryError) {
+        throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}. Response may contain invalid JSON syntax.`)
+      }
+    }
 
     return { extractedData, rawResponse: rawExtraction }
   } catch (error) {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Upload, FileText, Loader2, CheckCircle, XCircle, Trash2, Eye, Sparkles } from 'lucide-react'
+import { Upload, FileText, Loader2, CheckCircle, XCircle, Trash2, Eye, Sparkles, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,7 @@ interface FileUploadPanelProps {
   onFilesUpload: (files: File[]) => Promise<void>
   onFileDelete: (fileId: string) => void
   onApplyFields: (fileId: string, fields: Record<string, any>) => Promise<void>
+  onApplyAll?: () => Promise<void>
   isProcessing?: boolean
 }
 
@@ -28,6 +29,7 @@ export function FileUploadPanel({
   onFilesUpload,
   onFileDelete,
   onApplyFields,
+  onApplyAll,
   isProcessing = false,
 }: FileUploadPanelProps) {
   const [isDragging, setIsDragging] = useState(false)
@@ -133,6 +135,22 @@ export function FileUploadPanel({
     await onApplyFields(fileId, fields)
   }
 
+  const handleQuickApply = async (fileId: string) => {
+    const file = files.find(f => f.extraction.id === fileId)
+    if (!file || file.displayStatus !== 'completed') return
+    
+    // Use reviewed_values if available, otherwise use extracted_values
+    const fields = (file.extraction.reviewed_values || file.extraction.extracted_values || {}) as Record<string, any>
+    
+    // Remove _grouped key if it exists as a top-level key (it's metadata)
+    const fieldsToApply = { ...fields }
+    if ('_grouped' in fieldsToApply && typeof fieldsToApply._grouped === 'object') {
+      // Keep _grouped for processing, but the API will handle it
+    }
+    
+    await onApplyFields(fileId, fieldsToApply)
+  }
+
   const reviewingFile = files.find(f => f.extraction.id === reviewingFileId)
   
   // Transform grouped extracted data into ReviewField format
@@ -140,13 +158,20 @@ export function FileUploadPanel({
     const values = (reviewingFile.extraction.reviewed_values || reviewingFile.extraction.extracted_values || {}) as Record<string, any>
     const fields: ReviewField[] = []
     
+    // Helper to check if value is valid (not null, undefined, empty, or "Unknown")
+    const isValidValue = (value: any): boolean => {
+      if (value === null || value === undefined || value === '') return false
+      if (typeof value === 'string' && value.trim().toLowerCase() === 'unknown') return false
+      return true
+    }
+    
     // Check if data is grouped (has _grouped property)
     if (values._grouped && typeof values._grouped === 'object') {
       // Process grouped data
       Object.entries(values._grouped as Record<string, any>).forEach(([groupKey, groupData]) => {
         if (groupData && typeof groupData === 'object') {
           Object.entries(groupData).forEach(([fieldKey, fieldValue]) => {
-            if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
+            if (isValidValue(fieldValue)) {
               fields.push({
                 key: `${groupKey}.${fieldKey}`,
                 label: fieldKey.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\b\w/g, l => l.toUpperCase()).trim(),
@@ -162,7 +187,7 @@ export function FileUploadPanel({
     } else {
       // Fallback: flat structure
       Object.entries(values)
-        .filter(([key, value]) => key !== '_grouped' && value !== null && value !== undefined && value !== '')
+        .filter(([key, value]) => key !== '_grouped' && isValidValue(value))
         .forEach(([key, value]) => {
           fields.push({
             key,
@@ -232,15 +257,29 @@ export function FileUploadPanel({
         </div>
 
         {files.length > 0 && (
-          <div className="mt-4 text-sm font-semibold text-foreground/70 px-1">
-            Uploaded Files ({files.length})
+          <div className="mt-4 flex items-center justify-between px-1">
+            <div className="text-sm font-semibold text-foreground/70">
+              Uploaded Files ({files.length})
+            </div>
+            {onApplyAll && files.some(f => f.displayStatus === 'completed') && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onApplyAll}
+                disabled={isProcessing}
+                className="h-7 text-xs gap-1.5"
+              >
+                <Sparkles className="h-3 w-3" />
+                Apply All
+              </Button>
+            )}
           </div>
         )}
       </div>
 
       {/* File List - Scrollable */}
       {files.length > 0 && (
-        <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-8 min-h-0 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {files.map((file) => (
             <div
               key={file.extraction.id}
@@ -258,40 +297,46 @@ export function FileUploadPanel({
                     <FileText className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium truncate">{file.extraction.filename}</h4>
-                        <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                          <span>{formatFileSize(file.extraction.file_size)}</span>
-                          {file.extraction.file_summary && typeof file.extraction.file_summary === 'object' && (file.extraction.file_summary as any).document_type && (
-                            <>
-                              <span>•</span>
-                              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                {(file.extraction.file_summary as any).document_type}
-                              </Badge>
-                            </>
-                          )}
-                          {file.extraction.review_status === 'reviewed' && (
-                            <>
-                              <span>•</span>
-                              <Badge variant="outline" className="text-xs px-1.5 py-0 border-green-500/50 text-green-700">
-                                Reviewed
-                              </Badge>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
+                    {/* Name, Review, Delete in same row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-medium truncate flex-1 min-w-0">{file.extraction.filename}</h4>
+                      <div className="flex gap-2 items-center flex-shrink-0">
                         {file.displayStatus === 'completed' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleReview(file.extraction.id)}
-                            className="h-8 px-3 bg-yellow-500 hover:bg-yellow-600 text-white"
-                            title="Review & Apply"
-                          >
-                            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                            Review
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleQuickApply(file.extraction.id)}
+                              className="h-8 w-8 p-0 text-primary hover:text-primary hover:bg-primary/10"
+                              title="Apply extracted fields"
+                              disabled={isProcessing}
+                            >
+                              <Zap className="h-4 w-4" />
+                            </Button>
+                            {file.extraction.review_status !== 'reviewed' && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs px-1.5 py-0 border-yellow-500/50 text-yellow-700 hover:bg-yellow-50 cursor-pointer"
+                                onClick={() => handleReview(file.extraction.id)}
+                                title="Click to review"
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Review
+                              </Badge>
+                            )}
+                            {file.extraction.review_status === 'reviewed' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleReview(file.extraction.id)}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                title="View/Edit reviewed fields"
+                                disabled={isProcessing}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </>
                         )}
                         <Button
                           size="sm"
@@ -303,6 +348,18 @@ export function FileUploadPanel({
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
+                    </div>
+                    {/* Metadata below */}
+                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <span>{formatFileSize(file.extraction.file_size)}</span>
+                      {file.extraction.file_summary && typeof file.extraction.file_summary === 'object' && (file.extraction.file_summary as any).document_type && (
+                        <>
+                          <span>•</span>
+                          <Badge variant="outline" className="text-xs px-1.5 py-0">
+                            {(file.extraction.file_summary as any).document_type}
+                          </Badge>
+                        </>
+                      )}
                     </div>
                     {/* Status */}
                     <div className={cn('flex items-center gap-2 mt-2', getStatusColor(file.displayStatus))}>

@@ -184,43 +184,55 @@ export function FoodSupplementForm({
 
           {/* Manufacturer Name - Full Width */}
           <div>
-            <Label htmlFor="manufacturerName">Manufacturer Name</Label>
+            <Label htmlFor="manufacturerName">Manufacturer Name *</Label>
             <Input
               id="manufacturerName"
               value={formData.manufacturerName}
               onChange={(e) => onChange({ manufacturerName: e.target.value })}
               placeholder="e.g., ABC Pharma Co."
+              className={cn(errors.manufacturerName && 'border-destructive')}
             />
+            {errors.manufacturerName && (
+              <p className="text-xs text-destructive mt-1">{errors.manufacturerName}</p>
+            )}
           </div>
 
           {/* CAS and FDA Numbers - Share Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* CAS Number */}
             <div className="flex flex-col">
-              <Label htmlFor="casNumber" className="mb-1 whitespace-nowrap">CAS Number</Label>
+              <Label htmlFor="casNumber" className="mb-1 whitespace-nowrap">CAS Number *</Label>
               <Input
                 id="casNumber"
                 value={formData.casNumber}
                 onChange={(e) => onChange({ casNumber: e.target.value })}
                 placeholder="e.g., 50-81-7"
+                className={cn(errors.casNumber && 'border-destructive')}
               />
+              {errors.casNumber && (
+                <p className="text-xs text-destructive mt-1">{errors.casNumber}</p>
+              )}
             </div>
 
             {/* FDA Number */}
             <div className="flex flex-col">
-              <Label htmlFor="fdaNumber" className="mb-1 whitespace-nowrap">FDA Number</Label>
+              <Label htmlFor="fdaNumber" className="mb-1 whitespace-nowrap">FDA Number *</Label>
               <Input
                 id="fdaNumber"
                 value={formData.fdaNumber}
                 onChange={(e) => onChange({ fdaNumber: e.target.value })}
                 placeholder="e.g., 21CFR182.8013"
+                className={cn(errors.fdaNumber && 'border-destructive')}
               />
+              {errors.fdaNumber && (
+                <p className="text-xs text-destructive mt-1">{errors.fdaNumber}</p>
+              )}
             </div>
           </div>
 
           {/* Category */}
           <div>
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">Category *</Label>
             <SearchableSelect
               value={formData.category}
               onValueChange={(value) => onChange({ category: value })}
@@ -228,14 +240,17 @@ export function FoodSupplementForm({
               placeholder="Select category"
               searchPlaceholder="Search categories..."
             />
+            {errors.category && (
+              <p className="text-xs text-destructive mt-1">{errors.category}</p>
+            )}
           </div>
 
           {/* Form & Grade */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col">
-              <Label htmlFor="form" className="mb-1 whitespace-nowrap">Physical Form</Label>
+              <Label htmlFor="form" className="mb-1 whitespace-nowrap">Physical Form *</Label>
               <Select value={formData.form} onValueChange={(value) => onChange({ form: value })}>
-                <SelectTrigger className="h-11 rounded-xl">
+                <SelectTrigger className={cn("h-11 rounded-xl", errors.form && 'border-destructive')}>
                   <SelectValue placeholder="Select form" />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,11 +261,14 @@ export function FoodSupplementForm({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.form && (
+                <p className="text-xs text-destructive mt-1">{errors.form}</p>
+              )}
             </div>
             <div className="flex flex-col">
-              <Label htmlFor="grade" className="mb-1 whitespace-nowrap">Grade</Label>
+              <Label htmlFor="grade" className="mb-1 whitespace-nowrap">Grade *</Label>
               <Select value={formData.grade} onValueChange={(value) => onChange({ grade: value })}>
-                <SelectTrigger className="h-11 rounded-xl">
+                <SelectTrigger className={cn("h-11 rounded-xl", errors.grade && 'border-destructive')}>
                   <SelectValue placeholder="Select grade" />
                 </SelectTrigger>
                 <SelectContent>
@@ -261,28 +279,40 @@ export function FoodSupplementForm({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.grade && (
+                <p className="text-xs text-destructive mt-1">{errors.grade}</p>
+              )}
             </div>
           </div>
 
           {/* Applications with Search */}
-          <SearchableMultiSelect
-            label="Applications"
-            options={FOOD_SUPPLEMENT_APPLICATIONS}
-            selected={formData.applications}
-            onChange={(selected) => onChange({ applications: selected })}
-            placeholder="Search applications..."
-          />
+          <div>
+            <SearchableMultiSelect
+              label="Applications *"
+              options={FOOD_SUPPLEMENT_APPLICATIONS}
+              selected={formData.applications}
+              onChange={(selected) => onChange({ applications: selected })}
+              placeholder="Search applications..."
+            />
+            {errors.applications && (
+              <p className="text-xs text-destructive mt-1">{errors.applications}</p>
+            )}
+          </div>
 
           {/* Description */}
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => onChange({ description: e.target.value })}
               placeholder="Brief product description..."
               rows={4}
+              className={cn(errors.description && 'border-destructive')}
             />
+            {errors.description && (
+              <p className="text-xs text-destructive mt-1">{errors.description}</p>
+            )}
           </div>
         </div>
       </section>
@@ -303,7 +333,7 @@ export function FoodSupplementForm({
         <div className="space-y-4">
           {/* Packaging Type */}
           <div>
-            <Label htmlFor="packagingType">Packaging Type</Label>
+            <Label htmlFor="packagingType">Packaging Type *</Label>
             <SearchableSelect
               value={formData.packagingType}
               onValueChange={(value) => onChange({ packagingType: value })}
@@ -311,24 +341,31 @@ export function FoodSupplementForm({
               placeholder="Select packaging"
               searchPlaceholder="Search packaging types..."
             />
+            {errors.packagingType && (
+              <p className="text-xs text-destructive mt-1">{errors.packagingType}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Net Weight */}
             <div className="flex flex-col">
-              <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package</Label>
+              <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package *</Label>
               <Input
                 id="netWeight"
                 value={formData.netWeight}
                 onChange={(e) => onChange({ netWeight: e.target.value })}
                 placeholder="e.g., 25kg per drum"
+                className={cn(errors.netWeight && 'border-destructive')}
               />
+              {errors.netWeight && (
+                <p className="text-xs text-destructive mt-1">{errors.netWeight}</p>
+              )}
             </div>
           </div>
 
           {/* Payment Terms */}
           <div>
-            <Label htmlFor="paymentTerms">Payment Terms</Label>
+            <Label htmlFor="paymentTerms">Payment Terms *</Label>
             <SearchableSelect
               value={formData.paymentTerms}
               onValueChange={(value) => onChange({ paymentTerms: value })}
@@ -336,13 +373,16 @@ export function FoodSupplementForm({
               placeholder="Select payment terms"
               searchPlaceholder="Search payment terms..."
             />
+            {errors.paymentTerms && (
+              <p className="text-xs text-destructive mt-1">{errors.paymentTerms}</p>
+            )}
           </div>
 
           {/* Incoterm */}
           <div>
-            <Label htmlFor="incoterm">Incoterm</Label>
+            <Label htmlFor="incoterm">Incoterm *</Label>
             <Select value={formData.incoterm} onValueChange={(value) => onChange({ incoterm: value })}>
-              <SelectTrigger className="h-11 rounded-xl">
+              <SelectTrigger className={cn("h-11 rounded-xl", errors.incoterm && 'border-destructive')}>
                 <SelectValue placeholder="Select incoterm" />
               </SelectTrigger>
               <SelectContent>
@@ -353,6 +393,9 @@ export function FoodSupplementForm({
                 ))}
               </SelectContent>
             </Select>
+            {errors.incoterm && (
+              <p className="text-xs text-destructive mt-1">{errors.incoterm}</p>
+            )}
           </div>
         </div>
       </section>
@@ -363,9 +406,9 @@ export function FoodSupplementForm({
         <div className="space-y-4">
           {/* Provide Sample */}
           <div>
-            <Label htmlFor="provideSample">Provide Sample</Label>
+            <Label htmlFor="provideSample">Provide Sample *</Label>
             <Select value={formData.provideSample} onValueChange={(value) => onChange({ provideSample: value })}>
-              <SelectTrigger className="h-11 rounded-xl">
+              <SelectTrigger className={cn("h-11 rounded-xl", errors.provideSample && 'border-destructive')}>
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
@@ -373,15 +416,18 @@ export function FoodSupplementForm({
                 <SelectItem value="no">No</SelectItem>
               </SelectContent>
             </Select>
+            {errors.provideSample && (
+              <p className="text-xs text-destructive mt-1">{errors.provideSample}</p>
+            )}
           </div>
 
           {formData.provideSample === 'yes' && (
             <>
               {/* Sample Type */}
               <div>
-                <Label htmlFor="sampleType">Sample Type</Label>
+                <Label htmlFor="sampleType">Sample Type *</Label>
                 <Select value={formData.sampleType} onValueChange={(value) => onChange({ sampleType: value })}>
-                  <SelectTrigger className="h-11 rounded-xl">
+                  <SelectTrigger className={cn("h-11 rounded-xl", errors.sampleType && 'border-destructive')}>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -392,11 +438,14 @@ export function FoodSupplementForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.sampleType && (
+                  <p className="text-xs text-destructive mt-1">{errors.sampleType}</p>
+                )}
               </div>
 
               {formData.sampleType.includes('Paid') && (
                 <div>
-                  <Label htmlFor="samplePrice">Sample Price (USD/kg)</Label>
+                  <Label htmlFor="samplePrice">Sample Price (USD/kg) *</Label>
                   <Input
                     id="samplePrice"
                     type="number"
@@ -404,13 +453,17 @@ export function FoodSupplementForm({
                     value={formData.samplePrice || ''}
                     onChange={(e) => onChange({ samplePrice: parseFloat(e.target.value) || null })}
                     placeholder="e.g., 5.00"
+                    className={cn(errors.samplePrice && 'border-destructive')}
                   />
+                  {errors.samplePrice && (
+                    <p className="text-xs text-destructive mt-1">{errors.samplePrice}</p>
+                  )}
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <Label htmlFor="sampleQuantity" className="mb-1 whitespace-nowrap">Sample Quantity (kg)</Label>
+                  <Label htmlFor="sampleQuantity" className="mb-1 whitespace-nowrap">Sample Quantity (kg) *</Label>
                   <Input
                     id="sampleQuantity"
                     type="number"
@@ -418,16 +471,24 @@ export function FoodSupplementForm({
                     value={formData.sampleQuantity || ''}
                     onChange={(e) => onChange({ sampleQuantity: parseFloat(e.target.value) || null })}
                     placeholder="e.g., 0.5"
+                    className={cn(errors.sampleQuantity && 'border-destructive')}
                   />
+                  {errors.sampleQuantity && (
+                    <p className="text-xs text-destructive mt-1">{errors.sampleQuantity}</p>
+                  )}
                 </div>
                 <div className="flex flex-col">
-                  <Label htmlFor="sampleLeadTime" className="mb-1 whitespace-nowrap">Sample Lead Time</Label>
+                  <Label htmlFor="sampleLeadTime" className="mb-1 whitespace-nowrap">Sample Lead Time *</Label>
                   <Input
                     id="sampleLeadTime"
                     value={formData.sampleLeadTime}
                     onChange={(e) => onChange({ sampleLeadTime: e.target.value })}
                     placeholder="e.g., 3-5 business days"
+                    className={cn(errors.sampleLeadTime && 'border-destructive')}
                   />
+                  {errors.sampleLeadTime && (
+                    <p className="text-xs text-destructive mt-1">{errors.sampleLeadTime}</p>
+                  )}
                 </div>
               </div>
             </>
@@ -516,7 +577,7 @@ export function FoodSupplementForm({
       />
 
       {/* Add More Fields Button */}
-      <section className="pb-8">
+      <section className="pb-4">
         <AddFieldsModal
           visibleFields={visibleTechnicalFields}
           onFieldsAdd={onAddFields}

@@ -39,6 +39,14 @@ const PRODUCT_DOCUMENT_TYPES = [
   'Quality_Certificate',
   // Compliance & Regulatory
   'Allergen_Statement',
+  'Irradiation_Statement',
+  'GMO_Statement',
+  'GMO_Free_Statement',
+  'Non_GMO_Statement',
+  'Prop65_Statement',
+  'Prop_65_Statement',
+  'California_Prop_65_Statement',
+  'Vegan_Statement',
   'Nutritional_Info',
   'Organic_Certificate',
   'Halal_Certificate',
@@ -74,7 +82,19 @@ export function ReviewFieldsModal({
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
   
   // Check if this is a non-product document (anything not in the product types list, including "Other")
-  const isNonProductDocument = documentType && !PRODUCT_DOCUMENT_TYPES.includes(documentType)
+  // Normalize document type for comparison (handle case, spaces, underscores)
+  const normalizeDocumentType = (type?: string): string => {
+    if (!type) return ''
+    return type
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '')
+  }
+  
+  const normalizedDocType = normalizeDocumentType(documentType)
+  const isNonProductDocument = documentType && !PRODUCT_DOCUMENT_TYPES.some(
+    productType => normalizeDocumentType(productType) === normalizedDocType
+  )
 
   useEffect(() => {
     if (isOpen && fields.length > 0) {
