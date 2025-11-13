@@ -8,6 +8,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAzure } from '@ai-sdk/azure'
 import { generateText } from 'ai'
+import { AzureOpenAI } from 'openai'
 import {
   extractDocumentContent,
   detectDocumentType
@@ -140,57 +141,146 @@ export async function runAIExtraction(
     }
   }
 
-  const azure = createAzure({
-    resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
-    apiKey: process.env.AZURE_OPENAI_API_KEY!,
-  })
-  
-  const model = azure(visionDeploymentName)
-
-  let userContent: any[] = []
-
-  // Add text content if available
-  if (context.extractedContent) {
-    userContent.push({
-      type: 'text' as const,
-      text: `Document content (extracted text):\n\n${context.extractedContent}`
-    })
-  }
-
-  // Add images for vision processing
-  if (context.needsVision && options.includeImages !== false) {
-    const base64Data = context.buffer.toString('base64')
-    const dataUrl = `data:${context.mimeType};base64,${base64Data}`
-    
-    userContent.push({
-      type: 'image' as const,
-      image: dataUrl
-    })
-  }
-
-  // If no content, just add a request for extraction
-  if (userContent.length === 0) {
-    userContent.push({
-      type: 'text' as const,
-      text: 'Please extract all relevant information from this document.'
-    })
-  }
+  const azureEndpoint = `https://${process.env.AZURE_OPENAI_RESOURCE_NAME}.openai.azure.com`
+  const azureApiKey = process.env.AZURE_OPENAI_API_KEY!
 
   try {
-    const { text: rawExtraction } = await generateText({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: options.systemPrompt
-        },
-        {
-          role: 'user',
-          content: userContent
-        }
-      ],
-      temperature: options.temperature ?? 0.1,
-    })
+    let rawExtraction: string
+
+    // Handle PDFs with Azure OpenAI Responses API (supports PDF natively)
+    if (context.mimeType === 'application/pdf') {
+      console.log(`[AI Extraction] Using Azure Responses API for PDF...`)
+      
+      // Initialize Azure OpenAI client
+      const openaiClient = new AzureOpenAI({
+        apiKey: azureApiKey,
+        endpoint: azureEndpoint,
+        apiVersion: '2024-12-01-preview'
+      })
+      
+      // Combine system and user prompts for the Responses API
+      const fullPrompt = `${options.systemPrompt}
+
+User Request: Analyze this document (${context.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema. Extract only information that is clearly visible in the document.`
+      
+      // Upload PDF file to Azure OpenAI
+      console.log(`[AI Extraction] Uploading PDF file...`)
+      const { Readable } = await import('stream')
+      const fileStream = Readable.from(context.buffer)
+      
+      const file = await openaiClient.files.create({
+        file: fileStream as any,
+        purpose: 'assistants',
+        filename: context.filename
+      })
+      
+      const fileId = file.id
+      console.log(`[AI Extraction] File uploaded with ID: ${fileId}`)
+      
+      // Call Azure OpenAI Responses API with file_id
+      console.log(`[AI Extraction] Calling Responses API...`)
+      const responsesResult = await openaiClient.responses.create({
+        model: visionDeploymentName,
+        input: [
+          {
+            type: "message",
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: fullPrompt
+              },
+              {
+                type: "input_file",
+                file_id: fileId
+              }
+            ]
+          }
+        ]
+      } as any)
+      
+      // Extract text from response
+      rawExtraction = (responsesResult as any).output?.[0]?.content?.[0]?.text 
+        || (responsesResult as any).output_text 
+        || ''
+      
+      console.log(`[AI Extraction] Responses API completed`)
+    } 
+    // Handle images with AI SDK (Chat Completions API)
+    else if (context.mimeType.startsWith('image/')) {
+      console.log(`[AI Extraction] Using Chat Completions API for image...`)
+      
+      const azure = createAzure({
+        resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
+        apiKey: azureApiKey,
+      })
+      
+      const model = azure(visionDeploymentName)
+      const base64Data = context.buffer.toString('base64')
+      const dataUrl = `data:${context.mimeType};base64,${base64Data}`
+      
+      const response = await generateText({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: options.systemPrompt
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Analyze this document (${context.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema.`
+              },
+              {
+                type: 'image' as const,
+                image: dataUrl
+              }
+            ]
+          }
+        ],
+        temperature: options.temperature ?? 0.1,
+        maxTokens: options.maxTokens ?? 4000,
+      })
+      
+      rawExtraction = response.text
+    }
+    // Handle text-based documents (DOCX, XLSX)
+    else if (context.extractedContent) {
+      console.log(`[AI Extraction] Using text extraction...`)
+      
+      const azure = createAzure({
+        resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
+        apiKey: azureApiKey,
+      })
+      
+      const model = azure(visionDeploymentName)
+      const userPrompt = `Analyze this document (${context.filename}) and extract all relevant information. First identify the document type, then extract data using the appropriate schema.
+
+=== Document Content ===
+${context.extractedContent}`
+      
+      const response = await generateText({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: options.systemPrompt
+          },
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        temperature: options.temperature ?? 0.1,
+        maxTokens: options.maxTokens ?? 4000,
+      })
+      
+      rawExtraction = response.text
+    } else {
+      return { error: 'No content available for extraction' }
+    }
 
     // Clean up response (remove markdown code blocks if present)
     let cleanedResponse = rawExtraction.trim()
@@ -312,4 +402,3 @@ export async function validateAuthentication(): Promise<
 
   return { user }
 }
-
