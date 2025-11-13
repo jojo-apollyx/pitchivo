@@ -23,6 +23,10 @@ export const DOCUMENT_TYPES = {
   COMPLIANCE_REGULATORY: [
     { code: 'Allergen_Statement', name: 'Allergen Statement', description: 'Allergen information and declarations' },
     { code: 'Vegan_Certificate', name: 'Vegan Certificate', description: 'Vegan certification or vegan statement' },
+    { code: 'Prop65_Statement', name: 'Prop 65 Statement', description: 'California Proposition 65 compliance statement' },
+    { code: 'Non_GMO_Statement', name: 'Non-GMO Statement', description: 'Non-GMO or GMO-free certification statement' },
+    { code: 'Irradiation_Statement', name: 'Irradiation Statement', description: 'Irradiation status or irradiation-free statement' },
+    { code: 'BSE_Statement', name: 'BSE/TSE Statement', description: 'BSE/TSE free statement or certification' },
     { code: 'Nutritional_Info', name: 'Nutritional Information', description: 'Nutritional facts and analysis' },
     { code: 'Organic_Certificate', name: 'Organic Certificate', description: 'Organic certification documents' },
     { code: 'Halal_Certificate', name: 'Halal Certificate', description: 'Halal certification' },
@@ -494,6 +498,16 @@ STEP 1: Identify the document type
 Use EXACTLY ONE of these document type codes based on the document content:
 
 ${validDocumentTypes.map(code => `- ${code}`).join('\n')}
+
+IMPORTANT: Distinguish between similar document types:
+- Prop65_Statement: Documents about California Proposition 65 compliance, warnings, or statements
+- Non_GMO_Statement: Documents about GMO-free or Non-GMO certification/statements
+- Irradiation_Statement: Documents about irradiation status, irradiation-free, or not irradiated statements
+- BSE_Statement: Documents about BSE/TSE (Bovine Spongiform Encephalopathy/TSE) free statements
+- Allergen_Statement: Documents about allergens (milk, eggs, nuts, soy, wheat, etc.)
+- Vegan_Certificate: Documents specifically about vegan certification, vegan statements, or plant-based/animal-free claims
+- Kosher_Certificate: Documents about kosher certification
+- Halal_Certificate: Documents about halal certification
 
 If the document doesn't fit any of these categories, use "Other".
 
