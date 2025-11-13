@@ -19,7 +19,7 @@ export function useProducts() {
 }
 
 // Fetch single product
-export function useProduct(id: string) {
+export function useProduct(id: string, options?: { refetchOnMount?: boolean; staleTime?: number }) {
   return useQuery({
     queryKey: queryKeys.products.detail(id),
     queryFn: async () => {
@@ -27,6 +27,8 @@ export function useProduct(id: string) {
       return data
     },
     enabled: !!id, // Only fetch if ID exists
+    refetchOnMount: options?.refetchOnMount ?? true, // Always refetch on mount to get latest data
+    staleTime: options?.staleTime ?? 0, // Consider data stale immediately (default: 0)
   })
 }
 

@@ -340,7 +340,10 @@ export default function PreviewPublishPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push(`/dashboard/products/create?productId=${productId}`)}
+                onClick={() => {
+                  // Force refresh when navigating back to form with cache-busting
+                  router.push(`/dashboard/products/create?productId=${productId}&_refresh=${Date.now()}`)
+                }}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>

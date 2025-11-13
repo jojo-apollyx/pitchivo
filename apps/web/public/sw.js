@@ -1,5 +1,5 @@
 // Service Worker for Pitchivo PWA
-const CACHE_VERSION = 'v6' // Bump this to force cache refresh
+const CACHE_VERSION = 'v7' // Bump this to force cache refresh (v7: exclude dashboard from caching)
 const STATIC_CACHE = `pitchivo-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `pitchivo-dynamic-${CACHE_VERSION}`
 const IMAGE_CACHE = `pitchivo-images-${CACHE_VERSION}`
@@ -11,7 +11,7 @@ const STATIC_ASSETS = [
   '/favicon.ico',
 ]
 
-// Routes that should NEVER be cached (auth, user data, etc.)
+// Routes that should NEVER be cached (auth, user data, dynamic pages, etc.)
 const NEVER_CACHE = [
   '/auth/', // Auth callbacks
   '/rest/v1/user_profiles', // User profiles from Supabase
@@ -19,6 +19,8 @@ const NEVER_CACHE = [
   'supabase.co/auth/', // Supabase auth endpoints
   'supabase.co/rest/', // Supabase REST API
   '/storage/v1/object/sign', // Signed URLs
+  '/dashboard/', // All dashboard pages (dynamic, user-specific data)
+  '/api/', // All API routes (dynamic data)
 ]
 
 // Check if URL should never be cached
@@ -145,20 +147,42 @@ async function cacheFirst(request) {
 
 // Network first strategy - always fetch fresh data
 async function networkFirst(request) {
+  const url = new URL(request.url)
+  
+  // For dashboard and API routes, always fetch fresh and never cache
+  if (url.pathname.startsWith('/dashboard/') || url.pathname.startsWith('/api/')) {
+    try {
+      const networkResponse = await fetch(request, {
+        cache: 'no-store', // Force no caching
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      })
+      return networkResponse
+    } catch (error) {
+      // For dashboard pages, don't fallback to cache - show error instead
+      throw error
+    }
+  }
+  
+  // For other pages, use network-first with cache fallback
   try {
     const networkResponse = await fetch(request)
     
-    // Only cache successful responses
-    if (networkResponse.ok) {
+    // Only cache successful responses (but not dashboard/API)
+    if (networkResponse.ok && !url.pathname.startsWith('/dashboard/') && !url.pathname.startsWith('/api/')) {
       const cache = await caches.open(DYNAMIC_CACHE)
       cache.put(request, networkResponse.clone())
     }
     return networkResponse
   } catch (error) {
-    // Fallback to cache only for navigation requests
-    const cachedResponse = await caches.match(request)
-    if (cachedResponse) {
-      return cachedResponse
+    // Fallback to cache only for non-dashboard navigation requests
+    if (!url.pathname.startsWith('/dashboard/') && !url.pathname.startsWith('/api/')) {
+      const cachedResponse = await caches.match(request)
+      if (cachedResponse) {
+        return cachedResponse
+      }
     }
     throw error
   }

@@ -78,10 +78,11 @@ export const productPublishSchema = z.object({
   payment_terms: z.string().optional(),
   incoterm: z.string().optional(),
   
-  // Provide sample - must be 'yes' or 'no'
+  // Provide sample - must be 'yes' or 'no' (required)
   provide_sample: z
     .enum(['yes', 'no'], {
-      errorMap: () => ({ message: 'Please specify if you provide samples' }),
+      required_error: 'Please specify if you provide samples',
+      invalid_type_error: 'Please specify if you provide samples',
     }),
   
   // Product images - at least one required
@@ -100,6 +101,18 @@ export const productPublishSchema = z.object({
   sample_price: z.union([z.string(), z.number()]).optional(),
   sample_quantity: z.union([z.string(), z.number()]).optional(),
   sample_lead_time: z.string().optional(),
+  
+  // Inventory locations - at least one required
+  inventory_locations: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        country: z.string(),
+        city: z.string(),
+        quantity: z.number().optional(),
+      })
+    )
+    .min(1, 'At least one inventory location is required'),
 }).refine(
   (data) => {
     // If provide_sample is 'yes', validate sample fields
@@ -209,6 +222,7 @@ const fieldNameMap: Record<string, string> = {
   tds_file: 'tdsFile',
   msds_file: 'msdsFile',
   spec_sheet: 'specSheet',
+  inventory_locations: 'inventoryLocation',
 }
 
 /**
@@ -254,7 +268,14 @@ export function validateProductForPublish(
       net_weight: (data as any).netWeight || data.net_weight || '',
       payment_terms: (data as any).paymentTerms || data.payment_terms || '',
       incoterm: (data as any).incoterm || data.incoterm || '',
-      provide_sample: (data as any).provideSample || data.provide_sample || 'no',
+      // Check for provide_sample - if it's empty string, null, or undefined, set to undefined for validation
+      provide_sample: (() => {
+        const value = (data as any).provideSample || data.provide_sample
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          return undefined
+        }
+        return value
+      })(),
       sample_type: (data as any).sampleType || data.sample_type,
       sample_price: (data as any).samplePrice || data.sample_price,
       sample_quantity: (data as any).sampleQuantity || data.sample_quantity,
@@ -264,6 +285,8 @@ export function validateProductForPublish(
       tds_file: (data as any).tdsFile || data.tds_file || '',
       msds_file: (data as any).msdsFile || data.msds_file || '',
       spec_sheet: (data as any).specSheet || data.spec_sheet || '',
+      // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
+      inventory_locations: (data as any).inventoryLocation || data.inventory_locations || [],
     }
     
     // Validate documents - at least one document is required

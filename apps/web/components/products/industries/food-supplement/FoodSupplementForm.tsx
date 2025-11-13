@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2, Upload, X, Loader2, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,8 +59,66 @@ export function FoodSupplementForm({
   visibleTechnicalFields = new Set(),
   onAddFields = () => {},
 }: FoodSupplementFormProps) {
-  const [imagePreview, setImagePreview] = useState<string[]>([])
+  // Initialize imagePreview from formData.product_images (which may be base64 strings or File objects)
+  const [imagePreview, setImagePreview] = useState<string[]>(() => {
+    if (formData.product_images && formData.product_images.length > 0) {
+      return formData.product_images.map((img: any) => {
+        if (img instanceof File) {
+          // File object - will be converted to preview when component mounts
+          return ''
+        } else if (typeof img === 'string') {
+          // Already a base64 string or URL
+          return img
+        }
+        return ''
+      }).filter(Boolean)
+    }
+    return []
+  })
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+
+  // Restore image previews when formData.product_images changes (e.g., when loading from saved product)
+  useEffect(() => {
+    const productImages = formData.product_images || []
+    if (productImages.length > 0) {
+      setImagePreview((prev) => {
+        const newPreviews: string[] = []
+        
+        // First, add existing previews that still match current images
+        productImages.forEach((img: any, index: number) => {
+          if (img instanceof File) {
+            // Convert File to preview
+            const reader = new FileReader()
+            reader.onloadend = () => {
+              setImagePreview((current) => {
+                const updated = [...current]
+                if (index < updated.length) {
+                  updated[index] = reader.result as string
+                } else {
+                  updated.push(reader.result as string)
+                }
+                return updated
+              })
+            }
+            reader.readAsDataURL(img)
+            // Use existing preview at this index if available
+            if (prev[index]) {
+              newPreviews.push(prev[index])
+            }
+          } else if (typeof img === 'string') {
+            // Base64 string or URL - use directly
+            newPreviews.push(img)
+          }
+        })
+        
+        // If we have new previews, use them; otherwise keep existing
+        return newPreviews.length > 0 ? newPreviews : prev
+      })
+    } else if (productImages.length === 0) {
+      // Clear previews if images array is empty
+      setImagePreview([])
+    }
+  }, [formData.product_images])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -79,6 +137,7 @@ export function FoodSupplementForm({
     const newImages = (formData.product_images || []).filter((_: any, i: number) => i !== index)
     const newPreviews = imagePreview.filter((_, i) => i !== index)
     onChange({ product_images: newImages } as any)
+    // Update previews to match the new images array
     setImagePreview(newPreviews)
   }
 
@@ -675,7 +734,10 @@ export function FoodSupplementForm({
 
       {/* Section 6: Inventory */}
       <section className="pb-8 border-b border-border/30">
-        <h2 className="text-lg font-semibold mb-4">Warehouse Inventory</h2>
+        <h2 className="text-lg font-semibold mb-4">Warehouse Inventory *</h2>
+        {errors.inventoryLocation && (
+          <p className="text-xs text-destructive mb-2">{errors.inventoryLocation}</p>
+        )}
         <div className="space-y-3">
           {locationsWithId.map((location: any) => (
             <div key={location.id} className="flex gap-3 items-end">

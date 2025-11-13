@@ -27,6 +27,8 @@ import type { FoodSupplementProductData } from '@/components/products/industries
 import { cn } from '@/lib/utils'
 import { useProduct } from '@/lib/api/products'
 import { productPublishSchema, validateProductForPublish } from './validation'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/api/client'
 
 const initialFormData: FoodSupplementProductData & { inventoryLocation?: any[] } = {
   // Core Product Information
@@ -125,12 +127,37 @@ export default function CreateProductPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const urlProductId = searchParams.get('productId')
+  const queryClient = useQueryClient()
+  
   const [formData, setFormData] = useState<FoodSupplementProductData>(initialFormData)
   const [uploadedFiles, setUploadedFiles] = useState<FileWithExtraction[]>([])
   const [productId, setProductId] = useState<string | null>(urlProductId) // Track product ID for updates
   
-  // Load product data if editing
-  const { data: productData, isLoading: isLoadingProduct } = useProduct(urlProductId || '')
+  // Load product data if editing - force refetch to get latest draft
+  const { data: productData, isLoading: isLoadingProduct, refetch: refetchProduct } = useProduct(urlProductId || '', {
+    refetchOnMount: true, // Always refetch when component mounts
+    staleTime: 0, // Consider data stale immediately
+  })
+  
+  // Force refresh when navigating back from preview to ensure fresh data
+  useEffect(() => {
+    // Check if we're coming back from preview (has productId in URL)
+    if (urlProductId) {
+      // Force refetch product data to get latest draft
+      refetchProduct()
+      
+      // Clear any cached page data and force fresh load
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        caches.keys().then((cacheNames) => {
+          cacheNames.forEach((cacheName) => {
+            if (cacheName.includes('pitchivo-dynamic')) {
+              caches.delete(cacheName)
+            }
+          })
+        })
+      }
+    }
+  }, [urlProductId, refetchProduct])
   
   // Helper to check if a value is meaningful (not empty, null, undefined, or "Unknown")
   const hasMeaningfulValue = (value: any): boolean => {
@@ -141,29 +168,35 @@ export default function CreateProductPage() {
     return true
   }
 
-  // Load product data into form when product is fetched
+  // Load product data into form when product is fetched (from saved draft)
   useEffect(() => {
     if (productData && productData.product_data) {
       const productDataObj = typeof productData.product_data === 'string' 
         ? JSON.parse(productData.product_data) 
         : productData.product_data
       
-      // Merge product data into form
-      setFormData((prev) => ({
-        ...prev,
+      // Restore images from base64 strings (they're stored as base64 in product_data)
+      // Images are stored as base64 strings, so we can use them directly
+      const restoredImages = productDataObj.product_images || []
+      
+      // Load all data from saved draft
+      const mergedData = {
         ...productDataObj,
+        // Restore images (they're already base64 strings, which work for preview)
+        product_images: restoredImages,
         // Override with extracted columns if they exist
-        product_name: productData.product_name || prev.product_name,
-        origin_country: productData.origin_country || prev.origin_country,
-        manufacturer_name: productData.manufacturer_name || prev.manufacturer_name,
-        category: productData.category || prev.category,
-        form: productData.form || prev.form,
-        grade: productData.grade || prev.grade,
-        applications: productData.applications || prev.applications,
+        product_name: productData.product_name || productDataObj.product_name,
+        origin_country: productData.origin_country || productDataObj.origin_country,
+        manufacturer_name: productData.manufacturer_name || productDataObj.manufacturer_name,
+        category: productData.category || productDataObj.category,
+        form: productData.form || productDataObj.form,
+        grade: productData.grade || productDataObj.grade,
+        applications: productData.applications || productDataObj.applications,
         // Map inventory_locations (snake_case from DB) to inventoryLocation (camelCase for frontend)
         inventoryLocation: (productDataObj.inventory_locations || productDataObj.inventoryLocation || []) as any,
-      }))
+      }
       
+      setFormData((prev) => ({ ...prev, ...mergedData }))
       setProductId(productData.product_id)
       
       // Restore uploaded files from product_data.uploaded_files
@@ -230,7 +263,7 @@ export default function CreateProductPage() {
       setVisibleTechnicalFields(newVisibleFields)
     }
   }, [productData])
-
+  
   // Helper to deduplicate files by extraction.id
   const deduplicateFiles = (files: FileWithExtraction[]): FileWithExtraction[] => {
     const seen = new Map<string, FileWithExtraction>()
@@ -272,6 +305,27 @@ export default function CreateProductPage() {
 
   const handleFormChange = useCallback((updates: Partial<FoodSupplementProductData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))
+    
+    // Clear errors for fields that are being updated
+    setFormErrors((prevErrors) => {
+      const newErrors = { ...prevErrors }
+      Object.keys(updates).forEach((key) => {
+        // Map camelCase to snake_case for error keys
+        const errorKey = key
+        // Also check for mapped error keys
+        const mappedKeys = [
+          key,
+          key.replace(/([A-Z])/g, '_$1').toLowerCase(), // camelCase to snake_case
+          key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()).replace(/^./, (letter) => letter.toLowerCase()), // snake_case to camelCase
+        ]
+        mappedKeys.forEach((k) => {
+          if (newErrors[k]) {
+            delete newErrors[k]
+          }
+        })
+      })
+      return newErrors
+    })
   }, [])
 
   const handleFilesUpload = useCallback(async (files: File[]) => {
@@ -870,9 +924,9 @@ export default function CreateProductPage() {
           }
         })
 
-        // Apply updates to form data
-        setFormData((prev) => ({ ...prev, ...updates }))
-        setVisibleTechnicalFields(newVisibleFields)
+      // Apply updates to form data
+      setFormData((prev) => ({ ...prev, ...updates }))
+      setVisibleTechnicalFields(newVisibleFields)
         
         toast.success('Fields merged and applied successfully', { icon: '✨' })
       } catch (error) {
@@ -1096,12 +1150,43 @@ export default function CreateProductPage() {
     }
   }, [uploadedFiles, formData, visibleTechnicalFields, hasMeaningfulValue])
 
+  // Helper function to convert File objects to base64 strings for persistence
+  const convertImagesToBase64 = async (images: any[]): Promise<string[]> => {
+    const base64Images: string[] = []
+    for (const image of images) {
+      if (image instanceof File) {
+        // Convert File to base64
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            const result = reader.result as string
+            resolve(result)
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(image)
+        })
+        base64Images.push(base64)
+      } else if (typeof image === 'string') {
+        // Already a string (URL or base64), keep as is
+        base64Images.push(image)
+      }
+    }
+    return base64Images
+  }
+
   const handleSaveDraft = async () => {
     setIsSaving(true)
     try {
+      // Convert File images to base64 for persistence
+      const productImagesBase64 = formData.product_images && formData.product_images.length > 0
+        ? await convertImagesToBase64(formData.product_images)
+        : []
+      
       // Prepare product data for save - map camelCase to snake_case for database
       const productDataForSave = {
         ...formData,
+        // Save images as base64 strings for persistence
+        product_images: productImagesBase64,
         // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
         inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
         // Attach all uploaded files (regardless of analysis status)
@@ -1161,7 +1246,11 @@ export default function CreateProductPage() {
       
       // Store product_id for future updates
       if (result.product?.product_id) {
-        setProductId(result.product.product_id)
+        const savedId = result.product.product_id
+        setProductId(savedId)
+        
+        // Invalidate the product cache to force refetch when coming back
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(savedId) })
       }
 
       toast.success('Product saved as draft')
@@ -1223,9 +1312,16 @@ export default function CreateProductPage() {
 
     setIsPublishing(true)
     try {
+      // Convert File images to base64 for persistence
+      const productImagesBase64 = formData.product_images && formData.product_images.length > 0
+        ? await convertImagesToBase64(formData.product_images)
+        : []
+      
       // Prepare product data for save - map camelCase to snake_case for database
       const productDataForSave = {
         ...formData,
+        // Save images as base64 strings for persistence
+        product_images: productImagesBase64,
         // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
         inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
         // Attach all uploaded files (regardless of analysis status)
@@ -1290,6 +1386,11 @@ export default function CreateProductPage() {
       if (result.product?.product_id) {
         savedProductId = result.product.product_id
         setProductId(savedProductId)
+        
+        // Invalidate the product cache to force refetch when coming back
+        if (savedProductId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(savedProductId) })
+        }
       }
 
       // Navigate to preview-publish page instead of directly publishing
