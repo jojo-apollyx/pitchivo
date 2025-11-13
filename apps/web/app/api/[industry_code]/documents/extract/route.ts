@@ -70,8 +70,9 @@ export async function POST(
     // Prepare document for extraction (shared logic)
     const prepareResult = await prepareDocumentForExtraction(fileId)
     if ('error' in prepareResult) {
+      console.error(`[${industry_code}] Prepare error:`, prepareResult.error)
       return NextResponse.json(
-        { error: prepareResult.error },
+        { error: 'Failed to prepare document for analysis. Please try again or contact support if the issue persists.' },
         { status: prepareResult.status }
       )
     }
@@ -86,9 +87,10 @@ export async function POST(
     })
 
     if ('error' in extractionResult) {
+      console.error(`[${industry_code}] Extraction error:`, extractionResult.error)
       await handleExtractionError(fileId, extractionResult.error)
       return NextResponse.json(
-        { error: extractionResult.error },
+        { error: 'Unable to analyze document. The file may be corrupted or in an unsupported format. Please try a different file.' },
         { status: 500 }
       )
     }
@@ -101,8 +103,9 @@ export async function POST(
     )
 
     if (!saveResult.success) {
+      console.error(`[${industry_code}] Save error:`, saveResult.error)
       return NextResponse.json(
-        { error: saveResult.error || 'Failed to save results' },
+        { error: 'Analysis completed but failed to save results. Please try again.' },
         { status: 500 }
       )
     }
@@ -116,19 +119,19 @@ export async function POST(
 
   } catch (error) {
     console.error(`[Industry: ${industry_code}] Extraction error:`, error)
+    console.error('Error details:', error instanceof Error ? error.stack : error)
     
     const body = await request.json().catch(() => ({}))
     if (body.fileId) {
       await handleExtractionError(
         body.fileId,
-        error instanceof Error ? error : 'Unknown error occurred'
+        error instanceof Error ? error.message : 'Unknown error occurred'
       )
     }
 
     return NextResponse.json(
       {
-        error: 'Failed to extract document data',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'An unexpected error occurred while analyzing the document. Please try again or contact support if the issue persists.'
       },
       { status: 500 }
     )

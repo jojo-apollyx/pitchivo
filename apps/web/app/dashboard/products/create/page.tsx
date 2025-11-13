@@ -308,7 +308,8 @@ export default function CreateProductPage() {
 
         if (!uploadResponse.ok) {
           const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }))
-          const errorMessage = errorData.error || `Upload failed with status ${uploadResponse.status}`
+          console.error('Upload error:', errorData)
+          const errorMessage = errorData.error || 'Upload failed. Please try again.'
           throw new Error(errorMessage)
         }
 
@@ -414,8 +415,9 @@ export default function CreateProductPage() {
         })
 
         if (!extractResponse.ok) {
-          const errorData = await extractResponse.json().catch(() => ({ error: 'Extraction failed' }))
-          const errorMessage = errorData.error || errorData.details || `Extraction failed with status ${extractResponse.status}`
+          const errorData = await extractResponse.json().catch(() => ({ error: 'Analysis failed' }))
+          console.error('Extraction error:', errorData)
+          const errorMessage = errorData.error || 'Unable to analyze document. Please try again.'
           
           // Update UI with error state immediately
           setUploadedFiles((prev) =>
@@ -629,8 +631,9 @@ export default function CreateProductPage() {
       })
 
       if (!extractResponse.ok) {
-        const errorData = await extractResponse.json().catch(() => ({ error: 'Extraction failed' }))
-        const errorMessage = errorData.error || errorData.details || `Extraction failed with status ${extractResponse.status}`
+        const errorData = await extractResponse.json().catch(() => ({ error: 'Analysis failed' }))
+        console.error('Retry extraction error:', errorData)
+        const errorMessage = errorData.error || 'Unable to analyze document. Please try again.'
         
         setUploadedFiles((prev) =>
           prev.map((f) =>
@@ -647,7 +650,7 @@ export default function CreateProductPage() {
               : f
           )
         )
-        toast.error(`Retry failed: ${errorMessage}`)
+        toast.error(`Analysis failed: ${errorMessage}`)
         return
       }
 
@@ -1058,6 +1061,14 @@ export default function CreateProductPage() {
         ...formData,
         // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
         inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
+        // Attach all uploaded files (regardless of analysis status)
+        uploaded_files: uploadedFiles.map(f => ({
+          file_id: f.extraction.id,
+          filename: f.extraction.filename,
+          mime_type: f.extraction.mime_type,
+          analysis_status: f.extraction.analysis_status,
+          uploaded_at: f.extraction.created_at,
+        }))
       }
       // Remove camelCase version if it exists
       if ((productDataForSave as any).inventoryLocation) {
@@ -1174,6 +1185,14 @@ export default function CreateProductPage() {
         ...formData,
         // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
         inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
+        // Attach all uploaded files (regardless of analysis status)
+        uploaded_files: uploadedFiles.map(f => ({
+          file_id: f.extraction.id,
+          filename: f.extraction.filename,
+          mime_type: f.extraction.mime_type,
+          analysis_status: f.extraction.analysis_status,
+          uploaded_at: f.extraction.created_at,
+        }))
       }
       // Remove camelCase version if it exists
       if ((productDataForSave as any).inventoryLocation) {

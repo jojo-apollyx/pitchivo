@@ -163,8 +163,7 @@ export async function POST(request: NextRequest) {
         storagePath: storagePath
       })
       return NextResponse.json({ 
-        error: 'Failed to upload file to storage',
-        details: uploadError.message || 'Storage upload failed. Please check if the documents bucket exists and has proper permissions. If uploading images, ensure the bucket allows image MIME types.'
+        error: 'Failed to upload file. Please check your file and try again. If the problem persists, contact support.'
       }, { status: 500 })
     }
 
@@ -186,11 +185,11 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error('Insert error:', insertError)
+      console.error('Insert error details:', insertError.message, insertError)
       // Clean up uploaded file
       await supabase.storage.from('documents').remove([storagePath])
       return NextResponse.json({ 
-        error: 'Failed to create extraction record',
-        details: insertError.message || 'Database insert failed. Please check the document_extractions table schema.'
+        error: 'File uploaded but failed to register in the system. Please try again.'
       }, { status: 500 })
     }
 

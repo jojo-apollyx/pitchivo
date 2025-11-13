@@ -267,23 +267,22 @@ export function validateProductForPublish(
     }
     
     // Validate documents - at least one document is required
-    // Check both direct file fields and uploaded files
+    // Check both direct file fields and uploaded files (any status is acceptable)
     const hasDirectDocument = 
       (dataForValidation.coa_file && dataForValidation.coa_file.trim() !== '') ||
       (dataForValidation.tds_file && dataForValidation.tds_file.trim() !== '') ||
       (dataForValidation.msds_file && dataForValidation.msds_file.trim() !== '') ||
       (dataForValidation.spec_sheet && dataForValidation.spec_sheet.trim() !== '')
     
-    // Check if there are any reviewed uploaded files
-    const hasUploadedDocument = uploadedFiles?.some(
-      (file) => file.extraction.review_status === 'reviewed'
-    ) || false
+    // Check if there are any uploaded files (regardless of analysis or review status)
+    // Files are now attached to products whether analysis succeeds or fails
+    const hasUploadedDocument = uploadedFiles && uploadedFiles.length > 0
     
     if (!hasDirectDocument && !hasUploadedDocument) {
       return {
         isValid: false,
         errors: {
-          documents: 'At least one document (COA, TDS, MSDS, or Spec Sheet) is required',
+          documents: 'At least one document is required. Please upload a file.',
         },
       }
     }

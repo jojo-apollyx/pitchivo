@@ -384,32 +384,6 @@ export interface Database {
           updated_at?: string
         }
       }
-      product_field_applications: {
-        Row: {
-          id: string
-          product_id: string
-          file_id: string
-          fields_applied: string[]
-          applied_by: string
-          applied_at: string
-        }
-        Insert: {
-          id?: string
-          product_id: string
-          file_id: string
-          fields_applied?: string[]
-          applied_by: string
-          applied_at?: string
-        }
-        Update: {
-          id?: string
-          product_id?: string
-          file_id?: string
-          fields_applied?: string[]
-          applied_by?: string
-          applied_at?: string
-        }
-      }
     }
     Views: {
       user_profile_with_org: {
@@ -552,7 +526,6 @@ export type Industry = Database['public']['Tables']['industries']['Row']
 export type ProductTemplate = Database['public']['Tables']['product_templates']['Row']
 export type Product = Database['public']['Tables']['products']['Row']
 export type DocumentExtraction = Database['public']['Tables']['document_extractions']['Row']
-export type ProductFieldApplication = Database['public']['Tables']['product_field_applications']['Row']
 
 export type UserProfileWithOrg = Database['public']['Views']['user_profile_with_org']['Row']
 export type OrganizationMember = Database['public']['Views']['organization_members']['Row']
