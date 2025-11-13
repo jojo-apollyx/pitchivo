@@ -165,7 +165,7 @@ export default function CreateProductPage() {
       
       setProductId(productData.product_id)
       
-      // Show visible technical fields that have values
+      // Show visible technical fields that have values when loading existing product
       const newVisibleFields = new Set<string>()
       const technicalFields = [
         'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
@@ -174,9 +174,13 @@ export default function CreateProductPage() {
         'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
         'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
         'particle_size', 'einecs', 'fda_number', 'allergen_info',
-        'gmo_status', 'irradiation_status', 'bse_statement'
+        'gmo_status', 'irradiation_status', 'bse_statement', 'coliforms',
+        'heavy_metals_total', 'halal_certified', 'kosher_certified', 'organic_certification_body',
+        'gross_weight', 'packages_per_pallet', 'storage_temperature', 'sample_availability',
+        'shelf_life'
       ]
       
+      // Only show fields that have meaningful values when loading existing product
       technicalFields.forEach((field) => {
         const value = productDataObj[field]
         if (hasMeaningfulValue(value)) {
@@ -223,26 +227,9 @@ export default function CreateProductPage() {
     })
   }, [formData, setValue])
 
-  // Clean up visibleFields based on current form data values
-  // Remove fields that have empty/unknown values
-  const cleanedVisibleFields = useMemo(() => {
-    const cleaned = new Set<string>()
-    visibleTechnicalFields.forEach((fieldName) => {
-      const fieldValue = formData[fieldName as keyof FoodSupplementProductData]
-      if (hasMeaningfulValue(fieldValue)) {
-        // Additional check for status fields
-        if (fieldName === 'gmoStatus' || fieldName === 'irradiationStatus') {
-          const strValue = String(fieldValue).trim().toLowerCase()
-          if (strValue !== 'unknown') {
-            cleaned.add(fieldName)
-          }
-        } else {
-          cleaned.add(fieldName)
-        }
-      }
-    })
-    return cleaned
-  }, [formData, visibleTechnicalFields])
+  // Note: We no longer filter visible fields based on values
+  // Users should be able to add empty fields and fill them in
+  // Only filter empty/unknown values when merging from documents
 
   const handleFormChange = useCallback((updates: Partial<FoodSupplementProductData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))
@@ -807,46 +794,38 @@ export default function CreateProductPage() {
         const updates: Partial<FoodSupplementProductData> = {}
         const newVisibleFields = new Set<string>(visibleTechnicalFields)
 
-        // Directly apply snake_case merged data
-        // The merge API now returns snake_case fields matching PRODUCT_FIELDS
+        // List of technical fields that can be shown
+        const technicalFields = [
+          'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
+          'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
+          'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
+          'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
+          'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
+          'particle_size', 'einecs', 'fda_number', 'allergen_info',
+          'gmo_status', 'irradiation_status', 'bse_statement', 'coliforms',
+          'heavy_metals_total', 'halal_certified', 'kosher_certified', 'organic_certification_body',
+          'gross_weight', 'packages_per_pallet', 'storage_temperature', 'sample_availability',
+          'shelf_life'
+        ]
+
+        // Apply merged data and add fields with meaningful values to visible set
         Object.entries(mergedFields).forEach(([key, value]) => {
-          if (value !== null && value !== undefined && value !== '') {
-            // Apply the field directly (already in snake_case)
+          // Always apply the value to form data
+          if (value !== null && value !== undefined) {
             (updates as any)[key] = value
-            
-            // Add technical fields to visible set
-            const technicalFields = [
-              'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
-              'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
-              'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
-              'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
-              'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
-              'particle_size', 'einecs', 'fda_number', 'allergen_info',
-              'gmo_status', 'irradiation_status', 'bse_statement'
-            ]
-            
-            if (technicalFields.includes(key)) {
-              newVisibleFields.add(key)
-            }
+          }
+          
+          // Only add to visible fields if:
+          // 1. It's a technical field, AND
+          // 2. It has a meaningful value (not empty/unknown/etc)
+          if (technicalFields.includes(key) && hasMeaningfulValue(value)) {
+            newVisibleFields.add(key)
           }
         })
 
         // Apply updates to form data
-        setFormData((prev) => {
-          const updatedData = { ...prev, ...updates }
-          
-          // Clean up visibleFields: remove fields that have empty/unknown values
-          const cleanedVisibleFields = new Set<string>()
-          newVisibleFields.forEach((fieldName) => {
-            const fieldValue = updatedData[fieldName as keyof FoodSupplementProductData]
-            if (hasMeaningfulValue(fieldValue)) {
-              cleanedVisibleFields.add(fieldName)
-            }
-          })
-          
-          setVisibleTechnicalFields(cleanedVisibleFields)
-          return updatedData
-        })
+        setFormData((prev) => ({ ...prev, ...updates }))
+        setVisibleTechnicalFields(newVisibleFields)
         
         toast.success('Fields merged and applied successfully', { icon: '✨' })
       } catch (error) {
@@ -1030,42 +1009,38 @@ export default function CreateProductPage() {
       const updates: Partial<FoodSupplementProductData> = {}
       const newVisibleFields = new Set<string>(visibleTechnicalFields)
 
+      // List of technical fields that can be shown
+      const technicalFields = [
+        'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
+        'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
+        'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
+        'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
+        'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
+        'particle_size', 'einecs', 'fda_number', 'allergen_info',
+        'gmo_status', 'irradiation_status', 'bse_statement', 'coliforms',
+        'heavy_metals_total', 'halal_certified', 'kosher_certified', 'organic_certification_body',
+        'gross_weight', 'packages_per_pallet', 'storage_temperature', 'sample_availability',
+        'shelf_life'
+      ]
+
+      // Apply merged data and add fields with meaningful values to visible set
       Object.entries(mergedFields).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
+        // Always apply the value to form data
+        if (value !== null && value !== undefined) {
           (updates as any)[key] = value
-          
-          // Add technical fields to visible set
-          const technicalFields = [
-            'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
-            'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
-            'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
-            'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
-            'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
-            'particle_size', 'einecs', 'fda_number', 'allergen_info',
-            'gmo_status', 'irradiation_status', 'bse_statement'
-          ]
-          
-          if (technicalFields.includes(key)) {
-            newVisibleFields.add(key)
-          }
+        }
+        
+        // Only add to visible fields if:
+        // 1. It's a technical field, AND
+        // 2. It has a meaningful value (not empty/unknown/etc)
+        if (technicalFields.includes(key) && hasMeaningfulValue(value)) {
+          newVisibleFields.add(key)
         }
       })
 
       // Apply updates
-      setFormData((prev) => {
-        const updatedData = { ...prev, ...updates }
-        
-        const cleanedVisibleFields = new Set<string>()
-        newVisibleFields.forEach((fieldName) => {
-          const fieldValue = updatedData[fieldName as keyof FoodSupplementProductData]
-          if (hasMeaningfulValue(fieldValue)) {
-            cleanedVisibleFields.add(fieldName)
-          }
-        })
-        
-        setVisibleTechnicalFields(cleanedVisibleFields)
-        return updatedData
-      })
+      setFormData((prev) => ({ ...prev, ...updates }))
+      setVisibleTechnicalFields(newVisibleFields)
       
       toast.success(`Successfully merged data from ${completedFiles.length} file(s)`, { icon: '✨' })
     } catch (error) {
@@ -1336,7 +1311,7 @@ export default function CreateProductPage() {
                 <FoodSupplementForm
                   formData={formData}
                   onChange={handleFormChange}
-                  visibleTechnicalFields={cleanedVisibleFields}
+                  visibleTechnicalFields={visibleTechnicalFields}
                   onAddFields={handleAddFields}
                   errors={formErrors}
                 />

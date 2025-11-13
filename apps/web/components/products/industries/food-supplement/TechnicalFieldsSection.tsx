@@ -2,7 +2,6 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { TagListField } from '@/components/ui/tag-list-field'
 import {
   Select,
   SelectContent,
@@ -29,34 +28,6 @@ export function TechnicalFieldsSection({
   // Helper to check if any field in a group is visible
   const hasVisibleFields = (fields: string[]) => {
     return fields.some((field) => visibleFields.has(field))
-  }
-
-  // Helper to check if a field is visible AND has a value
-  const shouldShowField = (fieldName: string, value: any): boolean => {
-    if (!visibleFields.has(fieldName)) return false
-    
-    // Check if field has a meaningful value
-    if (value === null || value === undefined) return false
-    
-    // For arrays, check if empty
-    if (Array.isArray(value)) {
-      return value.length > 0
-    }
-    
-    // For strings, check if empty or "unknown"
-    if (typeof value === 'string') {
-      const trimmed = value.trim()
-      if (trimmed === '' || trimmed.toLowerCase() === 'unknown') {
-        return false
-      }
-    }
-    
-    // For numbers, check if 0 or null
-    if (typeof value === 'number' && value === 0) {
-      return false
-    }
-    
-    return true
   }
 
   // Define field groups (snake_case)
@@ -93,6 +64,7 @@ export function TechnicalFieldsSection({
     'gross_weight',
     'packages_per_pallet',
     'storage_temperature',
+    'storage_conditions',
   ]
   const commercialFields = ['sample_availability']
 
@@ -106,8 +78,7 @@ export function TechnicalFieldsSection({
     hasVisibleFields(microbiologicalFields) ||
     hasVisibleFields(complianceFields) ||
     hasVisibleFields(logisticsFields) ||
-    hasVisibleFields(commercialFields) ||
-    visibleFields.has('storageConditions')
+    hasVisibleFields(commercialFields)
 
   if (!hasAnyVisibleField) {
     return null
@@ -557,7 +528,7 @@ export function TechnicalFieldsSection({
                   />
                 </div>
               )}
-              {shouldShowField('e_coli_presence', formData.e_coli_presence) && (
+              {visibleFields.has('e_coli_presence') && (
                 <div className="flex flex-col">
                   <Label htmlFor="e_coli_presence" className="mb-1 whitespace-nowrap">
                     E. Coli
@@ -577,7 +548,7 @@ export function TechnicalFieldsSection({
                   </Select>
                 </div>
               )}
-              {shouldShowField('salmonella_presence', formData.salmonella_presence) && (
+              {visibleFields.has('salmonella_presence') && (
                 <div className="flex flex-col">
                   <Label htmlFor="salmonella_presence" className="mb-1 whitespace-nowrap">
                     Salmonella
@@ -598,7 +569,7 @@ export function TechnicalFieldsSection({
                   </Select>
                 </div>
               )}
-              {shouldShowField('staphylococcus_presence', formData.staphylococcus_presence) && (
+              {visibleFields.has('staphylococcus_presence') && (
                 <div className="flex flex-col">
                   <Label htmlFor="staphylococcus_presence" className="mb-1 whitespace-nowrap">
                     Staphylococcus
@@ -628,7 +599,7 @@ export function TechnicalFieldsSection({
             <h3 className="text-sm font-semibold mb-3">Compliance & Safety</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {shouldShowField('gmo_status', formData.gmo_status) && (
+                {visibleFields.has('gmo_status') && (
                   <div className="flex flex-col">
                     <Label htmlFor="gmo_status" className="mb-1 whitespace-nowrap">
                       GMO Status
@@ -647,7 +618,7 @@ export function TechnicalFieldsSection({
                     </Select>
                   </div>
                 )}
-                {shouldShowField('irradiation_status', formData.irradiation_status) && (
+                {visibleFields.has('irradiation_status') && (
                   <div className="flex flex-col">
                     <Label htmlFor="irradiation_status" className="mb-1 whitespace-nowrap">
                       Irradiation Status
@@ -666,19 +637,22 @@ export function TechnicalFieldsSection({
                     </Select>
                   </div>
                 )}
-              </div>
-              {shouldShowField('allergen_info', formData.allergen_info) && (
-                <div className="mt-4">
-                  <TagListField
-                    label="Allergen Information"
-                    value={formData.allergen_info || []}
-                    onChange={(value) => onChange({ allergen_info: value })}
-                    placeholder="Enter allergen name..."
-                    emptyMessage="No allergens specified. Click 'Add' to add allergen information."
-                  />
-                </div>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {visibleFields.has('allergen_info') && (
+                  <div>
+                    <Label htmlFor="allergen_info">Allergen Information</Label>
+                    <Input
+                      id="allergen_info"
+                      value={Array.isArray(formData.allergen_info) ? formData.allergen_info.join(', ') : formData.allergen_info || ''}
+                      onChange={(e) => {
+                        // Convert comma-separated string to array
+                        const value = e.target.value
+                        const array = value ? value.split(',').map(s => s.trim()).filter(s => s) : []
+                        onChange({ allergen_info: array as any })
+                      }}
+                      placeholder="e.g., Milk, Eggs, Peanuts (comma-separated)"
+                    />
+                  </div>
+                )}
                 {visibleFields.has('bse_statement') && (
                   <div>
                     <Label htmlFor="bse_statement">BSE/TSE Statement</Label>
@@ -813,5 +787,4 @@ export function TechnicalFieldsSection({
     </section>
   )
 }
-
 
