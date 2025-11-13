@@ -53,44 +53,42 @@ export function TechnicalFieldsSection({
     return true
   }
 
-  // Define field groups
-  const basicSpecFields = ['einecs', 'shelfLife']
-  const originSourceFields = ['botanicalName', 'extractionRatio', 'carrierMaterial']
-  const physicalCharFields = ['appearance', 'odor', 'taste', 'solubility', 'meshSize']
+  // Define field groups (snake_case)
+  const basicSpecFields = ['einecs', 'shelf_life', 'fda_number']
+  const originSourceFields = ['botanical_name', 'extraction_ratio', 'carrier_material']
+  const physicalCharFields = ['appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density', 'particle_size']
   const chemicalAnalysisFields = [
     'assay',
     'moisture',
-    'ashContent',
-    'lossOnDrying',
+    'ash_content',
+    'loss_on_drying',
     'ph',
-    'bulkDensity',
-    'particleSize',
-    'residualSolvents',
+    'residual_solvents',
   ]
-  const heavyMetalsFields = ['lead', 'arsenic', 'cadmium', 'mercury', 'aflatoxins']
+  const heavyMetalsFields = ['lead', 'arsenic', 'cadmium', 'mercury', 'heavy_metals_total', 'pesticide_residue', 'aflatoxins']
   const microbiologicalFields = [
-    'totalPlateCount',
-    'yeastMold',
-    'eColiPresence',
-    'salmonellaPresence',
-    'staphylococcusPresence',
+    'total_plate_count',
+    'yeast_mold',
+    'e_coli_presence',
+    'salmonella_presence',
+    'staphylococcus_presence',
+    'coliforms',
   ]
   const complianceFields = [
-    'pesticideResidue',
-    'gmoStatus',
-    'irradiationStatus',
-    'allergenInfo',
-    'bseStatement',
-    'halalCertified',
-    'kosherCertified',
-    'organicCertificationBody',
+    'gmo_status',
+    'irradiation_status',
+    'allergen_info',
+    'bse_statement',
+    'halal_certified',
+    'kosher_certified',
+    'organic_certification_body',
   ]
   const logisticsFields = [
-    'grossWeight',
-    'packagesPerPallet',
-    'storageTemperature',
+    'gross_weight',
+    'packages_per_pallet',
+    'storage_temperature',
   ]
-  const commercialFields = ['moq', 'sampleAvailability']
+  const commercialFields = ['sample_availability']
 
   // If no technical fields are visible, don't render the section
   const hasAnyVisibleField =
@@ -125,23 +123,35 @@ export function TechnicalFieldsSection({
                   </Label>
                   <Input
                     id="einecs"
-                    value={formData.einecs}
+                    value={formData.einecs || ''}
                     onChange={(e) => onChange({ einecs: e.target.value })}
                     placeholder="e.g., 200-066-2"
                   />
                 </div>
               )}
-              {visibleFields.has('shelfLife') && (
+              {visibleFields.has('fda_number') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="shelfLife" className="mb-1 whitespace-nowrap">
-                    Shelf Life (months)
+                  <Label htmlFor="fda_number" className="mb-1 whitespace-nowrap">
+                    FDA Number
                   </Label>
                   <Input
-                    id="shelfLife"
-                    type="number"
-                    value={formData.shelfLife || ''}
-                    onChange={(e) => onChange({ shelfLife: parseInt(e.target.value) || null })}
-                    placeholder="e.g., 24"
+                    id="fda_number"
+                    value={formData.fda_number || ''}
+                    onChange={(e) => onChange({ fda_number: e.target.value })}
+                    placeholder="e.g., 12345-67890"
+                  />
+                </div>
+              )}
+              {visibleFields.has('shelf_life') && (
+                <div className="flex flex-col">
+                  <Label htmlFor="shelf_life" className="mb-1 whitespace-nowrap">
+                    Shelf Life
+                  </Label>
+                  <Input
+                    id="shelf_life"
+                    value={formData.shelf_life || ''}
+                    onChange={(e) => onChange({ shelf_life: e.target.value })}
+                    placeholder="e.g., 24 months"
                   />
                 </div>
               )}
@@ -154,41 +164,41 @@ export function TechnicalFieldsSection({
           <div>
             <h3 className="text-sm font-semibold mb-3">Origin & Source</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {visibleFields.has('botanicalName') && (
+              {visibleFields.has('botanical_name') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="botanicalName" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="botanical_name" className="mb-1 whitespace-nowrap">
                     Botanical/Latin Name
                   </Label>
                   <Input
-                    id="botanicalName"
-                    value={formData.botanicalName}
-                    onChange={(e) => onChange({ botanicalName: e.target.value })}
+                    id="botanical_name"
+                    value={formData.botanical_name || ''}
+                    onChange={(e) => onChange({ botanical_name: e.target.value })}
                     placeholder="e.g., Panax ginseng C.A. Meyer"
                   />
                 </div>
               )}
-              {visibleFields.has('extractionRatio') && (
+              {visibleFields.has('extraction_ratio') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="extractionRatio" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="extraction_ratio" className="mb-1 whitespace-nowrap">
                     Extraction Ratio
                   </Label>
                   <Input
-                    id="extractionRatio"
-                    value={formData.extractionRatio}
-                    onChange={(e) => onChange({ extractionRatio: e.target.value })}
+                    id="extraction_ratio"
+                    value={formData.extraction_ratio || ''}
+                    onChange={(e) => onChange({ extraction_ratio: e.target.value })}
                     placeholder="e.g., 10:1, 20:1"
                   />
                 </div>
               )}
-              {visibleFields.has('carrierMaterial') && (
+              {visibleFields.has('carrier_material') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="carrierMaterial" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="carrier_material" className="mb-1 whitespace-nowrap">
                     Carrier Material
                   </Label>
                   <Input
-                    id="carrierMaterial"
-                    value={formData.carrierMaterial}
-                    onChange={(e) => onChange({ carrierMaterial: e.target.value })}
+                    id="carrier_material"
+                    value={formData.carrier_material || ''}
+                    onChange={(e) => onChange({ carrier_material: e.target.value })}
                     placeholder="e.g., Maltodextrin"
                   />
                 </div>
@@ -209,7 +219,7 @@ export function TechnicalFieldsSection({
                   </Label>
                   <Input
                     id="appearance"
-                    value={formData.appearance}
+                    value={formData.appearance || ''}
                     onChange={(e) => onChange({ appearance: e.target.value })}
                     placeholder="e.g., White to off-white powder"
                   />
@@ -222,7 +232,7 @@ export function TechnicalFieldsSection({
                   </Label>
                   <Input
                     id="odor"
-                    value={formData.odor}
+                    value={formData.odor || ''}
                     onChange={(e) => onChange({ odor: e.target.value })}
                     placeholder="e.g., Mild"
                   />
@@ -235,7 +245,7 @@ export function TechnicalFieldsSection({
                   </Label>
                   <Input
                     id="taste"
-                    value={formData.taste}
+                    value={formData.taste || ''}
                     onChange={(e) => onChange({ taste: e.target.value })}
                     placeholder="e.g., Slightly acidic"
                   />
@@ -248,22 +258,48 @@ export function TechnicalFieldsSection({
                   </Label>
                   <Input
                     id="solubility"
-                    value={formData.solubility}
+                    value={formData.solubility || ''}
                     onChange={(e) => onChange({ solubility: e.target.value })}
                     placeholder="e.g., Soluble in water"
                   />
                 </div>
               )}
-              {visibleFields.has('meshSize') && (
+              {visibleFields.has('mesh_size') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="meshSize" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="mesh_size" className="mb-1 whitespace-nowrap">
                     Mesh Size
                   </Label>
                   <Input
-                    id="meshSize"
-                    value={formData.meshSize}
-                    onChange={(e) => onChange({ meshSize: e.target.value })}
+                    id="mesh_size"
+                    value={formData.mesh_size || ''}
+                    onChange={(e) => onChange({ mesh_size: e.target.value })}
                     placeholder="e.g., 80 mesh, 100 mesh"
+                  />
+                </div>
+              )}
+              {visibleFields.has('bulk_density') && (
+                <div className="flex flex-col">
+                  <Label htmlFor="bulk_density" className="mb-1 whitespace-nowrap">
+                    Bulk Density
+                  </Label>
+                  <Input
+                    id="bulk_density"
+                    value={formData.bulk_density || ''}
+                    onChange={(e) => onChange({ bulk_density: e.target.value })}
+                    placeholder="e.g., 0.5 g/ml"
+                  />
+                </div>
+              )}
+              {visibleFields.has('particle_size') && (
+                <div className="flex flex-col">
+                  <Label htmlFor="particle_size" className="mb-1 whitespace-nowrap">
+                    Particle Size
+                  </Label>
+                  <Input
+                    id="particle_size"
+                    value={formData.particle_size || ''}
+                    onChange={(e) => onChange({ particle_size: e.target.value })}
+                    placeholder="e.g., 80 mesh"
                   />
                 </div>
               )}
@@ -272,13 +308,13 @@ export function TechnicalFieldsSection({
         )}
 
         {/* Storage Conditions */}
-        {visibleFields.has('storageConditions') && (
+        {visibleFields.has('storage_conditions') && (
           <div>
             <SearchableMultiSelect
               label="Storage Conditions"
               options={FOOD_SUPPLEMENT_STORAGE}
-              selected={formData.storageConditions}
-              onChange={(selected) => onChange({ storageConditions: selected })}
+              selected={formData.storage_conditions || []}
+              onChange={(selected) => onChange({ storage_conditions: selected })}
               placeholder="Search storage conditions..."
             />
           </div>
@@ -292,62 +328,52 @@ export function TechnicalFieldsSection({
               {visibleFields.has('assay') && (
                 <div className="flex flex-col">
                   <Label htmlFor="assay" className="mb-1 whitespace-nowrap">
-                    Assay / Purity (%)
+                    Assay / Purity
                   </Label>
                   <Input
                     id="assay"
-                    type="number"
-                    step="0.01"
                     value={formData.assay || ''}
-                    onChange={(e) => onChange({ assay: parseFloat(e.target.value) || null })}
-                    placeholder="e.g., 99.5"
+                    onChange={(e) => onChange({ assay: e.target.value })}
+                    placeholder="e.g., 99.5%, ≥ 98%"
                   />
                 </div>
               )}
               {visibleFields.has('moisture') && (
                 <div className="flex flex-col">
                   <Label htmlFor="moisture" className="mb-1 whitespace-nowrap">
-                    Moisture (%)
+                    Moisture
                   </Label>
                   <Input
                     id="moisture"
-                    type="number"
-                    step="0.01"
                     value={formData.moisture || ''}
-                    onChange={(e) => onChange({ moisture: parseFloat(e.target.value) || null })}
-                    placeholder="e.g., 0.5"
+                    onChange={(e) => onChange({ moisture: e.target.value })}
+                    placeholder="e.g., ≤ 0.5%"
                   />
                 </div>
               )}
-              {visibleFields.has('ashContent') && (
+              {visibleFields.has('ash_content') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="ashContent" className="mb-1 whitespace-nowrap">
-                    Ash Content (%)
+                  <Label htmlFor="ash_content" className="mb-1 whitespace-nowrap">
+                    Ash Content
                   </Label>
                   <Input
-                    id="ashContent"
-                    type="number"
-                    step="0.01"
-                    value={formData.ashContent || ''}
-                    onChange={(e) => onChange({ ashContent: parseFloat(e.target.value) || null })}
-                    placeholder="e.g., 0.2"
+                    id="ash_content"
+                    value={formData.ash_content || ''}
+                    onChange={(e) => onChange({ ash_content: e.target.value })}
+                    placeholder="e.g., ≤ 0.2%"
                   />
                 </div>
               )}
-              {visibleFields.has('lossOnDrying') && (
+              {visibleFields.has('loss_on_drying') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="lossOnDrying" className="mb-1 whitespace-nowrap">
-                    Loss on Drying (%)
+                  <Label htmlFor="loss_on_drying" className="mb-1 whitespace-nowrap">
+                    Loss on Drying
                   </Label>
                   <Input
-                    id="lossOnDrying"
-                    type="number"
-                    step="0.01"
-                    value={formData.lossOnDrying || ''}
-                    onChange={(e) =>
-                      onChange({ lossOnDrying: parseFloat(e.target.value) || null })
-                    }
-                    placeholder="e.g., 0.5"
+                    id="loss_on_drying"
+                    value={formData.loss_on_drying || ''}
+                    onChange={(e) => onChange({ loss_on_drying: e.target.value })}
+                    placeholder="e.g., ≤ 0.5%"
                   />
                 </div>
               )}
@@ -358,52 +384,22 @@ export function TechnicalFieldsSection({
                   </Label>
                   <Input
                     id="ph"
-                    value={formData.ph}
+                    value={formData.ph || ''}
                     onChange={(e) => onChange({ ph: e.target.value })}
                     placeholder="e.g., 5.0-7.0"
                   />
                 </div>
               )}
-              {visibleFields.has('bulkDensity') && (
+              {visibleFields.has('residual_solvents') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="bulkDensity" className="mb-1 whitespace-nowrap">
-                    Bulk Density (g/ml)
-                  </Label>
-                  <Input
-                    id="bulkDensity"
-                    type="number"
-                    step="0.01"
-                    value={formData.bulkDensity || ''}
-                    onChange={(e) =>
-                      onChange({ bulkDensity: parseFloat(e.target.value) || null })
-                    }
-                    placeholder="e.g., 0.5"
-                  />
-                </div>
-              )}
-              {visibleFields.has('particleSize') && (
-                <div className="flex flex-col">
-                  <Label htmlFor="particleSize" className="mb-1 whitespace-nowrap">
-                    Particle Size
-                  </Label>
-                  <Input
-                    id="particleSize"
-                    value={formData.particleSize}
-                    onChange={(e) => onChange({ particleSize: e.target.value })}
-                    placeholder="e.g., 80 mesh"
-                  />
-                </div>
-              )}
-              {visibleFields.has('residualSolvents') && (
-                <div className="flex flex-col">
-                  <Label htmlFor="residualSolvents" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="residual_solvents" className="mb-1 whitespace-nowrap">
                     Residual Solvents
                   </Label>
                   <Input
-                    id="residualSolvents"
-                    value={formData.residualSolvents}
-                    onChange={(e) => onChange({ residualSolvents: e.target.value })}
-                    placeholder="e.g., <10 ppm"
+                    id="residual_solvents"
+                    value={formData.residual_solvents || ''}
+                    onChange={(e) => onChange({ residual_solvents: e.target.value })}
+                    placeholder="e.g., < 10 ppm"
                   />
                 </div>
               )}
@@ -414,80 +410,96 @@ export function TechnicalFieldsSection({
         {/* Heavy Metals & Mycotoxins */}
         {hasVisibleFields(heavyMetalsFields) && (
           <div>
-            <h3 className="text-sm font-semibold mb-3">Heavy Metals & Mycotoxins</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <h3 className="text-sm font-semibold mb-3">Heavy Metals & Contaminants</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {visibleFields.has('lead') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="lead" className="text-xs mb-1 whitespace-nowrap">
-                    Lead (Pb) ppm
+                  <Label htmlFor="lead" className="mb-1 whitespace-nowrap">
+                    Lead (Pb)
                   </Label>
                   <Input
                     id="lead"
-                    type="number"
-                    step="0.01"
                     value={formData.lead || ''}
-                    onChange={(e) => onChange({ lead: parseFloat(e.target.value) || null })}
-                    placeholder="0.5"
+                    onChange={(e) => onChange({ lead: e.target.value })}
+                    placeholder="e.g., < 1.0 ppm"
                   />
                 </div>
               )}
               {visibleFields.has('arsenic') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="arsenic" className="text-xs mb-1 whitespace-nowrap">
-                    Arsenic (As) ppm
+                  <Label htmlFor="arsenic" className="mb-1 whitespace-nowrap">
+                    Arsenic (As)
                   </Label>
                   <Input
                     id="arsenic"
-                    type="number"
-                    step="0.01"
                     value={formData.arsenic || ''}
-                    onChange={(e) => onChange({ arsenic: parseFloat(e.target.value) || null })}
-                    placeholder="0.5"
+                    onChange={(e) => onChange({ arsenic: e.target.value })}
+                    placeholder="e.g., < 0.5 ppm"
                   />
                 </div>
               )}
               {visibleFields.has('cadmium') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="cadmium" className="text-xs mb-1 whitespace-nowrap">
-                    Cadmium (Cd) ppm
+                  <Label htmlFor="cadmium" className="mb-1 whitespace-nowrap">
+                    Cadmium (Cd)
                   </Label>
                   <Input
                     id="cadmium"
-                    type="number"
-                    step="0.01"
                     value={formData.cadmium || ''}
-                    onChange={(e) => onChange({ cadmium: parseFloat(e.target.value) || null })}
-                    placeholder="0.5"
+                    onChange={(e) => onChange({ cadmium: e.target.value })}
+                    placeholder="e.g., < 0.3 ppm"
                   />
                 </div>
               )}
               {visibleFields.has('mercury') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="mercury" className="text-xs mb-1 whitespace-nowrap">
-                    Mercury (Hg) ppm
+                  <Label htmlFor="mercury" className="mb-1 whitespace-nowrap">
+                    Mercury (Hg)
                   </Label>
                   <Input
                     id="mercury"
-                    type="number"
-                    step="0.01"
                     value={formData.mercury || ''}
-                    onChange={(e) => onChange({ mercury: parseFloat(e.target.value) || null })}
-                    placeholder="0.1"
+                    onChange={(e) => onChange({ mercury: e.target.value })}
+                    placeholder="e.g., < 0.1 ppm"
+                  />
+                </div>
+              )}
+              {visibleFields.has('heavy_metals_total') && (
+                <div className="flex flex-col">
+                  <Label htmlFor="heavy_metals_total" className="mb-1 whitespace-nowrap">
+                    Heavy Metals (Total)
+                  </Label>
+                  <Input
+                    id="heavy_metals_total"
+                    value={formData.heavy_metals_total || ''}
+                    onChange={(e) => onChange({ heavy_metals_total: e.target.value })}
+                    placeholder="e.g., < 10 ppm"
+                  />
+                </div>
+              )}
+              {visibleFields.has('pesticide_residue') && (
+                <div className="flex flex-col">
+                  <Label htmlFor="pesticide_residue" className="mb-1 whitespace-nowrap">
+                    Pesticide Residue
+                  </Label>
+                  <Input
+                    id="pesticide_residue"
+                    value={formData.pesticide_residue || ''}
+                    onChange={(e) => onChange({ pesticide_residue: e.target.value })}
+                    placeholder="e.g., Non detected, < 0.1 ppm"
                   />
                 </div>
               )}
               {visibleFields.has('aflatoxins') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="aflatoxins" className="text-xs mb-1 whitespace-nowrap">
-                    Aflatoxins (ppb)
+                  <Label htmlFor="aflatoxins" className="mb-1 whitespace-nowrap">
+                    Aflatoxins
                   </Label>
                   <Input
                     id="aflatoxins"
-                    type="number"
-                    step="0.01"
                     value={formData.aflatoxins || ''}
-                    onChange={(e) => onChange({ aflatoxins: parseFloat(e.target.value) || null })}
-                    placeholder="5"
+                    onChange={(e) => onChange({ aflatoxins: e.target.value })}
+                    placeholder="e.g., < 5 ppb"
                   />
                 </div>
               )}
@@ -500,44 +512,53 @@ export function TechnicalFieldsSection({
           <div>
             <h3 className="text-sm font-semibold mb-3">Microbiological</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {visibleFields.has('totalPlateCount') && (
+              {visibleFields.has('total_plate_count') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="totalPlateCount" className="mb-1 whitespace-nowrap">
-                    Total Plate Count (cfu/g)
+                  <Label htmlFor="total_plate_count" className="mb-1 whitespace-nowrap">
+                    Total Plate Count
                   </Label>
                   <Input
-                    id="totalPlateCount"
-                    type="number"
-                    value={formData.totalPlateCount || ''}
-                    onChange={(e) =>
-                      onChange({ totalPlateCount: parseInt(e.target.value) || null })
-                    }
-                    placeholder="e.g., 1000"
+                    id="total_plate_count"
+                    value={formData.total_plate_count || ''}
+                    onChange={(e) => onChange({ total_plate_count: e.target.value })}
+                    placeholder="e.g., < 1000 cfu/g"
                   />
                 </div>
               )}
-              {visibleFields.has('yeastMold') && (
+              {visibleFields.has('yeast_mold') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="yeastMold" className="mb-1 whitespace-nowrap">
-                    Yeast & Mold (cfu/g)
+                  <Label htmlFor="yeast_mold" className="mb-1 whitespace-nowrap">
+                    Yeast & Mold
                   </Label>
                   <Input
-                    id="yeastMold"
-                    type="number"
-                    value={formData.yeastMold || ''}
-                    onChange={(e) => onChange({ yeastMold: parseInt(e.target.value) || null })}
-                    placeholder="e.g., 100"
+                    id="yeast_mold"
+                    value={formData.yeast_mold || ''}
+                    onChange={(e) => onChange({ yeast_mold: e.target.value })}
+                    placeholder="e.g., < 100 cfu/g"
                   />
                 </div>
               )}
-              {shouldShowField('eColiPresence', formData.eColiPresence) && (
+              {visibleFields.has('coliforms') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="eColiPresence" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="coliforms" className="mb-1 whitespace-nowrap">
+                    Coliforms
+                  </Label>
+                  <Input
+                    id="coliforms"
+                    value={formData.coliforms || ''}
+                    onChange={(e) => onChange({ coliforms: e.target.value })}
+                    placeholder="e.g., < 10 cfu/g"
+                  />
+                </div>
+              )}
+              {shouldShowField('e_coli_presence', formData.e_coli_presence) && (
+                <div className="flex flex-col">
+                  <Label htmlFor="e_coli_presence" className="mb-1 whitespace-nowrap">
                     E. Coli
                   </Label>
                   <Select
-                    value={formData.eColiPresence}
-                    onValueChange={(value) => onChange({ eColiPresence: value })}
+                    value={formData.e_coli_presence || ''}
+                    onValueChange={(value) => onChange({ e_coli_presence: value })}
                   >
                     <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue placeholder="Select" />
@@ -545,18 +566,19 @@ export function TechnicalFieldsSection({
                     <SelectContent>
                       <SelectItem value="Negative">Negative</SelectItem>
                       <SelectItem value="Positive">Positive</SelectItem>
+                      <SelectItem value="Not detected">Not detected</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
-              {shouldShowField('salmonellaPresence', formData.salmonellaPresence) && (
+              {shouldShowField('salmonella_presence', formData.salmonella_presence) && (
                 <div className="flex flex-col">
-                  <Label htmlFor="salmonellaPresence" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="salmonella_presence" className="mb-1 whitespace-nowrap">
                     Salmonella
                   </Label>
                   <Select
-                    value={formData.salmonellaPresence}
-                    onValueChange={(value) => onChange({ salmonellaPresence: value })}
+                    value={formData.salmonella_presence || ''}
+                    onValueChange={(value) => onChange({ salmonella_presence: value })}
                   >
                     <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue placeholder="Select" />
@@ -564,18 +586,20 @@ export function TechnicalFieldsSection({
                     <SelectContent>
                       <SelectItem value="Negative">Negative</SelectItem>
                       <SelectItem value="Positive">Positive</SelectItem>
+                      <SelectItem value="Not detected">Not detected</SelectItem>
+                      <SelectItem value="Negative in 25g">Negative in 25g</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
-              {shouldShowField('staphylococcusPresence', formData.staphylococcusPresence) && (
+              {shouldShowField('staphylococcus_presence', formData.staphylococcus_presence) && (
                 <div className="flex flex-col">
-                  <Label htmlFor="staphylococcusPresence" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="staphylococcus_presence" className="mb-1 whitespace-nowrap">
                     Staphylococcus
                   </Label>
                   <Select
-                    value={formData.staphylococcusPresence}
-                    onValueChange={(value) => onChange({ staphylococcusPresence: value })}
+                    value={formData.staphylococcus_presence || ''}
+                    onValueChange={(value) => onChange({ staphylococcus_presence: value })}
                   >
                     <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue placeholder="Select" />
@@ -583,6 +607,7 @@ export function TechnicalFieldsSection({
                     <SelectContent>
                       <SelectItem value="Negative">Negative</SelectItem>
                       <SelectItem value="Positive">Positive</SelectItem>
+                      <SelectItem value="Not detected">Not detected</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -591,31 +616,20 @@ export function TechnicalFieldsSection({
           </div>
         )}
 
-        {/* Pesticide & Compliance */}
+        {/* Compliance & Safety */}
         {hasVisibleFields(complianceFields) && (
           <div>
             <h3 className="text-sm font-semibold mb-3">Compliance & Safety</h3>
             <div className="space-y-4">
-              {visibleFields.has('pesticideResidue') && (
-                <div>
-                  <Label htmlFor="pesticideResidue">Pesticide Residue Status</Label>
-                  <Input
-                    id="pesticideResidue"
-                    value={formData.pesticideResidue}
-                    onChange={(e) => onChange({ pesticideResidue: e.target.value })}
-                    placeholder="e.g., Complies with EU/USP/JP standards"
-                  />
-                </div>
-              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {shouldShowField('gmoStatus', formData.gmoStatus) && (
+                {shouldShowField('gmo_status', formData.gmo_status) && (
                   <div className="flex flex-col">
-                    <Label htmlFor="gmoStatus" className="mb-1 whitespace-nowrap">
+                    <Label htmlFor="gmo_status" className="mb-1 whitespace-nowrap">
                       GMO Status
                     </Label>
                     <Select
-                      value={formData.gmoStatus}
-                      onValueChange={(value) => onChange({ gmoStatus: value })}
+                      value={formData.gmo_status || ''}
+                      onValueChange={(value) => onChange({ gmo_status: value })}
                     >
                       <SelectTrigger className="h-11 rounded-xl">
                         <SelectValue placeholder="Select" />
@@ -623,19 +637,18 @@ export function TechnicalFieldsSection({
                       <SelectContent>
                         <SelectItem value="Non-GMO">Non-GMO</SelectItem>
                         <SelectItem value="GMO">GMO</SelectItem>
-                        <SelectItem value="Unknown">Unknown</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 )}
-                {shouldShowField('irradiationStatus', formData.irradiationStatus) && (
+                {shouldShowField('irradiation_status', formData.irradiation_status) && (
                   <div className="flex flex-col">
-                    <Label htmlFor="irradiationStatus" className="mb-1 whitespace-nowrap">
+                    <Label htmlFor="irradiation_status" className="mb-1 whitespace-nowrap">
                       Irradiation Status
                     </Label>
                     <Select
-                      value={formData.irradiationStatus}
-                      onValueChange={(value) => onChange({ irradiationStatus: value })}
+                      value={formData.irradiation_status || ''}
+                      onValueChange={(value) => onChange({ irradiation_status: value })}
                     >
                       <SelectTrigger className="h-11 rounded-xl">
                         <SelectValue placeholder="Select" />
@@ -647,34 +660,34 @@ export function TechnicalFieldsSection({
                     </Select>
                   </div>
                 )}
-                {visibleFields.has('allergenInfo') && (
+                {visibleFields.has('allergen_info') && (
                   <div>
-                    <Label htmlFor="allergenInfo">Allergen Information</Label>
+                    <Label htmlFor="allergen_info">Allergen Information</Label>
                     <Input
-                      id="allergenInfo"
-                      value={formData.allergenInfo}
-                      onChange={(e) => onChange({ allergenInfo: e.target.value })}
-                      placeholder="e.g., None"
+                      id="allergen_info"
+                      value={formData.allergen_info || ''}
+                      onChange={(e) => onChange({ allergen_info: e.target.value })}
+                      placeholder="e.g., None, Gluten-Free"
                     />
                   </div>
                 )}
-                {visibleFields.has('bseStatement') && (
+                {visibleFields.has('bse_statement') && (
                   <div>
-                    <Label htmlFor="bseStatement">BSE/TSE Statement</Label>
+                    <Label htmlFor="bse_statement">BSE/TSE Statement</Label>
                     <Input
-                      id="bseStatement"
-                      value={formData.bseStatement}
-                      onChange={(e) => onChange({ bseStatement: e.target.value })}
+                      id="bse_statement"
+                      value={formData.bse_statement || ''}
+                      onChange={(e) => onChange({ bse_statement: e.target.value })}
                       placeholder="e.g., BSE/TSE Free"
                     />
                   </div>
                 )}
-                {visibleFields.has('halalCertified') && (
+                {visibleFields.has('halal_certified') && (
                   <div>
-                    <Label htmlFor="halalCertified">Halal Certified</Label>
+                    <Label htmlFor="halal_certified">Halal Certified</Label>
                     <Select
-                      value={formData.halalCertified}
-                      onValueChange={(value) => onChange({ halalCertified: value })}
+                      value={formData.halal_certified || ''}
+                      onValueChange={(value) => onChange({ halal_certified: value })}
                     >
                       <SelectTrigger className="h-11 rounded-xl">
                         <SelectValue placeholder="Select" />
@@ -686,12 +699,12 @@ export function TechnicalFieldsSection({
                     </Select>
                   </div>
                 )}
-                {visibleFields.has('kosherCertified') && (
+                {visibleFields.has('kosher_certified') && (
                   <div>
-                    <Label htmlFor="kosherCertified">Kosher Certified</Label>
+                    <Label htmlFor="kosher_certified">Kosher Certified</Label>
                     <Select
-                      value={formData.kosherCertified}
-                      onValueChange={(value) => onChange({ kosherCertified: value })}
+                      value={formData.kosher_certified || ''}
+                      onValueChange={(value) => onChange({ kosher_certified: value })}
                     >
                       <SelectTrigger className="h-11 rounded-xl">
                         <SelectValue placeholder="Select" />
@@ -703,13 +716,13 @@ export function TechnicalFieldsSection({
                     </Select>
                   </div>
                 )}
-                {visibleFields.has('organicCertificationBody') && (
+                {visibleFields.has('organic_certification_body') && (
                   <div>
-                    <Label htmlFor="organicCertificationBody">Organic Certifier</Label>
+                    <Label htmlFor="organic_certification_body">Organic Certifier</Label>
                     <Input
-                      id="organicCertificationBody"
-                      value={formData.organicCertificationBody}
-                      onChange={(e) => onChange({ organicCertificationBody: e.target.value })}
+                      id="organic_certification_body"
+                      value={formData.organic_certification_body || ''}
+                      onChange={(e) => onChange({ organic_certification_body: e.target.value })}
                       placeholder="e.g., USDA Organic, EU Organic"
                     />
                   </div>
@@ -725,43 +738,40 @@ export function TechnicalFieldsSection({
             <h3 className="text-sm font-semibold mb-3">Packaging & Logistics</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {visibleFields.has('grossWeight') && (
+                {visibleFields.has('gross_weight') && (
                   <div className="flex flex-col">
-                    <Label htmlFor="grossWeight" className="mb-1 whitespace-nowrap">
+                    <Label htmlFor="gross_weight" className="mb-1 whitespace-nowrap">
                       Gross Weight per Package
                     </Label>
                     <Input
-                      id="grossWeight"
-                      value={formData.grossWeight}
-                      onChange={(e) => onChange({ grossWeight: e.target.value })}
-                      placeholder="e.g., 26kg"
+                      id="gross_weight"
+                      value={formData.gross_weight || ''}
+                      onChange={(e) => onChange({ gross_weight: e.target.value })}
+                      placeholder="e.g., 26 kg"
                     />
                   </div>
                 )}
-                {visibleFields.has('packagesPerPallet') && (
+                {visibleFields.has('packages_per_pallet') && (
                   <div className="flex flex-col">
-                    <Label htmlFor="packagesPerPallet" className="mb-1 whitespace-nowrap">
+                    <Label htmlFor="packages_per_pallet" className="mb-1 whitespace-nowrap">
                       Packages per Pallet
                     </Label>
                     <Input
-                      id="packagesPerPallet"
-                      type="number"
-                      value={formData.packagesPerPallet || ''}
-                      onChange={(e) =>
-                        onChange({ packagesPerPallet: parseInt(e.target.value) || null })
-                      }
-                      placeholder="e.g., 40"
+                      id="packages_per_pallet"
+                      value={formData.packages_per_pallet || ''}
+                      onChange={(e) => onChange({ packages_per_pallet: e.target.value })}
+                      placeholder="e.g., 40 packages"
                     />
                   </div>
                 )}
               </div>
-              {visibleFields.has('storageTemperature') && (
+              {visibleFields.has('storage_temperature') && (
                 <div>
-                  <Label htmlFor="storageTemperature">Storage Temperature</Label>
+                  <Label htmlFor="storage_temperature">Storage Temperature</Label>
                   <Input
-                    id="storageTemperature"
-                    value={formData.storageTemperature}
-                    onChange={(e) => onChange({ storageTemperature: e.target.value })}
+                    id="storage_temperature"
+                    value={formData.storage_temperature || ''}
+                    onChange={(e) => onChange({ storage_temperature: e.target.value })}
                     placeholder="e.g., Room Temperature (15-25°C)"
                   />
                 </div>
@@ -775,29 +785,15 @@ export function TechnicalFieldsSection({
           <div>
             <h3 className="text-sm font-semibold mb-3">Commercial Terms</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {visibleFields.has('moq') && (
+              {visibleFields.has('sample_availability') && (
                 <div className="flex flex-col">
-                  <Label htmlFor="moq" className="mb-1 whitespace-nowrap">
-                    MOQ (Minimum Order Quantity) kg
-                  </Label>
-                  <Input
-                    id="moq"
-                    type="number"
-                    value={formData.moq || ''}
-                    onChange={(e) => onChange({ moq: parseInt(e.target.value) || null })}
-                    placeholder="e.g., 100"
-                  />
-                </div>
-              )}
-              {visibleFields.has('sampleAvailability') && (
-                <div className="flex flex-col">
-                  <Label htmlFor="sampleAvailability" className="mb-1 whitespace-nowrap">
+                  <Label htmlFor="sample_availability" className="mb-1 whitespace-nowrap">
                     Sample Availability
                   </Label>
                   <Input
-                    id="sampleAvailability"
-                    value={formData.sampleAvailability}
-                    onChange={(e) => onChange({ sampleAvailability: e.target.value })}
+                    id="sample_availability"
+                    value={formData.sample_availability || ''}
+                    onChange={(e) => onChange({ sample_availability: e.target.value })}
                     placeholder="e.g., Free sample available"
                   />
                 </div>

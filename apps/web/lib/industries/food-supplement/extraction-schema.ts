@@ -111,6 +111,7 @@ export interface FoodSupplementProductData {
   residual_solvents?: string
   
   // Heavy Metals
+  heavy_metals_total?: string
   lead?: string
   arsenic?: string
   cadmium?: string
@@ -123,6 +124,7 @@ export interface FoodSupplementProductData {
   // Microbiological
   total_plate_count?: string
   yeast_mold?: string
+  coliforms?: string
   e_coli_presence?: string
   salmonella_presence?: string
   staphylococcus_presence?: string
@@ -160,6 +162,7 @@ export interface FoodSupplementProductData {
   sample_price?: string
   sample_quantity?: string
   sample_lead_time?: string
+  sample_availability?: string
   
   // Certificates & Compliance
   certificates?: string[]
@@ -233,6 +236,7 @@ export const PRODUCT_FIELDS = {
   residual_solvents: { label: 'Residual Solvents', value_type: 'string' },
   
   // Heavy Metals (COA)
+  heavy_metals_total: { label: 'Heavy Metals (Total)', value_type: 'string', unit: 'ppm' },
   lead: { label: 'Lead (Pb)', value_type: 'string', unit: 'ppm' },
   arsenic: { label: 'Arsenic (As)', value_type: 'string', unit: 'ppm' },
   cadmium: { label: 'Cadmium (Cd)', value_type: 'string', unit: 'ppm' },
@@ -245,6 +249,7 @@ export const PRODUCT_FIELDS = {
   // Microbiological (COA)
   total_plate_count: { label: 'Total Plate Count', value_type: 'string', unit: 'cfu/g' },
   yeast_mold: { label: 'Yeast & Mold', value_type: 'string', unit: 'cfu/g' },
+  coliforms: { label: 'Coliforms', value_type: 'string', unit: 'cfu/g' },
   e_coli_presence: { label: 'E. Coli', value_type: 'string' },
   salmonella_presence: { label: 'Salmonella', value_type: 'string' },
   staphylococcus_presence: { label: 'Staphylococcus Aureus', value_type: 'string' },
@@ -265,6 +270,14 @@ export const PRODUCT_FIELDS = {
   
   // Sample Options (JSON array: [{ sample_type, price, quantity, lead_time, availability }, ...])
   samples: { label: 'Sample Options', value_type: 'array' },
+  
+  // Individual sample fields for form UI
+  provide_sample: { label: 'Provide Sample', value_type: 'string' },
+  sample_type: { label: 'Sample Type', value_type: 'string' },
+  sample_price: { label: 'Sample Price', value_type: 'string', unit: 'USD' },
+  sample_quantity: { label: 'Sample Quantity', value_type: 'string' },
+  sample_lead_time: { label: 'Sample Lead Time', value_type: 'string' },
+  sample_availability: { label: 'Sample Availability', value_type: 'string' },
   
   // Certificates & Compliance
   certificates: { label: 'Certificates', value_type: 'array' },
@@ -341,6 +354,7 @@ export const FIELD_OPTIONS = {
   irradiation_status: ['Not Irradiated', 'Irradiated', 'Irradiation Free'],
   halal_certified: ['Yes', 'No', 'In Progress'],
   kosher_certified: ['Yes', 'No', 'In Progress'],
+  provide_sample: ['Yes', 'No'],
   e_coli_presence: ['Negative', 'Positive', 'Not Detected'],
   salmonella_presence: ['Negative', 'Positive', 'Not Detected', 'Negative in 25g'],
   staphylococcus_presence: ['Negative', 'Positive', 'Not Detected'],
