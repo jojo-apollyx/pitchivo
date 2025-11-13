@@ -27,16 +27,13 @@ interface ReviewFieldsModalProps {
   onApply: (reviewedFields: Record<string, any>) => Promise<void>
 }
 
-// Product-related document types (industry-standard documents for B2B food/supplement trading)
+// Product-related document types (canonical codes from extraction schema)
+// Note: Normalization handles variations like MSDS->SDS, Prop_65->Prop65, etc.
 const PRODUCT_DOCUMENT_TYPES = [
   // Technical & Quality
   'COA',
   'TDS',
-  'MSDS',
-  'SDS',
-  'MSDS/SDS',
-  'Material_Safety_Data_Sheet',
-  'Safety_Data_Sheet',
+  'SDS',  // Handles MSDS, Material_Safety_Data_Sheet variations via normalization
   'Specification_Sheet',
   'COO',
   'Quality_Certificate',
@@ -44,16 +41,9 @@ const PRODUCT_DOCUMENT_TYPES = [
   'Allergen_Statement',
   'Irradiation_Statement',
   'BSE_Statement',
-  'BSE_Free_Statement',
-  'GMO_Statement',
-  'GMO_Free_Statement',
-  'Non_GMO_Statement',
-  'Prop65_Statement',
-  'Prop_65_Statement',
-  'California_Prop_65_Statement',
-  'Vegan_Statement',
+  'Non_GMO_Statement',  // Handles GMO_Statement, GMO_Free_Statement variations
+  'Prop65_Statement',  // Handles Prop_65_Statement, California_Prop_65_Statement variations
   'Gluten_Free_Certificate',
-  'Gluten_Free_Statement',
   'Nutritional_Info',
   'Organic_Certificate',
   'Halal_Certificate',
@@ -89,13 +79,32 @@ export function ReviewFieldsModal({
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
   
   // Check if this is a non-product document (anything not in the product types list, including "Other")
-  // Normalize document type for comparison (handle case, spaces, underscores)
+  // Normalize document type for comparison (handle variations and aliases)
   const normalizeDocumentType = (type?: string): string => {
     if (!type) return ''
-    return type
+    
+    // First, clean up the input
+    const cleaned = type
       .toLowerCase()
       .replace(/\s+/g, '_')
       .replace(/[^a-z0-9_]/g, '')
+    
+    // Map common variations to canonical forms
+    const variations: Record<string, string> = {
+      'msds': 'sds',
+      'material_safety_data_sheet': 'sds',
+      'safety_data_sheet': 'sds',
+      'msds_sds': 'sds',
+      'gmo_statement': 'non_gmo_statement',
+      'gmo_free_statement': 'non_gmo_statement',
+      'prop_65_statement': 'prop65_statement',
+      'california_prop_65_statement': 'prop65_statement',
+      'bse_free_statement': 'bse_statement',
+      'gluten_free_statement': 'gluten_free_certificate',
+      'vegan_statement': 'non_gmo_statement',  // Often similar context
+    }
+    
+    return variations[cleaned] || cleaned
   }
   
   const normalizedDocType = normalizeDocumentType(documentType)

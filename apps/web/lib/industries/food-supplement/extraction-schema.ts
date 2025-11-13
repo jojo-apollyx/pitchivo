@@ -15,8 +15,7 @@ export const DOCUMENT_TYPES = {
   TECHNICAL_QUALITY: [
     { code: 'COA', name: 'Certificate of Analysis', description: 'Lab test results with analytical data' },
     { code: 'TDS', name: 'Technical Data Sheet', description: 'Technical specifications and properties' },
-    { code: 'MSDS', name: 'Material Safety Data Sheet', description: 'Safety and handling information' },
-    { code: 'SDS', name: 'Safety Data Sheet', description: 'Safety and handling information' },
+    { code: 'SDS', name: 'Safety Data Sheet', description: 'Safety and handling information (MSDS/SDS)' },
     { code: 'Specification_Sheet', name: 'Specification Sheet', description: 'Product specifications and standards' },
     { code: 'COO', name: 'Certificate of Origin', description: 'Product origin certification' },
     { code: 'Quality_Certificate', name: 'Quality Certificate', description: 'Quality assurance certification' },
@@ -49,7 +48,8 @@ export const DOCUMENT_TYPES = {
 } as const
 
 /**
- * Get all product-related document type codes
+ * Get all valid product document type codes
+ * These are the canonical codes that AI should use for document_type field
  */
 export function getProductDocumentTypes(): string[] {
   return [
@@ -70,12 +70,14 @@ export function getExtractionSystemPrompt(): string {
 CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no code blocks.
 
 STEP 1: Analyze and identify the document type
-Determine what type of document this is based on its content, structure, and purpose. Common document types in the food/supplement industry include:
+Determine what type of document this is based on its content, structure, and purpose. Use the EXACT document type codes listed below (e.g., use "SDS" not "MSDS" or "Material_Safety_Data_Sheet").
+
+Common document types in the food/supplement industry include:
 
 TECHNICAL & QUALITY DOCUMENTS:
 - COA (Certificate of Analysis) - Lab test results with analytical data
 - TDS (Technical Data Sheet) - Technical specifications and properties
-- MSDS/SDS (Material Safety Data Sheet) - Safety and handling information
+- SDS (Safety Data Sheet / MSDS) - Safety and handling information
 - Specification_Sheet - Product specifications and standards
 - COO (Certificate of Origin) - Product origin certification
 - Quality_Certificate - Quality assurance certification
