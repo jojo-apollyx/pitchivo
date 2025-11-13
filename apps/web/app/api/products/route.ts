@@ -1,5 +1,5 @@
 import { withApiHandler } from '@/lib/impersonation'
-import { productsResponseSchema, createProductSchema, productSchema } from '@/lib/api/schemas'
+import { productsResponseSchema, createProductSchema, updateProductSchema, productSchema } from '@/lib/api/schemas'
 import { detectProductIndustry } from '@/lib/api/industry-detection'
 import { getIndustriesForAI, getIndustryByCode } from '@/lib/constants/industries'
 import { z } from 'zod'
@@ -127,7 +127,7 @@ export const POST = withApiHandler(
       throw new Error('Industry code is required')
     }
 
-    // Create product (no template fields)
+    // Create product with all fields
     const { data: product, error: insertError } = await supabase
       .from('products')
       .insert({
@@ -135,11 +135,96 @@ export const POST = withApiHandler(
         product_name: validatedInput.product_name,
         industry_code: industryCode,
         status: validatedInput.status || 'draft',
+        product_data: validatedInput.product_data || {},
+        // Extracted columns for fast searching
+        origin_country: validatedInput.origin_country || null,
+        manufacturer_name: validatedInput.manufacturer_name || null,
+        category: validatedInput.category || null,
+        form: validatedInput.form || null,
+        grade: validatedInput.grade || null,
+        applications: validatedInput.applications || null,
       })
       .select()
       .single()
 
     if (insertError) throw insertError
+
+    // Validate response
+    const validatedProduct = productSchema.parse(product)
+
+    return {
+      product: validatedProduct,
+      context: {
+        isImpersonating: context.isImpersonating,
+      },
+    }
+  },
+  { requireOrg: true }
+)
+
+/**
+ * Update an existing product
+ */
+export const PUT = withApiHandler(
+  '/api/products',
+  'PUT',
+  'update_product',
+  async ({ context, supabase, request }) => {
+    const rawBody = await request.json()
+    
+    // Extract product_id from body
+    if (!rawBody.product_id) {
+      throw new Error('product_id is required')
+    }
+    
+    const productId = rawBody.product_id
+    const validatedInput = updateProductSchema.parse(rawBody)
+    
+    // Build update object with only provided fields
+    const updateData: any = {}
+    if (validatedInput.product_name !== undefined) {
+      updateData.product_name = validatedInput.product_name
+    }
+    if (validatedInput.status !== undefined) {
+      updateData.status = validatedInput.status
+    }
+    if (validatedInput.product_data !== undefined) {
+      updateData.product_data = validatedInput.product_data
+    }
+    // Extracted columns
+    if (validatedInput.origin_country !== undefined) {
+      updateData.origin_country = validatedInput.origin_country
+    }
+    if (validatedInput.manufacturer_name !== undefined) {
+      updateData.manufacturer_name = validatedInput.manufacturer_name
+    }
+    if (validatedInput.category !== undefined) {
+      updateData.category = validatedInput.category
+    }
+    if (validatedInput.form !== undefined) {
+      updateData.form = validatedInput.form
+    }
+    if (validatedInput.grade !== undefined) {
+      updateData.grade = validatedInput.grade
+    }
+    if (validatedInput.applications !== undefined) {
+      updateData.applications = validatedInput.applications
+    }
+    
+    // Update product
+    const { data: product, error: updateError } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('product_id', productId)
+      .eq('org_id', context.organizationId) // Ensure user can only update their org's products
+      .select()
+      .single()
+
+    if (updateError) throw updateError
+    
+    if (!product) {
+      throw new Error('Product not found or you do not have permission to update it')
+    }
 
     // Validate response
     const validatedProduct = productSchema.parse(product)

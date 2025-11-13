@@ -121,6 +121,7 @@ export default function CreateProductPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<FoodSupplementProductData>(initialFormData)
   const [uploadedFiles, setUploadedFiles] = useState<FileWithExtraction[]>([])
+  const [productId, setProductId] = useState<string | null>(null) // Track product ID for updates
 
   // Helper to deduplicate files by extraction.id
   const deduplicateFiles = (files: FileWithExtraction[]): FileWithExtraction[] => {
@@ -1000,11 +1001,58 @@ export default function CreateProductPage() {
   const handleSaveDraft = async () => {
     setIsSaving(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Prepare product data for save
+      const productData = {
+        product_name: formData.product_name || 'Untitled Product',
+        origin_country: formData.origin_country || null,
+        manufacturer_name: formData.manufacturer_name || null,
+        category: formData.category || null,
+        form: formData.form || null,
+        grade: formData.grade || null,
+        applications: formData.applications || null,
+        product_data: formData, // Full data in JSONB
+        status: 'draft' as const,
+        industry_code: 'food_supplement',
+      }
+
+      let response
+      if (productId) {
+        // Update existing product
+        response = await fetch('/api/products', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_id: productId,
+            ...productData,
+          }),
+        })
+      } else {
+        // Create new product
+        response = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData),
+        })
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Save failed' }))
+        const errorMessage = errorData.error || errorData.details || `Save failed with status ${response.status}`
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      
+      // Store product_id for future updates
+      if (result.product?.product_id) {
+        setProductId(result.product.product_id)
+      }
+
       toast.success('Product saved as draft')
     } catch (error) {
       console.error('Error saving draft:', error)
-      toast.error('Failed to save draft')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save draft'
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -1037,23 +1085,49 @@ export default function CreateProductPage() {
         grade: formData.grade,
         applications: formData.applications,
         product_data: formData, // Full data in JSONB
-        status: 'published',
+        status: 'published' as const,
         industry_code: 'food_supplement',
       }
 
-      // TODO: Implement actual database save
-      // const response = await fetch('/api/products', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(productData),
-      // })
+      let response
+      if (productId) {
+        // Update existing product
+        response = await fetch('/api/products', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_id: productId,
+            ...productData,
+          }),
+        })
+      } else {
+        // Create new product
+        response = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData),
+        })
+      }
 
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Publish failed' }))
+        const errorMessage = errorData.error || errorData.details || `Publish failed with status ${response.status}`
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      
+      // Store product_id if this was a new product
+      if (result.product?.product_id) {
+        setProductId(result.product.product_id)
+      }
+
       toast.success('Product published successfully!')
       router.push('/dashboard/products')
     } catch (error) {
       console.error('Error publishing product:', error)
-      toast.error('Failed to publish product')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to publish product'
+      toast.error(errorMessage)
     } finally {
       setIsPublishing(false)
     }

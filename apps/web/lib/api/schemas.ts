@@ -12,9 +12,16 @@ export const productSchema = z.object({
   product_name: z.string().min(1, 'Product name is required'),
   industry_code: z.string().min(1, 'Industry code is required'),
   status: z.enum(['draft', 'published']).default('draft'),
-  product_data: z.record(z.any()).optional(), // Dynamic product data
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  product_data: z.record(z.any()).optional().nullable(), // Dynamic product data
+  // Extracted columns for fast searching
+  origin_country: z.string().optional().nullable(),
+  manufacturer_name: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  form: z.string().optional().nullable(),
+  grade: z.string().optional().nullable(),
+  applications: z.array(z.string()).optional().nullable(),
+  created_at: z.string(), // Accept any string format (PostgreSQL timestamps)
+  updated_at: z.string(), // Accept any string format (PostgreSQL timestamps)
 })
 
 // Schema for creating a product
@@ -23,6 +30,13 @@ export const createProductSchema = z.object({
   industry_code: z.string().min(1, 'Industry code is required'),
   status: z.enum(['draft', 'published']).default('draft').optional(),
   product_data: z.record(z.any()).optional(), // Dynamic product data
+  // Extracted columns for fast searching
+  origin_country: z.string().optional().nullable(),
+  manufacturer_name: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  form: z.string().optional().nullable(),
+  grade: z.string().optional().nullable(),
+  applications: z.array(z.string()).optional().nullable(),
 })
 
 // Schema for updating a product
@@ -30,6 +44,13 @@ export const updateProductSchema = z.object({
   product_name: z.string().min(1).max(200).optional(),
   status: z.enum(['draft', 'published']).optional(),
   product_data: z.record(z.any()).optional(),
+  // Extracted columns for fast searching
+  origin_country: z.string().optional().nullable(),
+  manufacturer_name: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  form: z.string().optional().nullable(),
+  grade: z.string().optional().nullable(),
+  applications: z.array(z.string()).optional().nullable(),
 })
 
 export const productsResponseSchema = z.object({
@@ -49,8 +70,8 @@ export const organizationSchema = z.object({
   primary_color: z.string(),
   secondary_color: z.string(),
   accent_color: z.string(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: z.string(), // Accept any string format (PostgreSQL timestamps)
+  updated_at: z.string(), // Accept any string format (PostgreSQL timestamps)
 })
 
 export const organizationsResponseSchema = z.object({
@@ -67,8 +88,8 @@ export const campaignSchema = z.object({
   name: z.string(),
   organization_id: z.string().uuid(),
   status: z.enum(['draft', 'scheduled', 'active', 'completed', 'cancelled']),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: z.string(), // Accept any string format (PostgreSQL timestamps)
+  updated_at: z.string(), // Accept any string format (PostgreSQL timestamps)
 })
 
 export const createCampaignSchema = campaignSchema.omit({
@@ -88,7 +109,7 @@ export const rfqSchema = z.object({
   buyer_email: z.string().email(),
   message: z.string(),
   status: z.enum(['pending', 'responded', 'closed']),
-  created_at: z.string().datetime(),
+  created_at: z.string(), // Accept any string format (PostgreSQL timestamps)
 })
 
 // Type exports for TypeScript
