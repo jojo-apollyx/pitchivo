@@ -40,6 +40,7 @@ const PRODUCT_DOCUMENT_TYPES = [
   'Quality_Certificate',
   // Compliance & Regulatory
   'Allergen_Statement',
+  'Vegan_Certificate',
   'Irradiation_Statement',
   'BSE_Statement',
   'Non_GMO_Statement',  // Handles GMO_Statement, GMO_Free_Statement variations
@@ -103,7 +104,8 @@ export function ReviewFieldsModal({
       'california_prop_65_statement': 'prop65_statement',
       'bse_free_statement': 'bse_statement',
       'gluten_free_statement': 'gluten_free_certificate',
-      'vegan_statement': 'non_gmo_statement',  // Often similar context
+      'vegan_statement': 'vegan_certificate',
+      'vegan_certificate': 'vegan_certificate',
     }
     
     return variations[cleaned] || cleaned

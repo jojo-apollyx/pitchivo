@@ -22,6 +22,7 @@ export const DOCUMENT_TYPES = {
   ],
   COMPLIANCE_REGULATORY: [
     { code: 'Allergen_Statement', name: 'Allergen Statement', description: 'Allergen information and declarations' },
+    { code: 'Vegan_Certificate', name: 'Vegan Certificate', description: 'Vegan certification or vegan statement' },
     { code: 'Nutritional_Info', name: 'Nutritional Information', description: 'Nutritional facts and analysis' },
     { code: 'Organic_Certificate', name: 'Organic Certificate', description: 'Organic certification documents' },
     { code: 'Halal_Certificate', name: 'Halal Certificate', description: 'Halal certification' },
@@ -513,8 +514,9 @@ Guidelines:
 - Use snake_case field names matching the product schema
 - Only include fields where you found actual meaningful product data
 - If multiple products are listed, extract common product information (not individual product codes)
+- For Vegan_Certificate documents: Extract vegan-related information and include "vegan_statement" or "vegan_certified" fields if present
 
-Example of a good extraction:
+Example of a good extraction (COA):
 {
   "document_type": "COA",
   "confidence_score": "0.95",
@@ -569,20 +571,22 @@ RULES:
      - If halal_certified = "Yes" → add "Halal" to certificates array
      - If organic_certification_body exists → add "Organic" to certificates array
      - If document contains "ISO 9001" text → add "ISO 9001" to certificates array
+     - If document_type = "Vegan_Certificate" → add "Vegan" to certificates array
+     - If document contains "vegan" text, vegan statement, vegan_certified = "Yes", or vegan_statement field exists → add "Vegan" to certificates array
      - DO NOT add GMP, HACCP, FDA, or other certificates unless explicitly found in the data
    
 3. **Standardized Value Formats** (for UI dropdowns):
    - origin_country: "China", "USA", "Germany", "India", "Japan" (proper case, no abbreviations)
    - form: "Powder", "Liquid", "Capsule", "Tablet", "Extract", "Oil" (capitalize first letter)
    - category: "Vitamin", "Mineral", "Amino Acid", "Botanical Extract", "Probiotic", "Enzyme" (proper case)
-   - certificates: "Non-GMO", "Kosher", "Halal", "Organic", "ISO 9001", "ISO 22000", "GMP", "HACCP", "FDA Registered", "GRAS", "Gluten-Free" (exact names)
+   - certificates: "Non-GMO", "Kosher", "Halal", "Organic", "ISO 9001", "ISO 22000", "GMP", "HACCP", "FDA Registered", "GRAS", "Gluten-Free", "Vegan" (exact names)
    - Status fields: "Yes" or "No" (e.g., kosher_certified, halal_certified, gmo_status)
    - Microbiological tests: "Negative" or "Positive" (e.g., e_coli_presence, salmonella_presence)
 
 4. **Merge Strategy**: Prefer more complete/specific values. Merge arrays and deduplicate. Always include units with measurements.
 
 EXAMPLE:
-Input extracted: { "product": "Ascorbic Acid", "made_in": "china", "form": "white powder", "gmo": "Non-GMO", "kosher": "Yes" }
+Input extracted: { "product": "Ascorbic Acid", "made_in": "china", "form": "white powder", "gmo": "Non-GMO", "kosher": "Yes", "vegan_statement": "This product is vegan certified" }
 
 Output:
 {
@@ -593,7 +597,7 @@ Output:
   "applications": ["Dietary Supplements", "Food Fortification"],
   "gmo_status": "Non-GMO",
   "kosher_certified": "Yes",
-  "certificates": ["Non-GMO", "Kosher"]
+  "certificates": ["Non-GMO", "Kosher", "Vegan"]
 }
 
 OUTPUT: Return ONLY valid JSON (no markdown, no code blocks)
