@@ -27,12 +27,21 @@ const TECHNICAL_FIELD_GROUPS: TechnicalFieldCategory[] = [
     ],
   },
   {
+    name: 'Origin & Source',
+    fields: [
+      { key: 'botanicalName', label: 'Botanical/Latin Name' },
+      { key: 'extractionRatio', label: 'Extraction Ratio' },
+      { key: 'carrierMaterial', label: 'Carrier Material' },
+    ],
+  },
+  {
     name: 'Physical Characteristics',
     fields: [
       { key: 'appearance', label: 'Appearance' },
       { key: 'odor', label: 'Odor' },
       { key: 'taste', label: 'Taste' },
       { key: 'solubility', label: 'Solubility' },
+      { key: 'meshSize', label: 'Mesh Size' },
     ],
   },
   {
@@ -45,15 +54,17 @@ const TECHNICAL_FIELD_GROUPS: TechnicalFieldCategory[] = [
       { key: 'ph', label: 'pH' },
       { key: 'bulkDensity', label: 'Bulk Density (g/ml)' },
       { key: 'particleSize', label: 'Particle Size' },
+      { key: 'residualSolvents', label: 'Residual Solvents' },
     ],
   },
   {
-    name: 'Heavy Metals (ppm)',
+    name: 'Heavy Metals & Mycotoxins',
     fields: [
-      { key: 'lead', label: 'Lead (Pb)' },
-      { key: 'arsenic', label: 'Arsenic (As)' },
-      { key: 'cadmium', label: 'Cadmium (Cd)' },
-      { key: 'mercury', label: 'Mercury (Hg)' },
+      { key: 'lead', label: 'Lead (Pb) ppm' },
+      { key: 'arsenic', label: 'Arsenic (As) ppm' },
+      { key: 'cadmium', label: 'Cadmium (Cd) ppm' },
+      { key: 'mercury', label: 'Mercury (Hg) ppm' },
+      { key: 'aflatoxins', label: 'Aflatoxins (ppb)' },
     ],
   },
   {
@@ -67,7 +78,7 @@ const TECHNICAL_FIELD_GROUPS: TechnicalFieldCategory[] = [
     ],
   },
   {
-    name: 'Pesticide & Compliance',
+    name: 'Compliance & Certifications',
     fields: [
       { key: 'pesticideResidue', label: 'Pesticide Residue Status' },
       { key: 'certificateExpiryDate', label: 'Certificate Expiry Date' },
@@ -75,11 +86,26 @@ const TECHNICAL_FIELD_GROUPS: TechnicalFieldCategory[] = [
       { key: 'irradiationStatus', label: 'Irradiation Status' },
       { key: 'allergenInfo', label: 'Allergen Information' },
       { key: 'bseStatement', label: 'BSE/TSE Statement' },
+      { key: 'halalCertified', label: 'Halal Certified' },
+      { key: 'kosherCertified', label: 'Kosher Certified' },
+      { key: 'organicCertificationBody', label: 'Organic Certifier' },
     ],
   },
   {
-    name: 'Storage Conditions',
-    fields: [{ key: 'storageConditions', label: 'Storage Conditions' }],
+    name: 'Packaging & Logistics',
+    fields: [
+      { key: 'grossWeight', label: 'Gross Weight per Package' },
+      { key: 'packagesPerPallet', label: 'Packages per Pallet' },
+      { key: 'storageTemperature', label: 'Storage Temperature' },
+      { key: 'storageConditions', label: 'Storage Conditions' },
+    ],
+  },
+  {
+    name: 'Commercial Terms',
+    fields: [
+      { key: 'moq', label: 'MOQ (Minimum Order Quantity)' },
+      { key: 'sampleAvailability', label: 'Sample Availability' },
+    ],
   },
 ]
 

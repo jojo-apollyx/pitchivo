@@ -31,11 +31,17 @@ export interface FoodSupplementProductData {
   form: string // Physical form (powder, liquid, etc.)
   grade: string // Food grade, pharma grade, etc.
   
+  // Origin & Source
+  botanicalName: string // Latin name for plant-based ingredients
+  extractionRatio: string // e.g., "10:1", "20:1"
+  carrierMaterial: string // e.g., "Maltodextrin", "Silicon Dioxide"
+  
   // Specifications
   appearance: string // e.g., "White to off-white powder"
   odor: string
   taste: string
   solubility: string
+  meshSize: string // e.g., "80 mesh", "100 mesh"
   
   // Tiered Pricing
   priceTiers: PriceTier[]
@@ -87,6 +93,9 @@ export interface FoodSupplementProductData {
   cadmium: number | null
   mercury: number | null
   
+  // Mycotoxins
+  aflatoxins: number | null // Total aflatoxins in ppb
+  
   // Microbiological (cfu/g)
   totalPlateCount: number | null
   yeastMold: number | null
@@ -94,11 +103,26 @@ export interface FoodSupplementProductData {
   salmonellaPresence: string // Negative/Positive
   staphylococcusPresence: string // Negative/Positive
   
-  // Pesticide Residues
+  // Pesticide Residues & Contaminants
   pesticideResidue: string // e.g., "Complies with EU/USP/JP standards"
+  residualSolvents: string // For extracts
   
   // Others
   ph: string // e.g., "5.0-7.0"
   lossOnDrying: number | null // %
+  
+  // Additional Compliance
+  halalCertified: string // Yes/No
+  kosherCertified: string // Yes/No
+  organicCertificationBody: string // e.g., "USDA Organic", "EU Organic"
+  
+  // Logistics
+  grossWeight: string // Gross weight per package
+  packagesPerPallet: number | null
+  storageTemperature: string // Storage temperature requirements
+  
+  // Commercial
+  sampleAvailability: string // Sample policy
+  moq: number | null // Minimum order quantity in kg
 }
 

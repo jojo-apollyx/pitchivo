@@ -157,12 +157,14 @@ export function ReviewFieldsModal({
   const getFieldWidth = (key: string): 'full' | 'half' | 'third' => {
     // Full width fields
     const fullWidthFields = ['product_name', 'description', 'appearance', 'manufacturer_name', 
-      'allergen_statement', 'pesticide_residue', 'specification_standard']
+      'allergen_statement', 'pesticide_residue', 'specification_standard', 'botanical_name',
+      'carrier_material', 'storage_temperature', 'sample_availability', 'residual_solvents']
     
     // Third width fields (for numbers/short values)
     const thirdWidthFields = ['assay_min', 'moisture_max', 'ash_max', 'ph_value', 'bulk_density',
-      'lead_max', 'arsenic_max', 'cadmium_max', 'mercury_max', 'total_plate_count_max',
-      'yeast_mold_max', 'shelf_life_months', 'particle_size_range']
+      'lead_max', 'arsenic_max', 'cadmium_max', 'mercury_max', 'aflatoxins_max',
+      'total_plate_count_max', 'yeast_mold_max', 'shelf_life_months', 'particle_size_range',
+      'mesh_size', 'packages_per_pallet', 'moq', 'extraction_ratio']
     
     if (fullWidthFields.some(f => key.includes(f))) return 'full'
     if (thirdWidthFields.some(f => key.includes(f))) return 'third'

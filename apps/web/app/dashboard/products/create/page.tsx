@@ -24,24 +24,33 @@ const initialFormData: FoodSupplementProductData = {
   applications: [],
   form: '',
   grade: '',
+  botanicalName: '',
+  extractionRatio: '',
+  carrierMaterial: '',
   appearance: '',
   odor: '',
   taste: '',
   solubility: '',
+  meshSize: '',
   priceTiers: [
     { id: '1', moq: 0, price: 0, leadTime: 0 },
   ],
   packagingType: '',
   netWeight: '',
+  grossWeight: '',
+  packagesPerPallet: null,
   paymentTerms: '',
   shelfLife: null,
   incoterm: '',
   storageConditions: [],
+  storageTemperature: '',
   provideSample: '',
   sampleType: '',
   samplePrice: null,
   sampleQuantity: null,
   sampleLeadTime: '',
+  sampleAvailability: '',
+  moq: null,
   certificates: [],
   certificateFiles: [],
   certificateExpiryDate: '',
@@ -49,6 +58,9 @@ const initialFormData: FoodSupplementProductData = {
   gmoStatus: '',
   irradiationStatus: '',
   bseStatement: '',
+  halalCertified: '',
+  kosherCertified: '',
+  organicCertificationBody: '',
   warehouseLocations: [],
   coaFile: null,
   tdsFile: null,
@@ -64,12 +76,14 @@ const initialFormData: FoodSupplementProductData = {
   arsenic: null,
   cadmium: null,
   mercury: null,
+  aflatoxins: null,
   totalPlateCount: null,
   yeastMold: null,
   eColiPresence: '',
   salmonellaPresence: '',
   staphylococcusPresence: '',
   pesticideResidue: '',
+  residualSolvents: '',
   ph: '',
   lossOnDrying: null,
 }
@@ -385,10 +399,30 @@ export default function CreateProductPage() {
                     break
                 }
                 break
+              case 'origin':
+                switch (fieldKey) {
+                  case 'botanical_name':
+                    updates.botanicalName = String(value)
+                    newVisibleFields.add('botanicalName')
+                    break
+                  case 'extraction_ratio':
+                    updates.extractionRatio = String(value)
+                    newVisibleFields.add('extractionRatio')
+                    break
+                  case 'carrier_material':
+                    updates.carrierMaterial = String(value)
+                    newVisibleFields.add('carrierMaterial')
+                    break
+                }
+                break
               case 'physical':
                 switch (fieldKey) {
                   case 'form':
                     updates.form = String(value)
+                    break
+                  case 'mesh_size':
+                    updates.meshSize = String(value)
+                    newVisibleFields.add('meshSize')
                     break
                   // Note: color field doesn't exist in form, skip it
                   // case 'color':
@@ -470,6 +504,16 @@ export default function CreateProductPage() {
                     updates.pesticideResidue = String(value)
                     newVisibleFields.add('pesticideResidue')
                     break
+                  case 'aflatoxins_max':
+                    if (value) {
+                      updates.aflatoxins = parseFloat(String(value))
+                      newVisibleFields.add('aflatoxins')
+                    }
+                    break
+                  case 'residual_solvents':
+                    updates.residualSolvents = String(value)
+                    newVisibleFields.add('residualSolvents')
+                    break
                 }
                 break
               case 'microbial':
@@ -515,6 +559,20 @@ export default function CreateProductPage() {
                       newVisibleFields.add('shelfLife')
                     }
                     break
+                  case 'storage_temperature':
+                    updates.storageTemperature = String(value)
+                    newVisibleFields.add('storageTemperature')
+                    break
+                  case 'sample_availability':
+                    updates.sampleAvailability = String(value)
+                    newVisibleFields.add('sampleAvailability')
+                    break
+                  case 'moq':
+                    if (value) {
+                      updates.moq = parseInt(String(value))
+                      newVisibleFields.add('moq')
+                    }
+                    break
                 }
                 break
               case 'packaging':
@@ -526,6 +584,16 @@ export default function CreateProductPage() {
                     break
                   case 'net_weight_per_package':
                     updates.netWeight = String(value)
+                    break
+                  case 'gross_weight_per_package':
+                    updates.grossWeight = String(value)
+                    newVisibleFields.add('grossWeight')
+                    break
+                  case 'packages_per_pallet':
+                    if (value) {
+                      updates.packagesPerPallet = parseInt(String(value))
+                      newVisibleFields.add('packagesPerPallet')
+                    }
                     break
                 }
                 break
@@ -542,6 +610,18 @@ export default function CreateProductPage() {
                   case 'is_gmo':
                     updates.gmoStatus = value === 'Yes' ? 'Non-GMO' : value === 'No' ? 'GMO' : 'Unknown'
                     newVisibleFields.add('gmoStatus')
+                    break
+                  case 'halal_certified':
+                    updates.halalCertified = String(value)
+                    newVisibleFields.add('halalCertified')
+                    break
+                  case 'kosher_certified':
+                    updates.kosherCertified = String(value)
+                    newVisibleFields.add('kosherCertified')
+                    break
+                  case 'organic_certification_body':
+                    updates.organicCertificationBody = String(value)
+                    newVisibleFields.add('organicCertificationBody')
                     break
                   case 'specification_standard':
                     if (Array.isArray(value)) {
