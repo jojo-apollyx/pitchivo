@@ -155,36 +155,52 @@ export async function POST(request: NextRequest) {
     }
 
     // System prompt for extraction - adapts to document type
-    const systemPrompt = `You are an AI assistant for extracting structured data from documents. First identify the document type, then extract relevant information using the appropriate schema.
+    const systemPrompt = `You are an AI assistant specialized in extracting structured data from B2B food supplement and ingredient industry documents.
 
 CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no code blocks.
 
-STEP 1: Identify the document type from these options:
-- "COA" (Certificate of Analysis)
-- "TDS" (Technical Data Sheet)
-- "MSDS" (Material Safety Data Sheet)
-- "Specification_Sheet" (Product Specification)
-- "Certificate" (General certificate)
-- "Allergen_Statement" (Allergen statement or allergen info document)
-- "Nutritional_Info" (Nutritional information document)
-- "Product_Label" (Product label or packaging information)
-- "Driver_License" (Driver's license or ID card)
-- "Passport" (Passport document)
-- "Invoice" (Invoice or bill)
-- "Contract" (Contract or agreement)
-- "Other" (Any other document type)
+STEP 1: Analyze and identify the document type
+Determine what type of document this is based on its content, structure, and purpose. Common document types in the food/supplement industry include:
 
-STEP 2: Extract data based on document type:
+TECHNICAL & QUALITY DOCUMENTS:
+- COA (Certificate of Analysis) - Lab test results with analytical data
+- TDS (Technical Data Sheet) - Technical specifications and properties
+- MSDS/SDS (Material Safety Data Sheet) - Safety and handling information
+- Specification_Sheet - Product specifications and standards
+- COO (Certificate of Origin) - Product origin certification
+- Quality_Certificate - Quality assurance certification
 
-For PRODUCT-RELATED documents (COA, TDS, MSDS, Specification_Sheet, Certificate, Allergen_Statement, Nutritional_Info, Product_Label):
-Use the detailed food industry schema below. Extract all relevant product information.
+COMPLIANCE & REGULATORY:
+- Allergen_Statement - Allergen information and declarations
+- Nutritional_Info - Nutritional facts and analysis
+- Organic_Certificate - Organic certification documents
+- Halal_Certificate - Halal certification
+- Kosher_Certificate - Kosher certification
+- GMP_Certificate - Good Manufacturing Practice certification
+- ISO_Certificate - ISO standard certifications
+- FDA_Letter - FDA notifications or approvals
+- GRAS_Notice - Generally Recognized as Safe notices
 
-For NON-PRODUCT documents (Driver_License, Passport, Invoice, Contract, Other):
-Only populate fields that are relevant to the document. Leave all food-specific fields empty. Extract what you see:
-- For IDs/Licenses: name, date of birth, issue date, expiration date, ID number, issuing authority, address
-- For Invoices: invoice number, date, items, amounts, vendor, customer
-- For Contracts: parties, dates, terms, amounts
-- For Other: extract key information visible in the document
+PRODUCT INFORMATION:
+- Product_Specification - Detailed product specifications
+- Product_Label - Product packaging and labeling information
+- Product_Catalog - Product catalog or brochure
+- Ingredient_List - Ingredient declarations and compositions
+
+BUSINESS DOCUMENTS:
+- Quote - Price quotation
+- Product_Offer - Product offering sheet
+- Sample_Information - Sample details and conditions
+
+If the document doesn't fit any of these categories or is not relevant to B2B food/supplement trading, classify it as "Other".
+
+STEP 2: Extract data based on document relevance:
+
+For PRODUCT-RELATED documents (technical, compliance, product info categories above):
+Extract comprehensive product information using the detailed schema below. Be thorough and extract all available data.
+
+For NON-PRODUCT documents (Other):
+Set document_type to "Other" and only extract basic information visible in the document. Leave all product-specific fields empty.
 
 {
   "document_type": string (from STEP 1),

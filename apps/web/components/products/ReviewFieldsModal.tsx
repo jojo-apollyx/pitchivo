@@ -27,25 +27,37 @@ interface ReviewFieldsModalProps {
   onApply: (reviewedFields: Record<string, any>) => Promise<void>
 }
 
-// Document types that are NOT suitable for product creation
-const NON_PRODUCT_DOCUMENT_TYPES = [
-  'Driver_License',
-  'Passport',
-  'Invoice',
-  'Contract',
-  'Other'
-]
-
-// Product-related document types
+// Product-related document types (industry-standard documents for B2B food/supplement trading)
 const PRODUCT_DOCUMENT_TYPES = [
+  // Technical & Quality
   'COA',
   'TDS',
   'MSDS',
+  'SDS',
   'Specification_Sheet',
-  'Certificate',
+  'COO',
+  'Quality_Certificate',
+  // Compliance & Regulatory
   'Allergen_Statement',
   'Nutritional_Info',
-  'Product_Label'
+  'Organic_Certificate',
+  'Halal_Certificate',
+  'Kosher_Certificate',
+  'GMP_Certificate',
+  'ISO_Certificate',
+  'FDA_Letter',
+  'GRAS_Notice',
+  // Product Information
+  'Product_Specification',
+  'Product_Label',
+  'Product_Catalog',
+  'Ingredient_List',
+  // Business Documents
+  'Quote',
+  'Product_Offer',
+  'Sample_Information',
+  // Generic
+  'Certificate'
 ]
 
 export function ReviewFieldsModal({
@@ -61,8 +73,8 @@ export function ReviewFieldsModal({
   const [isApplying, setIsApplying] = useState(false)
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
   
-  // Check if this is a non-product document
-  const isNonProductDocument = documentType && NON_PRODUCT_DOCUMENT_TYPES.includes(documentType)
+  // Check if this is a non-product document (anything not in the product types list, including "Other")
+  const isNonProductDocument = documentType && !PRODUCT_DOCUMENT_TYPES.includes(documentType)
 
   useEffect(() => {
     if (isOpen && fields.length > 0) {
