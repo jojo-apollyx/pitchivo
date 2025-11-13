@@ -299,6 +299,13 @@ ${context.extractedContent}`
     try {
       // First try standard JSON.parse
       extractedData = JSON.parse(cleanedResponse)
+      
+      // Handle double-encoded JSON (AI returning "{ ... }" instead of { ... })
+      // If the result is a string, try parsing it again
+      if (typeof extractedData === 'string') {
+        console.log('[AI Extraction] Detected double-encoded JSON, parsing again...')
+        extractedData = JSON.parse(extractedData)
+      }
     } catch (parseError) {
       console.error('[AI Extraction] JSON Parse Error:', parseError)
       console.error('[AI Extraction] Response length:', cleanedResponse.length)
@@ -317,6 +324,13 @@ ${context.extractedContent}`
         console.log('[AI Extraction] Attempting to repair JSON using jsonrepair...')
         const repairedJson = jsonrepair(cleanedResponse)
         extractedData = JSON.parse(repairedJson)
+        
+        // Check again for double-encoding after repair
+        if (typeof extractedData === 'string') {
+          console.log('[AI Extraction] Detected double-encoded JSON after repair, parsing again...')
+          extractedData = JSON.parse(extractedData)
+        }
+        
         console.log('[AI Extraction] Successfully repaired and parsed JSON')
       } catch (repairError) {
         // If jsonrepair also fails, try extracting just the JSON object portion
@@ -327,6 +341,13 @@ ${context.extractedContent}`
             const jsonOnly = cleanedResponse.substring(firstBrace, lastBrace + 1)
             const repairedJson = jsonrepair(jsonOnly)
             extractedData = JSON.parse(repairedJson)
+            
+            // Check again for double-encoding
+            if (typeof extractedData === 'string') {
+              console.log('[AI Extraction] Detected double-encoded JSON after extraction, parsing again...')
+              extractedData = JSON.parse(extractedData)
+            }
+            
             console.log('[AI Extraction] Successfully repaired JSON after extracting object portion')
           } else {
             throw repairError
@@ -336,6 +357,12 @@ ${context.extractedContent}`
           throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}. Response may contain invalid JSON syntax that could not be repaired.`)
         }
       }
+    }
+    
+    // Ensure we have an object, not a string
+    if (typeof extractedData !== 'object' || extractedData === null) {
+      console.error('[AI Extraction] Extracted data is not an object:', typeof extractedData)
+      throw new Error('AI response did not produce a valid JSON object')
     }
 
     // Normalize extracted data to convert any complex objects to plain text

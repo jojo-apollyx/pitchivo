@@ -468,7 +468,12 @@ export function getExtractionSystemPrompt(): string {
   
   return `You are an AI assistant specialized in extracting structured data from B2B food supplement and ingredient industry documents.
 
-CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no code blocks.
+CRITICAL OUTPUT REQUIREMENTS:
+- Return ONLY valid JSON object starting with { and ending with }
+- NO markdown code blocks
+- NO explanatory text before or after the JSON
+- NO quoted/escaped JSON strings - return the raw JSON object directly
+- The first character must be { and the last character must be }
 
 STEP 1: Identify the document type
 Use EXACTLY ONE of these document type codes based on the document content:
@@ -482,14 +487,8 @@ Write 2-3 sentences describing what this document is about.
 
 STEP 3: Extract ONLY product-related information
 Extract information that is RELEVANT TO THE PRODUCT ITSELF:
-- Product identification (name, codes, manufacturer, origin)
-- Product specifications (appearance, form, grade, category, composition)
-- Technical data (assay, purity, test results, heavy metals, microbial counts)
-- Compliance & certifications (GMO status, allergens, certificates)
-- Packaging & logistics (packaging type, shelf life, storage, MOQ, pricing)
 
 DO NOT EXTRACT:
-- Contact information (emails, phone numbers, websites, addresses)
 - Document metadata (issuer names, job titles, dates unless relevant to product)
 - Legal disclaimers or confidentiality statements
 - Generic company information unrelated to the product
