@@ -174,8 +174,12 @@ export function FileUploadPanel({
       return true
     }
     
-    // Check if data is grouped (has _grouped property)
-    if (values._grouped && typeof values._grouped === 'object') {
+    // Check if data is grouped (has _grouped property with actual data)
+    const hasGroupedData = values._grouped && 
+      typeof values._grouped === 'object' && 
+      Object.keys(values._grouped).length > 0
+    
+    if (hasGroupedData) {
       // Process grouped data
       Object.entries(values._grouped as Record<string, any>).forEach(([groupKey, groupData]) => {
         if (groupData && typeof groupData === 'object') {
@@ -194,16 +198,16 @@ export function FileUploadPanel({
         }
       })
     } else {
-      // Fallback: flat structure
+      // Flat structure (snake_case fields)
       Object.entries(values)
-        .filter(([key, value]) => key !== '_grouped' && isValidValue(value))
+        .filter(([key, value]) => key !== '_grouped' && key !== 'document_type' && key !== 'summary' && key !== 'confidence_score' && isValidValue(value))
         .forEach(([key, value]) => {
           fields.push({
             key,
-            label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+            label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).trim(),
             value,
             confidence: 0.85,
-            section: 'basic'
+            section: 'extracted'
           })
         })
     }
