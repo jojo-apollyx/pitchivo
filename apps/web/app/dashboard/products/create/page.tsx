@@ -15,7 +15,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save, Sparkles, Loader2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -23,6 +23,7 @@ import { FileUploadPanel, type FileWithExtraction } from '@/components/products/
 import { FoodSupplementForm } from '@/components/products/industries/food-supplement/FoodSupplementForm'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { cn } from '@/lib/utils'
+import { useProduct } from '@/lib/api/products'
 
 const initialFormData: FoodSupplementProductData = {
   // Core Product Information
@@ -119,9 +120,68 @@ const initialFormData: FoodSupplementProductData = {
 
 export default function CreateProductPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlProductId = searchParams.get('productId')
   const [formData, setFormData] = useState<FoodSupplementProductData>(initialFormData)
   const [uploadedFiles, setUploadedFiles] = useState<FileWithExtraction[]>([])
-  const [productId, setProductId] = useState<string | null>(null) // Track product ID for updates
+  const [productId, setProductId] = useState<string | null>(urlProductId) // Track product ID for updates
+  
+  // Load product data if editing
+  const { data: productData, isLoading: isLoadingProduct } = useProduct(urlProductId || '')
+  
+  // Helper to check if a value is meaningful (not empty, null, undefined, or "Unknown")
+  const hasMeaningfulValue = (value: any): boolean => {
+    if (value === null || value === undefined) return false
+    if (typeof value === 'string' && value.trim() === '') return false
+    if (typeof value === 'string' && value.trim().toLowerCase() === 'unknown') return false
+    return true
+  }
+
+  // Load product data into form when product is fetched
+  useEffect(() => {
+    if (productData && productData.product_data) {
+      const productDataObj = typeof productData.product_data === 'string' 
+        ? JSON.parse(productData.product_data) 
+        : productData.product_data
+      
+      // Merge product data into form
+      setFormData((prev) => ({
+        ...prev,
+        ...productDataObj,
+        // Override with extracted columns if they exist
+        product_name: productData.product_name || prev.product_name,
+        origin_country: productData.origin_country || prev.origin_country,
+        manufacturer_name: productData.manufacturer_name || prev.manufacturer_name,
+        category: productData.category || prev.category,
+        form: productData.form || prev.form,
+        grade: productData.grade || prev.grade,
+        applications: productData.applications || prev.applications,
+      }))
+      
+      setProductId(productData.product_id)
+      
+      // Show visible technical fields that have values
+      const newVisibleFields = new Set<string>()
+      const technicalFields = [
+        'appearance', 'odor', 'taste', 'solubility', 'mesh_size', 'bulk_density',
+        'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
+        'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
+        'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
+        'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
+        'particle_size', 'einecs', 'fda_number', 'allergen_info',
+        'gmo_status', 'irradiation_status', 'bse_statement'
+      ]
+      
+      technicalFields.forEach((field) => {
+        const value = productDataObj[field]
+        if (hasMeaningfulValue(value)) {
+          newVisibleFields.add(field)
+        }
+      })
+      
+      setVisibleTechnicalFields(newVisibleFields)
+    }
+  }, [productData])
 
   // Helper to deduplicate files by extraction.id
   const deduplicateFiles = (files: FileWithExtraction[]): FileWithExtraction[] => {
@@ -138,14 +198,6 @@ export default function CreateProductPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [extractedGroupedData, setExtractedGroupedData] = useState<any>({})
-
-  // Helper to check if a value is meaningful (not empty, null, undefined, or "Unknown")
-  const hasMeaningfulValue = (value: any): boolean => {
-    if (value === null || value === undefined) return false
-    if (typeof value === 'string' && value.trim() === '') return false
-    if (typeof value === 'string' && value.trim().toLowerCase() === 'unknown') return false
-    return true
-  }
 
   // Clean up visibleFields based on current form data values
   // Remove fields that have empty/unknown values
@@ -1134,6 +1186,18 @@ export default function CreateProductPage() {
   }
 
   const completedFilesCount = uploadedFiles.filter((f) => f.displayStatus === 'completed').length
+
+  // Show loading state when loading product data
+  if (isLoadingProduct && urlProductId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading product data...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
