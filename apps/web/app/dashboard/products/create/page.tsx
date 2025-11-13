@@ -1,5 +1,19 @@
 'use client'
 
+/**
+ * LEGACY: Product Creation Page (Food Supplement)
+ * 
+ * This page is maintained for backward compatibility.
+ * API calls to /api/documents/* automatically delegate to industry-specific routes.
+ * 
+ * NEW STRUCTURE: /dashboard/[industry_code]/products/create
+ * Future: This page will redirect to /dashboard/food_supplement/products/create
+ * 
+ * Current behavior: Works seamlessly with new industry-specific API architecture
+ * - /api/documents/extract → /api/food_supplement/documents/extract
+ * - /api/documents/merge → /api/food_supplement/documents/merge
+ */
+
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Sparkles, Loader2 } from 'lucide-react'
