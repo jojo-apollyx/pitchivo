@@ -2,6 +2,7 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TagListField } from '@/components/ui/tag-list-field'
 import {
   Select,
   SelectContent,
@@ -660,17 +661,17 @@ export function TechnicalFieldsSection({
                     </Select>
                   </div>
                 )}
-                {visibleFields.has('allergen_info') && (
-                  <div>
-                    <Label htmlFor="allergen_info">Allergen Information</Label>
-                    <Input
-                      id="allergen_info"
-                      value={formData.allergen_info || ''}
-                      onChange={(e) => onChange({ allergen_info: e.target.value })}
-                      placeholder="e.g., None, Gluten-Free"
-                    />
-                  </div>
-                )}
+              </div>
+              {visibleFields.has('allergen_info') && (
+                <TagListField
+                  label="Allergen Information"
+                  value={formData.allergen_info || []}
+                  onChange={(value) => onChange({ allergen_info: value })}
+                  placeholder="Enter allergen name..."
+                  emptyMessage="No allergens specified. Click 'Add' to add allergen information."
+                />
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {visibleFields.has('bse_statement') && (
                   <div>
                     <Label htmlFor="bse_statement">BSE/TSE Statement</Label>
@@ -805,4 +806,5 @@ export function TechnicalFieldsSection({
     </section>
   )
 }
+
 

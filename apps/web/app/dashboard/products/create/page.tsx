@@ -97,7 +97,7 @@ const initialFormData: FoodSupplementProductData = {
   
   // Certificates & Compliance
   certificates: [],
-  allergen_info: '',
+  allergen_info: [],
   gmo_status: '',
   irradiation_status: '',
   bse_statement: '',
@@ -641,7 +641,7 @@ export default function CreateProductPage() {
               'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
               'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
               'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
-              'particle_size', 'einecs', 'fda_number'
+              'particle_size', 'einecs', 'fda_number', 'allergen_info'
             ]
             
             if (technicalFields.includes(key)) {
@@ -759,7 +759,7 @@ export default function CreateProductPage() {
             'lead', 'arsenic', 'cadmium', 'mercury', 'pesticide_residue', 'aflatoxins',
             'total_plate_count', 'yeast_mold', 'e_coli_presence', 'salmonella_presence',
             'staphylococcus_presence', 'botanical_name', 'extraction_ratio', 'carrier_material',
-            'particle_size', 'einecs', 'fda_number'
+            'particle_size', 'einecs', 'fda_number', 'allergen_info'
           ]
           
           if (technicalFields.includes(key)) {

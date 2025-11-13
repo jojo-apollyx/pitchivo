@@ -171,7 +171,7 @@ export interface FoodSupplementProductData {
   
   // Certificates & Compliance
   certificates?: string[]
-  allergen_info?: string
+  allergen_info?: string[] // Array of allergens the product is free from
   gmo_status?: string
   irradiation_status?: string
   bse_statement?: string
@@ -286,7 +286,7 @@ export const PRODUCT_FIELDS = {
   
   // Certificates & Compliance
   certificates: { label: 'Certificates', value_type: 'array' },
-  allergen_info: { label: 'Allergen Information', value_type: 'string' },
+  allergen_info: { label: 'Allergen Information', value_type: 'array' }, // Array of allergens the product is free from (e.g., ["Milk", "Eggs", "Wheat"])
   gmo_status: { label: 'GMO Status', value_type: 'string' },
   irradiation_status: { label: 'Irradiation Status', value_type: 'string' },
   bse_statement: { label: 'BSE/TSE Free Statement', value_type: 'string' },
@@ -571,7 +571,7 @@ export function getMergeSystemPrompt(): string {
 
 IMPORTANT: Actively STANDARDIZE all values, names, and formats - even when no new information is added.
 
-SCHEMA (arrays: price_lead_time, samples, inventory_locations, applications, certificates, storage_conditions):
+SCHEMA (arrays: price_lead_time, samples, inventory_locations, applications, certificates, storage_conditions, allergen_info):
 ${schemaDoc}
 
 RULES:
@@ -599,7 +599,13 @@ RULES:
 
 4. **Merge Strategy**: Prefer more complete/specific values. Merge arrays and deduplicate. Always include units with measurements.
 
-EXAMPLE:
+5. **Field Relationships & Inference**:
+   - Understand that fields like "allergens_free", "allergen_statement", "allergen_info" are all related to allergen information
+   - If extracted data contains allergen-related information (e.g., "allergens_free" array, "allergen_statement" text, or mentions of specific allergens), infer and populate the "allergen_info" array
+   - Extract individual allergen names from text or arrays and populate as an array of strings (e.g., ["Milk", "Eggs", "Wheat"])
+   - Use your understanding of the data to intelligently map related fields
+
+EXAMPLE 1:
 Input extracted: { "product": "Ascorbic Acid", "made_in": "china", "form": "white powder", "gmo": "Non-GMO", "kosher": "Yes", "vegan_statement": "This product is vegan certified" }
 
 Output:
@@ -612,6 +618,14 @@ Output:
   "gmo_status": "Non-GMO",
   "kosher_certified": "Yes",
   "certificates": ["Non-GMO", "Kosher", "Vegan"]
+}
+
+EXAMPLE 2 (Allergen Statement):
+Input extracted: { "document_type": "Allergen_Statement", "allergens_free": ["Milk", "Eggs", "Fish", "Shellfish", "Tree Nuts", "Peanuts", "Wheat", "Soybeans"] }
+
+Output:
+{
+  "allergen_info": ["Milk", "Eggs", "Fish", "Shellfish", "Tree Nuts", "Peanuts", "Wheat", "Soybeans"]
 }
 
 OUTPUT: Return ONLY valid JSON (no markdown, no code blocks)
