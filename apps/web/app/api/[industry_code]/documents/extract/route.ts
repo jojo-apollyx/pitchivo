@@ -23,9 +23,9 @@ export const maxDuration = 300 // 5 minutes for AI processing
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { industry_code: string } }
+  { params }: { params: Promise<{ industry_code: string }> }
 ) {
-  const { industry_code } = params
+  const { industry_code } = await params
 
   try {
     // Validate authentication

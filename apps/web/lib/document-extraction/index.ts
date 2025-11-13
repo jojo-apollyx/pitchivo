@@ -22,9 +22,7 @@ export {
 } from './extractor'
 
 export {
-  extractPdfContent,
-  detectPdfType,
-  preparePdfForVision
+  extractPdfContent
 } from './pdf-handler'
 
 export {

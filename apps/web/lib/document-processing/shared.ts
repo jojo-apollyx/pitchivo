@@ -190,7 +190,6 @@ export async function runAIExtraction(
         }
       ],
       temperature: options.temperature ?? 0.1,
-      maxTokens: options.maxTokens ?? 4000,
     })
 
     // Clean up response (remove markdown code blocks if present)

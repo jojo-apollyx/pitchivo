@@ -39,7 +39,7 @@ export function extractExcelContent(
         header: 1, // Use array of arrays
         defval: '', // Default value for empty cells
         blankrows: false
-      })
+      }) as any[][]
       
       structuredData.sheets[sheetName] = {
         data: jsonData,

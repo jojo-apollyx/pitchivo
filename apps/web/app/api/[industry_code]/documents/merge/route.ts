@@ -19,9 +19,9 @@ export const maxDuration = 60
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { industry_code: string } }
+  { params }: { params: Promise<{ industry_code: string }> }
 ) {
-  const { industry_code } = params
+  const { industry_code } = await params
 
   try {
     // Validate authentication
@@ -96,7 +96,6 @@ Now merge the data:`
         },
       ],
       temperature: 0.1, // Low temperature for consistent merging
-      maxTokens: 4000,
     })
 
     // Parse the AI response
