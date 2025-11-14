@@ -618,12 +618,12 @@ export default function ProductAnalyticsPage() {
                 <Calendar className="h-5 w-5 text-[#F5E6A6]" />
               </div>
               <div>
-                <h2 className="text-lg md:text-xl font-semibold">Individual Access Logs</h2>
-                <p className="text-sm text-muted-foreground">Detailed view of each visit with browser, location, and device information</p>
+                <h2 className="text-lg md:text-xl font-semibold">Recent Access Logs</h2>
+                <p className="text-sm text-muted-foreground">Most recent 15 visits with browser, location, and device information</p>
               </div>
             </div>
             <div className="divide-y divide-border/30">
-              {analytics.access_logs.slice(0, 50).map((log) => {
+              {analytics.access_logs.slice(0, 15).map((log) => {
                 const isExpanded = expandedLogs.has(log.access_id)
                 const { browser, os } = parseUserAgent(log.user_agent)
                 const DeviceIcon = getDeviceIcon(log.device_type)
@@ -658,6 +658,13 @@ export default function ProductAnalyticsPage() {
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Globe className="h-3 w-3" />
                               {log.country_code}
+                              {log.city && ` · ${log.city}`}
+                            </div>
+                          )}
+                          {!log.country_code && log.city && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <MapPin className="h-3 w-3" />
+                              {log.city}
                             </div>
                           )}
                           <DeviceIcon className="h-4 w-4 text-[#A6D4F5]" />
@@ -713,9 +720,9 @@ export default function ProductAnalyticsPage() {
                 )
               })}
             </div>
-            {analytics.access_logs.length > 50 && (
+            {analytics.access_logs.length > 15 && (
               <p className="text-sm text-muted-foreground mt-6 text-center p-4 rounded-xl bg-[#E9A6F5]/5">
-                Showing first 50 of {analytics.access_logs.length} access logs
+                Showing most recent 15 of {analytics.access_logs.length} access logs
               </p>
             )}
           </div>
