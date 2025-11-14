@@ -71,9 +71,8 @@ CREATE POLICY "Users can view their organization's RFQs"
   FOR SELECT
   USING (
     org_id IN (
-      SELECT om.org_id 
-      FROM organization_members om 
-      WHERE om.user_id = auth.uid()
+      SELECT organization_id FROM user_profiles
+      WHERE id = auth.uid()
     )
   );
 
@@ -83,9 +82,8 @@ CREATE POLICY "Users can update their organization's RFQs"
   FOR UPDATE
   USING (
     org_id IN (
-      SELECT om.org_id 
-      FROM organization_members om 
-      WHERE om.user_id = auth.uid()
+      SELECT organization_id FROM user_profiles
+      WHERE id = auth.uid()
     )
   );
 

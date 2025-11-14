@@ -63,14 +63,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is member of product's organization
-    const { data: membership, error: membershipError } = await supabase
-      .from('organization_members')
-      .select('org_id')
-      .eq('org_id', product.org_id)
-      .eq('user_id', user.id)
+    const { data: userProfile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('organization_id')
+      .eq('id', user.id)
       .single()
 
-    if (membershipError || !membership) {
+    if (profileError || !userProfile || userProfile.organization_id !== product.org_id) {
       return NextResponse.json(
         { error: 'You do not have permission to create tokens for this product' },
         { status: 403 }

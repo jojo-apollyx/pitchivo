@@ -129,9 +129,8 @@ CREATE POLICY "Users can view their organization's tokens"
   FOR SELECT
   USING (
     org_id IN (
-      SELECT om.org_id 
-      FROM organization_members om 
-      WHERE om.user_id = auth.uid()
+      SELECT organization_id FROM user_profiles
+      WHERE id = auth.uid()
     )
   );
 
@@ -141,9 +140,8 @@ CREATE POLICY "Users can create tokens for their organization"
   FOR INSERT
   WITH CHECK (
     org_id IN (
-      SELECT om.org_id 
-      FROM organization_members om 
-      WHERE om.user_id = auth.uid()
+      SELECT organization_id FROM user_profiles
+      WHERE id = auth.uid()
     )
   );
 
@@ -153,9 +151,8 @@ CREATE POLICY "Users can update their organization's tokens"
   FOR UPDATE
   USING (
     org_id IN (
-      SELECT om.org_id 
-      FROM organization_members om 
-      WHERE om.user_id = auth.uid()
+      SELECT organization_id FROM user_profiles
+      WHERE id = auth.uid()
     )
   );
 
@@ -165,9 +162,8 @@ CREATE POLICY "Users can delete their organization's tokens"
   FOR DELETE
   USING (
     org_id IN (
-      SELECT om.org_id 
-      FROM organization_members om 
-      WHERE om.user_id = auth.uid()
+      SELECT organization_id FROM user_profiles
+      WHERE id = auth.uid()
     )
   );
 

@@ -41,14 +41,13 @@ export async function GET(
           .single()
 
         if (product) {
-          const { data: membership } = await supabase
-            .from('organization_members')
-            .select('org_id')
-            .eq('org_id', product.org_id)
-            .eq('user_id', user.id)
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('organization_id')
+            .eq('id', user.id)
             .single()
 
-          isMerchant = !!membership
+          isMerchant = !!userProfile && userProfile.organization_id === product.org_id
         }
       }
     }
