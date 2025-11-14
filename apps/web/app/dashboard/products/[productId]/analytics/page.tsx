@@ -9,7 +9,6 @@ import { useProduct } from '@/lib/api/products'
 import { createClient } from '@/lib/supabase/client'
 import { format, subDays, startOfDay } from 'date-fns'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { getMacaroonColors, getChartColors } from '@/lib/theme-macaroon'
 
 interface AccessLog {
   access_id: string
@@ -54,6 +53,9 @@ interface AnalyticsData {
   conversion_trend: Array<{ date: string; rate: number }>
 }
 
+// Macaroon color palette - soft, premium pastels
+const COLORS = ['#E9A6F5', '#F5A6D0', '#F5C6A6', '#A6D4F5', '#C6A6F5', '#F5E6A6']
+
 export default function ProductAnalyticsPage() {
   const params = useParams()
   const router = useRouter()
@@ -63,36 +65,6 @@ export default function ProductAnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set())
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
-  const [macaroonColors, setMacaroonColors] = useState(() => getMacaroonColors('#8B5CF6')) // Default purple
-  const [COLORS, setCOLORS] = useState(() => getChartColors('#8B5CF6'))
-
-  // Fetch organization primary color and set macaroon colors
-  useEffect(() => {
-    const fetchThemeColor = async () => {
-      if (!productData?.org_id) return
-
-      try {
-        const supabase = createClient()
-        const { data: orgData } = await supabase
-          .from('organizations')
-          .select('primary_color')
-          .eq('id', productData.org_id)
-          .single()
-
-        if (orgData?.primary_color) {
-          const colors = getMacaroonColors(orgData.primary_color)
-          const chartColors = getChartColors(orgData.primary_color)
-          setMacaroonColors(colors)
-          setCOLORS(chartColors)
-          console.log(`[Analytics] Theme ${orgData.primary_color} → Macaroon colors applied`)
-        }
-      } catch (error) {
-        console.error('Error fetching theme color:', error)
-      }
-    }
-
-    fetchThemeColor()
-  }, [productData?.org_id])
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -312,8 +284,8 @@ export default function ProductAnalyticsPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
-            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4" style={{ color: macaroonColors.primary }} />
-            <div className="absolute inset-0 blur-xl animate-pulse" style={{ backgroundColor: `${macaroonColors.primary}20` }} />
+            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4 text-[#E9A6F5]" />
+            <div className="absolute inset-0 blur-xl bg-[#E9A6F5]/20 animate-pulse" />
           </div>
           <p className="text-muted-foreground">Loading premium analytics...</p>
         </div>
@@ -323,11 +295,11 @@ export default function ProductAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Decorative background - dynamic macaroon gradient */}
+      {/* Decorative background - macaroon gradient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: `${macaroonColors.primary}10` }} />
-        <div className="absolute top-40 left-20 w-64 h-64 rounded-full blur-3xl" style={{ backgroundColor: `${macaroonColors.secondary}10` }} />
-        <div className="absolute bottom-20 right-40 w-80 h-80 rounded-full blur-3xl" style={{ backgroundColor: `${macaroonColors.chart1}10` }} />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#E9A6F5]/10 rounded-full blur-3xl" />
+        <div className="absolute top-40 left-20 w-64 h-64 bg-[#F5A6D0]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-40 w-80 h-80 bg-[#A6D4F5]/10 rounded-full blur-3xl" />
       </div>
 
       {/* Header - Sticky */}
@@ -347,18 +319,11 @@ export default function ProductAnalyticsPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl" style={{ background: `linear-gradient(to bottom right, ${macaroonColors.primary}20, ${macaroonColors.secondary}20)` }}>
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: macaroonColors.primary }} />
+                <div className="p-2 rounded-xl bg-gradient-to-br from-[#E9A6F5]/20 to-[#F5A6D0]/20">
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-[#E9A6F5]" />
                 </div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">
-                  <span style={{
-                    background: `linear-gradient(to right, ${macaroonColors.primary}, ${macaroonColors.secondary}, ${macaroonColors.tertiary})`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}>
-                    Product Analytics
-                  </span>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold bg-gradient-to-r from-[#E9A6F5] via-[#F5A6D0] to-[#C6A6F5] bg-clip-text text-transparent">
+                  Product Analytics
                 </h1>
               </div>
               <p className="text-sm sm:text-base text-muted-foreground mt-2">
@@ -391,17 +356,12 @@ export default function ProductAnalyticsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Visits */}
-            <div 
-              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
-              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.primary}0D, ${macaroonColors.primary}1A)` }}
-              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.primary}1A, ${macaroonColors.primary}33)`}
-              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.primary}0D, ${macaroonColors.primary}1A)`}
-            >
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/5 to-[#E9A6F5]/10 hover:from-[#E9A6F5]/10 hover:to-[#E9A6F5]/20 transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.primary}33` }}>
-                  <Eye className="h-4 w-4" style={{ color: macaroonColors.primary }} />
+                <div className="p-2 rounded-lg bg-[#E9A6F5]/20">
+                  <Eye className="h-4 w-4 text-[#E9A6F5]" />
                 </div>
-                <TrendingUp className="h-4 w-4" style={{ color: `${macaroonColors.primary}99` }} />
+                <TrendingUp className="h-4 w-4 text-[#E9A6F5]/60" />
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Total Visits</p>
               <p className="text-3xl font-bold text-foreground">{analytics?.total_visits || 0}</p>
@@ -411,17 +371,12 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* RFQ Submissions */}
-            <div 
-              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
-              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.secondary}0D, ${macaroonColors.secondary}1A)` }}
-              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.secondary}1A, ${macaroonColors.secondary}33)`}
-              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.secondary}0D, ${macaroonColors.secondary}1A)`}
-            >
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5A6D0]/5 to-[#F5A6D0]/10 hover:from-[#F5A6D0]/10 hover:to-[#F5A6D0]/20 transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.secondary}33` }}>
-                  <MessageSquare className="h-4 w-4" style={{ color: macaroonColors.secondary }} />
+                <div className="p-2 rounded-lg bg-[#F5A6D0]/20">
+                  <MessageSquare className="h-4 w-4 text-[#F5A6D0]" />
                 </div>
-                <Badge className="border-none" style={{ backgroundColor: `${macaroonColors.secondary}33`, color: macaroonColors.secondary }}>
+                <Badge className="bg-[#F5A6D0]/20 text-[#F5A6D0] border-none">
                   {conversionRate}%
                 </Badge>
               </div>
@@ -433,15 +388,10 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* Downloads */}
-            <div 
-              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
-              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.accent}0D, ${macaroonColors.accent}1A)` }}
-              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.accent}1A, ${macaroonColors.accent}33)`}
-              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.accent}0D, ${macaroonColors.accent}1A)`}
-            >
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5C6A6]/5 to-[#F5C6A6]/10 hover:from-[#F5C6A6]/10 hover:to-[#F5C6A6]/20 transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.accent}33` }}>
-                  <Download className="h-4 w-4" style={{ color: macaroonColors.accent }} />
+                <div className="p-2 rounded-lg bg-[#F5C6A6]/20">
+                  <Download className="h-4 w-4 text-[#F5C6A6]" />
                 </div>
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Downloads</p>
@@ -452,15 +402,10 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* Sessions */}
-            <div 
-              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
-              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.chart1}0D, ${macaroonColors.chart1}1A)` }}
-              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.chart1}1A, ${macaroonColors.chart1}33)`}
-              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.chart1}0D, ${macaroonColors.chart1}1A)`}
-            >
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#A6D4F5]/5 to-[#A6D4F5]/10 hover:from-[#A6D4F5]/10 hover:to-[#A6D4F5]/20 transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.chart1}33` }}>
-                  <Users className="h-4 w-4" style={{ color: macaroonColors.chart1 }} />
+                <div className="p-2 rounded-lg bg-[#A6D4F5]/20">
+                  <Users className="h-4 w-4 text-[#A6D4F5]" />
                 </div>
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Sessions</p>
@@ -480,46 +425,46 @@ export default function ProductAnalyticsPage() {
           <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.primary}1A` }}>
-                  <BarChart3 className="h-5 w-5" style={{ color: macaroonColors.primary }} />
+                <div className="p-2 rounded-lg bg-[#E9A6F5]/10">
+                  <BarChart3 className="h-5 w-5 text-[#E9A6F5]" />
                 </div>
                 <div>
                   <h2 className="text-lg md:text-xl font-semibold">Visits Over Time</h2>
                   <p className="text-sm text-muted-foreground">Daily visits, RFQ submissions, and downloads</p>
                 </div>
               </div>
-              <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(to bottom right, ${macaroonColors.primary}0D, transparent)` }}>
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/5 to-transparent">
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={analytics.daily_visits}>
                     <defs>
                       <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={macaroonColors.primary} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={macaroonColors.primary} stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#E9A6F5" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#E9A6F5" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorRfqs" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={macaroonColors.secondary} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={macaroonColors.secondary} stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#F5A6D0" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#F5A6D0" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorDownloads" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={macaroonColors.accent} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={macaroonColors.accent} stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#F5C6A6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#F5C6A6" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={macaroonColors.primary} strokeOpacity={0.1} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E9A6F5" strokeOpacity={0.1} />
                     <XAxis dataKey="date" stroke="#888" />
                     <YAxis stroke="#888" />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                        border: `1px solid ${macaroonColors.primary}`,
+                        border: '1px solid #E9A6F5',
                         borderRadius: '12px',
                         padding: '12px'
                       }} 
                     />
                     <Legend />
-                    <Area type="monotone" dataKey="visits" stackId="1" stroke={macaroonColors.primary} fill="url(#colorVisits)" strokeWidth={2} name="Visits" />
-                    <Area type="monotone" dataKey="rfqs" stackId="2" stroke={macaroonColors.secondary} fill="url(#colorRfqs)" strokeWidth={2} name="RFQs" />
-                    <Area type="monotone" dataKey="downloads" stackId="3" stroke={macaroonColors.accent} fill="url(#colorDownloads)" strokeWidth={2} name="Downloads" />
+                    <Area type="monotone" dataKey="visits" stackId="1" stroke="#E9A6F5" fill="url(#colorVisits)" strokeWidth={2} name="Visits" />
+                    <Area type="monotone" dataKey="rfqs" stackId="2" stroke="#F5A6D0" fill="url(#colorRfqs)" strokeWidth={2} name="RFQs" />
+                    <Area type="monotone" dataKey="downloads" stackId="3" stroke="#F5C6A6" fill="url(#colorDownloads)" strokeWidth={2} name="Downloads" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -530,32 +475,32 @@ export default function ProductAnalyticsPage() {
           <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.tertiary}1A` }}>
-                  <TrendingUp className="h-5 w-5" style={{ color: macaroonColors.tertiary }} />
+                <div className="p-2 rounded-lg bg-[#C6A6F5]/10">
+                  <TrendingUp className="h-5 w-5 text-[#C6A6F5]" />
                 </div>
                 <div>
                   <h2 className="text-lg md:text-xl font-semibold">Conversion Rate Trend</h2>
                   <p className="text-sm text-muted-foreground">Percentage of visits that resulted in RFQ submissions</p>
                 </div>
               </div>
-              <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(to bottom right, ${macaroonColors.tertiary}0D, transparent)` }}>
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#C6A6F5]/5 to-transparent">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={analytics.conversion_trend}>
                     <defs>
                       <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor={macaroonColors.primary} />
-                        <stop offset="50%" stopColor={macaroonColors.tertiary} />
-                        <stop offset="100%" stopColor={macaroonColors.chart1} />
+                        <stop offset="0%" stopColor="#E9A6F5" />
+                        <stop offset="50%" stopColor="#C6A6F5" />
+                        <stop offset="100%" stopColor="#A6D4F5" />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={macaroonColors.tertiary} strokeOpacity={0.1} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#C6A6F5" strokeOpacity={0.1} />
                     <XAxis dataKey="date" stroke="#888" />
                     <YAxis domain={[0, 100]} stroke="#888" />
                     <Tooltip 
                       formatter={(value: number) => `${value.toFixed(1)}%`}
                       contentStyle={{ 
                         backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                        border: `1px solid ${macaroonColors.tertiary}`,
+                        border: '1px solid #C6A6F5',
                         borderRadius: '12px',
                         padding: '12px'
                       }}
@@ -567,7 +512,7 @@ export default function ProductAnalyticsPage() {
                       stroke="url(#lineGradient)" 
                       strokeWidth={3} 
                       name="Conversion Rate (%)"
-                      dot={{ fill: macaroonColors.tertiary, r: 4 }}
+                      dot={{ fill: '#C6A6F5', r: 4 }}
                       activeDot={{ r: 6 }}
                     />
                   </LineChart>
@@ -583,32 +528,32 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.secondary}1A` }}>
-                <Link2 className="h-5 w-5" style={{ color: macaroonColors.secondary }} />
+              <div className="p-2 rounded-lg bg-[#F5A6D0]/10">
+                <Link2 className="h-5 w-5 text-[#F5A6D0]" />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-semibold">Channel Performance</h2>
                 <p className="text-sm text-muted-foreground">Visits by marketing channel</p>
               </div>
             </div>
-            <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(to bottom right, ${macaroonColors.secondary}0D, transparent)` }}>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#F5A6D0]/5 to-transparent">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analytics.channel_breakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={macaroonColors.secondary} strokeOpacity={0.1} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F5A6D0" strokeOpacity={0.1} />
                   <XAxis dataKey="channel_name" stroke="#888" />
                   <YAxis stroke="#888" />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: `1px solid ${macaroonColors.secondary}`,
+                      border: '1px solid #F5A6D0',
                       borderRadius: '12px',
                       padding: '12px'
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="visits" fill={macaroonColors.primary} name="Visits" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="rfqs" fill={macaroonColors.secondary} name="RFQs" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="downloads" fill={macaroonColors.accent} name="Downloads" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="visits" fill="#E9A6F5" name="Visits" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="rfqs" fill="#F5A6D0" name="RFQs" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="downloads" fill="#F5C6A6" name="Downloads" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -621,15 +566,15 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.chart1}1A` }}>
-                <QrCode className="h-5 w-5" style={{ color: macaroonColors.chart1 }} />
+              <div className="p-2 rounded-lg bg-[#A6D4F5]/10">
+                <QrCode className="h-5 w-5 text-[#A6D4F5]" />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-semibold">Access Method Distribution</h2>
                 <p className="text-sm text-muted-foreground">URL clicks vs QR code scans</p>
               </div>
             </div>
-            <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(to bottom right, ${macaroonColors.chart1}0D, transparent)` }}>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#A6D4F5]/5 to-transparent">
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -652,7 +597,7 @@ export default function ProductAnalyticsPage() {
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: `1px solid ${macaroonColors.chart1}`,
+                      border: '1px solid #A6D4F5',
                       borderRadius: '12px',
                       padding: '12px'
                     }}
@@ -669,8 +614,8 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.chart2}1A` }}>
-                <Calendar className="h-5 w-5" style={{ color: macaroonColors.chart2 }} />
+              <div className="p-2 rounded-lg bg-[#F5E6A6]/10">
+                <Calendar className="h-5 w-5 text-[#F5E6A6]" />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-semibold">Recent Access Logs</h2>
@@ -684,19 +629,7 @@ export default function ProductAnalyticsPage() {
                 const DeviceIcon = getDeviceIcon(log.device_type)
 
                 return (
-                  <div 
-                    key={log.access_id} 
-                    className="py-4 transition-colors rounded-xl px-4"
-                    style={{ 
-                      backgroundColor: isExpanded ? `${macaroonColors.primary}0A` : 'transparent'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isExpanded) e.currentTarget.style.backgroundColor = `${macaroonColors.primary}0D`
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent'
-                    }}
-                  >
+                  <div key={log.access_id} className="py-4 hover:bg-[#E9A6F5]/5 transition-colors rounded-xl px-4">
                     <div
                       className="flex items-center justify-between cursor-pointer"
                       onClick={() => toggleLogExpansion(log.access_id)}
@@ -704,9 +637,9 @@ export default function ProductAnalyticsPage() {
                       <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                         <div className="flex-shrink-0">
                           {isExpanded ? (
-                            <ChevronDown className="h-4 w-4" style={{ color: macaroonColors.primary }} />
+                            <ChevronDown className="h-4 w-4 text-[#E9A6F5]" />
                           ) : (
-                            <ChevronRight className="h-4 w-4" style={{ color: macaroonColors.primary }} />
+                            <ChevronRight className="h-4 w-4 text-[#E9A6F5]" />
                           )}
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1">
@@ -714,11 +647,11 @@ export default function ProductAnalyticsPage() {
                             {format(new Date(log.accessed_at), 'MMM d, HH:mm')}
                           </span>
                           {log.channel_name && (
-                            <Badge variant="outline" className="text-xs border-none" style={{ borderColor: `${macaroonColors.primary}4D`, color: macaroonColors.primary }}>
+                            <Badge variant="outline" className="text-xs border-[#E9A6F5]/30 text-[#E9A6F5]">
                               {log.channel_name}
                             </Badge>
                           )}
-                          <Badge className="text-xs border-none" style={{ backgroundColor: `${macaroonColors.secondary}33`, color: macaroonColors.secondary }}>
+                          <Badge className="text-xs bg-[#F5A6D0]/20 text-[#F5A6D0] border-none">
                             {log.access_method === 'qr_code' ? 'QR Code' : 'URL'}
                           </Badge>
                           {log.country_code && (
@@ -734,13 +667,10 @@ export default function ProductAnalyticsPage() {
                               {log.city}
                             </div>
                           )}
-                          <DeviceIcon className="h-4 w-4" style={{ color: macaroonColors.chart1 }} />
+                          <DeviceIcon className="h-4 w-4 text-[#A6D4F5]" />
                           <span className="text-xs text-muted-foreground hidden sm:inline">{browser}</span>
                           {log.is_unique_visit && (
-                            <Badge 
-                              className="text-xs text-white border-none"
-                              style={{ background: `linear-gradient(to right, ${macaroonColors.primary}, ${macaroonColors.secondary})` }}
-                            >
+                            <Badge className="text-xs bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none">
                               New
                             </Badge>
                           )}
@@ -750,37 +680,35 @@ export default function ProductAnalyticsPage() {
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t border-border/30">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                          <div className="p-3 rounded-xl" style={{ backgroundColor: `${macaroonColors.primary}0D` }}>
+                          <div className="p-3 rounded-xl bg-[#E9A6F5]/5">
                             <p className="text-xs text-muted-foreground mb-1">Browser & OS</p>
                             <p className="font-medium">{browser} on {os}</p>
                           </div>
-                          <div className="p-3 rounded-xl" style={{ backgroundColor: `${macaroonColors.secondary}0D` }}>
+                          <div className="p-3 rounded-xl bg-[#F5A6D0]/5">
                             <p className="text-xs text-muted-foreground mb-1">Device Type</p>
                             <p className="font-medium">{log.device_type || 'Unknown'}</p>
                           </div>
-                          {(log.city || log.country_code) && (
-                            <div className="p-3 rounded-xl" style={{ backgroundColor: `${macaroonColors.chart1}0D` }}>
+                          {log.city && (
+                            <div className="p-3 rounded-xl bg-[#A6D4F5]/5">
                               <p className="text-xs text-muted-foreground mb-1">Location</p>
                               <div className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3 text-muted-foreground" />
-                                <p className="font-medium">
-                                  {log.city && log.country_code ? `${log.city}, ${log.country_code}` : log.city || log.country_code || 'Unknown'}
-                                </p>
+                                <p className="font-medium">{log.city}{log.country_code ? `, ${log.country_code}` : ''}</p>
                               </div>
                             </div>
                           )}
                           {log.referrer && (
-                            <div className="p-3 rounded-xl" style={{ backgroundColor: `${macaroonColors.accent}0D` }}>
+                            <div className="p-3 rounded-xl bg-[#F5C6A6]/5">
                               <p className="text-xs text-muted-foreground mb-1">Referrer</p>
                               <p className="font-medium truncate text-xs">{log.referrer}</p>
                             </div>
                           )}
-                          <div className="p-3 rounded-xl" style={{ backgroundColor: `${macaroonColors.tertiary}0D` }}>
+                          <div className="p-3 rounded-xl bg-[#C6A6F5]/5">
                             <p className="text-xs text-muted-foreground mb-1">Session ID</p>
                             <p className="font-mono text-xs truncate">{log.session_id}</p>
                           </div>
                           {log.visitor_id && (
-                            <div className="p-3 rounded-xl" style={{ backgroundColor: `${macaroonColors.chart2}0D` }}>
+                            <div className="p-3 rounded-xl bg-[#F5E6A6]/5">
                               <p className="text-xs text-muted-foreground mb-1">Visitor ID</p>
                               <p className="font-mono text-xs truncate">{log.visitor_id}</p>
                             </div>
@@ -793,7 +721,7 @@ export default function ProductAnalyticsPage() {
               })}
             </div>
             {analytics.access_logs.length > 15 && (
-              <p className="text-sm text-muted-foreground mt-6 text-center p-4 rounded-xl" style={{ backgroundColor: `${macaroonColors.primary}0D` }}>
+              <p className="text-sm text-muted-foreground mt-6 text-center p-4 rounded-xl bg-[#E9A6F5]/5">
                 Showing most recent 15 of {analytics.access_logs.length} access logs
               </p>
             )}
@@ -806,36 +734,19 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <div className="max-w-2xl mx-auto text-center">
             <div className="relative inline-block mb-6">
-              <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(to bottom right, ${macaroonColors.primary}1A, ${macaroonColors.secondary}1A)` }}>
-                <BarChart3 className="h-16 w-16" style={{ color: macaroonColors.primary }} />
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/10 to-[#F5A6D0]/10">
+                <BarChart3 className="h-16 w-16 text-[#E9A6F5]" />
               </div>
-              <Sparkles className="absolute -top-2 -right-2 h-8 w-8" style={{ color: macaroonColors.secondary }} />
+              <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-[#F5A6D0]" />
             </div>
-            <h3 className="text-xl sm:text-2xl font-semibold mb-3">
-              <span style={{
-                background: `linear-gradient(to right, ${macaroonColors.primary}, ${macaroonColors.secondary}, ${macaroonColors.tertiary})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                No Analytics Data Yet
-              </span>
+            <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-[#E9A6F5] via-[#F5A6D0] to-[#C6A6F5] bg-clip-text text-transparent">
+              No Analytics Data Yet
             </h3>
             <p className="text-base text-muted-foreground mb-8">
               Share your product link to start tracking visits, conversions, and visitor insights.
             </p>
             <Button 
-              className="text-white border-none shadow-lg"
-              style={{ 
-                background: `linear-gradient(to right, ${macaroonColors.primary}, ${macaroonColors.secondary})`,
-                boxShadow: `0 10px 40px -10px ${macaroonColors.primary}33`
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '0.9'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '1'
-              }}
+              className="bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none hover:from-[#E9A6F5]/90 hover:to-[#F5A6D0]/90 shadow-lg shadow-[#E9A6F5]/20"
               onClick={() => router.back()}
             >
               Go Back to Product
