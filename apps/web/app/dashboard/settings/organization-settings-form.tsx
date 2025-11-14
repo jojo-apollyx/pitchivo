@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getAllIndustries, getIndustryByCode } from '@/lib/constants/industries'
 
 const COMPANY_SIZES = [
   { value: '1-5', label: '1-5' },
@@ -43,90 +44,34 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
   const [industryMap, setIndustryMap] = useState<Record<string, string>>({}) // code -> name mapping
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true)
 
-  // Load supported industries from database
+  // Load supported industries from hardcoded constants (industries table was removed)
   useEffect(() => {
-    const loadIndustries = async () => {
-      try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from('industries')
-          .select('industry_code, industry_name')
-          .eq('is_enabled', true)
-          .order('industry_name', { ascending: true })
-
-        if (error) {
-          console.error('Error loading industries:', error)
-          // Fallback to default industries if database query fails
-          const fallbackCodes = [
-            'supplements_food_ingredients',
-            'chemicals_raw_materials',
-            'pharmaceuticals',
-            'cosmetics_personal_care',
-            'other',
-          ]
-          const fallbackMap: Record<string, string> = {
-            'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
-            'chemicals_raw_materials': 'Chemicals & Raw Materials',
-            'pharmaceuticals': 'Pharmaceuticals',
-            'cosmetics_personal_care': 'Cosmetics & Personal Care',
-            'other': 'Other',
-          }
-          setIndustries(fallbackCodes)
-          setIndustryMap(fallbackMap)
-        } else {
-          const industryCodes = data?.map((item) => item.industry_code) || []
-          const map: Record<string, string> = {}
-          data?.forEach((item) => {
-            map[item.industry_code] = item.industry_name
-          })
-          if (industryCodes.length > 0) {
-            setIndustries(industryCodes)
-            setIndustryMap(map)
-          } else {
-            // Fallback
-            const fallbackCodes = [
-              'supplements_food_ingredients',
-              'chemicals_raw_materials',
-              'pharmaceuticals',
-              'cosmetics_personal_care',
-              'other',
-            ]
-            const fallbackMap: Record<string, string> = {
-              'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
-              'chemicals_raw_materials': 'Chemicals & Raw Materials',
-              'pharmaceuticals': 'Pharmaceuticals',
-              'cosmetics_personal_care': 'Cosmetics & Personal Care',
-              'other': 'Other',
-            }
-            setIndustries(fallbackCodes)
-            setIndustryMap(fallbackMap)
-          }
-        }
-      } catch (error) {
-        console.error('Error loading industries:', error)
-        // Fallback to default industries
-        const fallbackCodes = [
-          'supplements_food_ingredients',
-          'chemicals_raw_materials',
-          'pharmaceuticals',
-          'cosmetics_personal_care',
-          'other',
-        ]
-        const fallbackMap: Record<string, string> = {
-          'supplements_food_ingredients': 'Nutritional Supplements / Food Ingredients',
-          'chemicals_raw_materials': 'Chemicals & Raw Materials',
-          'pharmaceuticals': 'Pharmaceuticals',
-          'cosmetics_personal_care': 'Cosmetics & Personal Care',
-          'other': 'Other',
-        }
-        setIndustries(fallbackCodes)
-        setIndustryMap(fallbackMap)
-      } finally {
-        setIsLoadingIndustries(false)
+    try {
+      const allIndustries = getAllIndustries()
+      // Show all industries, not just enabled ones, so users can see what's available
+      const industryCodes = allIndustries.map((ind) => ind.code)
+      const map: Record<string, string> = {}
+      allIndustries.forEach((ind) => {
+        map[ind.code] = ind.name
+      })
+      setIndustries(industryCodes)
+      setIndustryMap(map)
+    } catch (error) {
+      console.error('Error loading industries:', error)
+      // Fallback to default industries
+      const fallbackCodes = ['food_supplement', 'chemicals_raw_materials', 'pharmaceuticals', 'cosmetics_personal_care', 'other']
+      const fallbackMap: Record<string, string> = {
+        'food_supplement': 'Food Supplements & Ingredients',
+        'chemicals_raw_materials': 'Chemicals & Raw Materials',
+        'pharmaceuticals': 'Pharmaceuticals',
+        'cosmetics_personal_care': 'Cosmetics & Personal Care',
+        'other': 'Other',
       }
+      setIndustries(fallbackCodes)
+      setIndustryMap(fallbackMap)
+    } finally {
+      setIsLoadingIndustries(false)
     }
-
-    loadIndustries()
   }, [])
 
   const handleSave = async () => {
@@ -143,19 +88,24 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
     try {
       const supabase = createClient()
       
-      // Update organization fields
+      // Update organization fields using API route (more reliable than direct RPC)
       if (hasSizeChange || hasIndustryChange) {
-        const { data: success, error } = await supabase.rpc('update_user_organization', {
-          p_org_id: organization.id,
-          p_company_size: companySize || null,
-          p_industry: industry || null,
+        const response = await fetch('/api/organizations', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_size: companySize || null,
+            industry: industry || null,
+          }),
         })
 
-        if (error) {
-          throw error
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Update failed' }))
+          throw new Error(errorData.error || `Failed to update organization: ${response.statusText}`)
         }
 
-        if (!success) {
+        const result = await response.json()
+        if (!result.success) {
           throw new Error('Failed to update organization')
         }
       }
@@ -188,7 +138,8 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
       window.location.reload()
     } catch (error) {
       console.error('Error updating organization:', error)
-      toast.error('Failed to update organization. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update organization. Please try again.'
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }

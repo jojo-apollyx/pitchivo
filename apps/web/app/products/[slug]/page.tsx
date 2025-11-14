@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useProduct } from '@/lib/api/products'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { RealPagePreview } from './RealPagePreview'
+import { RfqFormDialog } from '@/components/products/RfqFormDialog'
 
 export default function PublicProductPage() {
   const params = useParams()
@@ -39,6 +40,118 @@ export default function PublicProductPage() {
   }, [formData])
 
   const [documentMetadata, setDocumentMetadata] = useState<Record<string, any>>({})
+  const [showRfqDialog, setShowRfqDialog] = useState(false)
+  const [accessId, setAccessId] = useState<string | null>(null)
+  const trackingInitialized = useRef(false)
+
+  // Generate or retrieve session ID
+  const getSessionId = (): string => {
+    if (typeof window === 'undefined') return 'server'
+    let sessionId = localStorage.getItem('product_session_id')
+    if (!sessionId) {
+      sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem('product_session_id', sessionId)
+    }
+    return sessionId
+  }
+
+  // Generate visitor ID (anonymized)
+  const getVisitorId = (): string => {
+    if (typeof window === 'undefined') return 'visitor_unknown'
+    let visitorId = localStorage.getItem('product_visitor_id')
+    if (!visitorId) {
+      // Create a simple hash from available data
+      const data = `${navigator.userAgent}_${new Date().getTimezoneOffset()}`
+      visitorId = `vis_${btoa(data).substr(0, 16)}`
+      localStorage.setItem('product_visitor_id', visitorId)
+    }
+    return visitorId
+  }
+
+  // Track page access
+  useEffect(() => {
+    if (!productData || trackingInitialized.current) return
+    trackingInitialized.current = true
+
+    const trackAccess = async () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search)
+        const channelId = searchParams.get('ch') || null
+        const isQrCode = searchParams.get('qr') === 'true' || searchParams.get('qr') === '1'
+        const accessMethod = isQrCode ? 'qr_code' : 'url'
+
+        // Get channel name from product data
+        const formDataAny = formData as any
+        const channelLinks = formDataAny?.channel_links || []
+        const channel = channelLinks.find((c: any) => c.id === channelId || c.parameter?.includes(`ch=${channelId}`))
+        const channelName = channel?.name || null
+
+        const response = await fetch('/api/products/track-access', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            product_id: productId,
+            access_method: accessMethod,
+            channel_id: channelId,
+            channel_name: channelName,
+            session_id: getSessionId(),
+            visitor_id: getVisitorId(),
+            user_agent: navigator.userAgent,
+            referrer: document.referrer || null,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setAccessId(data.access_id)
+
+          // Track page_view action
+          if (data.access_id) {
+            await fetch('/api/products/track-action', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                access_id: data.access_id,
+                product_id: productId,
+                action_type: 'page_view',
+              }),
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error tracking access:', error)
+      }
+    }
+
+    trackAccess()
+  }, [productData, productId, formData])
+
+  // Track document downloads
+  const trackDownload = async (fileId: string, filename: string) => {
+    if (!accessId) return
+
+    try {
+      await fetch('/api/products/track-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_id: accessId,
+          product_id: productId,
+          action_type: 'document_download',
+          action_target: fileId,
+          action_metadata: { filename },
+        }),
+      })
+    } catch (error) {
+      console.error('Error tracking download:', error)
+    }
+  }
 
   // Fetch full document metadata for uploaded_files
   useEffect(() => {
@@ -108,7 +221,36 @@ export default function PublicProductPage() {
         permissions={permissions}
         viewMode={viewMode}
         documentMetadata={documentMetadata}
+        onRfqClick={() => setShowRfqDialog(true)}
+        onDownload={trackDownload}
       />
+
+      {/* RFQ Form Dialog */}
+      {productData && (
+        <RfqFormDialog
+          open={showRfqDialog}
+          onOpenChange={setShowRfqDialog}
+          productId={productId}
+          productName={productData.product_name || 'Product'}
+          onSuccess={() => {
+            // Track RFQ submission
+            if (accessId) {
+              fetch('/api/products/track-action', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  access_id: accessId,
+                  product_id: productId,
+                  action_type: 'rfq_submit',
+                  action_target: 'rfq_form',
+                }),
+              }).catch(console.error)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

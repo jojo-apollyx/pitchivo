@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Download, Package, MapPin, File, FileImage, FileSpreadsheet, FileCode, FileJson, FileText, Box, Sparkles } from 'lucide-react'
+import { Download, Package, MapPin, File, FileImage, FileSpreadsheet, FileCode, FileJson, FileText, Box, Sparkles, MessageSquare } from 'lucide-react'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -88,11 +88,15 @@ export function RealPagePreview({
   permissions,
   viewMode,
   documentMetadata = {},
+  onRfqClick,
+  onDownload,
 }: {
   formData: FoodSupplementProductData
   permissions: FieldPermission
   viewMode: 'public' | 'after_click' | 'after_rfq'
   documentMetadata?: Record<string, any>
+  onRfqClick?: () => void
+  onDownload?: (fileId: string, filename: string) => void
 }) {
   const shouldShow = (fieldName: string): boolean => {
     const permission = permissions[fieldName] || 'public'
@@ -141,6 +145,11 @@ export function RealPagePreview({
 
   const handleDownload = async (fileId: string, filename: string) => {
     try {
+      // Track download if callback provided
+      if (onDownload) {
+        onDownload(fileId, filename)
+      }
+
       const iframe = document.createElement('iframe')
       iframe.style.display = 'none'
       iframe.src = `/api/documents/download?fileId=${fileId}`
@@ -215,10 +224,23 @@ export function RealPagePreview({
               {shouldShow('description') && formData.description && (
                 <motion.p
                   variants={itemVariants}
-                  className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap"
+                  className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap mb-4"
                 >
                   {formData.description}
                 </motion.p>
+              )}
+              {/* RFQ Button - Prominent placement */}
+              {onRfqClick && (
+                <motion.div variants={itemVariants}>
+                  <Button
+                    onClick={onRfqClick}
+                    size="lg"
+                    className="gap-2 min-h-[48px] px-6 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                    Request for Quotation (RFQ)
+                  </Button>
+                </motion.div>
               )}
             </div>
             

@@ -4,17 +4,29 @@ import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Package, Plus, Edit, Eye, FileText, Search, X } from 'lucide-react'
+import { Package, Plus, Edit, Eye, FileText, Search, X, Trash2, BarChart3, MoreVertical } from 'lucide-react'
 import Link from 'next/link'
-import { useProducts } from '@/lib/api/products'
+import { useProducts, useDeleteProduct, useUpdateProduct } from '@/lib/api/products'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+// AlertDialog will be created inline for now
 
 export default function ProductsPage() {
   const { data, isLoading, error } = useProducts()
+  const deleteProduct = useDeleteProduct()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<string | null>(null)
 
   const allProducts = data?.products || []
 
@@ -288,12 +300,46 @@ export default function ProductsPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <Link href={`/dashboard/products/create?productId=${product.product_id}`}>
-                              <Button variant="ghost" size="sm" className="gap-2">
-                                <Edit className="h-4 w-4" />
-                                Edit
-                              </Button>
-                            </Link>
+                            <div className="flex items-center justify-end gap-2">
+                              <Link href={`/dashboard/products/${product.product_id}/analytics`}>
+                                <Button variant="ghost" size="sm" className="gap-2">
+                                  <BarChart3 className="h-4 w-4" />
+                                  Analytics
+                                </Button>
+                              </Link>
+                              <Link href={`/dashboard/products/create?productId=${product.product_id}`}>
+                                <Button variant="ghost" size="sm" className="gap-2">
+                                  <Edit className="h-4 w-4" />
+                                  Edit
+                                </Button>
+                              </Link>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <Link href={`/dashboard/products/${product.product_id}/preview-publish`}>
+                                    <DropdownMenuItem>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      Preview & Publish
+                                    </DropdownMenuItem>
+                                  </Link>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setProductToDelete(product.product_id)
+                                      setDeleteConfirmOpen(true)
+                                    }}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Product
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -305,6 +351,47 @@ export default function ProductsPage() {
           )}
         </section>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+            <h3 className="text-lg font-semibold mb-2">Delete Product</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Are you sure you want to delete this product? This action cannot be undone and will remove all associated data including access logs and analytics.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleteConfirmOpen(false)
+                  setProductToDelete(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!productToDelete) return
+                  try {
+                    await deleteProduct.mutateAsync(productToDelete)
+                    toast.success('Product deleted successfully')
+                    setDeleteConfirmOpen(false)
+                    setProductToDelete(null)
+                  } catch (error) {
+                    toast.error('Failed to delete product')
+                    console.error('Delete error:', error)
+                  }
+                }}
+                disabled={deleteProduct.isPending}
+              >
+                {deleteProduct.isPending ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
