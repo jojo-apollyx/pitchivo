@@ -17,16 +17,16 @@ interface LockedFieldProps {
 
 const accessLevelMessages = {
   after_click: {
-    icon: '🔗',
-    title: 'Link Access Required',
-    description: 'This field is visible when you access via marketing links (email, QR code, social posts, etc.)',
-    action: 'Get a marketing link to see this field',
+    icon: '🔒',
+    title: 'More Information Available',
+    description: 'Additional details are available for qualified buyers. Submit a request to view pricing, specifications, and other details.',
+    action: 'Submit a Request to view this information',
   },
   after_rfq: {
-    icon: '✅',
-    title: 'Full Access Required',
-    description: 'This field is only visible after submitting a Request for Quote (RFQ)',
-    action: 'Submit an RFQ to unlock this field',
+    icon: '🔒',
+    title: 'More Information Available',
+    description: 'Complete product details, pricing, and downloadable documents are available after submitting a request.',
+    action: 'Submit a Request to view this information',
   },
 }
 

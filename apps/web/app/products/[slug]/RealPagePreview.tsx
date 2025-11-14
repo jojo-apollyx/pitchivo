@@ -382,7 +382,7 @@ export function RealPagePreview({
                   className="gap-2 min-h-[48px] px-6 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 w-full sm:w-auto"
                 >
                   <MessageSquare className="h-5 w-5" />
-                  Request for Quotation (RFQ)
+                  Request More Information
                 </Button>
               )}
             </div>
@@ -962,7 +962,7 @@ export function RealPagePreview({
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Documentation & Files</h2>
               {!canDownload && (
                 <p className="text-sm sm:text-base text-muted-foreground mb-6">
-                  Documents are available for viewing. Download access requires RFQ submission.
+                  Documents are available for viewing. Submit a request to download files.
                 </p>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
