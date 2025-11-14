@@ -187,59 +187,119 @@ export function RealPagePreview({
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/3 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-      {/* Hero Section with Gradient */}
+      {/* Hero Section with Product Name on Left, Image on Right */}
       <motion.section
         variants={itemVariants}
-        className="relative bg-gradient-to-br from-background via-background to-primary/5 px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 border-b border-border/30"
+        className="relative bg-gradient-to-br from-background via-background to-primary/5 px-4 sm:px-6 lg:px-8 py-8 sm:py-12 border-b border-border/30"
       >
-        <div className="max-w-4xl mx-auto">
-          {shouldShow('product_name') && formData.product_name && (
-            <motion.h1
-              variants={itemVariants}
-              className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
-            >
-              {formData.product_name}
-            </motion.h1>
-          )}
-          {shouldShow('category') && formData.category && (
-            <motion.p
-              variants={itemVariants}
-              className="text-base sm:text-lg text-muted-foreground font-medium"
-            >
-              {formData.category}
-            </motion.p>
-          )}
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
+            {/* Product Name, Category, and Description - Left Side */}
+            <div className="flex-1 min-w-0">
+              {shouldShow('product_name') && formData.product_name && (
+                <motion.h1
+                  variants={itemVariants}
+                  className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+                >
+                  {formData.product_name}
+                </motion.h1>
+              )}
+              {shouldShow('category') && formData.category && (
+                <motion.p
+                  variants={itemVariants}
+                  className="text-base sm:text-lg text-muted-foreground font-medium mb-4"
+                >
+                  {formData.category}
+                </motion.p>
+              )}
+              {shouldShow('description') && formData.description && (
+                <motion.p
+                  variants={itemVariants}
+                  className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap"
+                >
+                  {formData.description}
+                </motion.p>
+              )}
+            </div>
+            
+            {/* Product Image - Right Side */}
+            {shouldShow('product_images') && formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 0 && (
+              <motion.div
+                variants={itemVariants}
+                className="flex-shrink-0 w-full sm:w-64 md:w-80 lg:w-96"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="relative aspect-square rounded-xl overflow-hidden border border-border/30 bg-gradient-to-br from-background to-muted/10 group cursor-pointer"
+                >
+                  {(() => {
+                    const firstImage = formData.product_images[0]
+                    let imgSrc: string = ''
+                    if (typeof firstImage === 'string') {
+                      imgSrc = firstImage
+                    } else if (firstImage instanceof File) {
+                      imgSrc = URL.createObjectURL(firstImage as Blob)
+                    } else if (firstImage && typeof firstImage === 'object' && 'url' in firstImage) {
+                      imgSrc = (firstImage as any).url
+                    }
+                    
+                    if (!imgSrc) return null
+                    
+                    return (
+                      <img
+                        src={imgSrc}
+                        alt={formData.product_name || 'Product'}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    )
+                  })()}
+                  {formData.product_images.length > 1 && (
+                    <div className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-medium text-foreground border border-border/30">
+                      +{formData.product_images.length - 1} more
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </motion.div>
+              </motion.div>
+            )}
+          </div>
         </div>
       </motion.section>
 
-      {/* Product Images Gallery */}
-      {shouldShow('product_images') && formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 0 && (
+      {/* Additional Product Images Gallery (if more than 1) */}
+      {shouldShow('product_images') && formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 1 && (
         <motion.section
           variants={itemVariants}
-          className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 border-b border-border/30 bg-gradient-to-b from-background to-muted/20"
+          className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30 bg-gradient-to-b from-background to-muted/20"
         >
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {formData.product_images.map((img: any, index: number) => {
-                let imgSrc: string
+          <div className="max-w-7xl mx-auto">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 text-foreground">Additional Images</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+              {formData.product_images.slice(1).map((img: any, index: number) => {
+                let imgSrc: string = ''
                 if (typeof img === 'string') {
                   imgSrc = img
                 } else if (img instanceof File) {
                   imgSrc = URL.createObjectURL(img as Blob)
-                } else {
-                  return null
+                } else if (img && typeof img === 'object' && 'url' in img) {
+                  imgSrc = (img as any).url
                 }
+                
                 if (!imgSrc) return null
+                
                 return (
                   <motion.div
-                    key={index}
+                    key={index + 1}
                     variants={itemVariants}
                     whileHover={{ scale: 1.02, y: -4 }}
                     className="relative aspect-square rounded-xl overflow-hidden border border-border/30 bg-gradient-to-br from-background to-muted/10 group cursor-pointer"
                   >
                     <img
                       src={imgSrc}
-                      alt={`Product image ${index + 1}`}
+                      alt={`Product image ${index + 2}`}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
@@ -256,13 +316,48 @@ export function RealPagePreview({
 
       {/* Main Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
-        {/* Description */}
-        {shouldShow('description') && formData.description && (
-          <motion.section variants={itemVariants} className="max-w-4xl mx-auto">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-foreground">Description</h2>
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {formData.description}
-            </p>
+        {/* Pricing & Lead Time - Moved Higher */}
+        {shouldShow('price_lead_time') && formData.price_lead_time && (
+          <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Pricing & Lead Time</h2>
+            {Array.isArray(formData.price_lead_time) ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                {formData.price_lead_time.map((tier: any, idx: number) => (
+                  <motion.div
+                    key={idx}
+                    variants={itemVariants}
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                  >
+                    <div className="grid grid-cols-3 gap-3">
+                      {tier.moq && (
+                        <div>
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">MOQ</p>
+                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">{tier.moq}</p>
+                        </div>
+                      )}
+                      {tier.price && (
+                        <div>
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">Price</p>
+                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">{tier.price}</p>
+                        </div>
+                      )}
+                      {tier.lead_time && (
+                        <div>
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">Lead Time</p>
+                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">{tier.lead_time}</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-5 sm:p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                <p className="text-base sm:text-lg text-foreground font-medium">
+                  {formatValue(formData.price_lead_time, 'price_lead_time')}
+                </p>
+              </div>
+            )}
           </motion.section>
         )}
 
@@ -287,19 +382,19 @@ export function RealPagePreview({
           if (basicFields.length === 0) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Product Information</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {basicFields.map((field) => (
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {String(formData[field.key as keyof typeof formData])}
                     </p>
                   </motion.div>
@@ -311,7 +406,7 @@ export function RealPagePreview({
 
         {/* Applications */}
         {shouldShow('applications') && formData.applications && Array.isArray(formData.applications) && formData.applications.length > 0 && (
-          <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+          <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
             <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-foreground">Applications</h2>
             <div className="flex flex-wrap gap-2 sm:gap-3">
               {formData.applications.map((app, idx) => (
@@ -348,19 +443,19 @@ export function RealPagePreview({
           if (techFields.length === 0) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Physical & Sensory Properties</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {techFields.map((field) => (
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {String(formData[field.key as keyof typeof formData])}
                     </p>
                   </motion.div>
@@ -387,19 +482,19 @@ export function RealPagePreview({
           if (chemFields.length === 0) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Chemical Analysis</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {chemFields.map((field) => (
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {String(formData[field.key as keyof typeof formData])}
                     </p>
                   </motion.div>
@@ -425,19 +520,19 @@ export function RealPagePreview({
           if (metalFields.length === 0) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Heavy Metals</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
                 {metalFields.map((field) => (
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {String(formData[field.key as keyof typeof formData])}
                     </p>
                   </motion.div>
@@ -460,19 +555,19 @@ export function RealPagePreview({
           if (contamFields.length === 0) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Contaminants</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
                 {contamFields.map((field) => (
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {String(formData[field.key as keyof typeof formData])}
                     </p>
                   </motion.div>
@@ -499,19 +594,19 @@ export function RealPagePreview({
           if (microFields.length === 0) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Microbiological</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {microFields.map((field) => (
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {String(formData[field.key as keyof typeof formData])}
                     </p>
                   </motion.div>
@@ -542,19 +637,19 @@ export function RealPagePreview({
           if (packFields.length === 0 && !hasStorageConditions) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Packaging & Logistics</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {packFields.map((field) => (
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {String(formData[field.key as keyof typeof formData])}
                     </p>
                   </motion.div>
@@ -562,12 +657,12 @@ export function RealPagePreview({
                 {hasStorageConditions && formData.storage_conditions && (
                   <motion.div
                     variants={itemVariants}
-                    className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       Storage Conditions
                     </p>
-                    <p className="text-base sm:text-lg font-semibold text-foreground">
+                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                       {formData.storage_conditions.join(', ')}
                     </p>
                   </motion.div>
@@ -597,7 +692,7 @@ export function RealPagePreview({
           if (certFields.length === 0 && !hasCertificates && !hasAllergenInfo) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Certificates & Compliance</h2>
               <div className="space-y-6">
                 {hasCertificates && formData.certificates && (
@@ -636,17 +731,17 @@ export function RealPagePreview({
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                   {certFields.map((field) => (
                     <motion.div
                       key={field.key}
                       variants={itemVariants}
-                      className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                      className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
                     >
                       <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                         {field.label}
                       </p>
-                      <p className="text-base sm:text-lg font-semibold text-foreground">
+                      <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
                         {String(formData[field.key as keyof typeof formData])}
                       </p>
                     </motion.div>
@@ -659,9 +754,9 @@ export function RealPagePreview({
 
         {/* Inventory Locations */}
         {shouldShow('inventory_locations') && formData.inventory_locations && Array.isArray(formData.inventory_locations) && formData.inventory_locations.length > 0 && (
-          <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+          <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
             <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Inventory Locations</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {formData.inventory_locations.map((loc: any, idx: number) => (
                 <motion.div
                   key={idx}
@@ -695,17 +790,6 @@ export function RealPagePreview({
           </motion.section>
         )}
 
-        {/* Pricing & Lead Time */}
-        {shouldShow('price_lead_time') && formData.price_lead_time && (
-          <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-foreground">Pricing & Lead Time</h2>
-            <div className="p-5 sm:p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
-              <p className="text-base sm:text-lg text-foreground font-medium">
-                {formatValue(formData.price_lead_time, 'price_lead_time')}
-              </p>
-            </div>
-          </motion.section>
-        )}
 
         {/* Samples */}
         {(() => {
@@ -727,9 +811,9 @@ export function RealPagePreview({
           if (samples.length === 0) return null
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Samples</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {samples.map((sample: any, idx: number) => (
                   <motion.div
                     key={idx}
@@ -795,14 +879,14 @@ export function RealPagePreview({
           const canDownload = viewMode === 'after_rfq'
           
           return (
-            <motion.section variants={itemVariants} className="max-w-6xl mx-auto">
+            <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
               <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Documentation & Files</h2>
               {!canDownload && (
                 <p className="text-sm sm:text-base text-muted-foreground mb-6">
                   Documents are available for viewing. Download access requires RFQ submission.
                 </p>
               )}
-              <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {formDataAny.uploaded_files.map((f: any, idx: number) => {
                   const fullDoc = f.file_id ? documentMetadata[f.file_id] : null
                   const docData = fullDoc || f
@@ -816,49 +900,48 @@ export function RealPagePreview({
                     <motion.div
                       key={idx}
                       variants={itemVariants}
-                      whileHover={{ scale: 1.01, y: -2 }}
-                      className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-4 sm:p-5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-3 sm:p-4 hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
                     >
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <div className="rounded-lg bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors duration-300">
-                            <FileIcon className="h-5 w-5 text-primary" />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-foreground mb-1 truncate text-base sm:text-lg">
-                                {docData.filename || f.filename || f.file_id || `Document ${idx + 1}`}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-2 mt-2">
-                                {docType && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {docType}
-                                  </Badge>
-                                )}
-                                {pageCount && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {pageCount} page{pageCount !== 1 ? 's' : ''}
-                                  </span>
-                                )}
-                                {fileSize && (
-                                  <span className="text-xs text-muted-foreground">{fileSize}</span>
-                                )}
-                              </div>
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="flex-shrink-0">
+                            <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors duration-300">
+                              <FileIcon className="h-4 w-4 text-primary" />
                             </div>
-                            {canDownload && f.file_id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDownload(f.file_id, docData.filename || f.filename || 'document')}
-                                className="flex-shrink-0"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground mb-1 text-sm sm:text-base line-clamp-2">
+                              {docData.filename || f.filename || f.file_id || `Document ${idx + 1}`}
+                            </p>
                           </div>
                         </div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-auto">
+                          {docType && (
+                            <Badge variant="outline" className="text-xs">
+                              {docType}
+                            </Badge>
+                          )}
+                          {pageCount && (
+                            <span className="text-xs text-muted-foreground">
+                              {pageCount}p
+                            </span>
+                          )}
+                          {fileSize && (
+                            <span className="text-xs text-muted-foreground">{fileSize}</span>
+                          )}
+                        </div>
+                        {canDownload && f.file_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownload(f.file_id, docData.filename || f.filename || 'document')}
+                            className="w-full mt-3"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        )}
                       </div>
                     </motion.div>
                   )
