@@ -1,5 +1,5 @@
 // Service Worker for Pitchivo PWA
-const CACHE_VERSION = 'v7' // Bump this to force cache refresh (v7: exclude dashboard from caching)
+const CACHE_VERSION = 'v8' // Bump this to force cache refresh (v8: exclude product pages with tokens from caching)
 const STATIC_CACHE = `pitchivo-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `pitchivo-dynamic-${CACHE_VERSION}`
 const IMAGE_CACHE = `pitchivo-images-${CACHE_VERSION}`
@@ -21,12 +21,30 @@ const NEVER_CACHE = [
   '/storage/v1/object/sign', // Signed URLs
   '/dashboard/', // All dashboard pages (dynamic, user-specific data)
   '/api/', // All API routes (dynamic data)
+  '/products/', // Product pages (dynamic access levels, tokens)
 ]
 
 // Check if URL should never be cached
 function shouldNeverCache(url) {
-  return NEVER_CACHE.some(pattern => url.includes(pattern)) ||
-         url.includes('authorization') || // Skip if has auth header
+  const urlObj = new URL(url)
+  
+  // Check against patterns
+  if (NEVER_CACHE.some(pattern => url.includes(pattern))) {
+    return true
+  }
+  
+  // Never cache URLs with tokens (product pages with access tokens)
+  if (urlObj.searchParams.has('token')) {
+    return true
+  }
+  
+  // Never cache URLs with merchant parameter
+  if (urlObj.searchParams.has('merchant')) {
+    return true
+  }
+  
+  // Skip if has auth-related parameters
+  return url.includes('authorization') || // Skip if has auth header
          url.includes('access_token') || // Skip if has access token
          url.includes('refresh_token') // Skip if has refresh token
 }
@@ -168,17 +186,25 @@ async function networkFirst(request) {
   
   // For other pages, use network-first with cache fallback
   try {
-    const networkResponse = await fetch(request)
+    const networkResponse = await fetch(request, {
+      cache: 'no-store', // Force fresh fetch for product pages
+    })
     
-    // Only cache successful responses (but not dashboard/API)
-    if (networkResponse.ok && !url.pathname.startsWith('/dashboard/') && !url.pathname.startsWith('/api/')) {
+    // Only cache successful responses (but not dashboard/API/products)
+    if (networkResponse.ok && 
+        !url.pathname.startsWith('/dashboard/') && 
+        !url.pathname.startsWith('/api/') &&
+        !url.pathname.startsWith('/products/')) {
       const cache = await caches.open(DYNAMIC_CACHE)
       cache.put(request, networkResponse.clone())
     }
     return networkResponse
   } catch (error) {
-    // Fallback to cache only for non-dashboard navigation requests
-    if (!url.pathname.startsWith('/dashboard/') && !url.pathname.startsWith('/api/')) {
+    // Fallback to cache only for non-dynamic navigation requests
+    // Never fallback for dashboard/API/products pages
+    if (!url.pathname.startsWith('/dashboard/') && 
+        !url.pathname.startsWith('/api/') &&
+        !url.pathname.startsWith('/products/')) {
       const cachedResponse = await caches.match(request)
       if (cachedResponse) {
         return cachedResponse

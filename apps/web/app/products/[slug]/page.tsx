@@ -43,7 +43,13 @@ export default function PublicProductPage() {
         
         const data = await response.json()
         setProductData(data) // API returns filtered product directly, not nested under .product
-        setAccessLevel(data._access_info?.level || 'public')
+        const newAccessLevel = data._access_info?.level || 'public'
+        setAccessLevel(newAccessLevel)
+        
+        // Log access level for debugging
+        if (token) {
+          console.log('📧 Access level after token validation:', newAccessLevel)
+        }
       } catch (error) {
         console.error('Error fetching product:', error)
       } finally {

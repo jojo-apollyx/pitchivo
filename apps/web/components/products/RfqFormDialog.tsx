@@ -69,13 +69,28 @@ export function RfqFormDialog({
         throw new Error(error.message || 'Failed to submit RFQ')
       }
 
-      toast.success('RFQ submitted successfully!', {
-        description: 'We will get back to you soon.',
-      })
+      const result = await response.json()
 
       reset()
       onOpenChange(false)
       onSuccess?.()
+
+      // Redirect to upgrade URL if provided (gives user full access)
+      if (result.upgrade_url) {
+        toast.success('RFQ submitted successfully!', {
+          description: 'Redirecting to view full product details...',
+        })
+        
+        // Use window.location.replace to avoid adding to history
+        // Small delay to show success message
+        setTimeout(() => {
+          window.location.replace(result.upgrade_url)
+        }, 1000)
+      } else {
+        toast.success('RFQ submitted successfully!', {
+          description: 'We will get back to you soon.',
+        })
+      }
     } catch (error) {
       console.error('RFQ submission error:', error)
       toast.error('Failed to submit RFQ', {
