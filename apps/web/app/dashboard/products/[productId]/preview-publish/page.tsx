@@ -55,10 +55,10 @@ function PermissionWidget({
         disabled={disabled}
         className={cn(
           'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
-          'hover:bg-background/80 touch-manipulation',
+          'touch-manipulation',
           value === 'public'
             ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground',
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
@@ -71,10 +71,10 @@ function PermissionWidget({
         disabled={disabled}
         className={cn(
           'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
-          'hover:bg-background/80 touch-manipulation',
+          'touch-manipulation',
           value === 'after_click'
             ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground',
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
@@ -87,16 +87,598 @@ function PermissionWidget({
         disabled={disabled}
         className={cn(
           'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
-          'hover:bg-background/80 touch-manipulation',
+          'touch-manipulation',
           value === 'after_rfq'
             ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground',
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
         <FileText className="h-3 w-3" />
         <span className="hidden sm:inline">After RFQ</span>
       </button>
+    </div>
+  )
+}
+
+/**
+ * Segmented Control for Preview Modes
+ */
+function PreviewModeSelector({
+  value,
+  onChange,
+}: {
+  value: 'none' | 'public' | 'after_click' | 'after_rfq'
+  onChange: (mode: 'none' | 'public' | 'after_click' | 'after_rfq') => void
+}) {
+  const modes: Array<{ value: 'none' | 'public' | 'after_click' | 'after_rfq'; label: string; icon: any }> = [
+    { value: 'none', label: 'Edit', icon: null },
+    { value: 'public', label: 'Public', icon: Globe },
+    { value: 'after_click', label: 'After Click', icon: Mail },
+    { value: 'after_rfq', label: 'After RFQ', icon: FileText },
+  ]
+
+  return (
+    <div className="flex items-center gap-1 rounded-lg bg-muted/30 p-1">
+      {modes.map((mode) => {
+        const Icon = mode.icon
+        return (
+          <button
+            key={mode.value}
+            type="button"
+            onClick={() => onChange(mode.value)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all',
+              'touch-manipulation',
+              value === mode.value
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            {Icon && <Icon className="h-3 w-3" />}
+            <span>{mode.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * Real Page Preview Component
+ * Shows product like a public-facing page
+ */
+function RealPagePreview({
+  formData,
+  permissions,
+  viewMode,
+}: {
+  formData: FoodSupplementProductData
+  permissions: FieldPermission
+  viewMode: 'public' | 'after_click' | 'after_rfq'
+}) {
+  const shouldShow = (fieldName: string): boolean => {
+    const permission = permissions[fieldName] || 'public'
+    if (viewMode === 'public') return permission === 'public'
+    if (viewMode === 'after_click') return permission === 'public' || permission === 'after_click'
+    if (viewMode === 'after_rfq') return true
+    return false
+  }
+
+  const formatValue = (value: any, fieldName: string): string => {
+    if (!value || (Array.isArray(value) && value.length === 0)) return ''
+    
+    if (fieldName === 'price_lead_time' && Array.isArray(value)) {
+      return value.map((tier: any) => {
+        const parts = []
+        if (tier.moq) parts.push(`MOQ: ${tier.moq}`)
+        if (tier.price) parts.push(`Price: ${tier.price}`)
+        if (tier.lead_time) parts.push(`Lead Time: ${tier.lead_time}`)
+        return parts.join(', ')
+      }).join(' | ')
+    }
+    
+    if (fieldName === 'samples' && Array.isArray(value)) {
+      return value.map((sample: any) => {
+        const parts = []
+        if (sample.sample_type) parts.push(`Type: ${sample.sample_type}`)
+        if (sample.price) parts.push(`Price: ${sample.price}`)
+        if (sample.quantity) parts.push(`Qty: ${sample.quantity}`)
+        return parts.join(', ')
+      }).join(' | ')
+    }
+    
+    if (Array.isArray(value)) return value.join(', ')
+    if (typeof value === 'object' && value !== null) {
+      const entries = Object.entries(value).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+      if (entries.length > 0) {
+        return entries.map(([k, v]) => `${k}: ${v}`).join(', ')
+      }
+    }
+    
+    return String(value)
+  }
+
+  return (
+    <div className="bg-background">
+      {/* Product Header */}
+      <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-border/30">
+        {shouldShow('product_name') && formData.product_name && (
+          <h1 className="text-3xl font-bold mb-2">{formData.product_name}</h1>
+        )}
+        {shouldShow('category') && formData.category && (
+          <p className="text-muted-foreground">{formData.category}</p>
+        )}
+      </div>
+
+      {/* Product Images */}
+      {shouldShow('product_images') && formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {formData.product_images.map((img: any, index: number) => {
+              const imgSrc = typeof img === 'string' ? img : (img instanceof File ? URL.createObjectURL(img) : '')
+              if (!imgSrc) return null
+              return (
+                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border/30">
+                  <img
+                    src={imgSrc}
+                    alt={`Product image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Product Details */}
+      <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+        {shouldShow('description') && formData.description && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Description</h2>
+            <p className="text-muted-foreground whitespace-pre-wrap">{formData.description}</p>
+          </div>
+        )}
+
+        {/* Basic Info */}
+        {(() => {
+          const basicFields = [
+            { key: 'origin_country', label: 'Origin Country' },
+            { key: 'manufacturer_name', label: 'Manufacturer' },
+            { key: 'form', label: 'Form' },
+            { key: 'grade', label: 'Grade' },
+            { key: 'cas_number', label: 'CAS Number' },
+            { key: 'fda_number', label: 'FDA Number' },
+            { key: 'einecs', label: 'EINECS Number' },
+            { key: 'botanical_name', label: 'Botanical Name' },
+            { key: 'extraction_ratio', label: 'Extraction Ratio' },
+            { key: 'carrier_material', label: 'Carrier Material' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          if (basicFields.length === 0) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Product Information</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {basicFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-sm text-muted-foreground">{field.label}</p>
+                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Applications */}
+        {shouldShow('applications') && formData.applications && Array.isArray(formData.applications) && formData.applications.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Applications</h2>
+            <div className="flex flex-wrap gap-2">
+              {formData.applications.map((app, idx) => (
+                <Badge key={idx} variant="secondary">{app}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Technical Specifications */}
+        {(() => {
+          const techFields = [
+            { key: 'appearance', label: 'Appearance' },
+            { key: 'odor', label: 'Odor' },
+            { key: 'taste', label: 'Taste' },
+            { key: 'solubility', label: 'Solubility' },
+            { key: 'particle_size', label: 'Particle Size' },
+            { key: 'mesh_size', label: 'Mesh Size' },
+            { key: 'bulk_density', label: 'Bulk Density' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          if (techFields.length === 0) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Physical & Sensory Properties</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {techFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-sm text-muted-foreground">{field.label}</p>
+                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Chemical Analysis */}
+        {(() => {
+          const chemFields = [
+            { key: 'assay', label: 'Assay/Purity' },
+            { key: 'ph', label: 'pH' },
+            { key: 'moisture', label: 'Moisture' },
+            { key: 'ash_content', label: 'Ash Content' },
+            { key: 'loss_on_drying', label: 'Loss on Drying' },
+            { key: 'residual_solvents', label: 'Residual Solvents' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          if (chemFields.length === 0) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Chemical Analysis</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {chemFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-sm text-muted-foreground">{field.label}</p>
+                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Heavy Metals */}
+        {(() => {
+          const metalFields = [
+            { key: 'heavy_metals_total', label: 'Heavy Metals (Total)' },
+            { key: 'lead', label: 'Lead (Pb)' },
+            { key: 'arsenic', label: 'Arsenic (As)' },
+            { key: 'cadmium', label: 'Cadmium (Cd)' },
+            { key: 'mercury', label: 'Mercury (Hg)' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          if (metalFields.length === 0) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Heavy Metals</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {metalFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-sm text-muted-foreground">{field.label}</p>
+                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Contaminants */}
+        {(() => {
+          const contamFields = [
+            { key: 'pesticide_residue', label: 'Pesticide Residue' },
+            { key: 'aflatoxins', label: 'Aflatoxins' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          if (contamFields.length === 0) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Contaminants</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {contamFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-sm text-muted-foreground">{field.label}</p>
+                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Microbiological */}
+        {(() => {
+          const microFields = [
+            { key: 'total_plate_count', label: 'Total Plate Count' },
+            { key: 'yeast_mold', label: 'Yeast & Mold' },
+            { key: 'coliforms', label: 'Coliforms' },
+            { key: 'e_coli_presence', label: 'E. Coli' },
+            { key: 'salmonella_presence', label: 'Salmonella' },
+            { key: 'staphylococcus_presence', label: 'Staphylococcus Aureus' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          if (microFields.length === 0) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Microbiological</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {microFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-sm text-muted-foreground">{field.label}</p>
+                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Packaging & Logistics */}
+        {(() => {
+          const packFields = [
+            { key: 'packaging_type', label: 'Packaging Type' },
+            { key: 'net_weight', label: 'Net Weight per Package' },
+            { key: 'gross_weight', label: 'Gross Weight per Package' },
+            { key: 'packages_per_pallet', label: 'Packages per Pallet' },
+            { key: 'shelf_life', label: 'Shelf Life' },
+            { key: 'storage_temperature', label: 'Storage Temperature' },
+            { key: 'payment_terms', label: 'Payment Terms' },
+            { key: 'incoterm', label: 'Incoterm' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          const hasStorageConditions = shouldShow('storage_conditions') && formData.storage_conditions && Array.isArray(formData.storage_conditions) && formData.storage_conditions.length > 0
+          
+          if (packFields.length === 0 && !hasStorageConditions) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Packaging & Logistics</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {packFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-sm text-muted-foreground">{field.label}</p>
+                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                  </div>
+                ))}
+                {hasStorageConditions && formData.storage_conditions && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Storage Conditions</p>
+                    <p className="font-medium">{formData.storage_conditions.join(', ')}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Certificates & Compliance */}
+        {(() => {
+          const certFields = [
+            { key: 'gmo_status', label: 'GMO Status' },
+            { key: 'irradiation_status', label: 'Irradiation Status' },
+            { key: 'bse_statement', label: 'BSE/TSE Free Statement' },
+            { key: 'halal_certified', label: 'Halal Certified' },
+            { key: 'kosher_certified', label: 'Kosher Certified' },
+            { key: 'organic_certification_body', label: 'Organic Certification Body' },
+          ].filter(f => {
+            const value = formData[f.key as keyof typeof formData]
+            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
+          })
+          
+          const hasCertificates = shouldShow('certificates') && formData.certificates && Array.isArray(formData.certificates) && formData.certificates.length > 0
+          const hasAllergenInfo = shouldShow('allergen_info') && formData.allergen_info && Array.isArray(formData.allergen_info) && formData.allergen_info.length > 0
+          
+          if (certFields.length === 0 && !hasCertificates && !hasAllergenInfo) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Certificates & Compliance</h2>
+              <div className="space-y-4">
+                {hasCertificates && formData.certificates && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Certificates</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.certificates.map((cert, idx) => (
+                        <Badge key={idx} variant="secondary">{cert}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {hasAllergenInfo && formData.allergen_info && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Allergen Information</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.allergen_info.map((allergen, idx) => (
+                        <Badge key={idx} variant="outline">Free from: {allergen}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {certFields.map((field) => (
+                    <div key={field.key}>
+                      <p className="text-sm text-muted-foreground">{field.label}</p>
+                      <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Inventory Locations */}
+        {shouldShow('inventory_locations') && formData.inventory_locations && Array.isArray(formData.inventory_locations) && formData.inventory_locations.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Inventory Locations</h2>
+            <div className="space-y-2">
+              {formData.inventory_locations.map((loc: any, idx: number) => (
+                <div key={idx} className="p-3 rounded-lg border border-border/30">
+                  <p className="font-medium">
+                    {loc.city && loc.country ? `${loc.city}, ${loc.country}` : loc.country || loc.city || 'Location'}
+                    {loc.quantity && ` - Quantity: ${loc.quantity}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Pricing */}
+        {shouldShow('price_lead_time') && formData.price_lead_time && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Pricing & Lead Time</h2>
+            <p className="text-muted-foreground">{formatValue(formData.price_lead_time, 'price_lead_time')}</p>
+          </div>
+        )}
+
+        {/* Samples */}
+        {(() => {
+          const hasSamplesArray = shouldShow('samples') && formData.samples && Array.isArray(formData.samples) && formData.samples.length > 0
+          const formDataAny = formData as any
+          const hasIndividualSamples = shouldShow('provide_sample') && formDataAny.provide_sample && 
+            (formDataAny.provide_sample.toLowerCase() === 'yes' || formDataAny.provide_sample.toLowerCase() === 'true')
+          
+          if (!hasSamplesArray && !hasIndividualSamples) return null
+          
+          let sampleInfo = ''
+          if (hasSamplesArray) {
+            sampleInfo = formatValue(formData.samples, 'samples')
+          } else if (hasIndividualSamples) {
+            const parts = []
+            if (formDataAny.sample_type) parts.push(`Type: ${formDataAny.sample_type}`)
+            if (formDataAny.sample_price) parts.push(`Price: ${formDataAny.sample_price}`)
+            if (formDataAny.sample_quantity) parts.push(`Quantity: ${formDataAny.sample_quantity}`)
+            if (formDataAny.sample_lead_time) parts.push(`Lead Time: ${formDataAny.sample_lead_time}`)
+            if (formDataAny.sample_availability) parts.push(`Availability: ${formDataAny.sample_availability}`)
+            sampleInfo = parts.length > 0 ? parts.join(', ') : 'Samples available'
+          }
+          
+          if (!sampleInfo) return null
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Samples</h2>
+              <p className="text-muted-foreground">{sampleInfo}</p>
+            </div>
+          )
+        })()}
+
+        {/* Documentation Files */}
+        {(() => {
+          const formDataAny = formData as any
+          const docFields = [
+            { key: 'coa_file', label: 'Certificate of Analysis (COA)' },
+            { key: 'tds_file', label: 'Technical Data Sheet (TDS)' },
+            { key: 'msds_file', label: 'Material Safety Data Sheet (MSDS)' },
+            { key: 'spec_sheet', label: 'Specification Sheet' },
+          ].filter(f => shouldShow(f.key) && formData[f.key as keyof typeof formData])
+          
+          const hasCertFiles = shouldShow('certificate_files') && formData.certificate_files && Array.isArray(formData.certificate_files) && formData.certificate_files.length > 0
+          const hasOtherFiles = shouldShow('other_files') && formData.other_files && Array.isArray(formData.other_files) && formData.other_files.length > 0
+          const hasUploadedFiles = shouldShow('uploaded_files') && formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
+          
+          if (docFields.length === 0 && !hasCertFiles && !hasOtherFiles && !hasUploadedFiles) return null
+          
+          // Determine if documents can be downloaded based on permission
+          const canDownload = viewMode === 'after_rfq' // Only after RFQ can download
+          
+          return (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Documentation & Files</h2>
+              {!canDownload && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Documents are available for viewing. Download access requires RFQ submission.
+                </p>
+              )}
+              <div className="space-y-2">
+                {docFields.map((field) => {
+                  const value = formData[field.key as keyof typeof formData]
+                  if (!value) return null
+                  const filename = typeof value === 'string' ? (value.split('/').pop() || value.split('\\').pop() || value) : String(value)
+                  return (
+                    <div key={field.key} className="p-3 rounded-lg border border-border/30">
+                      <p className="font-medium">{field.label}</p>
+                      <p className="text-sm text-muted-foreground">{filename.length > 60 ? filename.substring(0, 60) + '...' : filename}</p>
+                      {canDownload && (
+                        <p className="text-xs text-primary mt-1">✓ Download available</p>
+                      )}
+                    </div>
+                  )
+                })}
+                {hasCertFiles && formData.certificate_files && (
+                  <div className="p-3 rounded-lg border border-border/30">
+                    <p className="font-medium">Certificate Files ({formData.certificate_files.length})</p>
+                    {canDownload && (
+                      <p className="text-xs text-primary mt-1">✓ Download available</p>
+                    )}
+                  </div>
+                )}
+                {hasOtherFiles && formData.other_files && (
+                  <div className="p-3 rounded-lg border border-border/30">
+                    <p className="font-medium">Other Files ({formData.other_files.length})</p>
+                    {canDownload && (
+                      <p className="text-xs text-primary mt-1">✓ Download available</p>
+                    )}
+                  </div>
+                )}
+                {hasUploadedFiles && (
+                  <div className="p-3 rounded-lg border border-border/30">
+                    <p className="font-medium">Uploaded Documents ({formDataAny.uploaded_files.length})</p>
+                    <div className="mt-2 space-y-1">
+                      {formDataAny.uploaded_files.slice(0, 5).map((f: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <p className="text-sm text-muted-foreground">
+                            {f.filename || f.file_id || `Document ${idx + 1}`}
+                          </p>
+                          {canDownload && (
+                            <span className="text-xs text-primary">✓</span>
+                          )}
+                        </div>
+                      ))}
+                      {formDataAny.uploaded_files.length > 5 && (
+                        <p className="text-sm text-muted-foreground">+ {formDataAny.uploaded_files.length - 5} more</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+      </div>
     </div>
   )
 }
@@ -111,62 +693,143 @@ function FieldDisplay({
   fieldName,
   permission,
   onPermissionChange,
-  viewMode = 'merchant',
+  viewMode = 'none',
 }: {
   label: string
   value: any
   fieldName: string
   permission: AccessLevel
   onPermissionChange: (fieldName: string, level: AccessLevel) => void
-  viewMode?: 'merchant' | 'email_visitor' | 'after_rfq'
+  viewMode?: 'none' | 'public' | 'after_click' | 'after_rfq'
 }) {
   // Determine if field should be visible based on view mode
   const isVisible = useMemo(() => {
-    if (viewMode === 'merchant') return true
-    if (viewMode === 'email_visitor' && (permission === 'public' || permission === 'after_click')) return true
-    if (viewMode === 'after_rfq') return true // All fields visible after RFQ
+    if (viewMode === 'none') return true // Show all in edit mode
+    if (viewMode === 'public') {
+      return permission === 'public'
+    }
+    if (viewMode === 'after_click') {
+      // After click sees public and after_click fields
+      return permission === 'public' || permission === 'after_click'
+    }
+    if (viewMode === 'after_rfq') {
+      // After RFQ sees everything (inclusive model)
+      return true
+    }
     return false
   }, [viewMode, permission])
 
-  // Display value
+  // Display value with proper formatting
   const displayValue = useMemo(() => {
     if (!value || (Array.isArray(value) && value.length === 0)) return '-'
-    if (Array.isArray(value)) return value.join(', ')
-    if (typeof value === 'object') return JSON.stringify(value)
+    
+    // Handle product_images - show as image count, not URLs
+    if (fieldName === 'product_images' && Array.isArray(value)) {
+      return `${value.length} image(s)`
+    }
+    
+    // Handle price_lead_time array of objects
+    if (fieldName === 'price_lead_time' && Array.isArray(value)) {
+      return value.map((tier: any) => {
+        const parts = []
+        if (tier.moq) parts.push(`MOQ: ${tier.moq}`)
+        if (tier.price) parts.push(`Price: ${tier.price}`)
+        if (tier.lead_time) parts.push(`Lead Time: ${tier.lead_time}`)
+        return parts.length > 0 ? parts.join(', ') : '-'
+      }).join(' | ') || '-'
+    }
+    
+    // Handle samples array of objects
+    if (fieldName === 'samples' && Array.isArray(value)) {
+      return value.map((sample: any) => {
+        const parts = []
+        if (sample.sample_type) parts.push(`Type: ${sample.sample_type}`)
+        if (sample.price) parts.push(`Price: ${sample.price}`)
+        if (sample.quantity) parts.push(`Qty: ${sample.quantity}`)
+        if (sample.lead_time) parts.push(`Lead Time: ${sample.lead_time}`)
+        if (sample.availability) parts.push(`Available: ${sample.availability}`)
+        return parts.length > 0 ? parts.join(', ') : '-'
+      }).join(' | ') || '-'
+    }
+    
+    // Handle inventory_locations array of objects
+    if (fieldName === 'inventory_locations' && Array.isArray(value)) {
+      return value.map((loc: any) => {
+        const parts = []
+        if (loc.country) parts.push(loc.country)
+        if (loc.city) parts.push(loc.city)
+        if (loc.quantity) parts.push(`Qty: ${loc.quantity}`)
+        return parts.length > 0 ? parts.join(', ') : '-'
+      }).join(' | ') || '-'
+    }
+    
+    // Handle file fields - show filename or count
+    if (fieldName.includes('_file') || fieldName.includes('files')) {
+      if (Array.isArray(value)) {
+        return `${value.length} file(s)`
+      }
+      if (typeof value === 'string' && value.length > 0) {
+        // Extract filename from URL or path
+        const filename = value.split('/').pop() || value.split('\\').pop() || value
+        return filename.length > 50 ? filename.substring(0, 50) + '...' : filename
+      }
+    }
+    
+    // Handle regular arrays
+    if (Array.isArray(value)) {
+      return value.join(', ')
+    }
+    
+    // Handle objects (but not File objects)
+    if (typeof value === 'object' && value !== null && !(value instanceof File)) {
+      // Try to format as key-value pairs
+      const entries = Object.entries(value).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+      if (entries.length > 0) {
+        return entries.map(([k, v]) => `${k}: ${v}`).join(', ')
+      }
+      return '-'
+    }
+    
+    // Handle long URLs - truncate them
+    if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:'))) {
+      if (value.startsWith('data:image')) {
+        return 'Image (base64)'
+      }
+      if (value.length > 60) {
+        return value.substring(0, 60) + '...'
+      }
+    }
+    
     return String(value)
-  }, [value])
+  }, [value, fieldName])
+
+  // Hide field completely if not visible in current view mode (except edit mode)
+  if (viewMode !== 'none' && !isVisible) {
+    return null
+  }
 
   return (
     <div
       className={cn(
-        'flex flex-col sm:flex-row sm:items-start gap-3 py-3 border-b border-border/30',
-        !isVisible && 'opacity-40'
+        'flex flex-col sm:flex-row sm:items-start gap-3 py-3 border-b border-border/30'
       )}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-sm font-medium text-foreground">{label}</h3>
-          {!isVisible && viewMode !== 'merchant' && (
-            <Badge variant="outline" className="text-xs">
-              {permission === 'after_click' ? '✉️ Email access' : '🧾 RFQ required'}
-            </Badge>
-          )}
         </div>
-        <p
-          className={cn(
-            'text-sm',
-            isVisible ? 'text-foreground' : 'text-muted-foreground'
-          )}
-        >
+        <p className="text-sm text-foreground">
           {displayValue}
         </p>
       </div>
       <div className="flex-shrink-0">
-        <PermissionWidget
-          value={permission}
-          onChange={(level) => onPermissionChange(fieldName, level)}
-          disabled={viewMode !== 'merchant'}
-        />
+        {viewMode === 'none' && (
+          <PermissionWidget
+            value={permission}
+            onChange={(level) => onPermissionChange(fieldName, level)}
+            disabled={false}
+          />
+        )}
       </div>
     </div>
   )
@@ -178,7 +841,7 @@ export default function PreviewPublishPage() {
   const productId = params.productId as string
 
   const [isPublishing, setIsPublishing] = useState(false)
-  const [viewMode, setViewMode] = useState<'merchant' | 'email_visitor' | 'after_rfq'>('merchant')
+  const [viewMode, setViewMode] = useState<'none' | 'public' | 'after_click' | 'after_rfq'>('none')
   const [permissions, setPermissions] = useState<FieldPermission>({})
   const [channels, setChannels] = useState<ChannelLink[]>(DEFAULT_CHANNELS)
   const [showAddChannel, setShowAddChannel] = useState(false)
@@ -195,20 +858,54 @@ export default function PreviewPublishPage() {
       : productData.product_data
   }, [productData])
 
-  // Initialize default permissions (all fields public by default)
+  // Initialize default permissions with best practices
   useEffect(() => {
     if (formData && Object.keys(permissions).length === 0) {
       const defaultPermissions: FieldPermission = {}
       
-      // Set default permissions for all fields
+      // Sensitive fields that should default to after_rfq (most restricted)
+      const afterRfqFields = [
+        'price_lead_time',
+        'samples',
+        'coa_file',
+        'tds_file',
+        'msds_file',
+        'spec_sheet',
+        'certificate_files',
+        'other_files',
+      ]
+      
+      // Fields that should default to after_click (moderately sensitive)
+      const afterClickFields = [
+        'cas_number',
+        'assay',
+        'certificates',
+        'fda_number',
+        'einecs',
+        'manufacturer_name',
+      ]
+      
+      // Set default permissions for all fields in formData
       Object.keys(formData).forEach((key) => {
-        // Sensitive fields default to after_click or after_rfq
-        if (['price_lead_time', 'samples', 'moq'].includes(key)) {
-          defaultPermissions[key] = 'after_rfq'
-        } else if (['cas_number', 'assay', 'certificates'].includes(key)) {
-          defaultPermissions[key] = 'after_click'
-        } else {
-          defaultPermissions[key] = 'public'
+        // Skip internal/metadata fields
+        if (key.startsWith('_') || key === 'uploaded_files' || key === 'field_permissions' || key === 'channel_links') {
+          return
+        }
+        
+        // Check if field has a meaningful value
+        const value = formData[key as keyof typeof formData]
+        const hasValue = value !== null && value !== undefined && value !== '' && 
+          (!Array.isArray(value) || value.length > 0) &&
+          (typeof value !== 'object' || Object.keys(value).length > 0)
+        
+        if (hasValue) {
+          if (afterRfqFields.includes(key)) {
+            defaultPermissions[key] = 'after_rfq'
+          } else if (afterClickFields.includes(key)) {
+            defaultPermissions[key] = 'after_click'
+          } else {
+            defaultPermissions[key] = 'public'
+          }
         }
       })
       
@@ -363,42 +1060,76 @@ export default function PreviewPublishPage() {
         </div>
       </header>
 
-      {/* View Mode Selector */}
-      <section className="px-4 sm:px-6 lg:px-8 py-4 border-b border-border/30">
-        <div className="flex items-center gap-2">
-          <Eye className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">Preview as:</span>
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'merchant' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('merchant')}
-            >
-              Merchant View
-            </Button>
-            <Button
-              variant={viewMode === 'email_visitor' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('email_visitor')}
-            >
-              Email Visitor
-            </Button>
-            <Button
-              variant={viewMode === 'after_rfq' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('after_rfq')}
-            >
-              After RFQ
-            </Button>
+      {/* Permission Level Descriptions */}
+      <section className="px-4 sm:px-6 lg:px-8 py-4 bg-muted/30 border-b border-border/30">
+        <div className="space-y-2 mb-4">
+          <div className="flex items-start gap-2">
+            <Globe className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Public</p>
+              <p className="text-xs text-muted-foreground">Visible to everyone without any restrictions</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <Mail className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium">After Email Click</p>
+              <p className="text-xs text-muted-foreground">Visible only to users who clicked your email tracking link</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <FileText className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium">After RFQ</p>
+              <p className="text-xs text-muted-foreground">Visible only after user submits a Request for Quote (RFQ)</p>
+            </div>
           </div>
         </div>
       </section>
+
 
       {/* Main Content - Two Column Layout */}
       <main className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 lg:gap-6">
           {/* Left: Product Preview (2/3 width on desktop) */}
           <div className="lg:col-span-2">
+            {viewMode === 'none' ? (
+              <>
+                {/* Edit Mode: Show fields with access control */}
+                {/* Product Images */}
+            {formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 0 && (
+              <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+                <h2 className="text-lg font-semibold mb-4">Product Images</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+                  {formData.product_images.map((img: any, index: number) => {
+                    const imgSrc = typeof img === 'string' ? img : (img instanceof File ? URL.createObjectURL(img) : '')
+                    if (!imgSrc) return null
+                    return (
+                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border/30">
+                        <img
+                          src={imgSrc}
+                          alt={`Product image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Hide broken images
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+                <FieldDisplay
+                  label="Product Images"
+                  value={formData.product_images}
+                  fieldName="product_images"
+                  permission={permissions.product_images || 'public'}
+                  onPermissionChange={handlePermissionChange}
+                  viewMode={viewMode}
+                />
+              </section>
+            )}
+
             {/* Basic Information */}
             <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
               <h2 className="text-lg font-semibold mb-4">Product Information</h2>
@@ -520,58 +1251,226 @@ export default function PreviewPublishPage() {
             )}
 
             {/* Pricing & MOQ */}
-            <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-              <h2 className="text-lg font-semibold mb-4">Pricing & MOQ</h2>
-              <div className="space-y-1">
-                <FieldDisplay
-                  label="Price & Lead Time"
-                  value={formData.price_lead_time}
-                  fieldName="price_lead_time"
-                  permission={permissions.price_lead_time || 'after_rfq'}
-                  onPermissionChange={handlePermissionChange}
-                  viewMode={viewMode}
-                />
-                <FieldDisplay
-                  label="Samples Available"
-                  value={formData.samples}
-                  fieldName="samples"
-                  permission={permissions.samples || 'after_rfq'}
-                  onPermissionChange={handlePermissionChange}
-                  viewMode={viewMode}
-                />
-              </div>
-            </section>
+            {(() => {
+              const hasPriceLeadTime = formData.price_lead_time && (
+                Array.isArray(formData.price_lead_time) ? formData.price_lead_time.length > 0 : true
+              )
+              const hasSamplesArray = formData.samples && (
+                Array.isArray(formData.samples) ? formData.samples.length > 0 : true
+              )
+              const formDataAny = formData as any
+              const hasIndividualSamples = formDataAny.provide_sample && 
+                (formDataAny.provide_sample.toLowerCase() === 'yes' || formDataAny.provide_sample.toLowerCase() === 'true')
+              const hasSamples = hasSamplesArray || hasIndividualSamples
+              
+              if (!hasPriceLeadTime && !hasSamples) return null
+              
+              // Format samples value for display
+              let samplesValue: any = formData.samples
+              if (!hasSamplesArray && hasIndividualSamples) {
+                // Create a formatted string from individual sample fields
+                const parts = []
+                if (formDataAny.sample_type) parts.push(`Type: ${formDataAny.sample_type}`)
+                if (formDataAny.sample_price) parts.push(`Price: ${formDataAny.sample_price}`)
+                if (formDataAny.sample_quantity) parts.push(`Quantity: ${formDataAny.sample_quantity}`)
+                if (formDataAny.sample_lead_time) parts.push(`Lead Time: ${formDataAny.sample_lead_time}`)
+                if (formDataAny.sample_availability) parts.push(`Availability: ${formDataAny.sample_availability}`)
+                samplesValue = parts.length > 0 ? parts.join(', ') : 'Samples available'
+              }
+              
+              return (
+                <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+                  <h2 className="text-lg font-semibold mb-4">Pricing & MOQ</h2>
+                  <div className="space-y-1">
+                    {hasPriceLeadTime && (
+                      <FieldDisplay
+                        label="Price & Lead Time"
+                        value={formData.price_lead_time}
+                        fieldName="price_lead_time"
+                        permission={permissions.price_lead_time || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                    {hasSamples && (
+                      <FieldDisplay
+                        label="Samples Available"
+                        value={samplesValue}
+                        fieldName="samples"
+                        permission={permissions.samples || permissions.provide_sample || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                  </div>
+                </section>
+              )
+            })()}
+
+            {/* Documentation Files */}
+            {(() => {
+              // Check for files in various locations
+              const formDataAny = formData as any
+              const hasCoa = formData.coa_file
+              const hasTds = formData.tds_file
+              const hasMsds = formData.msds_file
+              const hasSpec = formData.spec_sheet
+              const hasCertFiles = formData.certificate_files && Array.isArray(formData.certificate_files) && formData.certificate_files.length > 0
+              const hasOtherFiles = formData.other_files && Array.isArray(formData.other_files) && formData.other_files.length > 0
+              const hasUploadedFiles = formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
+              
+              if (!hasCoa && !hasTds && !hasMsds && !hasSpec && !hasCertFiles && !hasOtherFiles && !hasUploadedFiles) {
+                return null
+              }
+              
+              return (
+                <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+                  <h2 className="text-lg font-semibold mb-4">Documentation & Files</h2>
+                  <div className="space-y-1">
+                    {hasCoa && (
+                      <FieldDisplay
+                        label="Certificate of Analysis (COA)"
+                        value={formData.coa_file}
+                        fieldName="coa_file"
+                        permission={permissions.coa_file || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                    {hasTds && (
+                      <FieldDisplay
+                        label="Technical Data Sheet (TDS)"
+                        value={formData.tds_file}
+                        fieldName="tds_file"
+                        permission={permissions.tds_file || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                    {hasMsds && (
+                      <FieldDisplay
+                        label="Material Safety Data Sheet (MSDS)"
+                        value={formData.msds_file}
+                        fieldName="msds_file"
+                        permission={permissions.msds_file || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                    {hasSpec && (
+                      <FieldDisplay
+                        label="Specification Sheet"
+                        value={formData.spec_sheet}
+                        fieldName="spec_sheet"
+                        permission={permissions.spec_sheet || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                    {hasCertFiles && (
+                      <FieldDisplay
+                        label="Certificate Files"
+                        value={formData.certificate_files}
+                        fieldName="certificate_files"
+                        permission={permissions.certificate_files || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                    {hasOtherFiles && (
+                      <FieldDisplay
+                        label="Other Files"
+                        value={formData.other_files}
+                        fieldName="other_files"
+                        permission={permissions.other_files || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                    {hasUploadedFiles && (
+                      <FieldDisplay
+                        label="Uploaded Documents"
+                        value={formDataAny.uploaded_files.map((f: any) => f.filename || f.file_id || 'Document').join(', ')}
+                        fieldName="uploaded_files"
+                        permission={permissions.uploaded_files || 'after_rfq'}
+                        onPermissionChange={handlePermissionChange}
+                        viewMode={viewMode}
+                      />
+                    )}
+                  </div>
+                </section>
+              )
+            })()}
+
+            {/* Additional Fields - Show all remaining fields */}
+            {(() => {
+              const displayedFields = new Set([
+                'product_name', 'category', 'cas_number', 'origin_country', 'manufacturer_name',
+                'form', 'grade', 'assay', 'appearance', 'odor', 'taste', 'ph',
+                'product_images', 'price_lead_time', 'samples',
+                'coa_file', 'tds_file', 'msds_file', 'spec_sheet', 'certificate_files', 'other_files', 'uploaded_files'
+              ])
+              
+              const additionalFields = Object.keys(formData).filter(key => {
+                if (displayedFields.has(key)) return false
+                if (key.startsWith('_')) return false
+                if (key === 'uploaded_files' || key === 'field_permissions' || key === 'channel_links') return false
+                const value = formData[key as keyof typeof formData]
+                return value !== null && value !== undefined && value !== '' && 
+                  (!Array.isArray(value) || value.length > 0) &&
+                  (typeof value !== 'object' || Object.keys(value).length > 0)
+              })
+              
+              if (additionalFields.length === 0) return null
+              
+              return (
+                <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+                  <h2 className="text-lg font-semibold mb-4">Additional Information</h2>
+                  <div className="space-y-1">
+                    {additionalFields.map((fieldName) => {
+                      const value = formData[fieldName as keyof typeof formData]
+                      // Get label from PRODUCT_FIELDS if available, otherwise format field name
+                      const label = fieldName.split('_').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                      ).join(' ')
+                      
+                      return (
+                        <FieldDisplay
+                          key={fieldName}
+                          label={label}
+                          value={value}
+                          fieldName={fieldName}
+                          permission={permissions[fieldName] || 'public'}
+                          onPermissionChange={handlePermissionChange}
+                          viewMode={viewMode}
+                        />
+                      )
+                    })}
+                  </div>
+                </section>
+              )
+            })()}
+              </>
+            ) : (
+              /* Preview Mode: Show real page view */
+              <RealPagePreview
+                formData={formData}
+                permissions={permissions}
+                viewMode={viewMode}
+              />
+            )}
           </div>
 
           {/* Right: Permissions & Links Sidebar (1/3 width on desktop) */}
           <div className="lg:border-l border-border/30">
-            {/* Permission Overview */}
+            {/* Preview Mode Selector */}
             <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-              <h2 className="text-lg font-semibold mb-4">Permission Overview</h2>
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Public</span>
-                  </div>
-                  <Badge variant="outline">{permissionStats.public} fields</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">After Click</span>
-                  </div>
-                  <Badge variant="outline">{permissionStats.after_click} fields</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">After RFQ</span>
-                  </div>
-                  <Badge variant="outline">{permissionStats.after_rfq} fields</Badge>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
+              <h2 className="text-lg font-semibold mb-4">Preview Mode</h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                Switch between edit mode and preview modes to see how your product appears
+              </p>
+              <PreviewModeSelector value={viewMode} onChange={setViewMode} />
+              <div className="flex flex-col gap-2 mt-4">
                 <Button
                   variant="outline"
                   size="sm"
@@ -598,7 +1497,7 @@ export default function PreviewPublishPage() {
                 {channels.map((channel) => (
                   <div
                     key={channel.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{channel.name}</p>
@@ -606,9 +1505,27 @@ export default function PreviewPublishPage() {
                         ?{channel.parameter}
                       </p>
                     </div>
-                    <Badge variant={channel.enabled ? 'default' : 'outline'}>
-                      {channel.enabled ? '✅' : '⏸️'}
-                    </Badge>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChannels((prev) =>
+                          prev.map((c) =>
+                            c.id === channel.id ? { ...c, enabled: !c.enabled } : c
+                          )
+                        )
+                        toast.success(
+                          channel.enabled
+                            ? `Channel "${channel.name}" disabled`
+                            : `Channel "${channel.name}" enabled`
+                        )
+                      }}
+                      className="cursor-pointer hover:opacity-80 transition-opacity"
+                      aria-label={channel.enabled ? 'Disable channel' : 'Enable channel'}
+                    >
+                      <Badge variant={channel.enabled ? 'default' : 'outline'}>
+                        {channel.enabled ? '✅' : '⏸️'}
+                      </Badge>
+                    </button>
                   </div>
                 ))}
               </div>
