@@ -191,6 +191,8 @@ export function RealPagePreview({
       initial="hidden"
       animate="visible"
       variants={containerVariants}
+      itemScope
+      itemType="https://schema.org/Product"
     >
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
@@ -209,6 +211,7 @@ export function RealPagePreview({
                 <motion.h1
                   variants={itemVariants}
                   className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+                  itemProp="name"
                 >
                   {formData.product_name}
                 </motion.h1>
@@ -217,6 +220,7 @@ export function RealPagePreview({
                 <motion.p
                   variants={itemVariants}
                   className="text-base sm:text-lg text-muted-foreground font-medium mb-4"
+                  itemProp="category"
                 >
                   {formData.category}
                 </motion.p>
@@ -224,23 +228,11 @@ export function RealPagePreview({
               {shouldShow('description') && formData.description && (
                 <motion.p
                   variants={itemVariants}
-                  className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap mb-4"
+                  className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap"
+                  itemProp="description"
                 >
                   {formData.description}
                 </motion.p>
-              )}
-              {/* RFQ Button - Prominent placement */}
-              {onRfqClick && (
-                <motion.div variants={itemVariants}>
-                  <Button
-                    onClick={onRfqClick}
-                    size="lg"
-                    className="gap-2 min-h-[48px] px-6 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
-                  >
-                    <MessageSquare className="h-5 w-5" />
-                    Request for Quotation (RFQ)
-                  </Button>
-                </motion.div>
               )}
             </div>
             
@@ -267,10 +259,13 @@ export function RealPagePreview({
                     
                     if (!imgSrc) return null
                     
+                    const imageAlt = `${formData.product_name || 'Product'}${formData.category ? ` - ${formData.category}` : ''}${formData.manufacturer_name ? ` by ${formData.manufacturer_name}` : ''}`
+                    
                     return (
                       <img
                         src={imgSrc}
-                        alt={formData.product_name || 'Product'}
+                        alt={imageAlt}
+                        itemProp="image"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none'
@@ -340,8 +335,26 @@ export function RealPagePreview({
       <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
         {/* Pricing & Lead Time - Moved Higher */}
         {shouldShow('price_lead_time') && formData.price_lead_time && (
-          <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Pricing & Lead Time</h2>
+          <motion.section 
+            variants={itemVariants} 
+            className="max-w-7xl mx-auto"
+            itemScope
+            itemType="https://schema.org/Offer"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Pricing & Lead Time</h2>
+              {/* RFQ Button - Right side of price section */}
+              {onRfqClick && (
+                <Button
+                  onClick={onRfqClick}
+                  size="lg"
+                  className="gap-2 min-h-[48px] px-6 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 w-full sm:w-auto"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                  Request for Quotation (RFQ)
+                </Button>
+              )}
+            </div>
             {Array.isArray(formData.price_lead_time) ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {formData.price_lead_time.map((tier: any, idx: number) => (
@@ -349,24 +362,26 @@ export function RealPagePreview({
                     key={idx}
                     variants={itemVariants}
                     className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    itemScope
+                    itemType="https://schema.org/Offer"
                   >
                     <div className="grid grid-cols-3 gap-3">
                       {tier.moq && (
                         <div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">MOQ</p>
-                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">{tier.moq}</p>
+                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground" itemProp="eligibleQuantity">{tier.moq}</p>
                         </div>
                       )}
                       {tier.price && (
                         <div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">Price</p>
-                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">{tier.price}</p>
+                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground" itemProp="price">{tier.price}</p>
                         </div>
                       )}
                       {tier.lead_time && (
                         <div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">Lead Time</p>
-                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">{tier.lead_time}</p>
+                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground" itemProp="deliveryTime">{tier.lead_time}</p>
                         </div>
                       )}
                     </div>
@@ -386,16 +401,16 @@ export function RealPagePreview({
         {/* Product Information */}
         {(() => {
           const basicFields = [
-            { key: 'origin_country', label: 'Origin Country' },
-            { key: 'manufacturer_name', label: 'Manufacturer' },
-            { key: 'form', label: 'Form' },
-            { key: 'grade', label: 'Grade' },
-            { key: 'cas_number', label: 'CAS Number' },
-            { key: 'fda_number', label: 'FDA Number' },
-            { key: 'einecs', label: 'EINECS Number' },
-            { key: 'botanical_name', label: 'Botanical Name' },
-            { key: 'extraction_ratio', label: 'Extraction Ratio' },
-            { key: 'carrier_material', label: 'Carrier Material' },
+            { key: 'origin_country', label: 'Origin Country', schemaProp: 'countryOfOrigin' },
+            { key: 'manufacturer_name', label: 'Manufacturer', schemaProp: 'manufacturer' },
+            { key: 'form', label: 'Form', schemaProp: 'additionalProperty' },
+            { key: 'grade', label: 'Grade', schemaProp: 'additionalProperty' },
+            { key: 'cas_number', label: 'CAS Number', schemaProp: 'identifier' },
+            { key: 'fda_number', label: 'FDA Number', schemaProp: 'additionalProperty' },
+            { key: 'einecs', label: 'EINECS Number', schemaProp: 'additionalProperty' },
+            { key: 'botanical_name', label: 'Botanical Name', schemaProp: 'additionalProperty' },
+            { key: 'extraction_ratio', label: 'Extraction Ratio', schemaProp: 'additionalProperty' },
+            { key: 'carrier_material', label: 'Carrier Material', schemaProp: 'additionalProperty' },
           ].filter(f => {
             const value = formData[f.key as keyof typeof formData]
             return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
@@ -416,8 +431,17 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {String(formData[field.key as keyof typeof formData])}
+                    <p 
+                      className="text-sm sm:text-base lg:text-lg font-semibold text-foreground"
+                      {...(field.schemaProp === 'manufacturer' ? { itemProp: 'manufacturer', itemScope: true, itemType: 'https://schema.org/Organization' } : {})}
+                      {...(field.schemaProp === 'countryOfOrigin' ? { itemProp: 'countryOfOrigin' } : {})}
+                      {...(field.schemaProp === 'identifier' ? { itemProp: 'identifier' } : {})}
+                    >
+                      {field.schemaProp === 'manufacturer' ? (
+                        <span itemProp="name">{String(formData[field.key as keyof typeof formData])}</span>
+                      ) : (
+                        String(formData[field.key as keyof typeof formData])
+                      )}
                     </p>
                   </motion.div>
                 ))}
@@ -428,22 +452,29 @@ export function RealPagePreview({
 
         {/* Applications */}
         {shouldShow('applications') && formData.applications && Array.isArray(formData.applications) && formData.applications.length > 0 && (
-          <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
+          <motion.section 
+            variants={itemVariants} 
+            className="max-w-7xl mx-auto"
+            itemScope
+            itemType="https://schema.org/ItemList"
+          >
             <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-foreground">Applications</h2>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              {formData.applications.map((app, idx) => (
-                <motion.div
-                  key={idx}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Badge variant="secondary" className="px-3 py-1.5 text-sm font-medium">
-                    {app}
-                  </Badge>
-                </motion.div>
-              ))}
-            </div>
+              <div className="flex flex-wrap gap-2 sm:gap-3" itemProp="itemListElement">
+                {formData.applications.map((app, idx) => (
+                  <motion.div
+                    key={idx}
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                    itemScope
+                    itemType="https://schema.org/ListItem"
+                  >
+                    <Badge variant="secondary" className="px-3 py-1.5 text-sm font-medium" itemProp="name">
+                      {app}
+                    </Badge>
+                  </motion.div>
+                ))}
+              </div>
           </motion.section>
         )}
 

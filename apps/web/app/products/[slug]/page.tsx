@@ -7,6 +7,7 @@ import { useProduct } from '@/lib/api/products'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { RealPagePreview } from './RealPagePreview'
 import { RfqFormDialog } from '@/components/products/RfqFormDialog'
+import { ProductStructuredData } from '@/components/products/ProductStructuredData'
 
 export default function PublicProductPage() {
   const params = useParams()
@@ -19,6 +20,29 @@ export default function PublicProductPage() {
   const productId = slug
 
   const { data: productData, isLoading } = useProduct(productId)
+  const [organizationData, setOrganizationData] = useState<{ name: string | null; domain: string | null } | null>(null)
+  
+  // Fetch organization data for SEO
+  useEffect(() => {
+    if (!productData?.org_id) return
+    
+    const fetchOrg = async () => {
+      try {
+        const response = await fetch(`/api/organizations?id=${productData.org_id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setOrganizationData({
+            name: data.name || null,
+            domain: data.domain || null,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching organization:', error)
+      }
+    }
+    
+    fetchOrg()
+  }, [productData?.org_id])
   
   // Extract product form data
   const formData: FoodSupplementProductData | null = useMemo(() => {
@@ -208,22 +232,34 @@ export default function PublicProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {isMerchant && (
-        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
-          <p className="text-xs text-primary font-medium">
-            Merchant Preview Mode - Full Access Enabled
-          </p>
-        </div>
+    <>
+      {/* SEO Structured Data */}
+      {productData && formData && (
+        <ProductStructuredData
+          productId={productId}
+          productName={productData.product_name || 'Product'}
+          productData={formData}
+          organizationName={organizationData?.name || null}
+          organizationDomain={organizationData?.domain || null}
+        />
       )}
-      <RealPagePreview
-        formData={formData}
-        permissions={permissions}
-        viewMode={viewMode}
-        documentMetadata={documentMetadata}
-        onRfqClick={() => setShowRfqDialog(true)}
-        onDownload={trackDownload}
-      />
+
+      <div className="min-h-screen bg-background">
+        {isMerchant && (
+          <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
+            <p className="text-xs text-primary font-medium">
+              Merchant Preview Mode - Full Access Enabled
+            </p>
+          </div>
+        )}
+        <RealPagePreview
+          formData={formData}
+          permissions={permissions}
+          viewMode={viewMode}
+          documentMetadata={documentMetadata}
+          onRfqClick={() => setShowRfqDialog(true)}
+          onDownload={trackDownload}
+        />
 
       {/* RFQ Form Dialog */}
       {productData && (
@@ -251,7 +287,8 @@ export default function PublicProductPage() {
           }}
         />
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

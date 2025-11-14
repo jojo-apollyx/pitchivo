@@ -1306,7 +1306,7 @@ export default function PreviewPublishPage() {
         throw new Error(errorData.error || 'Failed to publish product')
       }
 
-      toast.success('✅ Product published successfully! Links and QR codes generated.')
+      toast.success('Product published successfully! Links and QR codes generated.')
       router.push('/dashboard/products')
     } catch (error) {
       console.error('Error publishing product:', error)
