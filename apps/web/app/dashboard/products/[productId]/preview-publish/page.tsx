@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Eye, Globe, Mail, FileText, Plus, QrCode, Download, Package, MapPin, File, FileCheck, FileX, FileImage, FileSpreadsheet, FileCode, FileJson, Image as ImageIcon, Package2, Box } from 'lucide-react'
+import { ArrowLeft, Loader2, Eye, Globe, Mail, FileText, Plus, QrCode, Download, Package, MapPin, File, FileCheck, FileX, FileImage, FileSpreadsheet, FileCode, FileJson, Image as ImageIcon, Package2, Box, ExternalLink, Copy, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { useProduct } from '@/lib/api/products'
 import { cn } from '@/lib/utils'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
+import QRCode from 'react-qr-code'
 
 // Permission levels with inclusion relationship: Public ⊂ After Click ⊂ After RFQ
 type AccessLevel = 'public' | 'after_click' | 'after_rfq'
@@ -48,13 +50,13 @@ function PermissionWidget({
   disabled?: boolean
 }) {
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-muted/30 p-1">
+    <div className="flex items-center gap-1 rounded-lg bg-muted/30 p-1 w-full sm:w-auto">
       <button
         type="button"
         onClick={() => onChange('public')}
         disabled={disabled}
         className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+          'flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all flex-1 sm:flex-initial',
           'touch-manipulation',
           value === 'public'
             ? 'bg-primary text-primary-foreground shadow-sm'
@@ -62,7 +64,7 @@ function PermissionWidget({
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
-        <Globe className="h-3 w-3" />
+        <Globe className="h-3 w-3 flex-shrink-0" />
         <span className="hidden sm:inline">Public</span>
       </button>
       <button
@@ -70,7 +72,7 @@ function PermissionWidget({
         onClick={() => onChange('after_click')}
         disabled={disabled}
         className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+          'flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all flex-1 sm:flex-initial',
           'touch-manipulation',
           value === 'after_click'
             ? 'bg-primary text-primary-foreground shadow-sm'
@@ -78,7 +80,7 @@ function PermissionWidget({
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
-        <Mail className="h-3 w-3" />
+        <Mail className="h-3 w-3 flex-shrink-0" />
         <span className="hidden sm:inline">After Click</span>
       </button>
       <button
@@ -86,7 +88,7 @@ function PermissionWidget({
         onClick={() => onChange('after_rfq')}
         disabled={disabled}
         className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+          'flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all flex-1 sm:flex-initial',
           'touch-manipulation',
           value === 'after_rfq'
             ? 'bg-primary text-primary-foreground shadow-sm'
@@ -94,7 +96,7 @@ function PermissionWidget({
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
-        <FileText className="h-3 w-3" />
+        <FileText className="h-3 w-3 flex-shrink-0" />
         <span className="hidden sm:inline">After RFQ</span>
       </button>
     </div>
@@ -112,14 +114,14 @@ function PreviewModeSelector({
   onChange: (mode: 'none' | 'public' | 'after_click' | 'after_rfq') => void
 }) {
   const modes: Array<{ value: 'none' | 'public' | 'after_click' | 'after_rfq'; label: string; icon: any }> = [
-    { value: 'none', label: 'Edit', icon: null },
+    { value: 'none', label: 'Edit', icon: Edit },
     { value: 'public', label: 'Public', icon: Globe },
     { value: 'after_click', label: 'After Click', icon: Mail },
     { value: 'after_rfq', label: 'After RFQ', icon: FileText },
   ]
 
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-muted/30 p-1">
+    <div className="flex flex-wrap items-center gap-1 rounded-lg bg-muted/30 p-1">
       {modes.map((mode) => {
         const Icon = mode.icon
         return (
@@ -128,15 +130,15 @@ function PreviewModeSelector({
             type="button"
             onClick={() => onChange(mode.value)}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all',
+              'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all flex-1 min-w-[calc(50%-0.125rem)]',
               'touch-manipulation',
               value === mode.value
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
           >
-            {Icon && <Icon className="h-3 w-3" />}
-            <span>{mode.label}</span>
+            {Icon && <Icon className="h-3 w-3 flex-shrink-0" />}
+            <span className="whitespace-nowrap">{mode.label}</span>
           </button>
         )
       })}
@@ -1099,6 +1101,8 @@ export default function PreviewPublishPage() {
   const [showAddChannel, setShowAddChannel] = useState(false)
   const [newChannelName, setNewChannelName] = useState('')
   const [documentMetadata, setDocumentMetadata] = useState<Record<string, any>>({})
+  const [showQrDialog, setShowQrDialog] = useState(false)
+  const [selectedQrChannel, setSelectedQrChannel] = useState<ChannelLink | null>(null)
 
   // Load product data
   const { data: productData, isLoading } = useProduct(productId)
@@ -1253,6 +1257,30 @@ export default function PreviewPublishPage() {
     toast.success(`Channel "${newChannelName}" added`)
   }
 
+  // Generate public product URL with channel parameter
+  const getPublicProductUrl = (channel?: ChannelLink): string => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    // Use productId as slug for now (in production, you'd use actual slug from product)
+    const productSlug = productId
+    const url = `${baseUrl}/products/${productSlug}`
+    if (channel?.enabled && channel.parameter) {
+      return `${url}?${channel.parameter}&merchant=true`
+    }
+    return `${url}?merchant=true`
+  }
+
+  // Copy URL to clipboard
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url)
+    toast.success('URL copied to clipboard!')
+  }
+
+  // Open QR code dialog for a channel
+  const handleShowQrCode = (channel: ChannelLink) => {
+    setSelectedQrChannel(channel)
+    setShowQrDialog(true)
+  }
+
   const handlePublish = async () => {
     setIsPublishing(true)
     try {
@@ -1349,28 +1377,38 @@ export default function PreviewPublishPage() {
         </div>
       </header>
 
-      {/* Permission Level Descriptions */}
+      {/* Permission Level Descriptions - Improved Visual Design */}
       <section className="px-4 sm:px-6 lg:px-8 py-4 bg-muted/30 border-b border-border/30">
-        <div className="space-y-2 mb-4">
-          <div className="flex items-start gap-2">
-            <Globe className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium">Public</p>
-              <p className="text-xs text-muted-foreground">Visible to everyone without any restrictions</p>
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-foreground mb-1">Access Control Levels</h3>
+          <p className="text-xs text-muted-foreground">Set visibility for each field using the controls below</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
+            <div className="flex-shrink-0 rounded-lg bg-primary/10 p-2">
+              <Globe className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground mb-0.5">Public</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Visible to everyone without any restrictions</p>
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <Mail className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium">After Email Click</p>
-              <p className="text-xs text-muted-foreground">Visible only to users who clicked your email tracking link</p>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
+            <div className="flex-shrink-0 rounded-lg bg-primary/10 p-2">
+              <Mail className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground mb-0.5">After Email Click</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Visible only to users who clicked your email tracking link</p>
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <FileText className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium">After RFQ</p>
-              <p className="text-xs text-muted-foreground">Visible only after user submits a Request for Quote (RFQ)</p>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
+            <div className="flex-shrink-0 rounded-lg bg-primary/10 p-2">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground mb-0.5">After RFQ</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Visible only after user submits a Request for Quote (RFQ)</p>
             </div>
           </div>
         </div>
@@ -1807,41 +1845,80 @@ export default function PreviewPublishPage() {
             {/* Channel Links */}
             <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
               <h2 className="text-lg font-semibold mb-4">Channel Links</h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                Click links to open in new tab. Use QR codes for easy sharing.
+              </p>
               <div className="space-y-2 mb-4">
-                {channels.map((channel) => (
-                  <div
-                    key={channel.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{channel.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        ?{channel.parameter}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChannels((prev) =>
-                          prev.map((c) =>
-                            c.id === channel.id ? { ...c, enabled: !c.enabled } : c
-                          )
-                        )
-                        toast.success(
-                          channel.enabled
-                            ? `Channel "${channel.name}" disabled`
-                            : `Channel "${channel.name}" enabled`
-                        )
-                      }}
-                      className="cursor-pointer hover:opacity-80 transition-opacity"
-                      aria-label={channel.enabled ? 'Disable channel' : 'Enable channel'}
+                {channels.map((channel) => {
+                  const channelUrl = getPublicProductUrl(channel)
+                  return (
+                    <div
+                      key={channel.id}
+                      className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      <Badge variant={channel.enabled ? 'default' : 'outline'}>
-                        {channel.enabled ? '✅' : '⏸️'}
-                      </Badge>
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{channel.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {channel.parameter}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChannels((prev) =>
+                              prev.map((c) =>
+                                c.id === channel.id ? { ...c, enabled: !c.enabled } : c
+                              )
+                            )
+                            toast.success(
+                              channel.enabled
+                                ? `Channel "${channel.name}" disabled`
+                                : `Channel "${channel.name}" enabled`
+                            )
+                          }}
+                          className="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                          aria-label={channel.enabled ? 'Disable channel' : 'Enable channel'}
+                        >
+                          <Badge variant={channel.enabled ? 'default' : 'outline'}>
+                            {channel.enabled ? '✅' : '⏸️'}
+                          </Badge>
+                        </button>
+                      </div>
+                      {channel.enabled && (
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={channelUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 min-w-0 text-xs text-primary hover:underline truncate flex items-center gap-1"
+                          >
+                            <span className="truncate">{channelUrl}</span>
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          </a>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyUrl(channelUrl)}
+                            className="h-7 px-2 flex-shrink-0"
+                            title="Copy URL"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleShowQrCode(channel)}
+                            className="h-7 px-2 flex-shrink-0"
+                            title="Show QR Code"
+                          >
+                            <QrCode className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
 
               {showAddChannel ? (
@@ -1871,25 +1948,15 @@ export default function PreviewPublishPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAddChannel(true)}
-                    className="flex-1 gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Channel
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    QR Codes
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddChannel(true)}
+                  className="w-full gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Channel
+                </Button>
               )}
             </section>
 
@@ -1947,6 +2014,32 @@ export default function PreviewPublishPage() {
           </div>
         </div>
       </footer>
+
+      {/* QR Code Dialog */}
+      <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>QR Code - {selectedQrChannel?.name || 'Channel'}</DialogTitle>
+            <DialogDescription>
+              Scan this QR code to open the product page with channel tracking
+            </DialogDescription>
+          </DialogHeader>
+          {selectedQrChannel && (
+            <div className="flex flex-col items-center gap-4 py-4 w-full">
+              <div className="flex items-center justify-center w-full">
+                <div className="p-4 bg-white rounded-lg inline-block">
+                  <QRCode
+                    value={getPublicProductUrl(selectedQrChannel)}
+                    size={256}
+                    style={{ display: 'block', margin: '0 auto' }}
+                    viewBox="0 0 256 256"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
