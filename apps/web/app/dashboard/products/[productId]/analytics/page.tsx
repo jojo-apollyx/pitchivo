@@ -341,11 +341,13 @@ export default function ProductAnalyticsPage() {
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="ghost"
+            <Button 
+              variant="ghost" 
               size="sm"
               onClick={() => router.back()}
-              className="gap-2 hover:bg-[#E9A6F5]/10 transition-colors"
+              className="gap-2 transition-colors"
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${themeColors.accent}1A`}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <ArrowLeft className="h-4 w-4" />
               Back
@@ -381,9 +383,24 @@ export default function ProductAnalyticsPage() {
                   onClick={() => setTimeRange(range)}
                   className={
                     timeRange === range
-                      ? 'bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none hover:from-[#E9A6F5]/90 hover:to-[#F5A6D0]/90'
-                      : 'border-[#E9A6F5]/30 hover:bg-[#E9A6F5]/10'
+                      ? 'text-white border-none'
+                      : ''
                   }
+                  style={
+                    timeRange === range
+                      ? { background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})` }
+                      : { borderColor: `${themeColors.primary}4D` }
+                  }
+                  onMouseEnter={(e) => {
+                    if (timeRange !== range) {
+                      e.currentTarget.style.backgroundColor = `${themeColors.accent}1A`
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (timeRange !== range) {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                    }
+                  }}
                 >
                   {range === 'all' ? 'All Time' : range}
                 </Button>
@@ -511,46 +528,46 @@ export default function ProductAnalyticsPage() {
           <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-[#E9A6F5]/10">
-                  <BarChart3 className="h-5 w-5 text-[#E9A6F5]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.primary}1A` }}>
+                  <BarChart3 className="h-5 w-5" style={{ color: themeColors.primary }} />
                 </div>
                 <div>
                   <h2 className="text-lg md:text-xl font-semibold">Visits Over Time</h2>
                   <p className="text-sm text-muted-foreground">Daily visits, RFQ submissions, and downloads</p>
                 </div>
               </div>
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/5 to-transparent">
+              <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.primary}0D, transparent)` }}>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={analytics.daily_visits}>
                     <defs>
                       <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#E9A6F5" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#E9A6F5" stopOpacity={0}/>
+                        <stop offset="5%" stopColor={themeColors.primary} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={themeColors.primary} stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorRfqs" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#F5A6D0" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#F5A6D0" stopOpacity={0}/>
+                        <stop offset="5%" stopColor={themeColors.secondary} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={themeColors.secondary} stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorDownloads" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#F5C6A6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#F5C6A6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor={themeColors.accent} stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor={themeColors.accent} stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E9A6F5" strokeOpacity={0.1} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={themeColors.primary} strokeOpacity={0.1} />
                     <XAxis dataKey="date" stroke="#888" />
                     <YAxis stroke="#888" />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                        border: '1px solid #E9A6F5',
+                        border: `1px solid ${themeColors.primary}`,
                         borderRadius: '12px',
                         padding: '12px'
                       }} 
                     />
                     <Legend />
-                    <Area type="monotone" dataKey="visits" stackId="1" stroke="#E9A6F5" fill="url(#colorVisits)" strokeWidth={2} name="Visits" />
-                    <Area type="monotone" dataKey="rfqs" stackId="2" stroke="#F5A6D0" fill="url(#colorRfqs)" strokeWidth={2} name="RFQs" />
-                    <Area type="monotone" dataKey="downloads" stackId="3" stroke="#F5C6A6" fill="url(#colorDownloads)" strokeWidth={2} name="Downloads" />
+                    <Area type="monotone" dataKey="visits" stackId="1" stroke={themeColors.primary} fill="url(#colorVisits)" strokeWidth={2} name="Visits" />
+                    <Area type="monotone" dataKey="rfqs" stackId="2" stroke={themeColors.secondary} fill="url(#colorRfqs)" strokeWidth={2} name="RFQs" />
+                    <Area type="monotone" dataKey="downloads" stackId="3" stroke={themeColors.accent} fill="url(#colorDownloads)" strokeWidth={2} name="Downloads" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -561,32 +578,32 @@ export default function ProductAnalyticsPage() {
           <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-[#C6A6F5]/10">
-                  <TrendingUp className="h-5 w-5 text-[#C6A6F5]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.secondary}1A` }}>
+                  <TrendingUp className="h-5 w-5" style={{ color: themeColors.secondary }} />
                 </div>
                 <div>
                   <h2 className="text-lg md:text-xl font-semibold">Conversion Rate Trend</h2>
                   <p className="text-sm text-muted-foreground">Percentage of visits that resulted in RFQ submissions</p>
                 </div>
               </div>
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#C6A6F5]/5 to-transparent">
+              <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.secondary}0D, transparent)` }}>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={analytics.conversion_trend}>
                     <defs>
                       <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#E9A6F5" />
-                        <stop offset="50%" stopColor="#C6A6F5" />
-                        <stop offset="100%" stopColor="#A6D4F5" />
+                        <stop offset="0%" stopColor={themeColors.primary} />
+                        <stop offset="50%" stopColor={themeColors.secondary} />
+                        <stop offset="100%" stopColor={themeColors.accent} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#C6A6F5" strokeOpacity={0.1} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={themeColors.secondary} strokeOpacity={0.1} />
                     <XAxis dataKey="date" stroke="#888" />
                     <YAxis domain={[0, 100]} stroke="#888" />
                     <Tooltip 
                       formatter={(value: number) => `${value.toFixed(1)}%`}
                       contentStyle={{ 
                         backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                        border: '1px solid #C6A6F5',
+                        border: `1px solid ${themeColors.secondary}`,
                         borderRadius: '12px',
                         padding: '12px'
                       }}
@@ -598,8 +615,8 @@ export default function ProductAnalyticsPage() {
                       stroke="url(#lineGradient)" 
                       strokeWidth={3} 
                       name="Conversion Rate (%)"
-                      dot={{ fill: '#C6A6F5', r: 4 }}
-                      activeDot={{ r: 6 }}
+                      dot={{ fill: themeColors.secondary, r: 4 }}
+                      activeDot={{ r: 6, fill: themeColors.accent }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -614,32 +631,32 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-[#F5A6D0]/10">
-                <Link2 className="h-5 w-5 text-[#F5A6D0]" />
+              <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.secondary}1A` }}>
+                <Link2 className="h-5 w-5" style={{ color: themeColors.secondary }} />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-semibold">Channel Performance</h2>
                 <p className="text-sm text-muted-foreground">Visits by marketing channel</p>
               </div>
             </div>
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#F5A6D0]/5 to-transparent">
+            <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.secondary}0D, transparent)` }}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analytics.channel_breakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F5A6D0" strokeOpacity={0.1} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={themeColors.secondary} strokeOpacity={0.1} />
                   <XAxis dataKey="channel_name" stroke="#888" />
                   <YAxis stroke="#888" />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: '1px solid #F5A6D0',
+                      border: `1px solid ${themeColors.secondary}`,
                       borderRadius: '12px',
                       padding: '12px'
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="visits" fill="#E9A6F5" name="Visits" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="rfqs" fill="#F5A6D0" name="RFQs" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="downloads" fill="#F5C6A6" name="Downloads" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="visits" fill={themeColors.primary} name="Visits" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="rfqs" fill={themeColors.secondary} name="RFQs" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="downloads" fill={themeColors.accent} name="Downloads" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -652,15 +669,15 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-[#A6D4F5]/10">
-                <QrCode className="h-5 w-5 text-[#A6D4F5]" />
+              <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.primary}1A` }}>
+                <QrCode className="h-5 w-5" style={{ color: themeColors.primary }} />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-semibold">Access Method Distribution</h2>
                 <p className="text-sm text-muted-foreground">URL clicks vs QR code scans</p>
               </div>
             </div>
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#A6D4F5]/5 to-transparent">
+            <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.primary}0D, transparent)` }}>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -683,7 +700,7 @@ export default function ProductAnalyticsPage() {
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: '1px solid #A6D4F5',
+                      border: `1px solid ${themeColors.primary}`,
                       borderRadius: '12px',
                       padding: '12px'
                     }}
@@ -700,8 +717,8 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-[#F5E6A6]/10">
-                <Calendar className="h-5 w-5 text-[#F5E6A6]" />
+              <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.accent}1A` }}>
+                <Calendar className="h-5 w-5" style={{ color: themeColors.accent }} />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-semibold">Recent Access Logs</h2>
@@ -715,7 +732,19 @@ export default function ProductAnalyticsPage() {
                 const DeviceIcon = getDeviceIcon(log.device_type)
 
                 return (
-                  <div key={log.access_id} className="py-4 hover:bg-[#E9A6F5]/5 transition-colors rounded-xl px-4">
+                  <div 
+                    key={log.access_id} 
+                    className="py-4 transition-colors rounded-xl px-4"
+                    style={{
+                      backgroundColor: isExpanded ? `${themeColors.primary}0A` : 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isExpanded) e.currentTarget.style.backgroundColor = `${themeColors.accent}08`
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent'
+                    }}
+                  >
                     <div
                       className="flex items-center justify-between cursor-pointer"
                       onClick={() => toggleLogExpansion(log.access_id)}
@@ -723,9 +752,9 @@ export default function ProductAnalyticsPage() {
                       <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                         <div className="flex-shrink-0">
                           {isExpanded ? (
-                            <ChevronDown className="h-4 w-4 text-[#E9A6F5]" />
+                            <ChevronDown className="h-4 w-4" style={{ color: themeColors.primary }} />
                           ) : (
-                            <ChevronRight className="h-4 w-4 text-[#E9A6F5]" />
+                            <ChevronRight className="h-4 w-4" style={{ color: themeColors.accent }} />
                           )}
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1">
@@ -733,11 +762,11 @@ export default function ProductAnalyticsPage() {
                             {format(new Date(log.accessed_at), 'MMM d, HH:mm')}
                           </span>
                           {log.channel_name && (
-                            <Badge variant="outline" className="text-xs border-[#E9A6F5]/30 text-[#E9A6F5]">
+                            <Badge variant="outline" className="text-xs" style={{ borderColor: `${themeColors.primary}4D`, color: themeColors.primary }}>
                               {log.channel_name}
                             </Badge>
                           )}
-                          <Badge className="text-xs bg-[#F5A6D0]/20 text-[#F5A6D0] border-none">
+                          <Badge className="text-xs border-none" style={{ backgroundColor: `${themeColors.secondary}33`, color: themeColors.secondary }}>
                             {log.access_method === 'qr_code' ? 'QR Code' : 'URL'}
                           </Badge>
                           {log.country_code && (
@@ -753,10 +782,13 @@ export default function ProductAnalyticsPage() {
                               {log.city}
                             </div>
                           )}
-                          <DeviceIcon className="h-4 w-4 text-[#A6D4F5]" />
+                          <DeviceIcon className="h-4 w-4" style={{ color: themeColors.accent }} />
                           <span className="text-xs text-muted-foreground hidden sm:inline">{browser}</span>
                           {log.is_unique_visit && (
-                            <Badge className="text-xs bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none">
+                            <Badge 
+                              className="text-xs text-white border-none"
+                              style={{ background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})` }}
+                            >
                               New
                             </Badge>
                           )}
@@ -766,16 +798,16 @@ export default function ProductAnalyticsPage() {
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t border-border/30">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                          <div className="p-3 rounded-xl bg-[#E9A6F5]/5">
+                          <div className="p-3 rounded-xl" style={{ backgroundColor: `${themeColors.primary}0D` }}>
                             <p className="text-xs text-muted-foreground mb-1">Browser & OS</p>
                             <p className="font-medium">{browser} on {os}</p>
                           </div>
-                          <div className="p-3 rounded-xl bg-[#F5A6D0]/5">
+                          <div className="p-3 rounded-xl" style={{ backgroundColor: `${themeColors.secondary}0D` }}>
                             <p className="text-xs text-muted-foreground mb-1">Device Type</p>
                             <p className="font-medium">{log.device_type || 'Unknown'}</p>
                           </div>
                           {log.city && (
-                            <div className="p-3 rounded-xl bg-[#A6D4F5]/5">
+                            <div className="p-3 rounded-xl" style={{ backgroundColor: `${themeColors.accent}0D` }}>
                               <p className="text-xs text-muted-foreground mb-1">Location</p>
                               <div className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -784,17 +816,17 @@ export default function ProductAnalyticsPage() {
                             </div>
                           )}
                           {log.referrer && (
-                            <div className="p-3 rounded-xl bg-[#F5C6A6]/5">
+                            <div className="p-3 rounded-xl" style={{ backgroundColor: `${themeColors.primary}0D` }}>
                               <p className="text-xs text-muted-foreground mb-1">Referrer</p>
                               <p className="font-medium truncate text-xs">{log.referrer}</p>
                             </div>
                           )}
-                          <div className="p-3 rounded-xl bg-[#C6A6F5]/5">
+                          <div className="p-3 rounded-xl" style={{ backgroundColor: `${themeColors.secondary}0D` }}>
                             <p className="text-xs text-muted-foreground mb-1">Session ID</p>
                             <p className="font-mono text-xs truncate">{log.session_id}</p>
                           </div>
                           {log.visitor_id && (
-                            <div className="p-3 rounded-xl bg-[#F5E6A6]/5">
+                            <div className="p-3 rounded-xl" style={{ backgroundColor: `${themeColors.accent}0D` }}>
                               <p className="text-xs text-muted-foreground mb-1">Visitor ID</p>
                               <p className="font-mono text-xs truncate">{log.visitor_id}</p>
                             </div>
@@ -807,7 +839,7 @@ export default function ProductAnalyticsPage() {
               })}
             </div>
             {analytics.access_logs.length > 15 && (
-              <p className="text-sm text-muted-foreground mt-6 text-center p-4 rounded-xl bg-[#E9A6F5]/5">
+              <p className="text-sm text-muted-foreground mt-6 text-center p-4 rounded-xl" style={{ backgroundColor: `${themeColors.primary}0D` }}>
                 Showing most recent 15 of {analytics.access_logs.length} access logs
               </p>
             )}
@@ -820,19 +852,32 @@ export default function ProductAnalyticsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <div className="max-w-2xl mx-auto text-center">
             <div className="relative inline-block mb-6">
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/10 to-[#F5A6D0]/10">
-                <BarChart3 className="h-16 w-16 text-[#E9A6F5]" />
+              <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.primary}1A, ${themeColors.secondary}1A)` }}>
+                <BarChart3 className="h-16 w-16" style={{ color: themeColors.primary }} />
               </div>
-              <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-[#F5A6D0]" />
+              <Sparkles className="absolute -top-2 -right-2 h-8 w-8" style={{ color: themeColors.accent }} />
             </div>
-            <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-[#E9A6F5] via-[#F5A6D0] to-[#C6A6F5] bg-clip-text text-transparent">
-              No Analytics Data Yet
+            <h3 className="text-xl sm:text-2xl font-semibold mb-3">
+              <span style={{
+                background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                No Analytics Data Yet
+              </span>
             </h3>
             <p className="text-base text-muted-foreground mb-8">
               Share your product link to start tracking visits, conversions, and visitor insights.
             </p>
             <Button 
-              className="bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none hover:from-[#E9A6F5]/90 hover:to-[#F5A6D0]/90 shadow-lg shadow-[#E9A6F5]/20"
+              className="text-white border-none shadow-lg"
+              style={{ 
+                background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})`,
+                boxShadow: `0 10px 40px -10px ${themeColors.accent}4D`
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               onClick={() => router.back()}
             >
               Go Back to Product
