@@ -6,6 +6,7 @@ import { Download, Package, MapPin, File, FileImage, FileSpreadsheet, FileCode, 
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { LockedField, getFieldValue } from '@/components/ui/locked-field'
 
 type AccessLevel = 'public' | 'after_click' | 'after_rfq'
 type FieldPermission = {
@@ -98,15 +99,44 @@ export function RealPagePreview({
   onRfqClick?: () => void
   onDownload?: (fileId: string, filename: string) => void
 }) {
+  // NEW: Always show fields, but check if they're locked
   const shouldShow = (fieldName: string): boolean => {
+    // Always show all fields (they'll be wrapped in LockedField if restricted)
+    return true
+  }
+
+  // NEW: Check if field is locked based on permissions and view mode
+  const isFieldLocked = (fieldName: string): boolean => {
     const permission = permissions[fieldName] || 'public'
-    if (fieldName === 'uploaded_files') {
-      return true
-    }
-    if (viewMode === 'public') return permission === 'public'
-    if (viewMode === 'after_click') return permission === 'public' || permission === 'after_click'
-    if (viewMode === 'after_rfq') return true
+    if (viewMode === 'after_rfq') return false // Full access
+    if (viewMode === 'after_click') return permission === 'after_rfq' // Only after_rfq fields are locked
+    if (viewMode === 'public') return permission !== 'public' // Everything except public is locked
     return false
+  }
+
+  // NEW: Get required level for locked field
+  const getRequiredLevel = (fieldName: string): 'after_click' | 'after_rfq' => {
+    const permission = permissions[fieldName] || 'public'
+    return permission as 'after_click' | 'after_rfq'
+  }
+
+  // NEW: Render field value with lock if needed
+  const renderFieldValue = (value: any, fieldName: string, className?: string) => {
+    const formatted = formatValue(value, fieldName)
+    
+    if (isFieldLocked(fieldName)) {
+      return (
+        <LockedField 
+          requiredLevel={getRequiredLevel(fieldName)}
+          preview={formatted}
+          className={className}
+        >
+          <span className={className}>{formatted}</span>
+        </LockedField>
+      )
+    }
+    
+    return <span className={className}>{formatted}</span>
   }
 
   const formatValue = (value: any, fieldName: string): string => {

@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
       access_method, // 'url' or 'qr_code'
       channel_id,
       channel_name,
+      token_id, // NEW: token ID if accessed via token
       session_id,
       visitor_id,
       ip_address,
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
         access_method,
         channel_id: channel_id || null,
         channel_name: channel_name || null,
+        token_id: token_id || null, // NEW: Track token if used
         session_id,
         visitor_id: visitor_id || null,
         is_unique_visit,

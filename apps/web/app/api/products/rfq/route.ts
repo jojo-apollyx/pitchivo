@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { createRfqUpgradeToken } from '@/lib/api/access-tokens'
 
 const rfqSchema = z.object({
   product_id: z.string().uuid(),
@@ -47,12 +48,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Store RFQ in database (create rfqs table if needed)
-    // For now, we'll just track it as an action
-    // In production, you'd want a dedicated rfqs table
+    // Store RFQ in product_rfqs table (if it exists)
+    // If table doesn't exist yet, we'll just track the action
+    let rfqId = null
+    try {
+      const { data: rfqData, error: rfqError } = await supabase
+        .from('product_rfqs')
+        .insert({
+          product_id: data.product_id,
+          org_id: product.org_id,
+          name: data.name,
+          email: data.email,
+          company: data.company,
+          phone: data.phone,
+          message: data.message,
+          quantity: data.quantity,
+          target_date: data.targetDate,
+          status: 'new',
+          submitted_at: new Date().toISOString(),
+        })
+        .select('rfq_id')
+        .single()
+
+      if (!rfqError && rfqData) {
+        rfqId = rfqData.rfq_id
+      }
+    } catch (error) {
+      console.log('RFQ table not found or error storing RFQ:', error)
+      // Continue - we'll still track the action
+    }
 
     // Get the most recent access_id for this product and visitor
-    // This is a simplified approach - in production, you'd track this better
     const sessionId = request.headers.get('x-session-id') || 'unknown'
     
     // Find or create access log for tracking
@@ -78,6 +104,7 @@ export async function POST(request: NextRequest) {
           action_type: 'rfq_submit',
           action_target: 'rfq_form',
           action_metadata: {
+            rfq_id: rfqId,
             name: data.name,
             email: data.email,
             company: data.company,
@@ -89,12 +116,37 @@ export async function POST(request: NextRequest) {
         })
     }
 
+    // ✨ NEW: Generate upgrade token for after_rfq access
+    const tokenResult = await createRfqUpgradeToken(
+      data.product_id,
+      product.org_id,
+      rfqId || `rfq_${Date.now()}`,
+      supabase
+    )
+
+    if (!tokenResult.success) {
+      console.error('Failed to generate upgrade token:', tokenResult.error)
+      // Don't fail the RFQ, just log the error
+    }
+
+    // Build full URL for redirect
+    const baseUrl =
+      request.headers.get('origin') ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'http://localhost:3000'
+    const upgradeUrl = tokenResult.success
+      ? `${baseUrl}${tokenResult.url}`
+      : null
+
     // TODO: Send email notification to product owner
-    // TODO: Store RFQ in dedicated rfqs table
 
     return NextResponse.json({
       success: true,
       message: 'RFQ submitted successfully',
+      rfq_id: rfqId,
+      // Return upgrade token for client to redirect
+      upgrade_token: tokenResult.token,
+      upgrade_url: upgradeUrl,
     })
   } catch (error) {
     console.error('RFQ submission error:', error)

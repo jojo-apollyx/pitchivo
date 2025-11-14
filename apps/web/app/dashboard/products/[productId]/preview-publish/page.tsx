@@ -1257,22 +1257,75 @@ export default function PreviewPublishPage() {
     toast.success(`Channel "${newChannelName}" added`)
   }
 
-  // Generate public product URL with channel parameter
-  const getPublicProductUrl = (channel?: ChannelLink): string => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-    // Use productId as slug for now (in production, you'd use actual slug from product)
-    const productSlug = productId
-    const url = `${baseUrl}/products/${productSlug}`
-    if (channel?.enabled && channel.parameter) {
-      return `${url}?${channel.parameter}&merchant=true`
+  // State for secure token generation
+  const [generatingTokens, setGeneratingTokens] = useState<Set<string>>(new Set())
+  const [generatedUrls, setGeneratedUrls] = useState<Map<string, string>>(new Map())
+
+  // Generate secure token URL for channel
+  const generateSecureUrl = async (channel: ChannelLink): Promise<string> => {
+    // Check cache first
+    if (generatedUrls.has(channel.id)) {
+      return generatedUrls.get(channel.id)!
     }
-    return `${url}?merchant=true`
+
+    setGeneratingTokens(prev => new Set(prev).add(channel.id))
+
+    try {
+      const response = await fetch('/api/products/tokens/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          channel_id: channel.id,
+          channel_name: channel.name,
+          access_level: 'after_click',
+          expires_in_days: 90,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.url) {
+        setGeneratedUrls(prev => new Map(prev).set(channel.id, data.url))
+        return data.url
+      }
+
+      throw new Error(data.error || 'Failed to generate token')
+    } catch (error) {
+      console.error('Error generating secure URL:', error)
+      toast.error(`Failed to generate link for ${channel.name}`)
+      return ''
+    } finally {
+      setGeneratingTokens(prev => {
+        const next = new Set(prev)
+        next.delete(channel.id)
+        return next
+      })
+    }
   }
 
-  // Copy URL to clipboard
-  const handleCopyUrl = (url: string) => {
+  // Generate public product URL (for merchant view)
+  const getPublicProductUrl = (): string => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const productSlug = productId
+    return `${baseUrl}/products/${productSlug}?merchant=true`
+  }
+
+  // Copy URL to clipboard (generates secure token for channels)
+  const handleCopyUrl = async (channel?: ChannelLink) => {
+    let url: string
+    
+    if (channel) {
+      // Generate secure token URL for channel
+      url = await generateSecureUrl(channel)
+      if (!url) return // Error already shown
+    } else {
+      // Merchant URL (no token needed)
+      url = getPublicProductUrl()
+    }
+    
     navigator.clipboard.writeText(url)
-    toast.success('URL copied to clipboard!')
+    toast.success('Secure URL copied to clipboard!')
   }
 
   // Open QR code dialog for a channel
@@ -1850,7 +1903,8 @@ export default function PreviewPublishPage() {
               </p>
               <div className="space-y-2 mb-4">
                 {channels.map((channel) => {
-                  const channelUrl = getPublicProductUrl(channel)
+                  const isGenerating = generatingTokens.has(channel.id)
+                  const cachedUrl = generatedUrls.get(channel.id)
                   return (
                     <div
                       key={channel.id}
@@ -1860,7 +1914,7 @@ export default function PreviewPublishPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground">{channel.name}</p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {channel.parameter}
+                            {cachedUrl || 'Click "Copy Secure Link" to generate'}
                           </p>
                         </div>
                         <button
@@ -1887,23 +1941,24 @@ export default function PreviewPublishPage() {
                       </div>
                       {channel.enabled && (
                         <div className="flex items-center gap-2">
-                          <a
-                            href={channelUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 min-w-0 text-xs text-primary hover:underline truncate flex items-center gap-1"
-                          >
-                            <span className="truncate">{channelUrl}</span>
-                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          </a>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => handleCopyUrl(channelUrl)}
-                            className="h-7 px-2 flex-shrink-0"
-                            title="Copy URL"
+                            onClick={() => handleCopyUrl(channel)}
+                            disabled={isGenerating}
+                            className="flex-1 h-7 text-xs gap-1"
                           >
-                            <Copy className="h-3 w-3" />
+                            {isGenerating ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3" />
+                                {cachedUrl ? 'Copy Secure Link' : 'Generate & Copy Link'}
+                              </>
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
