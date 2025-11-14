@@ -14,13 +14,45 @@ export default function PublicProductPage() {
   const searchParams = useSearchParams()
   const slug = params.slug as string
   const isMerchant = searchParams.get('merchant') === 'true'
+  const token = searchParams.get('token') || undefined
   
   // For now, we'll use slug as productId. In production, you'd query by slug
   // This assumes slug is the productId for simplicity
   const productId = slug
 
-  const { data: productData, isLoading } = useProduct(productId)
+  // Fetch from PUBLIC API endpoint that handles access control filtering
+  const [productData, setProductData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [accessLevel, setAccessLevel] = useState<string>('public')
   const [organizationData, setOrganizationData] = useState<{ name: string | null; domain: string | null } | null>(null)
+  
+  // Fetch product data from public API with access control
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setIsLoading(true)
+        const url = new URL(`/api/products/public/${slug}`, window.location.origin)
+        if (token) url.searchParams.set('token', token)
+        if (isMerchant) url.searchParams.set('merchant', 'true')
+        
+        const response = await fetch(url.toString())
+        if (!response.ok) {
+          console.error('Failed to fetch product:', response.statusText)
+          return
+        }
+        
+        const data = await response.json()
+        setProductData(data) // API returns filtered product directly, not nested under .product
+        setAccessLevel(data._access_info?.level || 'public')
+      } catch (error) {
+        console.error('Error fetching product:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchProduct()
+  }, [slug, token, isMerchant])
   
   // Fetch organization data for SEO
   useEffect(() => {
@@ -44,7 +76,7 @@ export default function PublicProductPage() {
     fetchOrg()
   }, [productData?.org_id])
   
-  // Extract product form data
+  // Extract product form data (already filtered by server)
   const formData: FoodSupplementProductData | null = useMemo(() => {
     if (!productData?.product_data) return null
     return typeof productData.product_data === 'string'
@@ -52,11 +84,10 @@ export default function PublicProductPage() {
       : productData.product_data
   }, [productData])
 
-  // For merchant access, show everything (after_rfq mode)
-  // For regular users, respect permissions
-  const viewMode = isMerchant ? 'after_rfq' : 'public'
+  // Use the access level returned by the server
+  const viewMode = accessLevel as 'public' | 'after_click' | 'after_rfq'
   
-  // Get permissions from product data
+  // Get permissions from product data (for display purposes)
   const permissions = useMemo(() => {
     if (!formData) return {}
     const formDataAny = formData as any

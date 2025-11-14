@@ -371,6 +371,7 @@ export function RealPagePreview({
             itemScope
             itemType="https://schema.org/Offer"
           >
+            {/* Section title - ALWAYS visible, never blurred */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Pricing & Lead Time</h2>
               {/* RFQ Button - Right side of price section */}
@@ -385,6 +386,7 @@ export function RealPagePreview({
                 </Button>
               )}
             </div>
+            {/* Content - only values are locked/blurred, not labels */}
             {Array.isArray(formData.price_lead_time) ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {formData.price_lead_time.map((tier: any, idx: number) => (
@@ -399,19 +401,19 @@ export function RealPagePreview({
                       {tier.moq && (
                         <div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">MOQ</p>
-                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground" itemProp="eligibleQuantity">{tier.moq}</p>
+                          {renderFieldValue(tier.moq, 'price_lead_time', 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
                         </div>
                       )}
                       {tier.price && (
                         <div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">Price</p>
-                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground" itemProp="price">{tier.price}</p>
+                          {renderFieldValue(tier.price, 'price_lead_time', 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
                         </div>
                       )}
                       {tier.lead_time && (
                         <div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium uppercase tracking-wide">Lead Time</p>
-                          <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground" itemProp="deliveryTime">{tier.lead_time}</p>
+                          {renderFieldValue(tier.lead_time, 'price_lead_time', 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
                         </div>
                       )}
                     </div>
@@ -420,9 +422,7 @@ export function RealPagePreview({
               </div>
             ) : (
               <div className="p-5 sm:p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
-                <p className="text-base sm:text-lg text-foreground font-medium">
-                  {formatValue(formData.price_lead_time, 'price_lead_time')}
-                </p>
+                {renderFieldValue(formData.price_lead_time, 'price_lead_time', 'text-base sm:text-lg text-foreground font-medium')}
               </div>
             )}
           </motion.section>
@@ -461,18 +461,14 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p 
+                    <div 
                       className="text-sm sm:text-base lg:text-lg font-semibold text-foreground"
                       {...(field.schemaProp === 'manufacturer' ? { itemProp: 'manufacturer', itemScope: true, itemType: 'https://schema.org/Organization' } : {})}
                       {...(field.schemaProp === 'countryOfOrigin' ? { itemProp: 'countryOfOrigin' } : {})}
                       {...(field.schemaProp === 'identifier' ? { itemProp: 'identifier' } : {})}
                     >
-                      {field.schemaProp === 'manufacturer' ? (
-                        <span itemProp="name">{String(formData[field.key as keyof typeof formData])}</span>
-                      ) : (
-                        String(formData[field.key as keyof typeof formData])
-                      )}
-                    </p>
+                      {renderFieldValue(formData[field.key as keyof typeof formData], field.key, field.schemaProp === 'manufacturer' ? 'itemProp="name"' : '')}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -538,9 +534,9 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {String(formData[field.key as keyof typeof formData])}
-                    </p>
+                    <div className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
+                      {renderFieldValue(formData[field.key as keyof typeof formData], field.key)}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -577,9 +573,9 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {String(formData[field.key as keyof typeof formData])}
-                    </p>
+                    <div className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
+                      {renderFieldValue(formData[field.key as keyof typeof formData], field.key)}
+                    </div>
                   </motion.div>
                 ))}
               </div>
