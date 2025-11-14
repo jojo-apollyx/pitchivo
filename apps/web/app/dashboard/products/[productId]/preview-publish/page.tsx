@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Eye, Globe, Mail, FileText, Plus, QrCode, Download, Package, MapPin, File, FileCheck, FileX, FileImage, FileSpreadsheet, FileCode, FileJson, Image as ImageIcon, Package2, Box, ExternalLink, Copy, Edit } from 'lucide-react'
+import { ArrowLeft, Loader2, Eye, Globe, Mail, FileText, Plus, QrCode, Download, Package, MapPin, File, FileCheck, FileX, FileImage, FileSpreadsheet, FileCode, FileJson, Image as ImageIcon, Package2, Box, ExternalLink, Copy, Edit, Lock, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useProduct } from '@/lib/api/products'
 import { cn } from '@/lib/utils'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
+import { PRODUCT_FIELDS } from '@/lib/industries/food-supplement/extraction-schema'
 import QRCode from 'react-qr-code'
 
 // Permission levels with inclusion relationship: Public ⊂ After Click ⊂ After RFQ
@@ -214,6 +216,83 @@ function getPageCount(extraction: any): number | null {
 }
 
 /**
+ * Helper to get access level hint message
+ */
+function getAccessLevelHint(requiredLevel: AccessLevel): string {
+  switch (requiredLevel) {
+    case 'after_click':
+      return 'Click the link in your email or channel to view this field'
+    case 'after_rfq':
+      return 'Submit a Request for Quote (RFQ) to view this field'
+    default:
+      return 'This field is publicly visible'
+  }
+}
+
+/**
+ * Helper to get access level badge name
+ */
+function getAccessLevelName(level: AccessLevel): string {
+  switch (level) {
+    case 'public':
+      return 'Public'
+    case 'after_click':
+      return 'After Click'
+    case 'after_rfq':
+      return 'After RFQ'
+  }
+}
+
+/**
+ * Restricted Field Display Component
+ * Shows field value with blur/hide effect and hint when restricted
+ */
+function RestrictedFieldDisplay({
+  value,
+  isAccessible,
+  requiredLevel,
+  children,
+}: {
+  value: any
+  isAccessible: boolean
+  requiredLevel: AccessLevel
+  children: React.ReactNode
+}) {
+  if (isAccessible) {
+    return <>{children}</>
+  }
+
+  const hint = getAccessLevelHint(requiredLevel)
+  const levelName = getAccessLevelName(requiredLevel)
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="relative group">
+            <div className="blur-sm select-none pointer-events-none">
+              {children}
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-md border border-dashed border-muted-foreground/30">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Lock className="h-4 w-4" />
+                <span className="text-xs font-medium">{levelName} Access Required</span>
+              </div>
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1">
+            <p className="font-medium">{levelName} Access Required</p>
+            <p className="text-xs">{hint}</p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
+/**
  * Real Page Preview Component
  * Shows product like a public-facing page
  */
@@ -228,7 +307,8 @@ function RealPagePreview({
   viewMode: 'public' | 'after_click' | 'after_rfq'
   documentMetadata?: Record<string, any>
 }) {
-  const shouldShow = (fieldName: string): boolean => {
+  // Check if field is accessible in current view mode
+  const isFieldAccessible = (fieldName: string): boolean => {
     const permission = permissions[fieldName] || 'public'
     // Special case: uploaded_files should be visible in all modes (but only downloadable in after_rfq)
     if (fieldName === 'uploaded_files') {
@@ -238,6 +318,80 @@ function RealPagePreview({
     if (viewMode === 'after_click') return permission === 'public' || permission === 'after_click'
     if (viewMode === 'after_rfq') return true
     return false
+  }
+
+  // Get required access level for a field
+  const getRequiredAccessLevel = (fieldName: string): AccessLevel => {
+    return permissions[fieldName] || 'public'
+  }
+
+  // Get field label from PRODUCT_FIELDS
+  const getFieldLabel = (fieldName: string): string => {
+    return PRODUCT_FIELDS[fieldName as keyof typeof PRODUCT_FIELDS]?.label || 
+           fieldName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  // Check if a field should be excluded from dynamic rendering
+  const isExcludedField = (fieldName: string): boolean => {
+    const excludedFields = [
+      'field_permissions',
+      'channel_links',
+      'uploaded_files', // Handled separately in files section
+      'product_images', // Handled separately
+      'product_name', // Handled in header
+      'category', // Handled in header
+      'description', // Handled separately
+      'applications', // Handled separately (array)
+      'certificates', // Handled separately (array)
+      'allergen_info', // Handled separately (array)
+      'storage_conditions', // Handled separately (array)
+      'price_lead_time', // Handled separately (complex formatting)
+      'samples', // Handled separately (complex formatting)
+      'inventory_locations', // Handled separately (complex formatting)
+      'coa_file', // Handled in files section
+      'tds_file', // Handled in files section
+      'msds_file', // Handled in files section
+      'spec_sheet', // Handled in files section
+      'certificate_files', // Handled in files section
+      'other_files', // Handled in files section
+      // Individual sample fields (handled via samples array)
+      'provide_sample',
+      'sample_type',
+      'sample_price',
+      'sample_quantity',
+      'sample_lead_time',
+      'sample_availability',
+    ]
+    return excludedFields.includes(fieldName)
+  }
+
+  // Get all fields with values for dynamic rendering
+  const getFieldsWithValues = (): Array<{ key: string; label: string; value: any }> => {
+    const fields: Array<{ key: string; label: string; value: any }> = []
+    
+    Object.keys(formData).forEach((key) => {
+      if (isExcludedField(key)) return
+      
+      const value = formData[key as keyof typeof formData]
+      const hasValue = value !== null && value !== undefined && value !== '' && 
+        (!Array.isArray(value) || value.length > 0) &&
+        (typeof value !== 'object' || Object.keys(value).length > 0)
+      
+      if (hasValue) {
+        fields.push({
+          key,
+          label: getFieldLabel(key),
+          value,
+        })
+      }
+    })
+    
+    return fields
+  }
+
+  // Legacy function for backward compatibility
+  const shouldShow = (fieldName: string): boolean => {
+    return isFieldAccessible(fieldName)
   }
 
   const formatValue = (value: any, fieldName: string): string => {
@@ -275,398 +429,242 @@ function RealPagePreview({
   }
 
   return (
-    <div className="bg-background">
-      {/* Product Header */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-border/30">
-        {shouldShow('product_name') && formData.product_name && (
-          <h1 className="text-3xl font-bold mb-2">{formData.product_name}</h1>
-        )}
-        {shouldShow('category') && formData.category && (
-          <p className="text-muted-foreground">{formData.category}</p>
-        )}
-      </div>
+    <TooltipProvider>
+      <div className="bg-background">
+        {/* Product Header */}
+        <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-border/30">
+          {formData.product_name && (
+            <RestrictedFieldDisplay
+              value={formData.product_name}
+              isAccessible={isFieldAccessible('product_name')}
+              requiredLevel={getRequiredAccessLevel('product_name')}
+            >
+              <h1 className="text-3xl font-bold mb-2">{formData.product_name}</h1>
+            </RestrictedFieldDisplay>
+          )}
+          {formData.category && (
+            <RestrictedFieldDisplay
+              value={formData.category}
+              isAccessible={isFieldAccessible('category')}
+              requiredLevel={getRequiredAccessLevel('category')}
+            >
+              <p className="text-muted-foreground">{formData.category}</p>
+            </RestrictedFieldDisplay>
+          )}
+        </div>
 
       {/* Product Images */}
-      {shouldShow('product_images') && formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 0 && (
-        <div className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {formData.product_images.map((img: any, index: number) => {
-              let imgSrc: string
-              if (typeof img === 'string') {
-                imgSrc = img
-              } else if (img instanceof File) {
-                imgSrc = URL.createObjectURL(img as Blob)
-              } else {
-                return null
-              }
-              if (!imgSrc) return null
-              return (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border/30">
-                  <img
-                    src={imgSrc}
-                    alt={`Product image ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                </div>
-              )
-            })}
+      {formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 0 && (
+        <RestrictedFieldDisplay
+          value={formData.product_images}
+          isAccessible={isFieldAccessible('product_images')}
+          requiredLevel={getRequiredAccessLevel('product_images')}
+        >
+          <div className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {formData.product_images.map((img: any, index: number) => {
+                let imgSrc: string
+                if (typeof img === 'string') {
+                  imgSrc = img
+                } else if (img instanceof File) {
+                  imgSrc = URL.createObjectURL(img as Blob)
+                } else {
+                  return null
+                }
+                if (!imgSrc) return null
+                return (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border/30">
+                    <img
+                      src={imgSrc}
+                      alt={`Product image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </RestrictedFieldDisplay>
       )}
 
       {/* Product Details */}
       <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {shouldShow('description') && formData.description && (
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Description</h2>
-            <p className="text-muted-foreground whitespace-pre-wrap">{formData.description}</p>
-          </div>
+        {formData.description && (
+          <RestrictedFieldDisplay
+            value={formData.description}
+            isAccessible={isFieldAccessible('description')}
+            requiredLevel={getRequiredAccessLevel('description')}
+          >
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Description</h2>
+              <p className="text-muted-foreground whitespace-pre-wrap">{formData.description}</p>
+            </div>
+          </RestrictedFieldDisplay>
         )}
 
-        {/* Basic Info */}
+        {/* Additional Product Information - Dynamically rendered from all fields */}
         {(() => {
-          const basicFields = [
-            { key: 'origin_country', label: 'Origin Country' },
-            { key: 'manufacturer_name', label: 'Manufacturer' },
-            { key: 'form', label: 'Form' },
-            { key: 'grade', label: 'Grade' },
-            { key: 'cas_number', label: 'CAS Number' },
-            { key: 'fda_number', label: 'FDA Number' },
-            { key: 'einecs', label: 'EINECS Number' },
-            { key: 'botanical_name', label: 'Botanical Name' },
-            { key: 'extraction_ratio', label: 'Extraction Ratio' },
-            { key: 'carrier_material', label: 'Carrier Material' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
+          const fields = getFieldsWithValues()
           
-          if (basicFields.length === 0) return null
+          if (fields.length === 0) return null
           
           return (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Product Information</h2>
+              <h2 className="text-xl font-semibold mb-4">Additional Information</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {basicFields.map((field) => (
-                  <div key={field.key}>
-                    <p className="text-sm text-muted-foreground">{field.label}</p>
-                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                  </div>
-                ))}
+                {fields.map((field) => {
+                  const fieldAccessible = isFieldAccessible(field.key)
+                  const requiredLevel = getRequiredAccessLevel(field.key)
+                  
+                  return (
+                    <RestrictedFieldDisplay
+                      key={field.key}
+                      value={field.value}
+                      isAccessible={fieldAccessible}
+                      requiredLevel={requiredLevel}
+                    >
+                      <div>
+                        <p className="text-sm text-muted-foreground">{field.label}</p>
+                        <p className="font-medium">{String(field.value)}</p>
+                      </div>
+                    </RestrictedFieldDisplay>
+                  )
+                })}
               </div>
             </div>
           )
         })()}
 
         {/* Applications */}
-        {shouldShow('applications') && formData.applications && Array.isArray(formData.applications) && formData.applications.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Applications</h2>
-            <div className="flex flex-wrap gap-2">
-              {formData.applications.map((app, idx) => (
-                <Badge key={idx} variant="secondary">{app}</Badge>
-              ))}
+        {formData.applications && Array.isArray(formData.applications) && formData.applications.length > 0 && (
+          <RestrictedFieldDisplay
+            value={formData.applications}
+            isAccessible={isFieldAccessible('applications')}
+            requiredLevel={getRequiredAccessLevel('applications')}
+          >
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Applications</h2>
+              <div className="flex flex-wrap gap-2">
+                {formData.applications.map((app, idx) => (
+                  <Badge key={idx} variant="secondary">{app}</Badge>
+                ))}
+              </div>
             </div>
-          </div>
+          </RestrictedFieldDisplay>
         )}
 
-        {/* Technical Specifications */}
-        {(() => {
-          const techFields = [
-            { key: 'appearance', label: 'Appearance' },
-            { key: 'odor', label: 'Odor' },
-            { key: 'taste', label: 'Taste' },
-            { key: 'solubility', label: 'Solubility' },
-            { key: 'particle_size', label: 'Particle Size' },
-            { key: 'mesh_size', label: 'Mesh Size' },
-            { key: 'bulk_density', label: 'Bulk Density' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
-          
-          if (techFields.length === 0) return null
-          
-          return (
+
+        {/* Storage Conditions - Array field with special formatting */}
+        {formData.storage_conditions && Array.isArray(formData.storage_conditions) && formData.storage_conditions.length > 0 && (
+          <RestrictedFieldDisplay
+            value={formData.storage_conditions}
+            isAccessible={isFieldAccessible('storage_conditions')}
+            requiredLevel={getRequiredAccessLevel('storage_conditions')}
+          >
             <div>
-              <h2 className="text-xl font-semibold mb-4">Physical & Sensory Properties</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {techFields.map((field) => (
-                  <div key={field.key}>
-                    <p className="text-sm text-muted-foreground">{field.label}</p>
-                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                  </div>
+              <h2 className="text-xl font-semibold mb-2">Storage Conditions</h2>
+              <p className="text-muted-foreground">{formData.storage_conditions.join(', ')}</p>
+            </div>
+          </RestrictedFieldDisplay>
+        )}
+
+        {/* Certificates - Array field with badges */}
+        {formData.certificates && Array.isArray(formData.certificates) && formData.certificates.length > 0 && (
+          <RestrictedFieldDisplay
+            value={formData.certificates}
+            isAccessible={isFieldAccessible('certificates')}
+            requiredLevel={getRequiredAccessLevel('certificates')}
+          >
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Certificates</h2>
+              <div className="flex flex-wrap gap-2">
+                {formData.certificates.map((cert, idx) => (
+                  <Badge key={idx} variant="secondary">{cert}</Badge>
                 ))}
               </div>
             </div>
-          )
-        })()}
+          </RestrictedFieldDisplay>
+        )}
 
-        {/* Chemical Analysis */}
-        {(() => {
-          const chemFields = [
-            { key: 'assay', label: 'Assay/Purity' },
-            { key: 'ph', label: 'pH' },
-            { key: 'moisture', label: 'Moisture' },
-            { key: 'ash_content', label: 'Ash Content' },
-            { key: 'loss_on_drying', label: 'Loss on Drying' },
-            { key: 'residual_solvents', label: 'Residual Solvents' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
-          
-          if (chemFields.length === 0) return null
-          
-          return (
+        {/* Allergen Information - Array field with badges */}
+        {formData.allergen_info && Array.isArray(formData.allergen_info) && formData.allergen_info.length > 0 && (
+          <RestrictedFieldDisplay
+            value={formData.allergen_info}
+            isAccessible={isFieldAccessible('allergen_info')}
+            requiredLevel={getRequiredAccessLevel('allergen_info')}
+          >
             <div>
-              <h2 className="text-xl font-semibold mb-4">Chemical Analysis</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {chemFields.map((field) => (
-                  <div key={field.key}>
-                    <p className="text-sm text-muted-foreground">{field.label}</p>
-                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                  </div>
+              <h2 className="text-xl font-semibold mb-2">Allergen Information</h2>
+              <div className="flex flex-wrap gap-2">
+                {formData.allergen_info.map((allergen, idx) => (
+                  <Badge key={idx} variant="outline">Free from: {allergen}</Badge>
                 ))}
               </div>
             </div>
-          )
-        })()}
-
-        {/* Heavy Metals */}
-        {(() => {
-          const metalFields = [
-            { key: 'heavy_metals_total', label: 'Heavy Metals (Total)' },
-            { key: 'lead', label: 'Lead (Pb)' },
-            { key: 'arsenic', label: 'Arsenic (As)' },
-            { key: 'cadmium', label: 'Cadmium (Cd)' },
-            { key: 'mercury', label: 'Mercury (Hg)' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
-          
-          if (metalFields.length === 0) return null
-          
-          return (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Heavy Metals</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {metalFields.map((field) => (
-                  <div key={field.key}>
-                    <p className="text-sm text-muted-foreground">{field.label}</p>
-                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
-
-        {/* Contaminants */}
-        {(() => {
-          const contamFields = [
-            { key: 'pesticide_residue', label: 'Pesticide Residue' },
-            { key: 'aflatoxins', label: 'Aflatoxins' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
-          
-          if (contamFields.length === 0) return null
-          
-          return (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Contaminants</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {contamFields.map((field) => (
-                  <div key={field.key}>
-                    <p className="text-sm text-muted-foreground">{field.label}</p>
-                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
-
-        {/* Microbiological */}
-        {(() => {
-          const microFields = [
-            { key: 'total_plate_count', label: 'Total Plate Count' },
-            { key: 'yeast_mold', label: 'Yeast & Mold' },
-            { key: 'coliforms', label: 'Coliforms' },
-            { key: 'e_coli_presence', label: 'E. Coli' },
-            { key: 'salmonella_presence', label: 'Salmonella' },
-            { key: 'staphylococcus_presence', label: 'Staphylococcus Aureus' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
-          
-          if (microFields.length === 0) return null
-          
-          return (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Microbiological</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {microFields.map((field) => (
-                  <div key={field.key}>
-                    <p className="text-sm text-muted-foreground">{field.label}</p>
-                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
-
-        {/* Packaging & Logistics */}
-        {(() => {
-          const packFields = [
-            { key: 'packaging_type', label: 'Packaging Type' },
-            { key: 'net_weight', label: 'Net Weight per Package' },
-            { key: 'gross_weight', label: 'Gross Weight per Package' },
-            { key: 'packages_per_pallet', label: 'Packages per Pallet' },
-            { key: 'shelf_life', label: 'Shelf Life' },
-            { key: 'storage_temperature', label: 'Storage Temperature' },
-            { key: 'payment_terms', label: 'Payment Terms' },
-            { key: 'incoterm', label: 'Incoterm' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
-          
-          const hasStorageConditions = shouldShow('storage_conditions') && formData.storage_conditions && Array.isArray(formData.storage_conditions) && formData.storage_conditions.length > 0
-          
-          if (packFields.length === 0 && !hasStorageConditions) return null
-          
-          return (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Packaging & Logistics</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {packFields.map((field) => (
-                  <div key={field.key}>
-                    <p className="text-sm text-muted-foreground">{field.label}</p>
-                    <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                  </div>
-                ))}
-                {hasStorageConditions && formData.storage_conditions && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Storage Conditions</p>
-                    <p className="font-medium">{formData.storage_conditions.join(', ')}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })()}
-
-        {/* Certificates & Compliance */}
-        {(() => {
-          const certFields = [
-            { key: 'gmo_status', label: 'GMO Status' },
-            { key: 'irradiation_status', label: 'Irradiation Status' },
-            { key: 'bse_statement', label: 'BSE/TSE Free Statement' },
-            { key: 'halal_certified', label: 'Halal Certified' },
-            { key: 'kosher_certified', label: 'Kosher Certified' },
-            { key: 'organic_certification_body', label: 'Organic Certification Body' },
-          ].filter(f => {
-            const value = formData[f.key as keyof typeof formData]
-            return shouldShow(f.key) && value !== null && value !== undefined && value !== ''
-          })
-          
-          const hasCertificates = shouldShow('certificates') && formData.certificates && Array.isArray(formData.certificates) && formData.certificates.length > 0
-          const hasAllergenInfo = shouldShow('allergen_info') && formData.allergen_info && Array.isArray(formData.allergen_info) && formData.allergen_info.length > 0
-          
-          if (certFields.length === 0 && !hasCertificates && !hasAllergenInfo) return null
-          
-          return (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Certificates & Compliance</h2>
-              <div className="space-y-4">
-                {hasCertificates && formData.certificates && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Certificates</p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.certificates.map((cert, idx) => (
-                        <Badge key={idx} variant="secondary">{cert}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {hasAllergenInfo && formData.allergen_info && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Allergen Information</p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.allergen_info.map((allergen, idx) => (
-                        <Badge key={idx} variant="outline">Free from: {allergen}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {certFields.map((field) => (
-                    <div key={field.key}>
-                      <p className="text-sm text-muted-foreground">{field.label}</p>
-                      <p className="font-medium">{String(formData[field.key as keyof typeof formData])}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )
-        })()}
+          </RestrictedFieldDisplay>
+        )}
 
         {/* Inventory Locations */}
-        {shouldShow('inventory_locations') && formData.inventory_locations && Array.isArray(formData.inventory_locations) && formData.inventory_locations.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Inventory Locations</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {formData.inventory_locations.map((loc: any, idx: number) => (
-                <div key={idx} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-5 hover:border-primary/50 transition-all duration-200 hover:shadow-md">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="rounded-lg bg-primary/10 p-3">
-                        <MapPin className="h-5 w-5 text-primary" />
+        {formData.inventory_locations && Array.isArray(formData.inventory_locations) && formData.inventory_locations.length > 0 && (
+          <RestrictedFieldDisplay
+            value={formData.inventory_locations}
+            isAccessible={isFieldAccessible('inventory_locations')}
+            requiredLevel={getRequiredAccessLevel('inventory_locations')}
+          >
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Inventory Locations</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {formData.inventory_locations.map((loc: any, idx: number) => (
+                  <div key={idx} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-5 hover:border-primary/50 transition-all duration-200 hover:shadow-md">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <div className="rounded-lg bg-primary/10 p-3">
+                          <MapPin className="h-5 w-5 text-primary" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground mb-1">
+                          {loc.city && loc.country ? `${loc.city}, ${loc.country}` : loc.country || loc.city || 'Location'}
+                        </h3>
+                        {loc.quantity && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <Box className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Quantity: <span className="font-medium text-foreground">{loc.quantity}</span>
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground mb-1">
-                        {loc.city && loc.country ? `${loc.city}, ${loc.country}` : loc.country || loc.city || 'Location'}
-                      </h3>
-                      {loc.quantity && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <Box className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            Quantity: <span className="font-medium text-foreground">{loc.quantity}</span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          </RestrictedFieldDisplay>
         )}
 
         {/* Pricing */}
-        {shouldShow('price_lead_time') && formData.price_lead_time && (
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Pricing & Lead Time</h2>
-            <p className="text-muted-foreground">{formatValue(formData.price_lead_time, 'price_lead_time')}</p>
-          </div>
+        {formData.price_lead_time && (
+          <RestrictedFieldDisplay
+            value={formData.price_lead_time}
+            isAccessible={isFieldAccessible('price_lead_time')}
+            requiredLevel={getRequiredAccessLevel('price_lead_time')}
+          >
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Pricing & Lead Time</h2>
+              <p className="text-muted-foreground">{formatValue(formData.price_lead_time, 'price_lead_time')}</p>
+            </div>
+          </RestrictedFieldDisplay>
         )}
 
         {/* Samples */}
         {(() => {
-          const hasSamplesArray = shouldShow('samples') && formData.samples && Array.isArray(formData.samples) && formData.samples.length > 0
+          const hasSamplesArray = formData.samples && Array.isArray(formData.samples) && formData.samples.length > 0
           const formDataAny = formData as any
-          const hasIndividualSamples = shouldShow('provide_sample') && formDataAny.provide_sample && 
+          const hasIndividualSamples = formDataAny.provide_sample && 
             (formDataAny.provide_sample.toLowerCase() === 'yes' || formDataAny.provide_sample.toLowerCase() === 'true')
           
           if (!hasSamplesArray && !hasIndividualSamples) return null
@@ -681,11 +679,19 @@ function RealPagePreview({
           
           if (samples.length === 0) return null
           
+          const samplesAccessible = isFieldAccessible('samples')
+          const samplesRequiredLevel = getRequiredAccessLevel('samples')
+          
           return (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Samples</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {samples.map((sample: any, idx: number) => (
+            <RestrictedFieldDisplay
+              value={samples}
+              isAccessible={samplesAccessible}
+              requiredLevel={samplesRequiredLevel}
+            >
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Samples</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {samples.map((sample: any, idx: number) => (
                   <div key={idx} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-5 hover:border-primary/50 transition-all duration-200 hover:shadow-md">
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0">
@@ -732,6 +738,7 @@ function RealPagePreview({
                 ))}
               </div>
             </div>
+            </RestrictedFieldDisplay>
           )
         })()}
 
@@ -743,13 +750,12 @@ function RealPagePreview({
             { key: 'tds_file', label: 'Technical Data Sheet (TDS)', category: 'Technical' },
             { key: 'msds_file', label: 'Material Safety Data Sheet (MSDS)', category: 'Safety' },
             { key: 'spec_sheet', label: 'Specification Sheet', category: 'Technical' },
-          ].filter(f => shouldShow(f.key) && formData[f.key as keyof typeof formData])
+          ].filter(f => formData[f.key as keyof typeof formData])
           
-          const hasCertFiles = shouldShow('certificate_files') && formData.certificate_files && Array.isArray(formData.certificate_files) && formData.certificate_files.length > 0
-          const hasOtherFiles = shouldShow('other_files') && formData.other_files && Array.isArray(formData.other_files) && formData.other_files.length > 0
+          const hasCertFiles = formData.certificate_files && Array.isArray(formData.certificate_files) && formData.certificate_files.length > 0
+          const hasOtherFiles = formData.other_files && Array.isArray(formData.other_files) && formData.other_files.length > 0
           // Files should be visible in all modes, but only downloadable in after_rfq
-          // The shouldShow function already handles uploaded_files specially (always returns true)
-          const hasUploadedFiles = shouldShow('uploaded_files') && formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
+          const hasUploadedFiles = formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
           
           if (docFields.length === 0 && !hasCertFiles && !hasOtherFiles && !hasUploadedFiles) return null
           
@@ -780,9 +786,17 @@ function RealPagePreview({
             <div>
               <h2 className="text-xl font-semibold mb-4">Documentation & Files</h2>
               {!canDownload && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  Documents are available for viewing. Download access requires RFQ submission.
-                </p>
+                <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-dashed border-muted-foreground/30">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground mb-1">Download Restricted</p>
+                      <p className="text-xs text-muted-foreground">
+                        Submit a Request for Quote (RFQ) to download these documents.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
               <div className="space-y-3">
                 {docFields.map((field) => {
@@ -790,37 +804,63 @@ function RealPagePreview({
                   if (!value) return null
                   const filename = typeof value === 'string' ? (value.split('/').pop() || value.split('\\').pop() || value) : String(value)
                   const FileIcon = getFileIcon(undefined, filename)
+                  const fieldAccessible = isFieldAccessible(field.key)
+                  const requiredLevel = getRequiredAccessLevel(field.key)
+                  
                   return (
-                    <div key={field.key} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-4 hover:border-primary/50 transition-all duration-200">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <div className="rounded-lg bg-primary/10 p-3">
-                            <FileIcon className="h-5 w-5 text-primary" />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-foreground mb-1">{field.label}</p>
-                              <p className="text-sm text-muted-foreground truncate">{filename}</p>
-                              <div className="flex items-center gap-3 mt-2">
-                                <Badge variant="outline" className="text-xs">{field.category}</Badge>
-                              </div>
+                    <RestrictedFieldDisplay
+                      key={field.key}
+                      value={value}
+                      isAccessible={fieldAccessible}
+                      requiredLevel={requiredLevel}
+                    >
+                      <div className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-4 hover:border-primary/50 transition-all duration-200">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            <div className="rounded-lg bg-primary/10 p-3">
+                              <FileIcon className="h-5 w-5 text-primary" />
                             </div>
-                            {canDownload && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toast.info('Download functionality for legacy files coming soon')}
-                                className="flex-shrink-0"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-foreground mb-1">{field.label}</p>
+                                <p className="text-sm text-muted-foreground truncate">{filename}</p>
+                                <div className="flex items-center gap-3 mt-2">
+                                  <Badge variant="outline" className="text-xs">{field.category}</Badge>
+                                </div>
+                              </div>
+                              {canDownload ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toast.info('Download functionality for legacy files coming soon')}
+                                  className="flex-shrink-0"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled
+                                      className="flex-shrink-0 opacity-50"
+                                    >
+                                      <Lock className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs">Submit RFQ to download</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </RestrictedFieldDisplay>
                   )
                 })}
                 {hasUploadedFiles && (
@@ -864,7 +904,7 @@ function RealPagePreview({
                                     )}
                                   </div>
                                 </div>
-                                {canDownload && f.file_id && (
+                                {canDownload && f.file_id ? (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -873,6 +913,22 @@ function RealPagePreview({
                                   >
                                     <Download className="h-4 w-4" />
                                   </Button>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled
+                                        className="flex-shrink-0 opacity-50"
+                                      >
+                                        <Lock className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">Submit RFQ to download</p>
+                                    </TooltipContent>
+                                  </Tooltip>
                                 )}
                               </div>
                             </div>
@@ -904,6 +960,7 @@ function RealPagePreview({
         })()}
       </div>
     </div>
+    </TooltipProvider>
   )
 }
 
@@ -1148,9 +1205,31 @@ export default function PreviewPublishPage() {
       })
   }, [formData, documentMetadata])
 
-  // Initialize default permissions with best practices
+  // Load saved permissions and channels or initialize defaults
   useEffect(() => {
-    if (formData && Object.keys(permissions).length === 0) {
+    if (formData) {
+      const formDataAny = formData as any
+      
+      // Load saved permissions from product_data
+      if (Object.keys(permissions).length === 0) {
+        if (formDataAny.field_permissions && typeof formDataAny.field_permissions === 'object') {
+          setPermissions(formDataAny.field_permissions)
+        }
+      }
+      
+      // Load saved channels from product_data
+      if (channels.length === DEFAULT_CHANNELS.length && channels.every((c, i) => c.id === DEFAULT_CHANNELS[i].id)) {
+        if (formDataAny.channel_links && Array.isArray(formDataAny.channel_links) && formDataAny.channel_links.length > 0) {
+          setChannels(formDataAny.channel_links)
+        }
+      }
+      
+      // If we loaded saved permissions, don't initialize defaults
+      if (formDataAny.field_permissions && typeof formDataAny.field_permissions === 'object') {
+        return
+      }
+      
+      // If no saved permissions, initialize with defaults
       const defaultPermissions: FieldPermission = {}
       
       // Sensitive fields that should default to after_rfq (most restricted)
@@ -2084,7 +2163,7 @@ export default function PreviewPublishPage() {
               <div className="flex items-center justify-center w-full">
                 <div className="p-4 bg-white rounded-lg inline-block">
                   <QRCode
-                    value={getPublicProductUrl(selectedQrChannel)}
+                    value={generatedUrls.get(selectedQrChannel.id) || getPublicProductUrl()}
                     size={256}
                     style={{ display: 'block', margin: '0 auto' }}
                     viewBox="0 0 256 256"
