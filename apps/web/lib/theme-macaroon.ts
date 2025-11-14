@@ -75,7 +75,7 @@ const YELLOW_MACAROON: MacaroonColors = {
 }
 
 /**
- * Detect color family from hex color
+ * Detect color family from hex color based on overall feeling
  */
 function detectColorFamily(hex: string): 'purple' | 'blue' | 'green' | 'grey' | 'yellow' {
   // Remove # if present
@@ -86,39 +86,52 @@ function detectColorFamily(hex: string): 'purple' | 'blue' | 'green' | 'grey' | 
   const g = parseInt(cleanHex.substring(2, 4), 16)
   const b = parseInt(cleanHex.substring(4, 6), 16)
   
-  // Calculate which color is dominant
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
+  // Calculate HSL for better color family detection
+  const rNorm = r / 255
+  const gNorm = g / 255
+  const bNorm = b / 255
+  
+  const max = Math.max(rNorm, gNorm, bNorm)
+  const min = Math.min(rNorm, gNorm, bNorm)
   const diff = max - min
   
-  // Check if it's greyscale
-  if (diff < 30) {
+  const lightness = (max + min) / 2
+  const saturation = diff === 0 ? 0 : diff / (1 - Math.abs(2 * lightness - 1))
+  
+  // Low saturation = grey
+  if (saturation < 0.2) {
     return 'grey'
   }
   
-  // Determine color family
-  if (r > g && r > b) {
-    // Red family
-    if (g > b * 1.3) {
-      return 'yellow' // More yellow/orange
+  // Calculate hue
+  let hue = 0
+  if (diff !== 0) {
+    if (max === rNorm) {
+      hue = ((gNorm - bNorm) / diff + (gNorm < bNorm ? 6 : 0)) / 6
+    } else if (max === gNorm) {
+      hue = ((bNorm - rNorm) / diff + 2) / 6
+    } else {
+      hue = ((rNorm - gNorm) / diff + 4) / 6
     }
-    return 'purple' // Could be red or purple, default to purple
-  } else if (g > r && g > b) {
-    // Green family
-    if (b > r * 1.2) {
-      return 'blue' // Cyan/teal - closer to blue
-    }
-    return 'green'
-  } else if (b > r && b > g) {
-    // Blue family
-    if (r > g * 1.2) {
-      return 'purple' // Purple/violet
-    }
-    return 'blue'
   }
   
-  // Default fallback
-  return 'purple'
+  // Convert hue to degrees
+  const hueDeg = hue * 360
+  
+  // Map hue ranges to color families (based on color wheel feeling)
+  if (hueDeg >= 45 && hueDeg < 150) {
+    // Green/Yellow-Green range
+    return hueDeg < 75 ? 'yellow' : 'green'
+  } else if (hueDeg >= 150 && hueDeg < 260) {
+    // Cyan/Blue range - Ocean Energy is here!
+    return 'blue'
+  } else if (hueDeg >= 260 && hueDeg < 330) {
+    // Purple/Violet range
+    return 'purple'
+  } else {
+    // Red/Orange range (0-45, 330-360)
+    return hueDeg < 25 || hueDeg >= 345 ? 'purple' : 'yellow'
+  }
 }
 
 /**
