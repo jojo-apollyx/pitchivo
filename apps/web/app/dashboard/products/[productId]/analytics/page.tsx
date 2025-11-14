@@ -9,6 +9,7 @@ import { useProduct } from '@/lib/api/products'
 import { createClient } from '@/lib/supabase/client'
 import { format, subDays, startOfDay } from 'date-fns'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { getMacaroonColors, getChartColors } from '@/lib/theme-macaroon'
 
 interface AccessLog {
   access_id: string
@@ -53,9 +54,6 @@ interface AnalyticsData {
   conversion_trend: Array<{ date: string; rate: number }>
 }
 
-// Macaroon color palette - soft, premium pastels
-const COLORS = ['#E9A6F5', '#F5A6D0', '#F5C6A6', '#A6D4F5', '#C6A6F5', '#F5E6A6']
-
 export default function ProductAnalyticsPage() {
   const params = useParams()
   const router = useRouter()
@@ -65,6 +63,36 @@ export default function ProductAnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set())
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+  const [macaroonColors, setMacaroonColors] = useState(() => getMacaroonColors('#8B5CF6')) // Default purple
+  const [COLORS, setCOLORS] = useState(() => getChartColors('#8B5CF6'))
+
+  // Fetch organization primary color and set macaroon colors
+  useEffect(() => {
+    const fetchThemeColor = async () => {
+      if (!productData?.org_id) return
+
+      try {
+        const supabase = createClient()
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('primary_color')
+          .eq('id', productData.org_id)
+          .single()
+
+        if (orgData?.primary_color) {
+          const colors = getMacaroonColors(orgData.primary_color)
+          const chartColors = getChartColors(orgData.primary_color)
+          setMacaroonColors(colors)
+          setCOLORS(chartColors)
+          console.log(`[Analytics] Theme ${orgData.primary_color} → Macaroon colors applied`)
+        }
+      } catch (error) {
+        console.error('Error fetching theme color:', error)
+      }
+    }
+
+    fetchThemeColor()
+  }, [productData?.org_id])
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -284,8 +312,8 @@ export default function ProductAnalyticsPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
-            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4 text-[#E9A6F5]" />
-            <div className="absolute inset-0 blur-xl bg-[#E9A6F5]/20 animate-pulse" />
+            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4" style={{ color: macaroonColors.primary }} />
+            <div className="absolute inset-0 blur-xl animate-pulse" style={{ backgroundColor: `${macaroonColors.primary}20` }} />
           </div>
           <p className="text-muted-foreground">Loading premium analytics...</p>
         </div>
@@ -295,11 +323,11 @@ export default function ProductAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Decorative background - macaroon gradient */}
+      {/* Decorative background - dynamic macaroon gradient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#E9A6F5]/10 rounded-full blur-3xl" />
-        <div className="absolute top-40 left-20 w-64 h-64 bg-[#F5A6D0]/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-40 w-80 h-80 bg-[#A6D4F5]/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: `${macaroonColors.primary}10` }} />
+        <div className="absolute top-40 left-20 w-64 h-64 rounded-full blur-3xl" style={{ backgroundColor: `${macaroonColors.secondary}10` }} />
+        <div className="absolute bottom-20 right-40 w-80 h-80 rounded-full blur-3xl" style={{ backgroundColor: `${macaroonColors.chart1}10` }} />
       </div>
 
       {/* Header - Sticky */}
@@ -319,11 +347,18 @@ export default function ProductAnalyticsPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-[#E9A6F5]/20 to-[#F5A6D0]/20">
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-[#E9A6F5]" />
+                <div className="p-2 rounded-xl" style={{ background: `linear-gradient(to bottom right, ${macaroonColors.primary}20, ${macaroonColors.secondary}20)` }}>
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: macaroonColors.primary }} />
                 </div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold bg-gradient-to-r from-[#E9A6F5] via-[#F5A6D0] to-[#C6A6F5] bg-clip-text text-transparent">
-                  Product Analytics
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">
+                  <span style={{
+                    background: `linear-gradient(to right, ${macaroonColors.primary}, ${macaroonColors.secondary}, ${macaroonColors.tertiary})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}>
+                    Product Analytics
+                  </span>
                 </h1>
               </div>
               <p className="text-sm sm:text-base text-muted-foreground mt-2">
