@@ -53,9 +53,6 @@ interface AnalyticsData {
   conversion_trend: Array<{ date: string; rate: number }>
 }
 
-// Macaroon color palette - soft, premium pastels
-const COLORS = ['#E9A6F5', '#F5A6D0', '#F5C6A6', '#A6D4F5', '#C6A6F5', '#F5E6A6']
-
 export default function ProductAnalyticsPage() {
   const params = useParams()
   const router = useRouter()
@@ -65,6 +62,44 @@ export default function ProductAnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set())
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+  
+  // Theme colors from organization
+  const [themeColors, setThemeColors] = useState({
+    primary: '#8B5CF6',    // Default purple
+    secondary: '#EC4899',  // Default pink
+    accent: '#F59E0B'      // Default amber
+  })
+  
+  // Chart colors array (for pie chart)
+  const COLORS = [themeColors.primary, themeColors.secondary, themeColors.accent]
+
+  // Fetch organization theme colors
+  useEffect(() => {
+    const fetchThemeColors = async () => {
+      if (!productData?.org_id) return
+
+      try {
+        const supabase = createClient()
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('primary_color, secondary_color, accent_color')
+          .eq('id', productData.org_id)
+          .single()
+
+        if (orgData) {
+          setThemeColors({
+            primary: orgData.primary_color || '#8B5CF6',
+            secondary: orgData.secondary_color || '#EC4899',
+            accent: orgData.accent_color || '#F59E0B'
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching theme colors:', error)
+      }
+    }
+
+    fetchThemeColors()
+  }, [productData?.org_id])
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -284,8 +319,8 @@ export default function ProductAnalyticsPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
-            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4 text-[#E9A6F5]" />
-            <div className="absolute inset-0 blur-xl bg-[#E9A6F5]/20 animate-pulse" />
+            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4" style={{ color: themeColors.primary }} />
+            <div className="absolute inset-0 blur-xl animate-pulse" style={{ backgroundColor: `${themeColors.accent}33` }} />
           </div>
           <p className="text-muted-foreground">Loading premium analytics...</p>
         </div>
@@ -295,11 +330,11 @@ export default function ProductAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Decorative background - macaroon gradient */}
+      {/* Decorative background - theme gradient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#E9A6F5]/10 rounded-full blur-3xl" />
-        <div className="absolute top-40 left-20 w-64 h-64 bg-[#F5A6D0]/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-40 w-80 h-80 bg-[#A6D4F5]/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: `${themeColors.primary}0D` }} />
+        <div className="absolute top-40 left-20 w-64 h-64 rounded-full blur-3xl" style={{ backgroundColor: `${themeColors.secondary}0D` }} />
+        <div className="absolute bottom-20 right-40 w-80 h-80 rounded-full blur-3xl" style={{ backgroundColor: `${themeColors.accent}08` }} />
       </div>
 
       {/* Header - Sticky */}
@@ -319,11 +354,18 @@ export default function ProductAnalyticsPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-[#E9A6F5]/20 to-[#F5A6D0]/20">
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-[#E9A6F5]" />
+                <div className="p-2 rounded-xl" style={{ background: `linear-gradient(135deg, ${themeColors.primary}33, ${themeColors.secondary}33)` }}>
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: themeColors.primary }} />
                 </div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold bg-gradient-to-r from-[#E9A6F5] via-[#F5A6D0] to-[#C6A6F5] bg-clip-text text-transparent">
-                  Product Analytics
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">
+                  <span style={{
+                    background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}>
+                    Product Analytics
+                  </span>
                 </h1>
               </div>
               <p className="text-sm sm:text-base text-muted-foreground mt-2">
@@ -356,12 +398,23 @@ export default function ProductAnalyticsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Visits */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/5 to-[#E9A6F5]/10 hover:from-[#E9A6F5]/10 hover:to-[#E9A6F5]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(135deg, ${themeColors.primary}0D, ${themeColors.primary}1A)` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.primary}1A, ${themeColors.accent}1A)`
+                e.currentTarget.style.boxShadow = `0 8px 24px ${themeColors.accent}1A`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.primary}0D, ${themeColors.primary}1A)`
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#E9A6F5]/20">
-                  <Eye className="h-4 w-4 text-[#E9A6F5]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.primary}33` }}>
+                  <Eye className="h-4 w-4" style={{ color: themeColors.primary }} />
                 </div>
-                <TrendingUp className="h-4 w-4 text-[#E9A6F5]/60" />
+                <TrendingUp className="h-4 w-4" style={{ color: `${themeColors.accent}` }} />
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Total Visits</p>
               <p className="text-3xl font-bold text-foreground">{analytics?.total_visits || 0}</p>
@@ -371,12 +424,23 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* RFQ Submissions */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5A6D0]/5 to-[#F5A6D0]/10 hover:from-[#F5A6D0]/10 hover:to-[#F5A6D0]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(135deg, ${themeColors.secondary}0D, ${themeColors.secondary}1A)` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.secondary}1A, ${themeColors.accent}1A)`
+                e.currentTarget.style.boxShadow = `0 8px 24px ${themeColors.accent}1A`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.secondary}0D, ${themeColors.secondary}1A)`
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#F5A6D0]/20">
-                  <MessageSquare className="h-4 w-4 text-[#F5A6D0]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.secondary}33` }}>
+                  <MessageSquare className="h-4 w-4" style={{ color: themeColors.secondary }} />
                 </div>
-                <Badge className="bg-[#F5A6D0]/20 text-[#F5A6D0] border-none">
+                <Badge className="border-none" style={{ backgroundColor: `${themeColors.secondary}33`, color: themeColors.secondary }}>
                   {conversionRate}%
                 </Badge>
               </div>
@@ -388,10 +452,21 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* Downloads */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5C6A6]/5 to-[#F5C6A6]/10 hover:from-[#F5C6A6]/10 hover:to-[#F5C6A6]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(135deg, ${themeColors.primary}0D, ${themeColors.primary}1A)` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.primary}1A, ${themeColors.accent}1A)`
+                e.currentTarget.style.boxShadow = `0 8px 24px ${themeColors.accent}1A`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.primary}0D, ${themeColors.primary}1A)`
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#F5C6A6]/20">
-                  <Download className="h-4 w-4 text-[#F5C6A6]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.primary}33` }}>
+                  <Download className="h-4 w-4" style={{ color: themeColors.primary }} />
                 </div>
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Downloads</p>
@@ -402,10 +477,21 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* Sessions */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#A6D4F5]/5 to-[#A6D4F5]/10 hover:from-[#A6D4F5]/10 hover:to-[#A6D4F5]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(135deg, ${themeColors.secondary}0D, ${themeColors.secondary}1A)` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.secondary}1A, ${themeColors.accent}1A)`
+                e.currentTarget.style.boxShadow = `0 8px 24px ${themeColors.accent}1A`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = `linear-gradient(135deg, ${themeColors.secondary}0D, ${themeColors.secondary}1A)`
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#A6D4F5]/20">
-                  <Users className="h-4 w-4 text-[#A6D4F5]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${themeColors.secondary}33` }}>
+                  <Users className="h-4 w-4" style={{ color: themeColors.secondary }} />
                 </div>
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Sessions</p>
