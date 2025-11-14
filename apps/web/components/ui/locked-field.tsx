@@ -17,13 +17,15 @@ interface LockedFieldProps {
 
 const accessLevelMessages = {
   after_click: {
-    title: 'Click tracking link required',
-    description: 'This field is visible to users who click your channel links (email, QR code, etc.)',
-    action: 'Get a tracking link to see this field',
+    icon: '🔗',
+    title: 'Link Access Required',
+    description: 'This field is visible when you access via marketing links (email, QR code, social posts, etc.)',
+    action: 'Get a marketing link to see this field',
   },
   after_rfq: {
-    title: 'RFQ submission required',
-    description: 'This field is only visible after submitting a Request for Quote',
+    icon: '✅',
+    title: 'Full Access Required',
+    description: 'This field is only visible after submitting a Request for Quote (RFQ)',
     action: 'Submit an RFQ to unlock this field',
   },
 }
@@ -63,7 +65,7 @@ export function LockedField({
       <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
         <div className="bg-popover text-popover-foreground px-4 py-3 rounded-lg shadow-lg border border-border max-w-xs">
           <div className="flex items-start gap-2">
-            <Lock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <span className="text-lg flex-shrink-0">{message.icon}</span>
             <div>
               <p className="text-sm font-semibold mb-1">{message.title}</p>
               <p className="text-xs text-muted-foreground mb-2">

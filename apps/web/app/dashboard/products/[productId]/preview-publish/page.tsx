@@ -14,6 +14,9 @@ import { cn } from '@/lib/utils'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { PRODUCT_FIELDS } from '@/lib/industries/food-supplement/extraction-schema'
 import QRCode from 'react-qr-code'
+import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
+import { PreviewModeSelector } from '@/components/products/PreviewModeSelector'
+import { ACCESS_LEVEL_CONFIG, getAccessLevelLabel } from '@/lib/constants/access-levels'
 
 // Permission levels with inclusion relationship: Public ⊂ After Click ⊂ After RFQ
 type AccessLevel = 'public' | 'after_click' | 'after_rfq'
@@ -65,9 +68,10 @@ function PermissionWidget({
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
+        title={ACCESS_LEVEL_CONFIG.public.description}
       >
-        <Globe className="h-3 w-3 flex-shrink-0" />
-        <span className="hidden sm:inline">Public</span>
+        <span className="flex-shrink-0">👀</span>
+        <span className="hidden sm:inline">Browse</span>
       </button>
       <button
         type="button"
@@ -81,9 +85,10 @@ function PermissionWidget({
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
+        title={ACCESS_LEVEL_CONFIG.after_click.description}
       >
-        <Mail className="h-3 w-3 flex-shrink-0" />
-        <span className="hidden sm:inline">After Click</span>
+        <span className="flex-shrink-0">🔗</span>
+        <span className="hidden sm:inline">Link</span>
       </button>
       <button
         type="button"
@@ -97,56 +102,19 @@ function PermissionWidget({
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
+        title={ACCESS_LEVEL_CONFIG.after_rfq.description}
       >
-        <FileText className="h-3 w-3 flex-shrink-0" />
-        <span className="hidden sm:inline">After RFQ</span>
+        <span className="flex-shrink-0">✅</span>
+        <span className="hidden sm:inline">Full</span>
       </button>
     </div>
   )
 }
 
 /**
- * Segmented Control for Preview Modes
+ * Note: Using new PreviewModeSelector from @/components/products/PreviewModeSelector
+ * Old version removed - new one has better labels (Browse/Link/Full instead of Public/After Click/After RFQ)
  */
-function PreviewModeSelector({
-  value,
-  onChange,
-}: {
-  value: 'none' | 'public' | 'after_click' | 'after_rfq'
-  onChange: (mode: 'none' | 'public' | 'after_click' | 'after_rfq') => void
-}) {
-  const modes: Array<{ value: 'none' | 'public' | 'after_click' | 'after_rfq'; label: string; icon: any }> = [
-    { value: 'none', label: 'Edit', icon: Edit },
-    { value: 'public', label: 'Public', icon: Globe },
-    { value: 'after_click', label: 'After Click', icon: Mail },
-    { value: 'after_rfq', label: 'After RFQ', icon: FileText },
-  ]
-
-  return (
-    <div className="flex flex-wrap items-center gap-1 rounded-lg bg-muted/30 p-1">
-      {modes.map((mode) => {
-        const Icon = mode.icon
-        return (
-          <button
-            key={mode.value}
-            type="button"
-            onClick={() => onChange(mode.value)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all flex-1 min-w-[calc(50%-0.125rem)]',
-              'touch-manipulation',
-              value === mode.value
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-          >
-            {Icon && <Icon className="h-3 w-3 flex-shrink-0" />}
-            <span className="whitespace-nowrap">{mode.label}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 /**
  * Get file icon based on mime type or filename
@@ -1154,12 +1122,11 @@ export default function PreviewPublishPage() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [viewMode, setViewMode] = useState<'none' | 'public' | 'after_click' | 'after_rfq'>('none')
   const [permissions, setPermissions] = useState<FieldPermission>({})
-  const [channels, setChannels] = useState<ChannelLink[]>(DEFAULT_CHANNELS)
-  const [showAddChannel, setShowAddChannel] = useState(false)
-  const [newChannelName, setNewChannelName] = useState('')
   const [documentMetadata, setDocumentMetadata] = useState<Record<string, any>>({})
   const [showQrDialog, setShowQrDialog] = useState(false)
   const [selectedQrChannel, setSelectedQrChannel] = useState<ChannelLink | null>(null)
+  
+  // Note: Channel state moved to SharingLinksPanel component
 
   // Load product data
   const { data: productData, isLoading } = useProduct(productId)
@@ -1304,7 +1271,7 @@ export default function PreviewPublishPage() {
       newPermissions[key] = 'public'
     })
     setPermissions(newPermissions)
-    toast.success('All fields set to Public')
+    toast.success('👀 All fields set to Browse Mode (public)')
   }
 
   const handleSetAllRFQ = () => {
@@ -1313,114 +1280,20 @@ export default function PreviewPublishPage() {
       newPermissions[key] = 'after_rfq'
     })
     setPermissions(newPermissions)
-    toast.success('All fields set to After RFQ')
+    toast.success('✅ All fields set to Full Access (after RFQ)')
   }
 
-  const handleAddChannel = () => {
-    if (!newChannelName.trim()) {
-      toast.error('Please enter a channel name')
-      return
-    }
-
-    const slug = newChannelName.toLowerCase().replace(/\s+/g, '_')
-    const newChannel: ChannelLink = {
-      id: slug,
-      name: newChannelName,
-      parameter: `ch=${slug}`,
-      enabled: true,
-    }
-
-    setChannels((prev) => [...prev, newChannel])
-    setNewChannelName('')
-    setShowAddChannel(false)
-    toast.success(`Channel "${newChannelName}" added`)
-  }
-
-  // State for secure token generation
-  const [generatingTokens, setGeneratingTokens] = useState<Set<string>>(new Set())
-  const [generatedUrls, setGeneratedUrls] = useState<Map<string, string>>(new Map())
-
-  // Generate secure token URL for channel
-  const generateSecureUrl = async (channel: ChannelLink): Promise<string> => {
-    // Check cache first
-    if (generatedUrls.has(channel.id)) {
-      return generatedUrls.get(channel.id)!
-    }
-
-    setGeneratingTokens(prev => new Set(prev).add(channel.id))
-
-    try {
-      const response = await fetch('/api/products/tokens/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_id: productId,
-          channel_id: channel.id,
-          channel_name: channel.name,
-          access_level: 'after_click',
-          expires_in_days: 90,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success && data.url) {
-        setGeneratedUrls(prev => new Map(prev).set(channel.id, data.url))
-        return data.url
-      }
-
-      throw new Error(data.error || 'Failed to generate token')
-    } catch (error) {
-      console.error('Error generating secure URL:', error)
-      toast.error(`Failed to generate link for ${channel.name}`)
-      return ''
-    } finally {
-      setGeneratingTokens(prev => {
-        const next = new Set(prev)
-        next.delete(channel.id)
-        return next
-      })
-    }
-  }
-
-  // Generate public product URL (for merchant view)
-  const getPublicProductUrl = (): string => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-    const productSlug = productId
-    return `${baseUrl}/products/${productSlug}?merchant=true`
-  }
-
-  // Copy URL to clipboard (generates secure token for channels)
-  const handleCopyUrl = async (channel?: ChannelLink) => {
-    let url: string
-    
-    if (channel) {
-      // Generate secure token URL for channel
-      url = await generateSecureUrl(channel)
-      if (!url) return // Error already shown
-    } else {
-      // Merchant URL (no token needed)
-      url = getPublicProductUrl()
-    }
-    
-    navigator.clipboard.writeText(url)
-    toast.success('Secure URL copied to clipboard!')
-  }
-
-  // Open QR code dialog for a channel
-  const handleShowQrCode = (channel: ChannelLink) => {
-    setSelectedQrChannel(channel)
-    setShowQrDialog(true)
-  }
+  // Note: Channel management moved to SharingLinksPanel component
+  // Old functions (handleAddChannel, generateSecureUrl, handleCopyUrl, handleShowQrCode) removed
+  // SharingLinksPanel now handles all channel and token generation logic
 
   const handlePublish = async () => {
     setIsPublishing(true)
     try {
-      // Save permissions and channels to product
+      // Save permissions to product
       const updatedProductData = {
         ...formData,
         field_permissions: permissions,
-        channel_links: channels,
       }
 
       const response = await fetch('/api/products', {
@@ -1947,11 +1820,11 @@ export default function PreviewPublishPage() {
 
           {/* Right: Permissions & Links Sidebar (1/3 width on desktop) */}
           <div className="lg:border-l border-border/30">
-            {/* Preview Mode Selector */}
+            {/* Preview Mode Selector - NEW DESIGN */}
             <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-              <h2 className="text-lg font-semibold mb-4">Preview Mode</h2>
+              <h2 className="text-lg font-semibold mb-4">Preview & Access Levels</h2>
               <p className="text-xs text-muted-foreground mb-4">
-                Switch between edit mode and preview modes to see how your product appears
+                Switch modes to see exactly how your product appears to different visitors
               </p>
               <PreviewModeSelector value={viewMode} onChange={setViewMode} />
               <div className="flex flex-col gap-2 mt-4">
@@ -1959,139 +1832,36 @@ export default function PreviewPublishPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleSetAllPublic}
-                  className="w-full"
+                  className="w-full text-xs"
                 >
-                  Set All to Public
+                  👀 Set All to Browse Mode
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSetAllRFQ}
-                  className="w-full"
+                  className="w-full text-xs"
                 >
-                  Set All to After RFQ
+                  ✅ Set All to Full Access
                 </Button>
               </div>
             </section>
 
-            {/* Channel Links */}
+            {/* Sharing Links Panel - NEW DESIGN */}
             <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-              <h2 className="text-lg font-semibold mb-4">Channel Links</h2>
+              <h2 className="text-lg font-semibold mb-4">📋 Sharing Links</h2>
               <p className="text-xs text-muted-foreground mb-4">
-                Click links to open in new tab. Use QR codes for easy sharing.
+                Generate secure links for different channels. Each link shows the appropriate level of detail.
               </p>
-              <div className="space-y-2 mb-4">
-                {channels.map((channel) => {
-                  const isGenerating = generatingTokens.has(channel.id)
-                  const cachedUrl = generatedUrls.get(channel.id)
-                  return (
-                    <div
-                      key={channel.id}
-                      className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground">{channel.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {cachedUrl || 'Click "Copy Secure Link" to generate'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setChannels((prev) =>
-                              prev.map((c) =>
-                                c.id === channel.id ? { ...c, enabled: !c.enabled } : c
-                              )
-                            )
-                            toast.success(
-                              channel.enabled
-                                ? `Channel "${channel.name}" disabled`
-                                : `Channel "${channel.name}" enabled`
-                            )
-                          }}
-                          className="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
-                          aria-label={channel.enabled ? 'Disable channel' : 'Enable channel'}
-                        >
-                          <Badge variant={channel.enabled ? 'default' : 'outline'}>
-                            {channel.enabled ? '✅' : '⏸️'}
-                          </Badge>
-                        </button>
-                      </div>
-                      {channel.enabled && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCopyUrl(channel)}
-                            disabled={isGenerating}
-                            className="flex-1 h-7 text-xs gap-1"
-                          >
-                            {isGenerating ? (
-                              <>
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Generating...
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-3 w-3" />
-                                {cachedUrl ? 'Copy Secure Link' : 'Generate & Copy Link'}
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleShowQrCode(channel)}
-                            className="h-7 px-2 flex-shrink-0"
-                            title="Show QR Code"
-                          >
-                            <QrCode className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              {showAddChannel ? (
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Channel name (e.g., Twitter)"
-                    value={newChannelName}
-                    onChange={(e) => setNewChannelName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddChannel()}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleAddChannel} className="flex-1">
-                      Add
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setShowAddChannel(false)
-                        setNewChannelName('')
-                      }}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAddChannel(true)}
-                  className="w-full gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Channel
-                </Button>
-              )}
+              <SharingLinksPanel 
+                productId={productId}
+                onShowQR={(url, name) => {
+                  // Store the URL for QR generation
+                  const tempChannel = { id: name, name, parameter: url, enabled: true }
+                  setSelectedQrChannel(tempChannel as any)
+                  setShowQrDialog(true)
+                }}
+              />
             </section>
 
             {/* Auto Optimization */}
@@ -2163,13 +1933,16 @@ export default function PreviewPublishPage() {
               <div className="flex items-center justify-center w-full">
                 <div className="p-4 bg-white rounded-lg inline-block">
                   <QRCode
-                    value={generatedUrls.get(selectedQrChannel.id) || getPublicProductUrl()}
+                    value={selectedQrChannel.parameter || `${typeof window !== 'undefined' ? window.location.origin : ''}/products/${productId}`}
                     size={256}
                     style={{ display: 'block', margin: '0 auto' }}
                     viewBox="0 0 256 256"
                   />
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground text-center max-w-sm break-all">
+                {selectedQrChannel.parameter}
+              </p>
             </div>
           )}
         </DialogContent>
