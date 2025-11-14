@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, BarChart3, Eye, Download, MessageSquare, QrCode, Link2, TrendingUp, Users, Calendar, Globe, Monitor, Smartphone, Tablet, ChevronDown, ChevronRight, MapPin } from 'lucide-react'
+import { ArrowLeft, BarChart3, Eye, Download, MessageSquare, QrCode, Link2, TrendingUp, Users, Calendar, Globe, Monitor, Smartphone, Tablet, ChevronDown, ChevronRight, MapPin, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useProduct } from '@/lib/api/products'
 import { createClient } from '@/lib/supabase/client'
 import { format, subDays, startOfDay } from 'date-fns'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface AccessLog {
@@ -54,7 +53,8 @@ interface AnalyticsData {
   conversion_trend: Array<{ date: string; rate: number }>
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+// Macaroon color palette - soft, premium pastels
+const COLORS = ['#E9A6F5', '#F5A6D0', '#F5C6A6', '#A6D4F5', '#C6A6F5', '#F5E6A6']
 
 export default function ProductAnalyticsPage() {
   const params = useParams()
@@ -283,16 +283,26 @@ export default function ProductAnalyticsPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <BarChart3 className="h-8 w-8 animate-pulse mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading analytics...</p>
+          <div className="relative">
+            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4 text-[#E9A6F5]" />
+            <div className="absolute inset-0 blur-xl bg-[#E9A6F5]/20 animate-pulse" />
+          </div>
+          <p className="text-muted-foreground">Loading premium analytics...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10">
-      {/* Header */}
+    <div className="min-h-screen bg-background">
+      {/* Decorative background - macaroon gradient */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#E9A6F5]/10 rounded-full blur-3xl" />
+        <div className="absolute top-40 left-20 w-64 h-64 bg-[#F5A6D0]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-40 w-80 h-80 bg-[#A6D4F5]/10 rounded-full blur-3xl" />
+      </div>
+
+      {/* Header - Sticky */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center gap-4 mb-4">
@@ -300,29 +310,38 @@ export default function ProductAnalyticsPage() {
               variant="ghost"
               size="sm"
               onClick={() => router.back()}
-              className="gap-2"
+              className="gap-2 hover:bg-[#E9A6F5]/10 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold flex items-center gap-2">
-                <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                Product Analytics
-              </h1>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-[#E9A6F5]/20 to-[#F5A6D0]/20">
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-[#E9A6F5]" />
+                </div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold bg-gradient-to-r from-[#E9A6F5] via-[#F5A6D0] to-[#C6A6F5] bg-clip-text text-transparent">
+                  Product Analytics
+                </h1>
+              </div>
               <p className="text-sm sm:text-base text-muted-foreground mt-2">
-                {productData?.product_name || 'Product'} - Performance metrics and insights
+                {productData?.product_name || 'Product'} · Performance insights & visitor behavior
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {(['7d', '30d', '90d', 'all'] as const).map((range) => (
                 <Button
                   key={range}
                   variant={timeRange === range ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTimeRange(range)}
+                  className={
+                    timeRange === range
+                      ? 'bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none hover:from-[#E9A6F5]/90 hover:to-[#F5A6D0]/90'
+                      : 'border-[#E9A6F5]/30 hover:bg-[#E9A6F5]/10'
+                  }
                 >
                   {range === 'all' ? 'All Time' : range}
                 </Button>
@@ -332,285 +351,402 @@ export default function ProductAnalyticsPage() {
         </div>
       </section>
 
-      {/* Analytics Content */}
-      <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Key Metrics */}
+      {/* Key Metrics - Integral Section */}
+      <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
+        <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Visits</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics?.total_visits || 0}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {analytics?.unique_visitors || 0} unique visitors
+            {/* Total Visits */}
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/5 to-[#E9A6F5]/10 hover:from-[#E9A6F5]/10 hover:to-[#E9A6F5]/20 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-[#E9A6F5]/20">
+                  <Eye className="h-4 w-4 text-[#E9A6F5]" />
                 </div>
-              </CardContent>
-            </Card>
+                <TrendingUp className="h-4 w-4 text-[#E9A6F5]/60" />
+              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Total Visits</p>
+              <p className="text-3xl font-bold text-foreground">{analytics?.total_visits || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {analytics?.unique_visitors || 0} unique visitors
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">RFQ Submissions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics?.rfq_submissions || 0}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {conversionRate}% conversion rate
+            {/* RFQ Submissions */}
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5A6D0]/5 to-[#F5A6D0]/10 hover:from-[#F5A6D0]/10 hover:to-[#F5A6D0]/20 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-[#F5A6D0]/20">
+                  <MessageSquare className="h-4 w-4 text-[#F5A6D0]" />
                 </div>
-              </CardContent>
-            </Card>
+                <Badge className="bg-[#F5A6D0]/20 text-[#F5A6D0] border-none">
+                  {conversionRate}%
+                </Badge>
+              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">RFQ Submissions</p>
+              <p className="text-3xl font-bold text-foreground">{analytics?.rfq_submissions || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                conversion rate
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Downloads</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics?.downloads || 0}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Documents downloaded
+            {/* Downloads */}
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5C6A6]/5 to-[#F5C6A6]/10 hover:from-[#F5C6A6]/10 hover:to-[#F5C6A6]/20 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-[#F5C6A6]/20">
+                  <Download className="h-4 w-4 text-[#F5C6A6]" />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Downloads</p>
+              <p className="text-3xl font-bold text-foreground">{analytics?.downloads || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                documents downloaded
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Sessions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analytics?.unique_sessions || 0}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {analytics?.first_time_visitors || 0} first-time visitors
+            {/* Sessions */}
+            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#A6D4F5]/5 to-[#A6D4F5]/10 hover:from-[#A6D4F5]/10 hover:to-[#A6D4F5]/20 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-[#A6D4F5]/20">
+                  <Users className="h-4 w-4 text-[#A6D4F5]" />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Sessions</p>
+              <p className="text-3xl font-bold text-foreground">{analytics?.unique_sessions || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {analytics?.first_time_visitors || 0} first-time visitors
+              </p>
+            </div>
           </div>
-
-          {/* Trending Charts */}
-          {analytics && analytics.daily_visits.length > 0 && (
-            <>
-              {/* Visits Over Time */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Visits Over Time</CardTitle>
-                  <CardDescription>Daily visits, RFQ submissions, and downloads</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={analytics.daily_visits}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Area type="monotone" dataKey="visits" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} name="Visits" />
-                      <Area type="monotone" dataKey="rfqs" stackId="2" stroke="#10b981" fill="#10b981" fillOpacity={0.6} name="RFQs" />
-                      <Area type="monotone" dataKey="downloads" stackId="3" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} name="Downloads" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Conversion Rate Trend */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Conversion Rate Trend</CardTitle>
-                  <CardDescription>Percentage of visits that resulted in RFQ submissions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={analytics.conversion_trend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
-                      <Legend />
-                      <Line type="monotone" dataKey="rate" stroke="#8b5cf6" strokeWidth={2} name="Conversion Rate (%)" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </>
-          )}
-
-          {/* Channel Performance Chart */}
-          {analytics && analytics.channel_breakdown.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Channel Performance</CardTitle>
-                <CardDescription>Visits by marketing channel</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.channel_breakdown}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="channel_name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="visits" fill="#3b82f6" name="Visits" />
-                    <Bar dataKey="rfqs" fill="#10b981" name="RFQs" />
-                    <Bar dataKey="downloads" fill="#f59e0b" name="Downloads" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* URL vs QR Code Pie Chart */}
-          {analytics && (analytics.url_vs_qr.url_visits > 0 || analytics.url_vs_qr.qr_visits > 0) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Access Method Distribution</CardTitle>
-                <CardDescription>URL clicks vs QR code scans</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'URL', value: analytics.url_vs_qr.url_visits },
-                        { name: 'QR Code', value: analytics.url_vs_qr.qr_visits },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {[0, 1].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Individual Access Logs */}
-          {analytics && analytics.access_logs.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Individual Access Logs</CardTitle>
-                <CardDescription>Detailed view of each visit with browser, location, and device information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {analytics.access_logs.slice(0, 50).map((log) => {
-                    const isExpanded = expandedLogs.has(log.access_id)
-                    const { browser, os } = parseUserAgent(log.user_agent)
-                    const DeviceIcon = getDeviceIcon(log.device_type)
-
-                    return (
-                      <div key={log.access_id} className="border border-border/30 rounded-lg overflow-hidden">
-                        <div
-                          className="flex items-center justify-between p-4 hover:bg-muted/30 cursor-pointer transition-colors"
-                          onClick={() => toggleLogExpansion(log.access_id)}
-                        >
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <div className="flex-shrink-0">
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="text-sm text-muted-foreground flex-shrink-0">
-                              {format(new Date(log.accessed_at), 'MMM d, yyyy HH:mm')}
-                            </span>
-                            {log.channel_name && (
-                              <Badge variant="outline" className="text-xs flex-shrink-0">
-                                {log.channel_name}
-                              </Badge>
-                            )}
-                            <Badge variant="secondary" className="text-xs flex-shrink-0">
-                              {log.access_method === 'qr_code' ? 'QR Code' : 'URL'}
-                            </Badge>
-                            {log.country_code && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
-                                <Globe className="h-3 w-3" />
-                                {log.country_code}
-                              </div>
-                            )}
-                            <DeviceIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="text-xs text-muted-foreground truncate">{browser}</span>
-                            {log.is_unique_visit && (
-                              <Badge variant="default" className="text-xs">
-                                New Visitor
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        {isExpanded && (
-                          <div className="px-4 pb-4 pt-2 border-t border-border/30 bg-muted/10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Browser & OS</p>
-                                <p className="font-medium">{browser} on {os}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Device Type</p>
-                                <p className="font-medium">{log.device_type || 'Unknown'}</p>
-                              </div>
-                              {log.city && (
-                                <div>
-                                  <p className="text-xs text-muted-foreground mb-1">Location</p>
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                                    <p className="font-medium">{log.city}{log.country_code ? `, ${log.country_code}` : ''}</p>
-                                  </div>
-                                </div>
-                              )}
-                              {log.referrer && (
-                                <div>
-                                  <p className="text-xs text-muted-foreground mb-1">Referrer</p>
-                                  <p className="font-medium truncate">{log.referrer}</p>
-                                </div>
-                              )}
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Session ID</p>
-                                <p className="font-mono text-xs truncate">{log.session_id}</p>
-                              </div>
-                              {log.visitor_id && (
-                                <div>
-                                  <p className="text-xs text-muted-foreground mb-1">Visitor ID</p>
-                                  <p className="font-mono text-xs truncate">{log.visitor_id}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-                {analytics.access_logs.length > 50 && (
-                  <p className="text-sm text-muted-foreground mt-4 text-center">
-                    Showing first 50 of {analytics.access_logs.length} access logs
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {(!analytics || analytics.total_visits === 0) && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Analytics Data Yet</h3>
-                <p className="text-sm text-muted-foreground">
-                  Share your product link to start tracking visits and conversions.
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </section>
+
+      {/* Charts Section - Integral Flow */}
+      {analytics && analytics.daily_visits.length > 0 && (
+        <>
+          {/* Visits Over Time */}
+          <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-[#E9A6F5]/10">
+                  <BarChart3 className="h-5 w-5 text-[#E9A6F5]" />
+                </div>
+                <div>
+                  <h2 className="text-lg md:text-xl font-semibold">Visits Over Time</h2>
+                  <p className="text-sm text-muted-foreground">Daily visits, RFQ submissions, and downloads</p>
+                </div>
+              </div>
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/5 to-transparent">
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={analytics.daily_visits}>
+                    <defs>
+                      <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#E9A6F5" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#E9A6F5" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorRfqs" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F5A6D0" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#F5A6D0" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorDownloads" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F5C6A6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#F5C6A6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E9A6F5" strokeOpacity={0.1} />
+                    <XAxis dataKey="date" stroke="#888" />
+                    <YAxis stroke="#888" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                        border: '1px solid #E9A6F5',
+                        borderRadius: '12px',
+                        padding: '12px'
+                      }} 
+                    />
+                    <Legend />
+                    <Area type="monotone" dataKey="visits" stackId="1" stroke="#E9A6F5" fill="url(#colorVisits)" strokeWidth={2} name="Visits" />
+                    <Area type="monotone" dataKey="rfqs" stackId="2" stroke="#F5A6D0" fill="url(#colorRfqs)" strokeWidth={2} name="RFQs" />
+                    <Area type="monotone" dataKey="downloads" stackId="3" stroke="#F5C6A6" fill="url(#colorDownloads)" strokeWidth={2} name="Downloads" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
+
+          {/* Conversion Rate Trend */}
+          <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-[#C6A6F5]/10">
+                  <TrendingUp className="h-5 w-5 text-[#C6A6F5]" />
+                </div>
+                <div>
+                  <h2 className="text-lg md:text-xl font-semibold">Conversion Rate Trend</h2>
+                  <p className="text-sm text-muted-foreground">Percentage of visits that resulted in RFQ submissions</p>
+                </div>
+              </div>
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#C6A6F5]/5 to-transparent">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={analytics.conversion_trend}>
+                    <defs>
+                      <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#E9A6F5" />
+                        <stop offset="50%" stopColor="#C6A6F5" />
+                        <stop offset="100%" stopColor="#A6D4F5" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#C6A6F5" strokeOpacity={0.1} />
+                    <XAxis dataKey="date" stroke="#888" />
+                    <YAxis domain={[0, 100]} stroke="#888" />
+                    <Tooltip 
+                      formatter={(value: number) => `${value.toFixed(1)}%`}
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                        border: '1px solid #C6A6F5',
+                        borderRadius: '12px',
+                        padding: '12px'
+                      }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="rate" 
+                      stroke="url(#lineGradient)" 
+                      strokeWidth={3} 
+                      name="Conversion Rate (%)"
+                      dot={{ fill: '#C6A6F5', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* Channel Performance */}
+      {analytics && analytics.channel_breakdown.length > 0 && (
+        <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg bg-[#F5A6D0]/10">
+                <Link2 className="h-5 w-5 text-[#F5A6D0]" />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-semibold">Channel Performance</h2>
+                <p className="text-sm text-muted-foreground">Visits by marketing channel</p>
+              </div>
+            </div>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#F5A6D0]/5 to-transparent">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analytics.channel_breakdown}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F5A6D0" strokeOpacity={0.1} />
+                  <XAxis dataKey="channel_name" stroke="#888" />
+                  <YAxis stroke="#888" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                      border: '1px solid #F5A6D0',
+                      borderRadius: '12px',
+                      padding: '12px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="visits" fill="#E9A6F5" name="Visits" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="rfqs" fill="#F5A6D0" name="RFQs" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="downloads" fill="#F5C6A6" name="Downloads" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* URL vs QR Code */}
+      {analytics && (analytics.url_vs_qr.url_visits > 0 || analytics.url_vs_qr.qr_visits > 0) && (
+        <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg bg-[#A6D4F5]/10">
+                <QrCode className="h-5 w-5 text-[#A6D4F5]" />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-semibold">Access Method Distribution</h2>
+                <p className="text-sm text-muted-foreground">URL clicks vs QR code scans</p>
+              </div>
+            </div>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#A6D4F5]/5 to-transparent">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'URL', value: analytics.url_vs_qr.url_visits },
+                      { name: 'QR Code', value: analytics.url_vs_qr.qr_visits },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {[0, 1].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                      border: '1px solid #A6D4F5',
+                      borderRadius: '12px',
+                      padding: '12px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Individual Access Logs */}
+      {analytics && analytics.access_logs.length > 0 && (
+        <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-lg bg-[#F5E6A6]/10">
+                <Calendar className="h-5 w-5 text-[#F5E6A6]" />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-semibold">Individual Access Logs</h2>
+                <p className="text-sm text-muted-foreground">Detailed view of each visit with browser, location, and device information</p>
+              </div>
+            </div>
+            <div className="divide-y divide-border/30">
+              {analytics.access_logs.slice(0, 50).map((log) => {
+                const isExpanded = expandedLogs.has(log.access_id)
+                const { browser, os } = parseUserAgent(log.user_agent)
+                const DeviceIcon = getDeviceIcon(log.device_type)
+
+                return (
+                  <div key={log.access_id} className="py-4 hover:bg-[#E9A6F5]/5 transition-colors rounded-xl px-4">
+                    <div
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleLogExpansion(log.access_id)}
+                    >
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="flex-shrink-0">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-[#E9A6F5]" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-[#E9A6F5]" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-1">
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {format(new Date(log.accessed_at), 'MMM d, HH:mm')}
+                          </span>
+                          {log.channel_name && (
+                            <Badge variant="outline" className="text-xs border-[#E9A6F5]/30 text-[#E9A6F5]">
+                              {log.channel_name}
+                            </Badge>
+                          )}
+                          <Badge className="text-xs bg-[#F5A6D0]/20 text-[#F5A6D0] border-none">
+                            {log.access_method === 'qr_code' ? 'QR Code' : 'URL'}
+                          </Badge>
+                          {log.country_code && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Globe className="h-3 w-3" />
+                              {log.country_code}
+                            </div>
+                          )}
+                          <DeviceIcon className="h-4 w-4 text-[#A6D4F5]" />
+                          <span className="text-xs text-muted-foreground hidden sm:inline">{browser}</span>
+                          {log.is_unique_visit && (
+                            <Badge className="text-xs bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t border-border/30">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                          <div className="p-3 rounded-xl bg-[#E9A6F5]/5">
+                            <p className="text-xs text-muted-foreground mb-1">Browser & OS</p>
+                            <p className="font-medium">{browser} on {os}</p>
+                          </div>
+                          <div className="p-3 rounded-xl bg-[#F5A6D0]/5">
+                            <p className="text-xs text-muted-foreground mb-1">Device Type</p>
+                            <p className="font-medium">{log.device_type || 'Unknown'}</p>
+                          </div>
+                          {log.city && (
+                            <div className="p-3 rounded-xl bg-[#A6D4F5]/5">
+                              <p className="text-xs text-muted-foreground mb-1">Location</p>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-muted-foreground" />
+                                <p className="font-medium">{log.city}{log.country_code ? `, ${log.country_code}` : ''}</p>
+                              </div>
+                            </div>
+                          )}
+                          {log.referrer && (
+                            <div className="p-3 rounded-xl bg-[#F5C6A6]/5">
+                              <p className="text-xs text-muted-foreground mb-1">Referrer</p>
+                              <p className="font-medium truncate text-xs">{log.referrer}</p>
+                            </div>
+                          )}
+                          <div className="p-3 rounded-xl bg-[#C6A6F5]/5">
+                            <p className="text-xs text-muted-foreground mb-1">Session ID</p>
+                            <p className="font-mono text-xs truncate">{log.session_id}</p>
+                          </div>
+                          {log.visitor_id && (
+                            <div className="p-3 rounded-xl bg-[#F5E6A6]/5">
+                              <p className="text-xs text-muted-foreground mb-1">Visitor ID</p>
+                              <p className="font-mono text-xs truncate">{log.visitor_id}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {analytics.access_logs.length > 50 && (
+              <p className="text-sm text-muted-foreground mt-6 text-center p-4 rounded-xl bg-[#E9A6F5]/5">
+                Showing first 50 of {analytics.access_logs.length} access logs
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Empty State */}
+      {(!analytics || analytics.total_visits === 0) && (
+        <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="relative inline-block mb-6">
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/10 to-[#F5A6D0]/10">
+                <BarChart3 className="h-16 w-16 text-[#E9A6F5]" />
+              </div>
+              <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-[#F5A6D0]" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-semibold mb-3 bg-gradient-to-r from-[#E9A6F5] via-[#F5A6D0] to-[#C6A6F5] bg-clip-text text-transparent">
+              No Analytics Data Yet
+            </h3>
+            <p className="text-base text-muted-foreground mb-8">
+              Share your product link to start tracking visits, conversions, and visitor insights.
+            </p>
+            <Button 
+              className="bg-gradient-to-r from-[#E9A6F5] to-[#F5A6D0] text-white border-none hover:from-[#E9A6F5]/90 hover:to-[#F5A6D0]/90 shadow-lg shadow-[#E9A6F5]/20"
+              onClick={() => router.back()}
+            >
+              Go Back to Product
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
