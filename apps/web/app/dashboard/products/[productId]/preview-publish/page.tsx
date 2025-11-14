@@ -1184,12 +1184,8 @@ export default function PreviewPublishPage() {
         }
       }
       
-      // Load saved channels from product_data
-      if (channels.length === DEFAULT_CHANNELS.length && channels.every((c, i) => c.id === DEFAULT_CHANNELS[i].id)) {
-        if (formDataAny.channel_links && Array.isArray(formDataAny.channel_links) && formDataAny.channel_links.length > 0) {
-          setChannels(formDataAny.channel_links)
-        }
-      }
+      // Note: Channel management moved to SharingLinksPanel component
+      // Channels are now loaded and managed within that component
       
       // If we loaded saved permissions, don't initialize defaults
       if (formDataAny.field_permissions && typeof formDataAny.field_permissions === 'object') {
@@ -1386,7 +1382,7 @@ export default function PreviewPublishPage() {
       <section className="px-4 sm:px-6 lg:px-8 py-4 bg-muted/30 border-b border-border/30">
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-foreground mb-1">Access Control Levels</h3>
-          <p className="text-xs text-muted-foreground">Set visibility for each field using the controls below</p>
+          <p className="text-xs text-muted-foreground">Set visibility for each field. Generate channel links below to grant Link Access.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1394,8 +1390,8 @@ export default function PreviewPublishPage() {
               <Globe className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground mb-0.5">Public</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">Visible to everyone without any restrictions</p>
+              <p className="text-sm font-semibold text-foreground mb-0.5">👀 Browse Mode</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Anyone can view basic product information without restrictions</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1403,8 +1399,8 @@ export default function PreviewPublishPage() {
               <Mail className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground mb-0.5">After Email Click</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">Visible only to users who clicked your email tracking link</p>
+              <p className="text-sm font-semibold text-foreground mb-0.5">🔗 Link Access</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">People with your channel links (email, social, QR codes) see more details like pricing and MOQ</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1412,8 +1408,8 @@ export default function PreviewPublishPage() {
               <FileText className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground mb-0.5">After RFQ</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">Visible only after user submits a Request for Quote (RFQ)</p>
+              <p className="text-sm font-semibold text-foreground mb-0.5">✅ Full Access</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Complete information + file downloads after submitting a Request for Quote (RFQ)</p>
             </div>
           </div>
         </div>
