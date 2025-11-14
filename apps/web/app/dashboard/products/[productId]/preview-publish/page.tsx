@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Eye, Globe, Mail, FileText, Plus, QrCode } from 'lucide-react'
+import { ArrowLeft, Loader2, Eye, Globe, Mail, FileText, Plus, QrCode, Download, Package, MapPin, File, FileCheck, FileX, FileImage, FileSpreadsheet, FileCode, FileJson, Image as ImageIcon, Package2, Box } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -145,6 +145,73 @@ function PreviewModeSelector({
 }
 
 /**
+ * Get file icon based on mime type or filename
+ */
+function getFileIcon(mimeType?: string, filename?: string) {
+  if (!mimeType && !filename) return File
+  
+  const type = mimeType?.toLowerCase() || ''
+  const ext = filename?.split('.').pop()?.toLowerCase() || ''
+  
+  if (type.includes('pdf') || ext === 'pdf') return FileText
+  if (type.includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return FileImage
+  if (type.includes('spreadsheet') || type.includes('excel') || ['xlsx', 'xls'].includes(ext)) return FileSpreadsheet
+  if (type.includes('word') || ['docx', 'doc'].includes(ext)) return FileText
+  if (type.includes('json') || ext === 'json') return FileJson
+  if (type.includes('code') || ['js', 'ts', 'py', 'java'].includes(ext)) return FileCode
+  
+  return File
+}
+
+/**
+ * Format file size
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+}
+
+/**
+ * Get document type from extracted values or file summary
+ */
+function getDocumentType(extraction: any): string | null {
+  if (!extraction) return null
+  
+  try {
+    const extracted = typeof extraction.extracted_values === 'string' 
+      ? JSON.parse(extraction.extracted_values) 
+      : extraction.extracted_values
+    const summary = typeof extraction.file_summary === 'string'
+      ? JSON.parse(extraction.file_summary)
+      : extraction.file_summary
+      
+    return extracted?.document_type || summary?.document_type || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Get page count from metadata
+ */
+function getPageCount(extraction: any): number | null {
+  if (!extraction) return null
+  
+  try {
+    const extracted = typeof extraction.extracted_values === 'string'
+      ? JSON.parse(extraction.extracted_values)
+      : extraction.extracted_values
+    const metadata = extracted?._metadata || extracted?.metadata
+    return metadata?.pageCount || metadata?.pages || null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Real Page Preview Component
  * Shows product like a public-facing page
  */
@@ -152,13 +219,19 @@ function RealPagePreview({
   formData,
   permissions,
   viewMode,
+  documentMetadata = {},
 }: {
   formData: FoodSupplementProductData
   permissions: FieldPermission
   viewMode: 'public' | 'after_click' | 'after_rfq'
+  documentMetadata?: Record<string, any>
 }) {
   const shouldShow = (fieldName: string): boolean => {
     const permission = permissions[fieldName] || 'public'
+    // Special case: uploaded_files should be visible in all modes (but only downloadable in after_rfq)
+    if (fieldName === 'uploaded_files') {
+      return true // Always visible, download is controlled separately
+    }
     if (viewMode === 'public') return permission === 'public'
     if (viewMode === 'after_click') return permission === 'public' || permission === 'after_click'
     if (viewMode === 'after_rfq') return true
@@ -216,7 +289,14 @@ function RealPagePreview({
         <div className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {formData.product_images.map((img: any, index: number) => {
-              const imgSrc = typeof img === 'string' ? img : (img instanceof File ? URL.createObjectURL(img) : '')
+              let imgSrc: string
+              if (typeof img === 'string') {
+                imgSrc = img
+              } else if (img instanceof File) {
+                imgSrc = URL.createObjectURL(img as Blob)
+              } else {
+                return null
+              }
               if (!imgSrc) return null
               return (
                 <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border/30">
@@ -543,13 +623,29 @@ function RealPagePreview({
         {shouldShow('inventory_locations') && formData.inventory_locations && Array.isArray(formData.inventory_locations) && formData.inventory_locations.length > 0 && (
           <div>
             <h2 className="text-xl font-semibold mb-4">Inventory Locations</h2>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {formData.inventory_locations.map((loc: any, idx: number) => (
-                <div key={idx} className="p-3 rounded-lg border border-border/30">
-                  <p className="font-medium">
-                    {loc.city && loc.country ? `${loc.city}, ${loc.country}` : loc.country || loc.city || 'Location'}
-                    {loc.quantity && ` - Quantity: ${loc.quantity}`}
-                  </p>
+                <div key={idx} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-5 hover:border-primary/50 transition-all duration-200 hover:shadow-md">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="rounded-lg bg-primary/10 p-3">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground mb-1">
+                        {loc.city && loc.country ? `${loc.city}, ${loc.country}` : loc.country || loc.city || 'Location'}
+                      </h3>
+                      {loc.quantity && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Box className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            Quantity: <span className="font-medium text-foreground">{loc.quantity}</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -573,25 +669,66 @@ function RealPagePreview({
           
           if (!hasSamplesArray && !hasIndividualSamples) return null
           
-          let sampleInfo = ''
-          if (hasSamplesArray) {
-            sampleInfo = formatValue(formData.samples, 'samples')
-          } else if (hasIndividualSamples) {
-            const parts = []
-            if (formDataAny.sample_type) parts.push(`Type: ${formDataAny.sample_type}`)
-            if (formDataAny.sample_price) parts.push(`Price: ${formDataAny.sample_price}`)
-            if (formDataAny.sample_quantity) parts.push(`Quantity: ${formDataAny.sample_quantity}`)
-            if (formDataAny.sample_lead_time) parts.push(`Lead Time: ${formDataAny.sample_lead_time}`)
-            if (formDataAny.sample_availability) parts.push(`Availability: ${formDataAny.sample_availability}`)
-            sampleInfo = parts.length > 0 ? parts.join(', ') : 'Samples available'
-          }
+          const samples: any[] = hasSamplesArray ? (formData.samples || []) : (hasIndividualSamples ? [{
+            sample_type: formDataAny.sample_type,
+            price: formDataAny.sample_price,
+            quantity: formDataAny.sample_quantity,
+            lead_time: formDataAny.sample_lead_time,
+            availability: formDataAny.sample_availability,
+          }] : [])
           
-          if (!sampleInfo) return null
+          if (samples.length === 0) return null
           
           return (
             <div>
-              <h2 className="text-xl font-semibold mb-2">Samples</h2>
-              <p className="text-muted-foreground">{sampleInfo}</p>
+              <h2 className="text-xl font-semibold mb-4">Samples</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {samples.map((sample: any, idx: number) => (
+                  <div key={idx} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-5 hover:border-primary/50 transition-all duration-200 hover:shadow-md">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <div className="rounded-lg bg-primary/10 p-3">
+                          <Package className="h-5 w-5 text-primary" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        {sample.sample_type && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Type</p>
+                            <p className="font-semibold text-foreground">{sample.sample_type}</p>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-3">
+                          {sample.price && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Price</p>
+                              <p className="font-medium text-foreground">{sample.price}</p>
+                            </div>
+                          )}
+                          {sample.quantity && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                              <p className="font-medium text-foreground">{sample.quantity}</p>
+                            </div>
+                          )}
+                          {sample.lead_time && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Lead Time</p>
+                              <p className="font-medium text-foreground">{sample.lead_time}</p>
+                            </div>
+                          )}
+                          {sample.availability && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Availability</p>
+                              <p className="font-medium text-foreground">{sample.availability}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )
         })()}
@@ -600,20 +737,42 @@ function RealPagePreview({
         {(() => {
           const formDataAny = formData as any
           const docFields = [
-            { key: 'coa_file', label: 'Certificate of Analysis (COA)' },
-            { key: 'tds_file', label: 'Technical Data Sheet (TDS)' },
-            { key: 'msds_file', label: 'Material Safety Data Sheet (MSDS)' },
-            { key: 'spec_sheet', label: 'Specification Sheet' },
+            { key: 'coa_file', label: 'Certificate of Analysis (COA)', category: 'Certificate' },
+            { key: 'tds_file', label: 'Technical Data Sheet (TDS)', category: 'Technical' },
+            { key: 'msds_file', label: 'Material Safety Data Sheet (MSDS)', category: 'Safety' },
+            { key: 'spec_sheet', label: 'Specification Sheet', category: 'Technical' },
           ].filter(f => shouldShow(f.key) && formData[f.key as keyof typeof formData])
           
           const hasCertFiles = shouldShow('certificate_files') && formData.certificate_files && Array.isArray(formData.certificate_files) && formData.certificate_files.length > 0
           const hasOtherFiles = shouldShow('other_files') && formData.other_files && Array.isArray(formData.other_files) && formData.other_files.length > 0
+          // Files should be visible in all modes, but only downloadable in after_rfq
+          // The shouldShow function already handles uploaded_files specially (always returns true)
           const hasUploadedFiles = shouldShow('uploaded_files') && formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
           
           if (docFields.length === 0 && !hasCertFiles && !hasOtherFiles && !hasUploadedFiles) return null
           
           // Determine if documents can be downloaded based on permission
+          // Only after RFQ can download, but files are visible in all modes
           const canDownload = viewMode === 'after_rfq' // Only after RFQ can download
+          
+          const handleDownload = async (fileId: string, filename: string) => {
+            try {
+              // Use hidden iframe to trigger download without navigating away
+              // This preserves authentication cookies and Unicode filename from Content-Disposition header
+              const iframe = document.createElement('iframe')
+              iframe.style.display = 'none'
+              iframe.src = `/api/documents/download?fileId=${fileId}`
+              document.body.appendChild(iframe)
+              
+              // Clean up after download starts (browser will handle the rest)
+              setTimeout(() => {
+                document.body.removeChild(iframe)
+              }, 5000) // Give enough time for download to start
+            } catch (error) {
+              console.error('Download error:', error)
+              toast.error(error instanceof Error ? error.message : 'Failed to download file')
+            }
+          }
           
           return (
             <div>
@@ -623,55 +782,118 @@ function RealPagePreview({
                   Documents are available for viewing. Download access requires RFQ submission.
                 </p>
               )}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {docFields.map((field) => {
                   const value = formData[field.key as keyof typeof formData]
                   if (!value) return null
                   const filename = typeof value === 'string' ? (value.split('/').pop() || value.split('\\').pop() || value) : String(value)
+                  const FileIcon = getFileIcon(undefined, filename)
                   return (
-                    <div key={field.key} className="p-3 rounded-lg border border-border/30">
-                      <p className="font-medium">{field.label}</p>
-                      <p className="text-sm text-muted-foreground">{filename.length > 60 ? filename.substring(0, 60) + '...' : filename}</p>
-                      {canDownload && (
-                        <p className="text-xs text-primary mt-1">✓ Download available</p>
-                      )}
+                    <div key={field.key} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-4 hover:border-primary/50 transition-all duration-200">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="rounded-lg bg-primary/10 p-3">
+                            <FileIcon className="h-5 w-5 text-primary" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-foreground mb-1">{field.label}</p>
+                              <p className="text-sm text-muted-foreground truncate">{filename}</p>
+                              <div className="flex items-center gap-3 mt-2">
+                                <Badge variant="outline" className="text-xs">{field.category}</Badge>
+                              </div>
+                            </div>
+                            {canDownload && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toast.info('Download functionality for legacy files coming soon')}
+                                className="flex-shrink-0"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )
                 })}
+                {hasUploadedFiles && (
+                  <div className="space-y-3">
+                    {formDataAny.uploaded_files.map((f: any, idx: number) => {
+                      // Merge with full document metadata if available
+                      const fullDoc = f.file_id ? documentMetadata[f.file_id] : null
+                      const docData = fullDoc || f
+                      
+                      const FileIcon = getFileIcon(docData.mime_type, docData.filename)
+                      const docType = getDocumentType(docData)
+                      const pageCount = getPageCount(docData)
+                      const fileSize = docData.file_size ? formatFileSize(docData.file_size) : null
+                      
+                      return (
+                        <div key={idx} className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-4 hover:border-primary/50 transition-all duration-200">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                              <div className="rounded-lg bg-primary/10 p-3">
+                                <FileIcon className="h-5 w-5 text-primary" />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-foreground mb-1 truncate">
+                                    {docData.filename || f.filename || f.file_id || `Document ${idx + 1}`}
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    {docType && (
+                                      <Badge variant="outline" className="text-xs">{docType}</Badge>
+                                    )}
+                                    {pageCount && (
+                                      <span className="text-xs text-muted-foreground">{pageCount} page{pageCount !== 1 ? 's' : ''}</span>
+                                    )}
+                                    {fileSize && (
+                                      <span className="text-xs text-muted-foreground">{fileSize}</span>
+                                    )}
+                                    {docData.mime_type && (
+                                      <span className="text-xs text-muted-foreground">{docData.mime_type.split('/')[1]?.toUpperCase()}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                {canDownload && f.file_id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDownload(f.file_id, docData.filename || f.filename || 'document')}
+                                    className="flex-shrink-0"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
                 {hasCertFiles && formData.certificate_files && (
-                  <div className="p-3 rounded-lg border border-border/30">
-                    <p className="font-medium">Certificate Files ({formData.certificate_files.length})</p>
+                  <div className="p-4 rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20">
+                    <p className="font-semibold mb-2">Certificate Files ({formData.certificate_files.length})</p>
                     {canDownload && (
-                      <p className="text-xs text-primary mt-1">✓ Download available</p>
+                      <Badge variant="outline" className="text-xs">Download available</Badge>
                     )}
                   </div>
                 )}
                 {hasOtherFiles && formData.other_files && (
-                  <div className="p-3 rounded-lg border border-border/30">
-                    <p className="font-medium">Other Files ({formData.other_files.length})</p>
+                  <div className="p-4 rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20">
+                    <p className="font-semibold mb-2">Other Files ({formData.other_files.length})</p>
                     {canDownload && (
-                      <p className="text-xs text-primary mt-1">✓ Download available</p>
+                      <Badge variant="outline" className="text-xs">Download available</Badge>
                     )}
-                  </div>
-                )}
-                {hasUploadedFiles && (
-                  <div className="p-3 rounded-lg border border-border/30">
-                    <p className="font-medium">Uploaded Documents ({formDataAny.uploaded_files.length})</p>
-                    <div className="mt-2 space-y-1">
-                      {formDataAny.uploaded_files.slice(0, 5).map((f: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between">
-                          <p className="text-sm text-muted-foreground">
-                            {f.filename || f.file_id || `Document ${idx + 1}`}
-                          </p>
-                          {canDownload && (
-                            <span className="text-xs text-primary">✓</span>
-                          )}
-                        </div>
-                      ))}
-                      {formDataAny.uploaded_files.length > 5 && (
-                        <p className="text-sm text-muted-foreground">+ {formDataAny.uploaded_files.length - 5} more</p>
-                      )}
-                    </div>
                   </div>
                 )}
               </div>
@@ -681,6 +903,22 @@ function RealPagePreview({
       </div>
     </div>
   )
+}
+
+/**
+ * Get description for file/document fields based on permission level
+ */
+function getFilePermissionDescription(permission: AccessLevel): string {
+  switch (permission) {
+    case 'public':
+      return 'File is viewable but not downloadable'
+    case 'after_click':
+      return 'File becomes downloadable when user clicks through email link'
+    case 'after_rfq':
+      return 'File becomes downloadable when user submits RFQ'
+    default:
+      return 'File is viewable but not downloadable'
+  }
 }
 
 /**
@@ -694,6 +932,7 @@ function FieldDisplay({
   permission,
   onPermissionChange,
   viewMode = 'none',
+  description,
 }: {
   label: string
   value: any
@@ -701,7 +940,17 @@ function FieldDisplay({
   permission: AccessLevel
   onPermissionChange: (fieldName: string, level: AccessLevel) => void
   viewMode?: 'none' | 'public' | 'after_click' | 'after_rfq'
+  description?: string
 }) {
+  // For file fields, generate description dynamically based on current permission
+  const dynamicDescription = useMemo(() => {
+    // If it's a file field, generate description based on current permission
+    if (fieldName.includes('_file') || fieldName.includes('files')) {
+      return getFilePermissionDescription(permission)
+    }
+    // For non-file fields, use provided description if any
+    return description
+  }, [description, fieldName, permission])
   // Determine if field should be visible based on view mode
   const isVisible = useMemo(() => {
     if (viewMode === 'none') return true // Show all in edit mode
@@ -818,6 +1067,9 @@ function FieldDisplay({
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-sm font-medium text-foreground">{label}</h3>
         </div>
+        {dynamicDescription && viewMode === 'none' && (
+          <p className="text-xs text-muted-foreground mb-1">{dynamicDescription}</p>
+        )}
         <p className="text-sm text-foreground">
           {displayValue}
         </p>
@@ -846,6 +1098,7 @@ export default function PreviewPublishPage() {
   const [channels, setChannels] = useState<ChannelLink[]>(DEFAULT_CHANNELS)
   const [showAddChannel, setShowAddChannel] = useState(false)
   const [newChannelName, setNewChannelName] = useState('')
+  const [documentMetadata, setDocumentMetadata] = useState<Record<string, any>>({})
 
   // Load product data
   const { data: productData, isLoading } = useProduct(productId)
@@ -857,6 +1110,39 @@ export default function PreviewPublishPage() {
       ? JSON.parse(productData.product_data)
       : productData.product_data
   }, [productData])
+
+  // Fetch full document metadata for uploaded_files
+  useEffect(() => {
+    if (!formData) return
+    
+    const formDataAny = formData as any
+    const uploadedFiles = formDataAny.uploaded_files || []
+    
+    if (uploadedFiles.length === 0) return
+
+    // Get file IDs that need metadata
+    const fileIds = uploadedFiles
+      .map((f: any) => f.file_id)
+      .filter((id: string) => id && !documentMetadata[id])
+
+    if (fileIds.length === 0) return
+
+    // Fetch document metadata
+    fetch(`/api/documents/list?fileIds=${fileIds.join(',')}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.documents && data.documents.length > 0) {
+          const metadata: Record<string, any> = {}
+          data.documents.forEach((doc: any) => {
+            metadata[doc.id] = doc
+          })
+          setDocumentMetadata(prev => ({ ...prev, ...metadata }))
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching document metadata:', error)
+      })
+  }, [formData, documentMetadata])
 
   // Initialize default permissions with best practices
   useEffect(() => {
@@ -873,6 +1159,7 @@ export default function PreviewPublishPage() {
         'spec_sheet',
         'certificate_files',
         'other_files',
+        'uploaded_files',
       ]
       
       // Fields that should default to after_click (moderately sensitive)
@@ -887,10 +1174,12 @@ export default function PreviewPublishPage() {
       
       // Set default permissions for all fields in formData
       Object.keys(formData).forEach((key) => {
-        // Skip internal/metadata fields
-        if (key.startsWith('_') || key === 'uploaded_files' || key === 'field_permissions' || key === 'channel_links') {
+        // Skip internal/metadata fields (but include uploaded_files)
+        if (key.startsWith('_') || key === 'field_permissions' || key === 'channel_links') {
           return
         }
+        
+        // Note: uploaded_files is handled in afterRfqFields list above
         
         // Check if field has a meaningful value
         const value = formData[key as keyof typeof formData]
@@ -1102,7 +1391,14 @@ export default function PreviewPublishPage() {
                 <h2 className="text-lg font-semibold mb-4">Product Images</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
                   {formData.product_images.map((img: any, index: number) => {
-                    const imgSrc = typeof img === 'string' ? img : (img instanceof File ? URL.createObjectURL(img) : '')
+                    let imgSrc: string
+                    if (typeof img === 'string') {
+                      imgSrc = img
+                    } else if (img instanceof File) {
+                      imgSrc = URL.createObjectURL(img as Blob)
+                    } else {
+                      return null
+                    }
                     if (!imgSrc) return null
                     return (
                       <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border/30">
@@ -1317,7 +1613,19 @@ export default function PreviewPublishPage() {
               const hasSpec = formData.spec_sheet
               const hasCertFiles = formData.certificate_files && Array.isArray(formData.certificate_files) && formData.certificate_files.length > 0
               const hasOtherFiles = formData.other_files && Array.isArray(formData.other_files) && formData.other_files.length > 0
-              const hasUploadedFiles = formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
+              
+              // Check uploaded_files more carefully
+              const uploadedFiles = formDataAny.uploaded_files
+              const hasUploadedFiles = uploadedFiles && Array.isArray(uploadedFiles) && uploadedFiles.length > 0
+              
+              // Debug log
+              if (uploadedFiles) {
+                console.log('[Preview] Uploaded files found:', {
+                  isArray: Array.isArray(uploadedFiles),
+                  length: Array.isArray(uploadedFiles) ? uploadedFiles.length : 'not array',
+                  data: uploadedFiles
+                })
+              }
               
               if (!hasCoa && !hasTds && !hasMsds && !hasSpec && !hasCertFiles && !hasOtherFiles && !hasUploadedFiles) {
                 return null
@@ -1335,6 +1643,7 @@ export default function PreviewPublishPage() {
                         permission={permissions.coa_file || 'after_rfq'}
                         onPermissionChange={handlePermissionChange}
                         viewMode={viewMode}
+                        description={getFilePermissionDescription(permissions.coa_file || 'after_rfq')}
                       />
                     )}
                     {hasTds && (
@@ -1345,6 +1654,7 @@ export default function PreviewPublishPage() {
                         permission={permissions.tds_file || 'after_rfq'}
                         onPermissionChange={handlePermissionChange}
                         viewMode={viewMode}
+                        description={getFilePermissionDescription(permissions.tds_file || 'after_rfq')}
                       />
                     )}
                     {hasMsds && (
@@ -1355,6 +1665,7 @@ export default function PreviewPublishPage() {
                         permission={permissions.msds_file || 'after_rfq'}
                         onPermissionChange={handlePermissionChange}
                         viewMode={viewMode}
+                        description={getFilePermissionDescription(permissions.msds_file || 'after_rfq')}
                       />
                     )}
                     {hasSpec && (
@@ -1365,6 +1676,7 @@ export default function PreviewPublishPage() {
                         permission={permissions.spec_sheet || 'after_rfq'}
                         onPermissionChange={handlePermissionChange}
                         viewMode={viewMode}
+                        description={getFilePermissionDescription(permissions.spec_sheet || 'after_rfq')}
                       />
                     )}
                     {hasCertFiles && (
@@ -1395,6 +1707,7 @@ export default function PreviewPublishPage() {
                         permission={permissions.uploaded_files || 'after_rfq'}
                         onPermissionChange={handlePermissionChange}
                         viewMode={viewMode}
+                        description={getFilePermissionDescription(permissions.uploaded_files || 'after_rfq')}
                       />
                     )}
                   </div>
@@ -1457,6 +1770,7 @@ export default function PreviewPublishPage() {
                 formData={formData}
                 permissions={permissions}
                 viewMode={viewMode}
+                documentMetadata={documentMetadata}
               />
             )}
           </div>

@@ -415,20 +415,8 @@ export default function CreateProductPage() {
           )
         )
 
-        // Check if file already exists and is completed - show results immediately
-        if (uploadData.isExisting && extraction.analysis_status === 'completed') {
-          setUploadedFiles((prev) =>
-            prev.map((f) =>
-              f.extraction.id === tempFile.extraction.id
-                ? { extraction, displayStatus: 'completed' as const }
-                : f
-            )
-          )
-          toast.success(`File already analyzed: ${file.name}`, { icon: '✨' })
-          return
-        }
-
-        // Check if file already exists but not completed yet - show current status
+        // Check if file already exists - update the file in the list
+        // This ensures existing files are still added to the product
         if (uploadData.isExisting) {
           const displayStatus = extraction.analysis_status === 'failed' 
             ? 'error' as const
@@ -446,10 +434,13 @@ export default function CreateProductPage() {
             )
           )
           
-          // If it's already completed, skip
+          // If it's already completed, show success but continue (don't return early)
+          // This ensures the file is still added to the product
           if (extraction.analysis_status === 'completed') {
-            toast.success(`File already analyzed: ${file.name}`)
-            return
+            toast.success(`File already analyzed: ${file.name}`, { icon: '✨' })
+            // Don't return - let it continue to be added to product and trigger extraction if needed
+          } else {
+            toast.info(`File found: ${file.name}`, { icon: 'ℹ️' })
           }
           
           // If it's already analyzing, check if it's stuck
@@ -459,7 +450,7 @@ export default function CreateProductPage() {
             
             if (analyzingTime < twoMinutes) {
               toast.info(`File is already being analyzed: ${file.name}`)
-              return
+              // Continue - don't return so file gets added to product
             } else {
               toast.warning(`File has been analyzing for a while, retrying: ${file.name}`)
               setUploadedFiles((prev) =>
@@ -478,9 +469,8 @@ export default function CreateProductPage() {
                   : f
               )
             )
-          } else {
-            return
           }
+          // Continue processing - don't return early so file gets added to product
         } else {
           // New file - set to analyzing
           // Check if a file with this extraction.id already exists (duplicate upload)
@@ -1150,43 +1140,53 @@ export default function CreateProductPage() {
     }
   }, [uploadedFiles, formData, visibleTechnicalFields, hasMeaningfulValue])
 
-  // Helper function to convert File objects to base64 strings for persistence
-  const convertImagesToBase64 = async (images: any[]): Promise<string[]> => {
-    const base64Images: string[] = []
+  // Helper function to convert images to URLs (upload Files to storage, keep URLs as-is)
+  const processProductImages = async (images: any[]): Promise<string[]> => {
+    const imageUrls: string[] = []
     for (const image of images) {
       if (image instanceof File) {
-        // Convert File to base64
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onloadend = () => {
-            const result = reader.result as string
-            resolve(result)
+        // Upload File to storage
+        try {
+          const formData = new FormData()
+          formData.append('file', image)
+
+          const response = await fetch('/api/products/upload-image', {
+            method: 'POST',
+            body: formData,
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+            throw new Error(errorData.error || 'Failed to upload image')
           }
-          reader.onerror = reject
-          reader.readAsDataURL(image)
-        })
-        base64Images.push(base64)
+
+          const result = await response.json()
+          imageUrls.push(result.image.url)
+        } catch (error) {
+          console.error('Error uploading image:', error)
+          // Skip failed uploads
+        }
       } else if (typeof image === 'string') {
-        // Already a string (URL or base64), keep as is
-        base64Images.push(image)
+        // Already a URL (or legacy base64), keep as is
+        imageUrls.push(image)
       }
     }
-    return base64Images
+    return imageUrls
   }
 
   const handleSaveDraft = async () => {
     setIsSaving(true)
     try {
-      // Convert File images to base64 for persistence
-      const productImagesBase64 = formData.product_images && formData.product_images.length > 0
-        ? await convertImagesToBase64(formData.product_images)
+      // Process images: upload Files to storage, keep URLs as-is
+      const productImageUrls = formData.product_images && formData.product_images.length > 0
+        ? await processProductImages(formData.product_images)
         : []
       
       // Prepare product data for save - map camelCase to snake_case for database
       const productDataForSave = {
         ...formData,
-        // Save images as base64 strings for persistence
-        product_images: productImagesBase64,
+        // Save images as URLs (storage paths)
+        product_images: productImageUrls,
         // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
         inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
         // Attach all uploaded files (regardless of analysis status)
@@ -1312,16 +1312,16 @@ export default function CreateProductPage() {
 
     setIsPublishing(true)
     try {
-      // Convert File images to base64 for persistence
-      const productImagesBase64 = formData.product_images && formData.product_images.length > 0
-        ? await convertImagesToBase64(formData.product_images)
+      // Process images: upload Files to storage, keep URLs as-is
+      const productImageUrls = formData.product_images && formData.product_images.length > 0
+        ? await processProductImages(formData.product_images)
         : []
       
       // Prepare product data for save - map camelCase to snake_case for database
       const productDataForSave = {
         ...formData,
-        // Save images as base64 strings for persistence
-        product_images: productImagesBase64,
+        // Save images as URLs (storage paths)
+        product_images: productImageUrls,
         // Map inventoryLocation (camelCase) to inventory_locations (snake_case)
         inventory_locations: (formData as any).inventoryLocation || formData.inventory_locations || [],
         // Attach all uploaded files (regardless of analysis status)

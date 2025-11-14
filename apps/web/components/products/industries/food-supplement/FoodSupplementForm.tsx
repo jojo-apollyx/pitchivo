@@ -120,17 +120,49 @@ export function FoodSupplementForm({
     }
   }, [formData.product_images])
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    onChange({ product_images: [...(formData.product_images || []), ...files] } as any)
-    
-    files.forEach((file) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview((prev) => [...prev, reader.result as string])
+    if (files.length === 0) return
+
+    // Upload files to storage
+    const uploadPromises = files.map(async (file) => {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await fetch('/api/products/upload-image', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+          throw new Error(errorData.error || 'Failed to upload image')
+        }
+
+        const result = await response.json()
+        return result.image.url // Return the storage URL
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        toast.error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        return null
       }
-      reader.readAsDataURL(file)
     })
+
+    const uploadedUrls = await Promise.all(uploadPromises)
+    const validUrls = uploadedUrls.filter((url): url is string => url !== null)
+
+    if (validUrls.length > 0) {
+      // Add URLs to product images
+      onChange({ product_images: [...(formData.product_images || []), ...validUrls] } as any)
+      
+      // Add previews
+      validUrls.forEach((url) => {
+        setImagePreview((prev) => [...prev, url])
+      })
+
+      toast.success(`${validUrls.length} image(s) uploaded successfully`)
+    }
   }
 
   const removeImage = (index: number) => {
@@ -196,11 +228,16 @@ export function FoodSupplementForm({
       const result = await response.json()
 
       if (result.success && result.image) {
-        // Convert to File and add to form
-        let imageFile: File
+        // Image is already uploaded to storage, use the URL directly
+        const imageUrl = result.image.url || result.image.b64_json
+        
+        if (!imageUrl) {
+          throw new Error('No image data received')
+        }
 
-        if (result.image.b64_json) {
-          // Convert base64 to File
+        // If it's base64 (fallback), we need to upload it
+        if (result.image.b64_json && !result.image.url) {
+          // Convert base64 to File and upload
           const base64 = result.image.b64_json
           const byteString = atob(base64.replace(/^data:image\/\w+;base64,/, ''))
           const bytes = new Uint8Array(byteString.length)
@@ -208,25 +245,32 @@ export function FoodSupplementForm({
             bytes[i] = byteString.charCodeAt(i)
           }
           const blob = new Blob([bytes], { type: 'image/png' })
-          imageFile = new File([blob], result.image.filename || 'ai-generated.png', { type: 'image/png' })
-        } else if (result.image.url) {
-          // Fetch from URL and convert to File
-          const imageResponse = await fetch(result.image.url)
-          const blob = await imageResponse.blob()
-          imageFile = new File([blob], result.image.filename || 'ai-generated.png', { type: 'image/png' })
+          const imageFile = new File([blob], result.image.filename || 'ai-generated.png', { type: 'image/png' })
+          
+          // Upload to storage
+          const formData = new FormData()
+          formData.append('file', imageFile)
+          
+          const uploadResponse = await fetch('/api/products/upload-image', {
+            method: 'POST',
+            body: formData,
+          })
+          
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to upload generated image')
+          }
+          
+          const uploadResult = await uploadResponse.json()
+          const finalUrl = uploadResult.image.url
+          
+          // Add URL to product images
+          onChange({ product_images: [...(formData.product_images || []), finalUrl] } as any)
+          setImagePreview((prev) => [...prev, finalUrl])
         } else {
-          throw new Error('No image data received')
+          // Already has URL from storage
+          onChange({ product_images: [...(formData.product_images || []), imageUrl] } as any)
+          setImagePreview((prev) => [...prev, imageUrl])
         }
-
-        // Add to product images
-        onChange({ product_images: [...(formData.product_images || []), imageFile] } as any)
-
-        // Add preview
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setImagePreview((prev) => [...prev, reader.result as string])
-        }
-        reader.readAsDataURL(imageFile)
 
         toast.success('Product image generated successfully!', { icon: '✨' })
       } else {
