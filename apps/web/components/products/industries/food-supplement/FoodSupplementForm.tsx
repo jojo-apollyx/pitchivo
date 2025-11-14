@@ -264,11 +264,11 @@ export function FoodSupplementForm({
           const finalUrl = uploadResult.image.url
           
           // Add URL to product images
-          onChange({ product_images: [...(formData.product_images || []), finalUrl] } as any)
+          onChange({ product_images: [...((formData as any).product_images || []), finalUrl] } as Partial<FoodSupplementProductData>)
           setImagePreview((prev) => [...prev, finalUrl])
         } else {
           // Already has URL from storage
-          onChange({ product_images: [...(formData.product_images || []), imageUrl] } as any)
+          onChange({ product_images: [...((formData as any).product_images || []), imageUrl] } as Partial<FoodSupplementProductData>)
           setImagePreview((prev) => [...prev, imageUrl])
         }
 

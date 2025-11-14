@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { createRfqUpgradeToken } from '@/lib/api/access-tokens'
+import { sendRfqNotificationEmail } from '@/lib/emails'
+import { getOrganizationEmails } from '@/lib/emails/utils/organization'
 
 const rfqSchema = z.object({
   product_id: z.string().uuid(),
@@ -34,10 +36,10 @@ export async function POST(request: NextRequest) {
     const data = validation.data
     const supabase = await createClient()
 
-    // Get product and org_id
+    // Get product with industry code
     const { data: product, error: productError } = await supabase
       .from('products')
-      .select('org_id, product_name')
+      .select('org_id, product_name, industry_code')
       .eq('product_id', data.product_id)
       .single()
 
@@ -138,7 +140,43 @@ export async function POST(request: NextRequest) {
       ? `${baseUrl}${tokenResult.url}`
       : null
 
-    // TODO: Send email notification to product owner
+    // Send email notification to product owners
+    try {
+      // Get all organization member emails
+      const ownerEmails = await getOrganizationEmails(product.org_id)
+      
+      if (ownerEmails.length > 0) {
+        // Build URLs
+        const productUrl = `${baseUrl}/products/${data.product_id}`
+        const dashboardUrl = `${baseUrl}/dashboard/rfqs`
+        
+        // Send email notification (fire and forget - don't block response)
+        sendRfqNotificationEmail({
+          to: ownerEmails,
+          productName: product.product_name,
+          rfq: {
+            name: data.name,
+            email: data.email,
+            company: data.company,
+            phone: data.phone,
+            message: data.message,
+            quantity: data.quantity,
+            targetDate: data.targetDate,
+          },
+          productUrl,
+          dashboardUrl,
+          industryCode: product.industry_code,
+        }).catch((error) => {
+          // Log error but don't fail the RFQ submission
+          console.error('Failed to send RFQ notification email:', error)
+        })
+      } else {
+        console.warn(`No emails found for organization ${product.org_id} - RFQ notification not sent`)
+      }
+    } catch (error) {
+      // Log error but don't fail the RFQ submission
+      console.error('Error sending RFQ notification email:', error)
+    }
 
     return NextResponse.json({
       success: true,

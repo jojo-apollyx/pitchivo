@@ -23,12 +23,16 @@ import { createInvitationEmail } from './templates/client/invitation'
 // Admin email templates
 import { createWaitlistAdminNotificationEmail } from './templates/admin/waitlist-notification'
 
+// Merchant/Product Owner email templates
+import { createRfqNotificationEmail } from './templates/merchant/rfq-notification'
+
 // Re-export template creators for external use
 export { createWaitlistConfirmationEmail } from './templates/client/waitlist-confirmation'
 export { createWelcomeEmail } from './templates/client/welcome'
 export { createOrganizationSetupEmail } from './templates/client/organization-setup'
 export { createInvitationEmail } from './templates/client/invitation'
 export { createWaitlistAdminNotificationEmail } from './templates/admin/waitlist-notification'
+export { createRfqNotificationEmail } from './templates/merchant/rfq-notification'
 
 /**
  * Send email with spam-prevention validation and defaults
@@ -208,6 +212,44 @@ export async function sendWaitlistAdminNotification(data: {
   })
 }
 
+/**
+ * Send RFQ notification email to product owners
+ */
+export async function sendRfqNotificationEmail(data: {
+  to: string | string[]
+  productName: string
+  rfq: {
+    name: string
+    email: string
+    company: string
+    phone?: string
+    message: string
+    quantity?: string
+    targetDate?: string
+  }
+  productUrl: string
+  dashboardUrl: string
+  industryCode?: string
+}): Promise<SendEmailResponse> {
+  const template = createRfqNotificationEmail({
+    productName: data.productName,
+    rfq: data.rfq,
+    productUrl: data.productUrl,
+    dashboardUrl: data.dashboardUrl,
+    industryCode: data.industryCode,
+  })
+
+  return sendEmailWithDefaults({
+    to: data.to,
+    subject: template.subject,
+    htmlContent: template.html,
+    textContent: template.text,
+  })
+}
+
 // Export subdomain utilities for promotional emails
 export { getEmailSubdomain, getPromotionalSenderEmail } from './config'
+
+// Note: Organization utilities are NOT exported here because they use server-side Supabase client
+// Import them directly from './utils/organization' in server-side code only (API routes, server components)
 
