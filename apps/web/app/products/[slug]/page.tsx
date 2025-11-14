@@ -213,9 +213,10 @@ export default function PublicProductPage() {
     if (!formData) return
     
     const formDataAny = formData as any
-    const uploadedFiles = formDataAny.uploaded_files || []
+    const uploadedFiles = formDataAny.uploaded_files
     
-    if (uploadedFiles.length === 0) return
+    // Check if uploaded_files is actually an array (might be locked field metadata object)
+    if (!Array.isArray(uploadedFiles) || uploadedFiles.length === 0) return
 
     // Get file IDs that need metadata
     const fileIds = uploadedFiles
