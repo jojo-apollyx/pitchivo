@@ -391,12 +391,17 @@ export default function ProductAnalyticsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Visits */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#E9A6F5]/5 to-[#E9A6F5]/10 hover:from-[#E9A6F5]/10 hover:to-[#E9A6F5]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.primary}0D, ${macaroonColors.primary}1A)` }}
+              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.primary}1A, ${macaroonColors.primary}33)`}
+              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.primary}0D, ${macaroonColors.primary}1A)`}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#E9A6F5]/20">
-                  <Eye className="h-4 w-4 text-[#E9A6F5]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.primary}33` }}>
+                  <Eye className="h-4 w-4" style={{ color: macaroonColors.primary }} />
                 </div>
-                <TrendingUp className="h-4 w-4 text-[#E9A6F5]/60" />
+                <TrendingUp className="h-4 w-4" style={{ color: `${macaroonColors.primary}99` }} />
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Total Visits</p>
               <p className="text-3xl font-bold text-foreground">{analytics?.total_visits || 0}</p>
@@ -406,12 +411,17 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* RFQ Submissions */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5A6D0]/5 to-[#F5A6D0]/10 hover:from-[#F5A6D0]/10 hover:to-[#F5A6D0]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.secondary}0D, ${macaroonColors.secondary}1A)` }}
+              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.secondary}1A, ${macaroonColors.secondary}33)`}
+              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.secondary}0D, ${macaroonColors.secondary}1A)`}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#F5A6D0]/20">
-                  <MessageSquare className="h-4 w-4 text-[#F5A6D0]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.secondary}33` }}>
+                  <MessageSquare className="h-4 w-4" style={{ color: macaroonColors.secondary }} />
                 </div>
-                <Badge className="bg-[#F5A6D0]/20 text-[#F5A6D0] border-none">
+                <Badge className="border-none" style={{ backgroundColor: `${macaroonColors.secondary}33`, color: macaroonColors.secondary }}>
                   {conversionRate}%
                 </Badge>
               </div>
@@ -423,10 +433,15 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* Downloads */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#F5C6A6]/5 to-[#F5C6A6]/10 hover:from-[#F5C6A6]/10 hover:to-[#F5C6A6]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.accent}0D, ${macaroonColors.accent}1A)` }}
+              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.accent}1A, ${macaroonColors.accent}33)`}
+              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.accent}0D, ${macaroonColors.accent}1A)`}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#F5C6A6]/20">
-                  <Download className="h-4 w-4 text-[#F5C6A6]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.accent}33` }}>
+                  <Download className="h-4 w-4" style={{ color: macaroonColors.accent }} />
                 </div>
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Downloads</p>
@@ -437,10 +452,15 @@ export default function ProductAnalyticsPage() {
             </div>
 
             {/* Sessions */}
-            <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-[#A6D4F5]/5 to-[#A6D4F5]/10 hover:from-[#A6D4F5]/10 hover:to-[#A6D4F5]/20 transition-all duration-300 hover:-translate-y-1">
+            <div 
+              className="group relative p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(to bottom right, ${macaroonColors.chart1}0D, ${macaroonColors.chart1}1A)` }}
+              onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.chart1}1A, ${macaroonColors.chart1}33)`}
+              onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(to bottom right, ${macaroonColors.chart1}0D, ${macaroonColors.chart1}1A)`}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-[#A6D4F5]/20">
-                  <Users className="h-4 w-4 text-[#A6D4F5]" />
+                <div className="p-2 rounded-lg" style={{ backgroundColor: `${macaroonColors.chart1}33` }}>
+                  <Users className="h-4 w-4" style={{ color: macaroonColors.chart1 }} />
                 </div>
               </div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Sessions</p>
