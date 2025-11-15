@@ -73,14 +73,10 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
       <div className="relative">
         {/* Page Header */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -101,7 +97,7 @@ export default function ProductsPage() {
 
         {/* Filters */}
         {!isLoading && allProducts.length > 0 && (
-          <section className="px-4 sm:px-6 lg:px-8 py-4 border-b border-border/30 bg-background/50">
+          <section className="px-4 sm:px-6 lg:px-8 py-4 border-b border-border/20 bg-background/80 backdrop-blur-sm">
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 {/* Search */}
@@ -175,7 +171,7 @@ export default function ProductsPage() {
         )}
 
         {/* Products List */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-background/60 backdrop-blur-sm min-h-[500px]">
           {isLoading ? (
             <div className="max-w-7xl mx-auto">
               <div className="bg-card/50 backdrop-blur-sm rounded-xl p-8 text-center">

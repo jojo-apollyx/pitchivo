@@ -18,14 +18,10 @@ export default async function ProfilePage() {
     .slice(0, 2)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
       <div className="relative">
         {/* Page Header */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">My Profile</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-2">
@@ -35,7 +31,7 @@ export default async function ProfilePage() {
         </section>
 
         {/* Content */}
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl bg-background/60 backdrop-blur-sm min-h-[500px]">
           {/* Profile Information */}
           <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
             <div className="flex items-center gap-2 mb-2">

@@ -155,111 +155,153 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="grid gap-2">
-          <Label htmlFor="company-name">Company Name</Label>
-          <Input 
-            id="company-name" 
-            defaultValue={organization.name || ''} 
-            disabled
-            className="transition-all duration-300"
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="domain">Email Domain</Label>
-          <Input 
-            id="domain" 
-            defaultValue={organization.domain || ''} 
-            disabled
-            className="transition-all duration-300"
-          />
-        </div>
-        {organization.pitchivo_domain && (
-          <div className="grid gap-2">
-            <Label htmlFor="pitchivo-domain">Pitchivo Domain</Label>
+      {/* Company Information - Grid Layout */}
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary" />
+          Company Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Company Name - Full Width on Mobile, Half on Desktop */}
+          <div className="space-y-1.5">
+            <Label htmlFor="company-name" className="text-sm font-medium">Company Name</Label>
             <Input 
-              id="pitchivo-domain" 
-              defaultValue={organization.pitchivo_domain || ''} 
+              id="company-name" 
+              defaultValue={organization.name || ''} 
               disabled
-              className="transition-all duration-300"
+              className="h-10 text-sm bg-muted/50"
             />
           </div>
-        )}
-        <div className="grid gap-2">
-          <Label htmlFor="industry">Industry</Label>
-          <Select
-            value={industry}
-            onValueChange={setIndustry}
-          >
-            <SelectTrigger id="industry" className="transition-all duration-300">
-              <SelectValue placeholder="Select an industry" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoadingIndustries ? (
-                <SelectItem value="loading" disabled>Loading industries...</SelectItem>
-              ) : (
-                industries.map((industryCode) => (
-                  <SelectItem key={industryCode} value={industryCode}>
-                    {industryMap[industryCode] || industryCode}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="company-size">Company Size</Label>
-          <Select
-            value={companySize}
-            onValueChange={setCompanySize}
-          >
-            <SelectTrigger id="company-size" className="transition-all duration-300">
-              <SelectValue placeholder="Select company size" />
-            </SelectTrigger>
-            <SelectContent>
-              {COMPANY_SIZES.map((size) => (
-                <SelectItem key={size.value} value={size.value}>
-                  {size.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="description" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Description
-          </Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe your organization, products, and services..."
-            rows={4}
-            className="transition-all duration-300"
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="role" className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4" />
-            Your Role / Title
-          </Label>
-          <Input
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            placeholder="e.g., Sales Manager, Founder, CEO"
-            className="transition-all duration-300"
-          />
+
+          {/* Email Domain */}
+          <div className="space-y-1.5">
+            <Label htmlFor="domain" className="text-sm font-medium">Email Domain</Label>
+            <Input 
+              id="domain" 
+              defaultValue={organization.domain || ''} 
+              disabled
+              className="h-10 text-sm bg-muted/50"
+            />
+          </div>
+
+          {/* Pitchivo Domain - Only show if exists */}
+          {organization.pitchivo_domain && (
+            <div className="space-y-1.5 md:col-span-2">
+              <Label htmlFor="pitchivo-domain" className="text-sm font-medium">Pitchivo Domain</Label>
+              <Input 
+                id="pitchivo-domain" 
+                defaultValue={organization.pitchivo_domain || ''} 
+                disabled
+                className="h-10 text-sm bg-muted/50"
+              />
+            </div>
+          )}
         </div>
       </div>
-      <div className="flex justify-end pt-4 border-t border-border/30">
+
+      {/* Business Details - Grid Layout */}
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Briefcase className="h-4 w-4 text-primary" />
+          Business Details
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Industry */}
+          <div className="space-y-1.5">
+            <Label htmlFor="industry" className="text-sm font-medium">Industry</Label>
+            <Select
+              value={industry}
+              onValueChange={setIndustry}
+            >
+              <SelectTrigger id="industry" className="h-10 text-sm">
+                <SelectValue placeholder="Select industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingIndustries ? (
+                  <SelectItem value="loading" disabled>Loading...</SelectItem>
+                ) : (
+                  industries.map((industryCode) => (
+                    <SelectItem key={industryCode} value={industryCode} className="text-sm">
+                      {industryMap[industryCode] || industryCode}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Company Size */}
+          <div className="space-y-1.5">
+            <Label htmlFor="company-size" className="text-sm font-medium">Company Size</Label>
+            <Select
+              value={companySize}
+              onValueChange={setCompanySize}
+            >
+              <SelectTrigger id="company-size" className="h-10 text-sm">
+                <SelectValue placeholder="Select size" />
+              </SelectTrigger>
+              <SelectContent>
+                {COMPANY_SIZES.map((size) => (
+                  <SelectItem key={size.value} value={size.value} className="text-sm">
+                    {size.label} employees
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Description - Full Width */}
+          <div className="space-y-1.5 md:col-span-2">
+            <Label htmlFor="description" className="text-sm font-medium flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              Company Description
+            </Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe your organization, products, and services..."
+              rows={3}
+              className="text-sm resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              This helps buyers understand your business better
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Personal Information */}
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Briefcase className="h-4 w-4 text-primary" />
+          Your Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="role" className="text-sm font-medium">Your Role / Title</Label>
+            <Input
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="e.g., Sales Manager, CEO"
+              className="h-10 text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between pt-4 border-t border-border/20">
+        <p className="text-xs text-muted-foreground">
+          {hasChanges ? 'You have unsaved changes' : 'No changes to save'}
+        </p>
         <Button 
-          className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" 
+          className="gap-2 h-9 px-4 text-sm" 
           onClick={handleSave}
           disabled={!hasChanges || isSaving}
         >
-          <Save className="h-4 w-4" />
+          <Save className="h-3.5 w-3.5" />
           {isSaving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>

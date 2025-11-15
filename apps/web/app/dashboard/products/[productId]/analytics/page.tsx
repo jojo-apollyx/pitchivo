@@ -329,16 +329,9 @@ export default function ProductAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Decorative background - theme gradient */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: `${themeColors.primary}0D` }} />
-        <div className="absolute top-40 left-20 w-64 h-64 rounded-full blur-3xl" style={{ backgroundColor: `${themeColors.secondary}0D` }} />
-        <div className="absolute bottom-20 right-40 w-80 h-80 rounded-full blur-3xl" style={{ backgroundColor: `${themeColors.accent}08` }} />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
       {/* Header - Sticky */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center gap-4 mb-4">
             <Button 
