@@ -84,7 +84,14 @@ export default function ProductsPage() {
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Products</h1>
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Products</h1>
+                  {!isLoading && (
+                    <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+                      {allProducts.length} {allProducts.length === 1 ? 'Product' : 'Products'}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm sm:text-base text-muted-foreground mt-2">
                   Manage your product pages and catalog
                 </p>

@@ -1,4 +1,5 @@
 import { getEffectiveUserAndProfile } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { 
   Package, 
@@ -21,8 +22,53 @@ export default async function DashboardPage() {
   const organizationName = organization?.name || organization?.company_name || 'there'
   const userName = profile?.full_name || profile?.email?.split('@')[0] || 'User'
   
+  // Fetch real statistics
+  const supabase = await createClient()
+  const orgId = profile?.organization_id
 
-  // Mock metrics data - in production, fetch from database
+  let productsTotal = 0
+  let productsPublished = 0
+  let rfqsTotal = 0
+  let rfqsNew = 0
+
+  if (orgId) {
+    const [
+      { count: productsCount } = { count: 0 },
+      { count: publishedCount } = { count: 0 },
+      { count: rfqsCount } = { count: 0 },
+      { count: newRfqsCount } = { count: 0 },
+    ] = await Promise.all([
+      supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId),
+      supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId)
+        .eq('status', 'published'),
+      supabase
+        .from('product_rfqs')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId),
+      supabase
+        .from('product_rfqs')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId)
+        .eq('status', 'new'),
+    ])
+
+    productsTotal = productsCount || 0
+    productsPublished = publishedCount || 0
+    rfqsTotal = rfqsCount || 0
+    rfqsNew = newRfqsCount || 0
+  }
+
+  // Calculate conversion rate (RFQs / Products, if products > 0)
+  const conversionRate = productsTotal > 0 
+    ? ((rfqsTotal / productsTotal) * 100).toFixed(1)
+    : '0.0'
+
   type MetricChangeType = 'positive' | 'negative' | 'neutral'
   
   const metrics: Array<{
@@ -34,9 +80,9 @@ export default async function DashboardPage() {
   }> = [
     {
       label: 'Products',
-      value: '0',
+      value: productsTotal.toString(),
       icon: Package,
-      change: '+0%',
+      change: `${productsPublished} published`,
       changeType: 'neutral',
     },
     {
@@ -55,16 +101,16 @@ export default async function DashboardPage() {
     },
     {
       label: 'RFQs Received',
-      value: '0',
+      value: rfqsTotal.toString(),
       icon: MessageSquare,
-      change: '+0%',
-      changeType: 'neutral',
+      change: rfqsNew > 0 ? `${rfqsNew} new` : '0 new',
+      changeType: rfqsNew > 0 ? 'positive' : 'neutral',
     },
     {
       label: 'Conversion Rate',
-      value: '0%',
+      value: `${conversionRate}%`,
       icon: TrendingUp,
-      change: '+0%',
+      change: `${rfqsTotal} RFQs / ${productsTotal} Products`,
       changeType: 'neutral',
     },
     {

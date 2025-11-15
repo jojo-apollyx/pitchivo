@@ -126,7 +126,7 @@ export default function RFQsPage() {
     return Array.from(productMap.entries()).sort((a, b) => a[1].localeCompare(b[1]))
   }, [rfqs])
 
-  // Group RFQs by status for summary (from all pages)
+  // Group RFQs by status for summary (from current page only)
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     rfqs.forEach((rfq) => {
@@ -183,16 +183,27 @@ export default function RFQsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/5 via-background to-primary-light/5">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
+
+      <div className="relative max-w-7xl mx-auto">
         {/* Page Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight mb-1">
-                  Requests for Quotation
-                </h1>
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">
+                    Requests for Quotation
+                  </h1>
+                  {!isLoading && (
+                    <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+                      {totalCount} {totalCount === 1 ? 'RFQ' : 'RFQs'}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   Manage and respond to buyer inquiries
                 </p>
@@ -339,125 +350,66 @@ export default function RFQsPage() {
                 return (
                   <div
                     key={rfq.rfq_id}
-                    className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/30 p-3 sm:p-4 hover:border-border/50 hover:shadow-md transition-all duration-300"
+                    className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/30 p-4 sm:p-5 hover:border-border/50 hover:shadow-md transition-all duration-300"
                   >
-                    <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
-                      {/* Left: Product Image & Info */}
-                      <div className="flex items-start gap-3 flex-shrink-0">
-                        {/* Product Image */}
-                        {rfq.products?.product_data?.product_images && 
-                         Array.isArray(rfq.products.product_data.product_images) && 
-                         rfq.products.product_data.product_images.length > 0 ? (
-                          <div className="flex-shrink-0">
-                            <img
-                              src={rfq.products.product_data.product_images[0]}
-                              alt={rfq.products.product_name}
-                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-border/30"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-muted/30 border border-border/30 flex items-center justify-center flex-shrink-0">
-                            <Package className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                        
-                        {/* Product Name */}
-                        {rfq.products && (
-                          <div className="flex-shrink-0 min-w-[120px] sm:min-w-[150px]">
-                            <Link
-                              href={`/products/${rfq.product_id}?merchant=true`}
-                              className="group"
-                            >
-                              <h4 className="text-xs sm:text-sm font-semibold text-foreground mb-0.5 group-hover:text-primary transition-colors line-clamp-2">
-                                {rfq.products.product_name}
-                              </h4>
-                            </Link>
+                    <div className="flex flex-col lg:flex-row gap-4 sm:gap-5">
+                      {/* Left: Product Image & Name */}
+                      <div className="flex-shrink-0">
+                        {rfq.products ? (
+                          <Link
+                            href={`/products/${rfq.product_id}?merchant=true`}
+                            className="group block"
+                          >
+                            {/* Product Image */}
+                            {rfq.products?.product_data?.product_images && 
+                             Array.isArray(rfq.products.product_data.product_images) && 
+                             rfq.products.product_data.product_images.length > 0 ? (
+                              <div className="mb-3">
+                                <img
+                                  src={rfq.products.product_data.product_images[0]}
+                                  alt={rfq.products.product_name}
+                                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover border border-border/30 group-hover:border-primary/50 transition-colors"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/30 flex items-center justify-center mb-3 group-hover:border-primary/50 transition-colors">
+                                <Package className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            
+                            {/* Product Name */}
+                            <h4 className="text-sm sm:text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+                              {rfq.products.product_name}
+                            </h4>
                             {rfq.products.product_data?.product_name && (
-                              <p className="text-xs text-muted-foreground line-clamp-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 {rfq.products.product_data.product_name}
                               </p>
                             )}
+                          </Link>
+                        ) : (
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/30 flex items-center justify-center">
+                            <Package className="h-8 w-8 text-muted-foreground" />
                           </div>
                         )}
                       </div>
 
                       {/* Middle: Buyer Info & Message */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
-                          {/* Buyer Details */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-2 mb-1.5">
-                              <StatusIcon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-sm sm:text-base font-semibold text-foreground mb-0.5 leading-tight">
-                                  {rfq.name}
-                                </h3>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Building2 className="h-3 w-3" />
-                                    {rfq.company}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Contact & Time */}
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground mt-1.5">
-                              <a
-                                href={`mailto:${rfq.email}`}
-                                className="flex items-center gap-1 hover:text-primary transition-colors"
-                              >
-                                <Mail className="h-3 w-3" />
-                                <span className="truncate max-w-[150px]">{rfq.email}</span>
-                              </a>
-                              {rfq.phone && (
-                                <a
-                                  href={`tel:${rfq.phone}`}
-                                  className="flex items-center gap-1 hover:text-primary transition-colors"
-                                >
-                                  <Phone className="h-3 w-3" />
-                                  {rfq.phone}
-                                </a>
-                              )}
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {formatDistanceToNow(new Date(rfq.submitted_at), { addSuffix: true })}
-                              </span>
-                            </div>
-
-                            {/* Message Preview */}
-                            <div className="mt-2">
-                              <p className="text-xs text-foreground line-clamp-2 leading-relaxed">
-                                {rfq.message}
-                              </p>
-                            </div>
-
-                            {/* Additional Details */}
-                            {(rfq.quantity || rfq.target_date) && (
-                              <div className="flex flex-wrap gap-3 mt-2 text-xs">
-                                {rfq.quantity && (
-                                  <span>
-                                    <span className="text-muted-foreground">Qty:</span>{' '}
-                                    <span className="font-medium text-foreground">{rfq.quantity}</span>
-                                  </span>
-                                )}
-                                {rfq.target_date && (
-                                  <span>
-                                    <span className="text-muted-foreground">Target:</span>{' '}
-                                    <span className="font-medium text-foreground">
-                                      {format(new Date(rfq.target_date), 'MMM d, yyyy')}
-                                    </span>
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                        {/* Buyer Name & Status */}
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <StatusIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground leading-tight">
+                              {rfq.name}
+                            </h3>
                           </div>
-
-                          {/* Right: Status & Actions */}
-                          <div className="flex items-start gap-2 flex-shrink-0 sm:flex-col sm:items-end">
+                          
+                          {/* Status Badge */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge
                               variant="outline"
-                              className={`${statusConfig.color} border px-2 py-1 text-xs font-medium`}
+                              className={`${statusConfig.color} border px-2.5 py-1 text-xs font-medium whitespace-nowrap`}
                             >
                               {statusConfig.label}
                             </Badge>
@@ -540,19 +492,74 @@ export default function RFQsPage() {
                             </DropdownMenu>
                           </div>
                         </div>
+                            
+                        {/* Contact Info Row - Company, Email, Phone, Time */}
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3 pb-3 border-b border-border/30">
+                          <span className="flex items-center gap-1.5 text-sm">
+                            <Building2 className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                            <span className="font-medium text-foreground">{rfq.company}</span>
+                          </span>
+                          <a
+                            href={`mailto:${rfq.email}`}
+                            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            <span>{rfq.email}</span>
+                          </a>
+                          {rfq.phone && (
+                            <a
+                              href={`tel:${rfq.phone}`}
+                              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Phone className="h-4 w-4 flex-shrink-0" />
+                              <span>{rfq.phone}</span>
+                            </a>
+                          )}
+                          <span className="flex items-center gap-1.5 text-sm text-muted-foreground ml-auto">
+                            <Calendar className="h-4 w-4 flex-shrink-0" />
+                            <span>{formatDistanceToNow(new Date(rfq.submitted_at), { addSuffix: true })}</span>
+                          </span>
+                        </div>
+
+                        {/* Message Preview */}
+                        <div className="mb-3">
+                          <p className="text-sm text-foreground leading-relaxed">
+                            {rfq.message}
+                          </p>
+                        </div>
+
+                        {/* Additional Details */}
+                        {(rfq.quantity || rfq.target_date) && (
+                          <div className="flex flex-wrap gap-4 text-sm mb-3">
+                            {rfq.quantity && (
+                              <span>
+                                <span className="text-muted-foreground">Quantity:</span>{' '}
+                                <span className="font-medium text-foreground">{rfq.quantity}</span>
+                              </span>
+                            )}
+                            {rfq.target_date && (
+                              <span>
+                                <span className="text-muted-foreground">Target Date:</span>{' '}
+                                <span className="font-medium text-foreground">
+                                  {format(new Date(rfq.target_date), 'MMM d, yyyy')}
+                                </span>
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {/* Response Message (if exists) */}
                         {rfq.response_message && (
-                          <div className="mt-2 pt-2 border-t border-border/30">
-                            <div className="bg-primary/5 rounded-md p-2">
-                              <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+                          <div className="mt-3 pt-3 border-t border-border/30">
+                            <div className="bg-primary/5 rounded-md p-3">
+                              <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
                                 Your Response
                               </p>
-                              <p className="text-xs text-foreground leading-relaxed line-clamp-2">
+                              <p className="text-sm text-foreground leading-relaxed">
                                 {rfq.response_message}
                               </p>
                               {rfq.responded_at && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-xs text-muted-foreground mt-2">
                                   {format(new Date(rfq.responded_at), 'MMM d, yyyy')}
                                 </p>
                               )}
