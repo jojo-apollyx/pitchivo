@@ -322,7 +322,7 @@ export default function ProductAnalyticsPage() {
             <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4" style={{ color: themeColors.primary }} />
             <div className="absolute inset-0 blur-xl animate-pulse" style={{ backgroundColor: `${themeColors.accent}33` }} />
           </div>
-          <p className="text-muted-foreground">Loading premium analytics...</p>
+          <p className="text-sm text-muted-foreground font-normal">Loading premium analytics...</p>
         </div>
       </div>
     )
@@ -359,7 +359,7 @@ export default function ProductAnalyticsPage() {
                 <div className="p-2 rounded-xl" style={{ background: `linear-gradient(135deg, ${themeColors.primary}33, ${themeColors.secondary}33)` }}>
                   <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: themeColors.primary }} />
                 </div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">
                   <span style={{
                     background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})`,
                     WebkitBackgroundClip: 'text',
@@ -370,7 +370,7 @@ export default function ProductAnalyticsPage() {
                   </span>
                 </h1>
               </div>
-              <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
                 {productData?.product_name || 'Product'} · Performance insights & visitor behavior
               </p>
             </div>
@@ -433,9 +433,9 @@ export default function ProductAnalyticsPage() {
                 </div>
                 <TrendingUp className="h-4 w-4" style={{ color: `${themeColors.accent}` }} />
               </div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Total Visits</p>
-              <p className="text-3xl font-bold text-foreground">{analytics?.total_visits || 0}</p>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">Total Visits</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{analytics?.total_visits || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2 font-normal">
                 {analytics?.unique_visitors || 0} unique visitors
               </p>
             </div>
@@ -461,9 +461,9 @@ export default function ProductAnalyticsPage() {
                   {conversionRate}%
                 </Badge>
               </div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">RFQ Submissions</p>
-              <p className="text-3xl font-bold text-foreground">{analytics?.rfq_submissions || 0}</p>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">RFQ Submissions</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{analytics?.rfq_submissions || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2 font-normal">
                 conversion rate
               </p>
             </div>
@@ -486,9 +486,9 @@ export default function ProductAnalyticsPage() {
                   <Download className="h-4 w-4" style={{ color: themeColors.primary }} />
                 </div>
               </div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Downloads</p>
-              <p className="text-3xl font-bold text-foreground">{analytics?.downloads || 0}</p>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">Downloads</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{analytics?.downloads || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2 font-normal">
                 documents downloaded
               </p>
             </div>
@@ -511,9 +511,9 @@ export default function ProductAnalyticsPage() {
                   <Users className="h-4 w-4" style={{ color: themeColors.secondary }} />
                 </div>
               </div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Sessions</p>
-              <p className="text-3xl font-bold text-foreground">{analytics?.unique_sessions || 0}</p>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">Sessions</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{analytics?.unique_sessions || 0}</p>
+              <p className="text-xs text-muted-foreground mt-2 font-normal">
                 {analytics?.first_time_visitors || 0} first-time visitors
               </p>
             </div>
@@ -532,8 +532,8 @@ export default function ProductAnalyticsPage() {
                   <BarChart3 className="h-5 w-5" style={{ color: themeColors.primary }} />
                 </div>
                 <div>
-                  <h2 className="text-lg md:text-xl font-semibold">Visits Over Time</h2>
-                  <p className="text-sm text-muted-foreground">Daily visits, RFQ submissions, and downloads</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground">Visits Over Time</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground font-normal">Daily visits, RFQ submissions, and downloads</p>
                 </div>
               </div>
               <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.primary}0D, transparent)` }}>
@@ -582,8 +582,8 @@ export default function ProductAnalyticsPage() {
                   <TrendingUp className="h-5 w-5" style={{ color: themeColors.secondary }} />
                 </div>
                 <div>
-                  <h2 className="text-lg md:text-xl font-semibold">Conversion Rate Trend</h2>
-                  <p className="text-sm text-muted-foreground">Percentage of visits that resulted in RFQ submissions</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground">Conversion Rate Trend</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground font-normal">Percentage of visits that resulted in RFQ submissions</p>
                 </div>
               </div>
               <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.secondary}0D, transparent)` }}>
@@ -635,8 +635,8 @@ export default function ProductAnalyticsPage() {
                 <Link2 className="h-5 w-5" style={{ color: themeColors.secondary }} />
               </div>
               <div>
-                <h2 className="text-lg md:text-xl font-semibold">Channel Performance</h2>
-                <p className="text-sm text-muted-foreground">Visits by marketing channel</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground">Channel Performance</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">Visits by marketing channel</p>
               </div>
             </div>
             <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.secondary}0D, transparent)` }}>
@@ -673,8 +673,8 @@ export default function ProductAnalyticsPage() {
                 <QrCode className="h-5 w-5" style={{ color: themeColors.primary }} />
               </div>
               <div>
-                <h2 className="text-lg md:text-xl font-semibold">Access Method Distribution</h2>
-                <p className="text-sm text-muted-foreground">URL clicks vs QR code scans</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground">Access Method Distribution</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">URL clicks vs QR code scans</p>
               </div>
             </div>
             <div className="p-6 rounded-2xl" style={{ background: `linear-gradient(135deg, ${themeColors.primary}0D, transparent)` }}>
@@ -721,8 +721,8 @@ export default function ProductAnalyticsPage() {
                 <Calendar className="h-5 w-5" style={{ color: themeColors.accent }} />
               </div>
               <div>
-                <h2 className="text-lg md:text-xl font-semibold">Recent Access Logs</h2>
-                <p className="text-sm text-muted-foreground">Most recent 15 visits with browser, location, and device information</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground">Recent Access Logs</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">Most recent 15 visits with browser, location, and device information</p>
               </div>
             </div>
             <div className="divide-y divide-border/30">
@@ -857,7 +857,7 @@ export default function ProductAnalyticsPage() {
               </div>
               <Sparkles className="absolute -top-2 -right-2 h-8 w-8" style={{ color: themeColors.accent }} />
             </div>
-            <h3 className="text-xl sm:text-2xl font-semibold mb-3">
+            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">
               <span style={{
                 background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})`,
                 WebkitBackgroundClip: 'text',
@@ -867,7 +867,7 @@ export default function ProductAnalyticsPage() {
                 No Analytics Data Yet
               </span>
             </h3>
-            <p className="text-base text-muted-foreground mb-8">
+            <p className="text-sm text-muted-foreground mb-8 font-normal">
               Share your product link to start tracking visits, conversions, and visitor insights.
             </p>
             <Button 

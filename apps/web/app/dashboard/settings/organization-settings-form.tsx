@@ -156,6 +156,7 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
   return (
     <div className="space-y-6">
       <div className="space-y-4">
+        {/* Company Name - Full Width */}
         <div className="grid gap-2">
           <Label htmlFor="company-name">Company Name</Label>
           <Input 
@@ -165,6 +166,8 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
             className="transition-all duration-300"
           />
         </div>
+
+        {/* Email Domain - Full Width */}
         <div className="grid gap-2">
           <Label htmlFor="domain">Email Domain</Label>
           <Input 
@@ -174,6 +177,8 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
             className="transition-all duration-300"
           />
         </div>
+
+        {/* Pitchivo Domain - Full Width (if exists) */}
         {organization.pitchivo_domain && (
           <div className="grid gap-2">
             <Label htmlFor="pitchivo-domain">Pitchivo Domain</Label>
@@ -185,46 +190,52 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
             />
           </div>
         )}
-        <div className="grid gap-2">
-          <Label htmlFor="industry">Industry</Label>
-          <Select
-            value={industry}
-            onValueChange={setIndustry}
-          >
-            <SelectTrigger id="industry" className="transition-all duration-300">
-              <SelectValue placeholder="Select an industry" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoadingIndustries ? (
-                <SelectItem value="loading" disabled>Loading industries...</SelectItem>
-              ) : (
-                industries.map((industryCode) => (
-                  <SelectItem key={industryCode} value={industryCode}>
-                    {industryMap[industryCode] || industryCode}
+
+        {/* Industry and Company Size - Side by Side on Larger Screens */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="industry">Industry</Label>
+            <Select
+              value={industry}
+              onValueChange={setIndustry}
+            >
+              <SelectTrigger id="industry" className="transition-all duration-300">
+                <SelectValue placeholder="Select an industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingIndustries ? (
+                  <SelectItem value="loading" disabled>Loading industries...</SelectItem>
+                ) : (
+                  industries.map((industryCode) => (
+                    <SelectItem key={industryCode} value={industryCode}>
+                      {industryMap[industryCode] || industryCode}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="company-size">Company Size</Label>
+            <Select
+              value={companySize}
+              onValueChange={setCompanySize}
+            >
+              <SelectTrigger id="company-size" className="transition-all duration-300">
+                <SelectValue placeholder="Select company size" />
+              </SelectTrigger>
+              <SelectContent>
+                {COMPANY_SIZES.map((size) => (
+                  <SelectItem key={size.value} value={size.value}>
+                    {size.label}
                   </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="company-size">Company Size</Label>
-          <Select
-            value={companySize}
-            onValueChange={setCompanySize}
-          >
-            <SelectTrigger id="company-size" className="transition-all duration-300">
-              <SelectValue placeholder="Select company size" />
-            </SelectTrigger>
-            <SelectContent>
-              {COMPANY_SIZES.map((size) => (
-                <SelectItem key={size.value} value={size.value}>
-                  {size.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+
+        {/* Description - Full Width */}
         <div className="grid gap-2">
           <Label htmlFor="description" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -239,6 +250,8 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
             className="transition-all duration-300"
           />
         </div>
+
+        {/* Your Role / Title - Full Width */}
         <div className="grid gap-2">
           <Label htmlFor="role" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />

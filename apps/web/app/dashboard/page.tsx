@@ -179,10 +179,10 @@ export default async function DashboardPage() {
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">
                   Welcome back, {userName} 👋
                 </h1>
-                <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
                   {organizationName}
                 </p>
               </div>
@@ -195,7 +195,7 @@ export default async function DashboardPage() {
                     <Link key={action.href} href={action.href}>
                       <Button 
                         variant={action.variant}
-                        className="min-h-[44px] gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                        className="gap-2"
                       >
                         <Icon className="h-4 w-4" />
                         {action.label}
@@ -229,7 +229,7 @@ export default async function DashboardPage() {
 
         {/* Metrics Overview */}
         <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-foreground">
             Metrics Overview
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -241,15 +241,15 @@ export default async function DashboardPage() {
                   className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                       {metric.label}
                     </p>
                     <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
                       <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                     </div>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold">{metric.value}</div>
-                  <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 ${
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground">{metric.value}</div>
+                  <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 font-normal ${
                     metric.changeType === 'positive' 
                       ? 'text-primary' 
                       : metric.changeType === 'negative'
@@ -266,7 +266,7 @@ export default async function DashboardPage() {
 
         {/* Recent Activity */}
         <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-foreground">
             Recent Activity
           </h2>
           <div className="max-w-4xl">
@@ -287,15 +287,15 @@ export default async function DashboardPage() {
                         <Icon className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-300 group-hover:scale-110" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm sm:text-base group-hover:text-primary transition-colors duration-300">
+                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary transition-colors duration-300 text-foreground">
                           {activity.title}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="text-sm text-muted-foreground mt-0.5 font-normal">
                           {activity.description}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground font-normal">
                             {activity.time}
                           </span>
                         </div>

@@ -27,8 +27,8 @@ export default async function ProfilePage() {
         {/* Page Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">My Profile</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">My Profile</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Manage your personal information and preferences
             </p>
           </div>
@@ -39,10 +39,10 @@ export default async function ProfilePage() {
           {/* Profile Information */}
           <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
             <div className="flex items-center gap-2 mb-2">
-              <User className="h-5 w-5 text-primary" />
-              <h2 className="text-lg sm:text-xl font-semibold">Personal Information</h2>
+              <User className="h-4 w-4 text-primary" />
+              <h2 className="text-lg sm:text-xl font-semibold text-foreground">Personal Information</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-6 font-normal">
               Update your profile details
             </p>
             <div className="space-y-6">
@@ -55,11 +55,11 @@ export default async function ProfilePage() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" disabled>
+                  <Button variant="outline" className="gap-2" disabled>
                     <Upload className="h-4 w-4" />
                     Change Avatar
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <p className="text-xs text-muted-foreground mt-2 font-normal">
                     JPG, PNG or GIF. Max size 2MB
                   </p>
                 </div>
@@ -98,7 +98,7 @@ export default async function ProfilePage() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" disabled>
+                <Button className="gap-2" disabled>
                   <Save className="h-4 w-4" />
                   Save Changes
                 </Button>
@@ -109,11 +109,11 @@ export default async function ProfilePage() {
           {/* Notification Preferences */}
           <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
             <div className="text-center w-full">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2">Notification Preferences</h2>
-              <p className="text-sm text-muted-foreground mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">Notification Preferences</h2>
+              <p className="text-sm text-muted-foreground mb-4 font-normal">
                 Choose how you want to be notified
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground font-normal">
                 Notification settings coming soon
               </p>
             </div>
@@ -122,11 +122,11 @@ export default async function ProfilePage() {
           {/* Language & Region */}
           <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
             <div className="text-center w-full">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2">Language & Region</h2>
-              <p className="text-sm text-muted-foreground mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">Language & Region</h2>
+              <p className="text-sm text-muted-foreground mb-4 font-normal">
                 Set your language and regional preferences
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground font-normal">
                 Language settings coming soon
               </p>
             </div>

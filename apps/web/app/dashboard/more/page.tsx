@@ -65,8 +65,8 @@ export default async function MorePage() {
         {/* Page Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">More</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">More</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Additional menu options
             </p>
           </div>
@@ -89,8 +89,8 @@ export default async function MorePage() {
                         <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
                       </div>
                       <div>
-                        <p className="font-medium text-base sm:text-lg group-hover:text-primary transition-colors duration-300">{item.label}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary transition-colors duration-300 text-foreground">{item.label}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                           {item.description}
                         </p>
                       </div>
@@ -111,8 +111,8 @@ export default async function MorePage() {
                         <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
                       </div>
                       <div>
-                        <p className="font-medium text-base sm:text-lg group-hover:text-primary transition-colors duration-300">{adminMenuItem.label}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary transition-colors duration-300 text-foreground">{adminMenuItem.label}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                           {adminMenuItem.description}
                         </p>
                       </div>

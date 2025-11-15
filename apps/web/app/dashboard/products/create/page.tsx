@@ -1413,7 +1413,7 @@ export default function CreateProductPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading product data...</p>
+          <p className="text-sm text-muted-foreground font-normal">Loading product data...</p>
         </div>
       </div>
     )
@@ -1423,7 +1423,7 @@ export default function CreateProductPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -1432,18 +1432,18 @@ export default function CreateProductPage() {
                 onClick={() => router.push('/dashboard/products')}
                 disabled={isSaving || isPublishing}
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold">Upload Product</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Upload Product</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                   Food Supplement & Ingredients
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium text-primary hidden sm:inline">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-xs sm:text-sm font-medium text-primary hidden sm:inline">
                 AI Assisted
               </span>
             </div>

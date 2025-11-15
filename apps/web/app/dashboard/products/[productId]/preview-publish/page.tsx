@@ -1363,10 +1363,10 @@ export default function PreviewPublishPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">
                   {formData.product_name || 'Product Preview'}
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                   Configure visibility & publish
                 </p>
               </div>
@@ -1382,7 +1382,7 @@ export default function PreviewPublishPage() {
       <section className="px-4 sm:px-6 lg:px-8 py-4 bg-muted/30 border-b border-border/30">
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-foreground mb-1">Access Control Levels</h3>
-          <p className="text-xs text-muted-foreground">Set visibility for each field. Generate channel links below to grant Link Access.</p>
+          <p className="text-xs text-muted-foreground font-normal">Set visibility for each field. Generate channel links below to grant Link Access.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1390,8 +1390,8 @@ export default function PreviewPublishPage() {
               <Globe className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground mb-0.5">👀 Browse Mode</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">Anyone can view basic product information without restrictions</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">👀 Browse Mode</p>
+              <p className="text-xs text-muted-foreground leading-relaxed font-normal">Anyone can view basic product information without restrictions</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1399,8 +1399,8 @@ export default function PreviewPublishPage() {
               <Mail className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground mb-0.5">🔗 Link Access</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">People with your channel links (email, social, QR codes) see more details like pricing and MOQ</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">🔗 Link Access</p>
+              <p className="text-xs text-muted-foreground leading-relaxed font-normal">People with your channel links (email, social, QR codes) see more details like pricing and MOQ</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1408,8 +1408,8 @@ export default function PreviewPublishPage() {
               <FileText className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground mb-0.5">✅ Full Access</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">Complete information + file downloads after submitting a Request for Quote (RFQ)</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">✅ Full Access</p>
+              <p className="text-xs text-muted-foreground leading-relaxed font-normal">Complete information + file downloads after submitting a Request for Quote (RFQ)</p>
             </div>
           </div>
         </div>
@@ -1818,8 +1818,8 @@ export default function PreviewPublishPage() {
           <div className="lg:border-l border-border/30">
             {/* Preview Mode Selector - NEW DESIGN */}
             <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-              <h2 className="text-lg font-semibold mb-4">Preview & Access Levels</h2>
-              <p className="text-xs text-muted-foreground mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-foreground">Preview & Access Levels</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-4 font-normal">
                 Switch modes to see exactly how your product appears to different visitors
               </p>
               <PreviewModeSelector value={viewMode} onChange={setViewMode} />
@@ -1845,8 +1845,8 @@ export default function PreviewPublishPage() {
 
             {/* Sharing Links Panel - NEW DESIGN */}
             <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-              <h2 className="text-lg font-semibold mb-4">📋 Sharing Links</h2>
-              <p className="text-xs text-muted-foreground mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 text-foreground">📋 Sharing Links</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-4 font-normal">
                 Generate secure links for different channels. Each link shows the appropriate level of detail.
               </p>
               <SharingLinksPanel 
@@ -1876,7 +1876,7 @@ export default function PreviewPublishPage() {
                   >
                     Auto AIO Optimize
                   </label>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 font-normal">
                     Automatically optimize for SEO & channel tracking
                   </p>
                 </div>
@@ -1890,7 +1890,7 @@ export default function PreviewPublishPage() {
       <footer className="fixed bottom-0 left-0 right-0 z-20 bg-background/95 backdrop-blur-sm border-t border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <p className="text-sm text-muted-foreground hidden sm:block">
+            <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block font-normal">
               {permissionStats.public} public • {permissionStats.after_click} after click •{' '}
               {permissionStats.after_rfq} after RFQ
             </p>

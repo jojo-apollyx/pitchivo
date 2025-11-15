@@ -14,8 +14,8 @@ export default async function AdminRFQsPage() {
         {/* Page Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">RFQs Overview</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">RFQs Overview</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               View and manage all RFQs across the platform
             </p>
           </div>
@@ -29,9 +29,9 @@ export default async function AdminRFQsPage() {
                 <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
                   <MessageSquare className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-semibold mb-2">RFQs Overview</h2>
-                <p className="text-base text-muted-foreground mb-2">RFQs overview functionality coming soon</p>
-                <p className="text-sm text-muted-foreground">This page will display all RFQs, analytics, and management tools</p>
+                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">RFQs Overview</h2>
+                <p className="text-sm text-muted-foreground mb-2 font-normal">RFQs overview functionality coming soon</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">This page will display all RFQs, analytics, and management tools</p>
               </div>
             </div>
           </div>

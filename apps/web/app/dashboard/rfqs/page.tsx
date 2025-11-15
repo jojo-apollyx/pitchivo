@@ -191,20 +191,20 @@ export default function RFQsPage() {
       <div className="relative max-w-7xl mx-auto">
         {/* Page Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">
                     Requests for Quotation
                   </h1>
                   {!isLoading && (
-                    <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+                    <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2.5 py-1">
                       {totalCount} {totalCount === 1 ? 'RFQ' : 'RFQs'}
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                   Manage and respond to buyer inquiries
                 </p>
               </div>
@@ -217,7 +217,7 @@ export default function RFQsPage() {
                       <Badge
                         key={status}
                         variant="outline"
-                        className={`${config.color} border px-3 py-1.5 text-xs font-medium`}
+                        className={`${config.color} border px-2.5 py-1 text-xs sm:text-sm font-medium`}
                       >
                         {config.label}: {count}
                       </Badge>
@@ -230,8 +230,8 @@ export default function RFQsPage() {
         </section>
 
         {/* Filters */}
-        <section className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border/30 bg-background/50">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b border-border/30 bg-background/50">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
             {/* Search */}
             <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -239,7 +239,7 @@ export default function RFQsPage() {
                 placeholder="Search RFQs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 h-11 text-base"
+                className="pl-10 pr-10"
               />
               {searchQuery && (
                 <button
@@ -253,7 +253,7 @@ export default function RFQsPage() {
 
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -269,7 +269,7 @@ export default function RFQsPage() {
             {/* Product Filter */}
             {products.length > 0 && (
               <Select value={productFilter} onValueChange={setProductFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] h-11">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Products" />
                 </SelectTrigger>
                 <SelectContent>
@@ -289,7 +289,7 @@ export default function RFQsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="gap-2 h-11"
+                className="gap-2"
               >
                 <X className="h-4 w-4" />
                 Clear
@@ -299,7 +299,7 @@ export default function RFQsPage() {
 
           {/* Results count */}
           {!isLoading && (
-            <div className="mt-3 text-xs sm:text-sm text-muted-foreground">
+            <div className="mt-3 text-xs sm:text-sm text-muted-foreground font-normal">
               Showing {rfqs.length} of {totalCount} RFQ{totalCount !== 1 ? 's' : ''}
             </div>
           )}
@@ -311,7 +311,7 @@ export default function RFQsPage() {
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-xs sm:text-sm text-muted-foreground">Loading RFQs...</p>
+                <p className="text-sm text-muted-foreground font-normal">Loading RFQs...</p>
               </div>
             </div>
           ) : rfqs.length === 0 ? (
@@ -320,10 +320,10 @@ export default function RFQsPage() {
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <MessageSquare className="h-8 w-8 text-primary" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">
                   {hasActiveFilters ? 'No RFQs found' : 'No RFQs received yet'}
                 </h2>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-6 font-normal">
                   {hasActiveFilters
                     ? 'Try adjusting your filters or search query'
                     : 'When buyers send you requests for quotation, they\'ll appear here'}
@@ -409,7 +409,7 @@ export default function RFQsPage() {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge
                               variant="outline"
-                              className={`${statusConfig.color} border px-2.5 py-1 text-xs font-medium whitespace-nowrap`}
+                              className={`${statusConfig.color} border px-2.5 py-1 text-xs sm:text-sm font-medium whitespace-nowrap`}
                             >
                               {statusConfig.label}
                             </Badge>
@@ -501,7 +501,7 @@ export default function RFQsPage() {
                           </span>
                           <a
                             href={`mailto:${rfq.email}`}
-                            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors font-normal"
                           >
                             <Mail className="h-4 w-4 flex-shrink-0" />
                             <span>{rfq.email}</span>
@@ -509,13 +509,13 @@ export default function RFQsPage() {
                           {rfq.phone && (
                             <a
                               href={`tel:${rfq.phone}`}
-                              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors font-normal"
                             >
                               <Phone className="h-4 w-4 flex-shrink-0" />
                               <span>{rfq.phone}</span>
                             </a>
                           )}
-                          <span className="flex items-center gap-1.5 text-sm text-muted-foreground ml-auto">
+                          <span className="flex items-center gap-1.5 text-sm text-muted-foreground ml-auto font-normal">
                             <Calendar className="h-4 w-4 flex-shrink-0" />
                             <span>{formatDistanceToNow(new Date(rfq.submitted_at), { addSuffix: true })}</span>
                           </span>
@@ -523,7 +523,7 @@ export default function RFQsPage() {
 
                         {/* Message Preview */}
                         <div className="mb-3">
-                          <p className="text-sm text-foreground leading-relaxed">
+                          <p className="text-sm sm:text-base text-foreground leading-relaxed font-normal">
                             {rfq.message}
                           </p>
                         </div>
@@ -533,13 +533,13 @@ export default function RFQsPage() {
                           <div className="flex flex-wrap gap-4 text-sm mb-3">
                             {rfq.quantity && (
                               <span>
-                                <span className="text-muted-foreground">Quantity:</span>{' '}
+                                <span className="text-muted-foreground font-normal">Quantity:</span>{' '}
                                 <span className="font-medium text-foreground">{rfq.quantity}</span>
                               </span>
                             )}
                             {rfq.target_date && (
                               <span>
-                                <span className="text-muted-foreground">Target Date:</span>{' '}
+                                <span className="text-muted-foreground font-normal">Target Date:</span>{' '}
                                 <span className="font-medium text-foreground">
                                   {format(new Date(rfq.target_date), 'MMM d, yyyy')}
                                 </span>
@@ -551,15 +551,15 @@ export default function RFQsPage() {
                         {/* Response Message (if exists) */}
                         {rfq.response_message && (
                           <div className="mt-3 pt-3 border-t border-border/30">
-                            <div className="bg-primary/5 rounded-md p-3">
+                            <div className="bg-primary/5 rounded-lg p-3">
                               <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
                                 Your Response
                               </p>
-                              <p className="text-sm text-foreground leading-relaxed">
+                              <p className="text-sm sm:text-base text-foreground leading-relaxed font-normal">
                                 {rfq.response_message}
                               </p>
                               {rfq.responded_at && (
-                                <p className="text-xs text-muted-foreground mt-2">
+                                <p className="text-xs text-muted-foreground mt-2 font-normal">
                                   {format(new Date(rfq.responded_at), 'MMM d, yyyy')}
                                 </p>
                               )}
@@ -591,17 +591,17 @@ export default function RFQsPage() {
       <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-xl">Update RFQ Status</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-foreground">Update RFQ Status</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground font-normal">
               Change the status of this RFQ to {STATUS_CONFIG[newStatus]?.label}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="status" className="text-sm font-medium">New Status</Label>
+              <Label htmlFor="status" className="text-sm font-medium text-foreground">New Status</Label>
               <Select value={newStatus} onValueChange={(v) => setNewStatus(v as RFQStatus)}>
-                <SelectTrigger id="status" className="mt-2 h-11">
+                <SelectTrigger id="status" className="mt-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -616,14 +616,14 @@ export default function RFQsPage() {
 
             {(newStatus === 'responded' || newStatus === 'won') && (
               <div>
-                <Label htmlFor="response" className="text-sm font-medium">Response Message (Optional)</Label>
+                <Label htmlFor="response" className="text-sm font-medium text-foreground">Response Message (Optional)</Label>
                 <Textarea
                   id="response"
                   placeholder="Add a note about your response..."
                   value={responseMessage}
                   onChange={(e) => setResponseMessage(e.target.value)}
                   rows={4}
-                  className="mt-2"
+                  className="mt-2 text-sm sm:text-base"
                 />
               </div>
             )}

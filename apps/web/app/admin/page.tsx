@@ -77,8 +77,8 @@ export default async function AdminDashboard() {
         {/* Page Header - Integral Section */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Admin Dashboard</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Admin Dashboard</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Overview of platform activity and metrics
             </p>
           </div>
@@ -86,7 +86,7 @@ export default async function AdminDashboard() {
 
         {/* Summary Statistics - Integral Section */}
         <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {summaryCards.map((card) => {
               const Icon = card.icon
               return (
@@ -95,14 +95,14 @@ export default async function AdminDashboard() {
                   className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-muted-foreground">
+                    <span className="text-xs sm:text-sm font-medium text-muted-foreground">
                       {card.title}
                     </span>
                     <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
                       <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color} transition-transform duration-300 group-hover:scale-110`} />
                     </div>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-semibold group-hover:text-primary transition-colors duration-300">{card.value}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground group-hover:text-primary transition-colors duration-300">{card.value}</div>
                 </div>
               )
             })}
@@ -117,10 +117,10 @@ export default async function AdminDashboard() {
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
                   <Activity className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-semibold">Recent Activity</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground">Recent Activity</h2>
               </div>
               <div>
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Recent Organizations</h3>
+                <h3 className="text-xs sm:text-sm font-semibold mb-3 text-muted-foreground">Recent Organizations</h3>
                 <div className="overflow-x-auto">
                   <div className="divide-y divide-border/30">
                     {recentOrganizations && recentOrganizations.length > 0 ? (
@@ -130,15 +130,15 @@ export default async function AdminDashboard() {
                           className="py-4 hover:bg-primary/5 transition-all duration-300 group"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-medium group-hover:text-primary transition-colors duration-300">{org.name}</span>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm sm:text-base font-medium text-foreground group-hover:text-primary transition-colors duration-300">{org.name}</span>
+                            <span className="text-xs sm:text-sm text-muted-foreground font-normal">
                               {new Date(org.created_at).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center text-muted-foreground py-12">
+                      <div className="text-center text-sm text-muted-foreground py-12 font-normal">
                         No recent activity
                       </div>
                     )}

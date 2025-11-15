@@ -211,8 +211,8 @@ export default function AdminUsersPage() {
           className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50"
         >
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Users / Organizations</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Users / Organizations</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Manage all users and their organizations
             </p>
           </div>
@@ -232,7 +232,7 @@ export default function AdminUsersPage() {
                   variant={filterStatus === 'all' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFilterStatus('all')}
-                  className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                  className="min-h-[44px]"
                 >
                   All
                 </Button>
@@ -240,7 +240,7 @@ export default function AdminUsersPage() {
                   variant={filterStatus === 'active' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFilterStatus('active')}
-                  className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                  className="min-h-[44px]"
                 >
                   Active
                 </Button>
@@ -248,7 +248,7 @@ export default function AdminUsersPage() {
                   variant={filterStatus === 'suspended' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFilterStatus('suspended')}
-                  className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                  className="min-h-[44px]"
                 >
                   Suspended
                 </Button>
@@ -295,13 +295,11 @@ export default function AdminUsersPage() {
             <Button
               variant="outline"
               onClick={() => closeDialog('impersonate')}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
             >
               Cancel
             </Button>
             <Button
               onClick={confirmImpersonate}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
             >
               Impersonate
             </Button>
@@ -325,14 +323,12 @@ export default function AdminUsersPage() {
             <Button
               variant="outline"
               onClick={() => closeDialog('suspend')}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={confirmSuspend}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
             >
               Suspend
             </Button>
@@ -356,13 +352,11 @@ export default function AdminUsersPage() {
             <Button
               variant="outline"
               onClick={() => closeDialog('unsuspend')}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
             >
               Cancel
             </Button>
             <Button
               onClick={confirmUnsuspend}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
             >
               Unsuspend
             </Button>

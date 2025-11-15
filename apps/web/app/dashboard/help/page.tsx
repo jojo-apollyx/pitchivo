@@ -36,8 +36,8 @@ export default async function HelpPage() {
         {/* Page Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Help & Support</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Help & Support</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Get help and learn how to use Pitchivo
             </p>
           </div>
@@ -56,11 +56,11 @@ export default async function HelpPage() {
                   <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-lg bg-primary/10 flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
                     <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-primary transition-transform duration-300 group-hover:scale-110" />
                   </div>
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2 group-hover:text-primary transition-colors duration-300">{resource.title}</h2>
-                  <p className="text-sm sm:text-base text-muted-foreground mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2 group-hover:text-primary transition-colors duration-300 text-foreground">{resource.title}</h2>
+                  <p className="text-sm text-muted-foreground mb-4 font-normal">
                     {resource.description}
                   </p>
-                  <Button variant="outline" className="w-full gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" disabled>
+                  <Button variant="outline" className="w-full gap-2" disabled>
                     {resource.action}
                     <ExternalLink className="h-4 w-4" />
                   </Button>
@@ -76,10 +76,10 @@ export default async function HelpPage() {
             <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
               <div className="flex items-center gap-2 mb-4">
                 <HelpCircle className="h-5 w-5 text-primary" />
-                <h2 className="text-lg sm:text-xl font-semibold">Frequently Asked Questions</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground">Frequently Asked Questions</h2>
               </div>
               <div className="min-h-[300px] flex items-center justify-center">
-                <p className="text-sm sm:text-base text-muted-foreground text-center">
+                <p className="text-sm text-muted-foreground text-center font-normal">
                   FAQ content coming soon
                 </p>
               </div>

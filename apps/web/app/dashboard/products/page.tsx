@@ -84,20 +84,20 @@ export default function ProductsPage() {
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Products</h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Products</h1>
                   {!isLoading && (
-                    <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+                    <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2.5 py-1">
                       {allProducts.length} {allProducts.length === 1 ? 'Product' : 'Products'}
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                   Manage your product pages and catalog
                 </p>
               </div>
               <Link href="/dashboard/products/create">
-                <Button className="min-h-[44px] gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+                <Button className="gap-2">
                   <Plus className="h-4 w-4" />
                   Add Product
                 </Button>
@@ -108,9 +108,9 @@ export default function ProductsPage() {
 
         {/* Filters */}
         {!isLoading && allProducts.length > 0 && (
-          <section className="px-4 sm:px-6 lg:px-8 py-4 border-b border-border/30 bg-background/50">
+          <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b border-border/30 bg-background/50">
             <div className="max-w-7xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
                 {/* Search */}
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -123,7 +123,7 @@ export default function ProductsPage() {
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -174,7 +174,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Results count */}
-              <div className="mt-3 text-sm text-muted-foreground">
+              <div className="mt-3 text-xs sm:text-sm text-muted-foreground font-normal">
                 Showing {products.length} of {allProducts.length} product{allProducts.length !== 1 ? 's' : ''}
               </div>
             </div>
@@ -186,13 +186,13 @@ export default function ProductsPage() {
           {isLoading ? (
             <div className="max-w-7xl mx-auto">
               <div className="bg-card/50 backdrop-blur-sm rounded-xl p-8 text-center">
-                <div className="text-muted-foreground">Loading products...</div>
+                <div className="text-sm text-muted-foreground font-normal">Loading products...</div>
               </div>
             </div>
           ) : error ? (
             <div className="max-w-7xl mx-auto">
               <div className="bg-card/50 backdrop-blur-sm rounded-xl p-8 text-center">
-                <div className="text-destructive">Error loading products. Please try again.</div>
+                <div className="text-sm text-destructive font-normal">Error loading products. Please try again.</div>
               </div>
             </div>
           ) : allProducts.length === 0 ? (
@@ -202,12 +202,12 @@ export default function ProductsPage() {
                   <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
                     <Package className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-semibold mb-2">No products yet</h2>
-                  <p className="text-sm sm:text-base text-muted-foreground mb-6">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">No products yet</h2>
+                  <p className="text-sm text-muted-foreground mb-6 font-normal">
                     Create your first product page to start showcasing to buyers
                   </p>
                   <Link href="/dashboard/products/create">
-                    <Button className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+                    <Button className="gap-2">
                       <Plus className="h-4 w-4" />
                       Create Product
                     </Button>
@@ -222,12 +222,12 @@ export default function ProductsPage() {
                   <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <Search className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h2 className="text-xl font-semibold mb-2">No products found</h2>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">No products found</h2>
+                  <p className="text-sm text-muted-foreground mb-4 font-normal">
                     Try adjusting your filters or search query
                   </p>
                   {hasActiveFilters && (
-                    <Button variant="outline" onClick={clearFilters} className="gap-2">
+                    <Button variant="outline" onClick={clearFilters} className="gap-2" size="sm">
                       <X className="h-4 w-4" />
                       Clear Filters
                     </Button>
@@ -242,19 +242,19 @@ export default function ProductsPage() {
                   <table className="w-full">
                     <thead className="bg-muted/30 border-b border-border/30">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Product Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Category
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Created
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -265,26 +265,27 @@ export default function ProductsPage() {
                           key={product.product_id}
                           className="hover:bg-muted/20 transition-colors"
                         >
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                                 <Package className="h-5 w-5 text-primary" />
                               </div>
                               <div>
-                                <div className="text-sm font-medium">
+                                <div className="text-sm sm:text-base font-medium text-foreground">
                                   {product.product_name || 'Untitled Product'}
                                 </div>
                                 {product.manufacturer_name && (
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs sm:text-sm text-muted-foreground font-normal">
                                     {product.manufacturer_name}
                                   </div>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                             <Badge
                               variant={product.status === 'published' ? 'default' : 'secondary'}
+                              className="text-xs sm:text-sm"
                             >
                               {product.status === 'draft' ? (
                                 <FileText className="h-3 w-3 mr-1" />
@@ -294,35 +295,35 @@ export default function ProductsPage() {
                               {product.status}
                             </Badge>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-muted-foreground">
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-muted-foreground font-normal">
                               {product.category || '-'}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-muted-foreground">
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-muted-foreground font-normal">
                               {product.created_at
                                 ? format(new Date(product.created_at), 'MMM d, yyyy')
                                 : '-'}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right">
                             <div className="flex items-center justify-end gap-2">
                               <Link href={`/dashboard/products/${product.product_id}/analytics`}>
                                 <Button variant="ghost" size="sm" className="gap-2">
                                   <BarChart3 className="h-4 w-4" />
-                                  Analytics
+                                  <span className="hidden sm:inline">Analytics</span>
                                 </Button>
                               </Link>
                               <Link href={`/dashboard/products/create?productId=${product.product_id}`}>
                                 <Button variant="ghost" size="sm" className="gap-2">
                                   <Edit className="h-4 w-4" />
-                                  Edit
+                                  <span className="hidden sm:inline">Edit</span>
                                 </Button>
                               </Link>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
+                                  <Button variant="ghost" size="icon">
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -362,9 +363,9 @@ export default function ProductsPage() {
       {/* Delete Confirmation Dialog */}
       {deleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-            <h3 className="text-lg font-semibold mb-2">Delete Product</h3>
-            <p className="text-sm text-muted-foreground mb-6">
+          <div className="bg-background border border-border rounded-xl p-6 max-w-md w-full mx-4 shadow-lg">
+            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">Delete Product</h3>
+            <p className="text-sm text-muted-foreground mb-6 font-normal">
               Are you sure you want to delete this product? This action cannot be undone and will remove all associated data including access logs and analytics.
             </p>
             <div className="flex gap-3 justify-end">

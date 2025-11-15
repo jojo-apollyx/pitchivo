@@ -26,10 +26,10 @@ export default function HomePage() {
         <section className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 sm:py-12">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <div className="bg-card/50 backdrop-blur-sm rounded-xl p-8 sm:p-12 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-4">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground mb-4">
                 Welcome to Pitchivo
               </h1>
-              <p className="text-base sm:text-lg text-foreground/70">
+              <p className="text-sm sm:text-base text-muted-foreground font-normal">
                 Your workspace is ready. Let's start building something great.
               </p>
             </div>

@@ -17,12 +17,12 @@ export default async function CampaignsPage() {
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Campaigns</h1>
-                <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Campaigns</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
                   Create and manage your email campaigns
                 </p>
               </div>
-              <Button className="min-h-[44px] gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+              <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 New Campaign
               </Button>
@@ -38,11 +38,11 @@ export default async function CampaignsPage() {
                 <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
                   <Mail className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-semibold mb-2">No campaigns yet</h2>
-                <p className="text-sm sm:text-base text-muted-foreground mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">No campaigns yet</h2>
+                <p className="text-sm text-muted-foreground mb-6 font-normal">
                   Start your first email campaign to reach potential buyers
                 </p>
-                <Button className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+                <Button className="gap-2">
                   <Plus className="h-4 w-4" />
                   Create Campaign
                 </Button>
