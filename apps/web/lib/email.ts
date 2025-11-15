@@ -21,7 +21,9 @@ export interface SendEmailOptions {
   to: string | string[]
   subject: string
   htmlContent?: string
+  html?: string  // Alias for htmlContent
   textContent?: string
+  text?: string  // Alias for textContent
   templateId?: number
   params?: Record<string, any>
   sender?: {
@@ -32,6 +34,7 @@ export interface SendEmailOptions {
     name?: string
     email: string
   }
+  tags?: string[]  // Campaign tracking tags for webhooks
 }
 
 export interface SendEmailResponse {
