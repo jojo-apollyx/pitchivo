@@ -50,34 +50,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Store RFQ in product_rfqs table (if it exists)
-    // If table doesn't exist yet, we'll just track the action
+    // Store RFQ in product_rfqs table
     let rfqId = null
-    try {
-      const { data: rfqData, error: rfqError } = await supabase
-        .from('product_rfqs')
-        .insert({
-          product_id: data.product_id,
-          org_id: product.org_id,
-          name: data.name,
-          email: data.email,
-          company: data.company,
-          phone: data.phone,
-          message: data.message,
-          quantity: data.quantity,
-          target_date: data.targetDate,
-          status: 'new',
-          submitted_at: new Date().toISOString(),
-        })
-        .select('rfq_id')
-        .single()
+    const { data: rfqData, error: rfqError } = await supabase
+      .from('product_rfqs')
+      .insert({
+        product_id: data.product_id,
+        org_id: product.org_id,
+        name: data.name,
+        email: data.email,
+        company: data.company,
+        phone: data.phone || null,
+        message: data.message,
+        quantity: data.quantity || null,
+        target_date: data.targetDate || null,
+        status: 'new',
+        submitted_at: new Date().toISOString(),
+      })
+      .select('rfq_id')
+      .single()
 
-      if (!rfqError && rfqData) {
-        rfqId = rfqData.rfq_id
-      }
-    } catch (error) {
-      console.log('RFQ table not found or error storing RFQ:', error)
-      // Continue - we'll still track the action
+    if (rfqError) {
+      console.error('Error storing RFQ:', rfqError)
+      // Return error - RFQ storage is critical
+      return NextResponse.json(
+        { error: 'Failed to store RFQ', details: rfqError.message },
+        { status: 500 }
+      )
+    }
+
+    if (rfqData) {
+      rfqId = rfqData.rfq_id
     }
 
     // Get the most recent access_id for this product and visitor

@@ -33,13 +33,13 @@ export function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-center gap-2 py-4">
+    <div className="flex items-center justify-center gap-2 py-6">
       <Button
         variant="outline"
-        size="sm"
+        size="default"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="min-h-[36px] px-3"
+        className="min-h-[44px] min-w-[44px] px-3"
       >
         <ChevronLeft className="h-4 w-4" />
         <span className="sr-only">Previous</span>
@@ -49,9 +49,9 @@ export function Pagination({
         <>
           <Button
             variant="outline"
-            size="sm"
+            size="default"
             onClick={() => onPageChange(1)}
-            className="min-h-[36px] px-3"
+            className="min-h-[44px] min-w-[44px] px-3"
           >
             1
           </Button>
@@ -67,9 +67,9 @@ export function Pagination({
         <Button
           key={page}
           variant={currentPage === page ? 'default' : 'outline'}
-          size="sm"
+          size="default"
           onClick={() => onPageChange(page)}
-          className="min-h-[36px] px-3"
+          className="min-h-[44px] min-w-[44px] px-3"
         >
           {page}
         </Button>
@@ -84,9 +84,9 @@ export function Pagination({
           )}
           <Button
             variant="outline"
-            size="sm"
+            size="default"
             onClick={() => onPageChange(totalPages)}
-            className="min-h-[36px] px-3"
+            className="min-h-[44px] min-w-[44px] px-3"
           >
             {totalPages}
           </Button>
@@ -95,10 +95,10 @@ export function Pagination({
 
       <Button
         variant="outline"
-        size="sm"
+        size="default"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="min-h-[36px] px-3"
+        className="min-h-[44px] min-w-[44px] px-3"
       >
         <ChevronRight className="h-4 w-4" />
         <span className="sr-only">Next</span>

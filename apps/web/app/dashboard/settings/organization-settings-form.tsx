@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Building2, Save, Briefcase } from 'lucide-react'
+import { Building2, Save, Briefcase, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -30,6 +31,7 @@ interface OrganizationSettingsFormProps {
     domain: string
     industry: string | null
     company_size: string | null
+    description: string | null
     pitchivo_domain: string | null
   }
   userRole: string | null
@@ -38,6 +40,7 @@ interface OrganizationSettingsFormProps {
 export function OrganizationSettingsForm({ organization, userRole }: OrganizationSettingsFormProps) {
   const [companySize, setCompanySize] = useState(organization.company_size || '')
   const [industry, setIndustry] = useState(organization.industry || '')
+  const [description, setDescription] = useState(organization.description || '')
   const [role, setRole] = useState(userRole || '')
   const [isSaving, setIsSaving] = useState(false)
   const [industries, setIndustries] = useState<string[]>([])
@@ -77,9 +80,10 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
   const handleSave = async () => {
     const hasSizeChange = companySize !== (organization.company_size || '')
     const hasIndustryChange = industry !== (organization.industry || '')
+    const hasDescriptionChange = description !== (organization.description || '')
     const hasRoleChange = role !== (userRole || '')
     
-    if (!hasSizeChange && !hasIndustryChange && !hasRoleChange) {
+    if (!hasSizeChange && !hasIndustryChange && !hasDescriptionChange && !hasRoleChange) {
       toast.info('No changes to save')
       return
     }
@@ -89,13 +93,14 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
       const supabase = createClient()
       
       // Update organization fields using API route (more reliable than direct RPC)
-      if (hasSizeChange || hasIndustryChange) {
+      if (hasSizeChange || hasIndustryChange || hasDescriptionChange) {
         const response = await fetch('/api/organizations', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             company_size: companySize || null,
             industry: industry || null,
+            description: description || null,
           }),
         })
 
@@ -130,6 +135,7 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
       const changes = []
       if (hasSizeChange) changes.push('company size')
       if (hasIndustryChange) changes.push('industry')
+      if (hasDescriptionChange) changes.push('description')
       if (hasRoleChange) changes.push('role')
       
       toast.success(`${changes.join(' and ').replace(/, ([^,]*)$/, ' and $1')} updated successfully`)
@@ -145,17 +151,10 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
     }
   }
 
-  const hasChanges = companySize !== (organization.company_size || '') || industry !== (organization.industry || '') || role !== (userRole || '')
+  const hasChanges = companySize !== (organization.company_size || '') || industry !== (organization.industry || '') || description !== (organization.description || '') || role !== (userRole || '')
 
   return (
-    <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
-      <div className="flex items-center gap-2 mb-2">
-        <Building2 className="h-5 w-5 text-primary" />
-        <h2 className="text-lg sm:text-xl font-semibold">Organization Information</h2>
-      </div>
-      <p className="text-sm text-muted-foreground mb-6">
-        Basic information about your organization
-      </p>
+    <div className="space-y-6">
       <div className="space-y-4">
         <div className="grid gap-2">
           <Label htmlFor="company-name">Company Name</Label>
@@ -227,6 +226,20 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
           </Select>
         </div>
         <div className="grid gap-2">
+          <Label htmlFor="description" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Description
+          </Label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe your organization, products, and services..."
+            rows={4}
+            className="transition-all duration-300"
+          />
+        </div>
+        <div className="grid gap-2">
           <Label htmlFor="role" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
             Your Role / Title
@@ -239,18 +252,18 @@ export function OrganizationSettingsForm({ organization, userRole }: Organizatio
             className="transition-all duration-300"
           />
         </div>
-        <div className="flex justify-end pt-4">
-          <Button 
-            className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" 
-            onClick={handleSave}
-            disabled={!hasChanges || isSaving}
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
       </div>
-    </section>
+      <div className="flex justify-end pt-4 border-t border-border/30">
+        <Button 
+          className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20" 
+          onClick={handleSave}
+          disabled={!hasChanges || isSaving}
+        >
+          <Save className="h-4 w-4" />
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
+    </div>
   )
 }
 

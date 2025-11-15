@@ -8,7 +8,6 @@ import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { ColorSchemePicker } from './color-scheme-picker'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { COLOR_SCHEMES, type ColorScheme } from '@/lib/theme'
 import { useThemeStore } from '@/lib/stores/theme-store'
 
@@ -152,40 +151,38 @@ export function ThemeColorSettings({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className="space-y-6"
     >
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Brand Colors
-          </CardTitle>
-          <CardDescription>
-            Choose a professional color scheme for your organization. This will be applied across your dashboard and customer-facing pages.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <ColorSchemePicker 
-            value={currentSelectedScheme} 
-            onChange={(scheme) => setScheme(scheme)} 
-          />
-          
-          <div className="flex justify-end pt-4 border-t border-border/50">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button 
-                onClick={handleSave} 
-                disabled={isSaving || !hasChanged}
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {isSaving ? 'Saving...' : 'Save Color Scheme'}
-              </Button>
-            </motion.div>
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 flex items-center gap-2">
+          <Palette className="h-5 w-5 text-primary" />
+          Brand Colors
+        </h3>
+        <p className="text-sm text-muted-foreground mb-6">
+          Choose a professional color scheme for your organization. This will be applied across your dashboard and customer-facing pages.
+        </p>
+      </div>
+      
+      <ColorSchemePicker 
+        value={currentSelectedScheme} 
+        onChange={(scheme) => setScheme(scheme)} 
+      />
+      
+      <div className="flex justify-end pt-4 border-t border-border/30">
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving || !hasChanged}
+            className="gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Saving...' : 'Save Color Scheme'}
+          </Button>
+        </motion.div>
+      </div>
     </motion.div>
   )
 }
