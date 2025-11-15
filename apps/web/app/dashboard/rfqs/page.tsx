@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { MessageSquare, Search, X, Mail, Phone, Building2, Calendar, Package, CheckCircle2, Clock, Archive, TrendingUp, TrendingDown, MoreVertical, ExternalLink, Loader2, Filter, ChevronDown } from 'lucide-react'
+import { MessageSquare, Search, X, Mail, Phone, Building2, Calendar, Package, CheckCircle2, Clock, Archive, TrendingUp, TrendingDown, MoreVertical, ExternalLink, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -184,418 +183,423 @@ export default function RFQsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
-      {/* Page Header - Sticky */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
-        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-foreground">
-                RFQ Management
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                {totalCount} {totalCount === 1 ? 'inquiry' : 'inquiries'} total
-              </p>
-            </div>
-            
-            {/* Status Pills - Compact */}
-            {totalCount > 0 && (
-              <div className="hidden lg:flex items-center gap-2">
-                {Object.entries(STATUS_CONFIG).map(([status, config]) => {
-                  const count = statusCounts[status] || 0
-                  if (count === 0) return null
-                  return (
-                    <button
-                      key={status}
-                      onClick={() => setStatusFilter(status)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg text-xs font-medium transition-all touch-manipulation',
-                        statusFilter === status 
-                          ? config.color 
-                          : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                      )}
-                    >
-                      {config.label} <span className="ml-1 opacity-70">({count})</span>
-                    </button>
-                  )
-                })}
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/5 via-background to-primary-light/5">
+      <div className="max-w-7xl mx-auto">
+        {/* Page Header */}
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight mb-1">
+                  Requests for Quotation
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Manage and respond to buyer inquiries
+                </p>
               </div>
-            )}
+              {totalCount > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {Object.entries(STATUS_CONFIG).map(([status, config]) => {
+                    const count = statusCounts[status] || 0
+                    if (count === 0) return null
+                    return (
+                      <Badge
+                        key={status}
+                        variant="outline"
+                        className={`${config.color} border px-3 py-1.5 text-xs font-medium`}
+                      >
+                        {config.label}: {count}
+                      </Badge>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Search & Filters - Compact */}
-      <section className="px-4 sm:px-6 lg:px-8 py-3 border-b border-border/20 bg-background/80 backdrop-blur-sm">
-        <div className="flex flex-col gap-2.5">
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+        {/* Filters */}
+        <section className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border/30 bg-background/50">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
             {/* Search */}
-            <div className="relative flex-1 w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, company, email..."
+                placeholder="Search RFQs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-9 h-9 text-sm border-border/50"
+                className="pl-10 pr-10 h-11 text-base"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
 
-            {/* Filters */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {/* Status Filter */}
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm border-border/50">
-                  <SelectValue placeholder="Status" />
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px] h-11">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                  <SelectItem key={status} value={status}>
+                    {config.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Product Filter */}
+            {products.length > 0 && (
+              <Select value={productFilter} onValueChange={setProductFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] h-11">
+                  <SelectValue placeholder="All Products" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                    <SelectItem key={status} value={status}>
-                      {config.label}
+                  <SelectItem value="all">All Products</SelectItem>
+                  {products.map(([id, name]) => (
+                    <SelectItem key={id} value={id}>
+                      {name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            )}
 
-              {/* Product Filter */}
-              {products.length > 0 && (
-                <Select value={productFilter} onValueChange={setProductFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm border-border/50">
-                    <SelectValue placeholder="Product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Products</SelectItem>
-                    {products.map(([id, name]) => (
-                      <SelectItem key={id} value={id}>
-                        {name.length > 20 ? name.substring(0, 20) + '...' : name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              {/* Clear Filters */}
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="gap-1.5 h-9 px-3 text-xs hover:bg-muted"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Clear
-                </Button>
-              )}
-            </div>
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="gap-2 h-11"
+              >
+                <X className="h-4 w-4" />
+                Clear
+              </Button>
+            )}
           </div>
 
           {/* Results count */}
           {!isLoading && (
-            <div className="text-xs text-muted-foreground">
-              {rfqs.length === 0 
-                ? 'No RFQs found'
-                : `Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of ${totalCount}`
-              }
+            <div className="mt-3 text-xs sm:text-sm text-muted-foreground">
+              Showing {rfqs.length} of {totalCount} RFQ{totalCount !== 1 ? 's' : ''}
             </div>
           )}
-        </div>
-      </section>
+        </section>
 
-      {/* RFQs List - Continuous Flow */}
-      <section className="px-4 sm:px-6 lg:px-8 bg-background/60 backdrop-blur-sm min-h-[500px]">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="flex flex-col items-center gap-2.5">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Loading inquiries...</p>
-            </div>
-          </div>
-        ) : rfqs.length === 0 ? (
-          <div className="py-16">
-            <div className="text-center max-w-md mx-auto">
-              <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
-                <MessageSquare className="h-6 w-6 text-muted-foreground" />
+        {/* RFQs List */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-xs sm:text-sm text-muted-foreground">Loading RFQs...</p>
               </div>
-              <h2 className="text-base font-semibold mb-1.5">
-                {hasActiveFilters ? 'No RFQs match your filters' : 'No inquiries yet'}
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                {hasActiveFilters
-                  ? 'Try adjusting your search or filter criteria'
-                  : 'Buyer inquiries will appear here when you receive them'}
-              </p>
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  onClick={clearFilters}
-                  size="sm"
-                  className="gap-1.5"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Clear Filters
-                </Button>
-              )}
             </div>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/20">
-            {rfqs.map((rfq) => {
-              const StatusIcon = STATUS_CONFIG[rfq.status].icon
-              const statusConfig = STATUS_CONFIG[rfq.status]
+          ) : rfqs.length === 0 ? (
+            <div className="max-w-2xl mx-auto py-12">
+              <div className="text-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <MessageSquare className="h-8 w-8 text-primary" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  {hasActiveFilters ? 'No RFQs found' : 'No RFQs received yet'}
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-4">
+                  {hasActiveFilters
+                    ? 'Try adjusting your filters or search query'
+                    : 'When buyers send you requests for quotation, they\'ll appear here'}
+                </p>
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="gap-2"
+                    size="sm"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2 sm:space-y-3">
+              {rfqs.map((rfq) => {
+                const StatusIcon = STATUS_CONFIG[rfq.status].icon
+                const statusConfig = STATUS_CONFIG[rfq.status]
 
-              return (
-                <div
-                  key={rfq.rfq_id}
-                  className="py-3.5 sm:py-4 hover:bg-accent/5 transition-colors -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 group"
-                >
-                  <div className="flex gap-3">
-                    {/* Product Image - Compact */}
-                    {rfq.products?.product_data?.product_images?.[0] ? (
-                      <div className="flex-shrink-0">
-                        <img
-                          src={rfq.products.product_data.product_images[0]}
-                          alt={rfq.products.product_name}
-                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover border border-border/30"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-muted/30 border border-border/20 flex items-center justify-center flex-shrink-0">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-
-                    {/* Main Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          {/* Buyer Name & Company */}
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-sm font-semibold text-foreground">
-                              {rfq.name}
-                            </h3>
-                            <span className="text-xs text-muted-foreground">·</span>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Building2 className="h-3 w-3 flex-shrink-0" />
-                              {rfq.company}
-                            </span>
+                return (
+                  <div
+                    key={rfq.rfq_id}
+                    className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/30 p-3 sm:p-4 hover:border-border/50 hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
+                      {/* Left: Product Image & Info */}
+                      <div className="flex items-start gap-3 flex-shrink-0">
+                        {/* Product Image */}
+                        {rfq.products?.product_data?.product_images && 
+                         Array.isArray(rfq.products.product_data.product_images) && 
+                         rfq.products.product_data.product_images.length > 0 ? (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={rfq.products.product_data.product_images[0]}
+                              alt={rfq.products.product_name}
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-border/30"
+                            />
                           </div>
-
-                          {/* Product Name - If exists */}
-                          {rfq.products && (
+                        ) : (
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-muted/30 border border-border/30 flex items-center justify-center flex-shrink-0">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        
+                        {/* Product Name */}
+                        {rfq.products && (
+                          <div className="flex-shrink-0 min-w-[120px] sm:min-w-[150px]">
                             <Link
                               href={`/products/${rfq.product_id}?merchant=true`}
-                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mb-1.5"
+                              className="group"
                             >
-                              <span className="line-clamp-1">{rfq.products.product_name}</span>
-                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              <h4 className="text-xs sm:text-sm font-semibold text-foreground mb-0.5 group-hover:text-primary transition-colors line-clamp-2">
+                                {rfq.products.product_name}
+                              </h4>
                             </Link>
-                          )}
+                            {rfq.products.product_data?.product_name && (
+                              <p className="text-xs text-muted-foreground line-clamp-1">
+                                {rfq.products.product_data.product_name}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-                          {/* Message Preview */}
-                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-2">
-                            {rfq.message}
-                          </p>
-
-                          {/* Meta Info - Compact Row */}
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                            <a
-                              href={`mailto:${rfq.email}`}
-                              className="flex items-center gap-1 hover:text-primary transition-colors"
-                              title={rfq.email}
-                            >
-                              <Mail className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate max-w-[140px]">{rfq.email}</span>
-                            </a>
-                            {rfq.phone && (
+                      {/* Middle: Buyer Info & Message */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                          {/* Buyer Details */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2 mb-1.5">
+                              <StatusIcon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm sm:text-base font-semibold text-foreground mb-0.5 leading-tight">
+                                  {rfq.name}
+                                </h3>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    {rfq.company}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Contact & Time */}
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground mt-1.5">
                               <a
-                                href={`tel:${rfq.phone}`}
+                                href={`mailto:${rfq.email}`}
                                 className="flex items-center gap-1 hover:text-primary transition-colors"
                               >
-                                <Phone className="h-3 w-3 flex-shrink-0" />
-                                {rfq.phone}
+                                <Mail className="h-3 w-3" />
+                                <span className="truncate max-w-[150px]">{rfq.email}</span>
                               </a>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3 flex-shrink-0" />
-                              {formatDistanceToNow(new Date(rfq.submitted_at), { addSuffix: true })}
-                            </span>
-                            {rfq.quantity && (
-                              <span>
-                                <span className="text-muted-foreground/70">Qty:</span> {rfq.quantity}
+                              {rfq.phone && (
+                                <a
+                                  href={`tel:${rfq.phone}`}
+                                  className="flex items-center gap-1 hover:text-primary transition-colors"
+                                >
+                                  <Phone className="h-3 w-3" />
+                                  {rfq.phone}
+                                </a>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDistanceToNow(new Date(rfq.submitted_at), { addSuffix: true })}
                               </span>
-                            )}
-                            {rfq.target_date && (
-                              <span>
-                                <span className="text-muted-foreground/70">Target:</span>{' '}
-                                {format(new Date(rfq.target_date), 'MMM d, yyyy')}
-                              </span>
+                            </div>
+
+                            {/* Message Preview */}
+                            <div className="mt-2">
+                              <p className="text-xs text-foreground line-clamp-2 leading-relaxed">
+                                {rfq.message}
+                              </p>
+                            </div>
+
+                            {/* Additional Details */}
+                            {(rfq.quantity || rfq.target_date) && (
+                              <div className="flex flex-wrap gap-3 mt-2 text-xs">
+                                {rfq.quantity && (
+                                  <span>
+                                    <span className="text-muted-foreground">Qty:</span>{' '}
+                                    <span className="font-medium text-foreground">{rfq.quantity}</span>
+                                  </span>
+                                )}
+                                {rfq.target_date && (
+                                  <span>
+                                    <span className="text-muted-foreground">Target:</span>{' '}
+                                    <span className="font-medium text-foreground">
+                                      {format(new Date(rfq.target_date), 'MMM d, yyyy')}
+                                    </span>
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
 
-                          {/* Response Message (if exists) - Compact */}
-                          {rfq.response_message && (
-                            <div className="mt-2 pt-2 border-t border-border/20">
-                              <div className="bg-primary/5 rounded-md px-2.5 py-2">
-                                <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                                  Your Response
-                                </p>
-                                <p className="text-xs text-foreground leading-relaxed line-clamp-2">
-                                  {rfq.response_message}
-                                </p>
-                              </div>
-                            </div>
-                          )}
+                          {/* Right: Status & Actions */}
+                          <div className="flex items-start gap-2 flex-shrink-0 sm:flex-col sm:items-end">
+                            <Badge
+                              variant="outline"
+                              className={`${statusConfig.color} border px-2 py-1 text-xs font-medium`}
+                            >
+                              {statusConfig.label}
+                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                {rfq.status !== 'new' && (
+                                  <DropdownMenuItem
+                                    onClick={() => openStatusDialog(rfq, 'new')}
+                                  >
+                                    <MessageSquare className="h-4 w-4 mr-2" />
+                                    Mark as New
+                                  </DropdownMenuItem>
+                                )}
+                                {rfq.status !== 'in_progress' && (
+                                  <DropdownMenuItem
+                                    onClick={() => openStatusDialog(rfq, 'in_progress')}
+                                  >
+                                    <Clock className="h-4 w-4 mr-2" />
+                                    Mark In Progress
+                                  </DropdownMenuItem>
+                                )}
+                                {rfq.status !== 'responded' && (
+                                  <DropdownMenuItem
+                                    onClick={() => openStatusDialog(rfq, 'responded')}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    Mark as Responded
+                                  </DropdownMenuItem>
+                                )}
+                                {rfq.status !== 'won' && (
+                                  <DropdownMenuItem
+                                    onClick={() => openStatusDialog(rfq, 'won')}
+                                  >
+                                    <TrendingUp className="h-4 w-4 mr-2" />
+                                    Mark as Won
+                                  </DropdownMenuItem>
+                                )}
+                                {rfq.status !== 'lost' && (
+                                  <DropdownMenuItem
+                                    onClick={() => openStatusDialog(rfq, 'lost')}
+                                  >
+                                    <TrendingDown className="h-4 w-4 mr-2" />
+                                    Mark as Lost
+                                  </DropdownMenuItem>
+                                )}
+                                {rfq.status !== 'archived' && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => openStatusDialog(rfq, 'archived')}
+                                    >
+                                      <Archive className="h-4 w-4 mr-2" />
+                                      Archive
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {rfq.products && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem asChild>
+                                      <Link
+                                        href={`/products/${rfq.product_id}?merchant=true`}
+                                      >
+                                        <ExternalLink className="h-4 w-4 mr-2" />
+                                        View Product
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
 
-                        {/* Status & Actions - Right Side */}
-                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'border px-2.5 py-0.5 text-xs font-medium',
-                              statusConfig.color
-                            )}
-                          >
-                            {statusConfig.label}
-                          </Badge>
-                          
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <MoreVertical className="h-3.5 w-3.5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
-                              {rfq.status !== 'new' && (
-                                <DropdownMenuItem
-                                  onClick={() => openStatusDialog(rfq, 'new')}
-                                  className="text-xs"
-                                >
-                                  <MessageSquare className="h-3.5 w-3.5 mr-2" />
-                                  Mark as New
-                                </DropdownMenuItem>
+                        {/* Response Message (if exists) */}
+                        {rfq.response_message && (
+                          <div className="mt-2 pt-2 border-t border-border/30">
+                            <div className="bg-primary/5 rounded-md p-2">
+                              <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+                                Your Response
+                              </p>
+                              <p className="text-xs text-foreground leading-relaxed line-clamp-2">
+                                {rfq.response_message}
+                              </p>
+                              {rfq.responded_at && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {format(new Date(rfq.responded_at), 'MMM d, yyyy')}
+                                </p>
                               )}
-                              {rfq.status !== 'in_progress' && (
-                                <DropdownMenuItem
-                                  onClick={() => openStatusDialog(rfq, 'in_progress')}
-                                  className="text-xs"
-                                >
-                                  <Clock className="h-3.5 w-3.5 mr-2" />
-                                  In Progress
-                                </DropdownMenuItem>
-                              )}
-                              {rfq.status !== 'responded' && (
-                                <DropdownMenuItem
-                                  onClick={() => openStatusDialog(rfq, 'responded')}
-                                  className="text-xs"
-                                >
-                                  <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
-                                  Responded
-                                </DropdownMenuItem>
-                              )}
-                              {rfq.status !== 'won' && (
-                                <DropdownMenuItem
-                                  onClick={() => openStatusDialog(rfq, 'won')}
-                                  className="text-xs"
-                                >
-                                  <TrendingUp className="h-3.5 w-3.5 mr-2" />
-                                  Won
-                                </DropdownMenuItem>
-                              )}
-                              {rfq.status !== 'lost' && (
-                                <DropdownMenuItem
-                                  onClick={() => openStatusDialog(rfq, 'lost')}
-                                  className="text-xs"
-                                >
-                                  <TrendingDown className="h-3.5 w-3.5 mr-2" />
-                                  Lost
-                                </DropdownMenuItem>
-                              )}
-                              {rfq.status !== 'archived' && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => openStatusDialog(rfq, 'archived')}
-                                    className="text-xs"
-                                  >
-                                    <Archive className="h-3.5 w-3.5 mr-2" />
-                                    Archive
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {rfq.products && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem asChild>
-                                    <Link
-                                      href={`/products/${rfq.product_id}?merchant=true`}
-                                      className="text-xs"
-                                    >
-                                      <ExternalLink className="h-3.5 w-3.5 mr-2" />
-                                      View Product
-                                    </Link>
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+            </div>
+          )}
 
-        {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
-          <div className="mt-6 pb-6">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
+          {/* Pagination */}
+          {!isLoading && totalPages > 1 && (
+            <div className="mt-6 sm:mt-8">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
           </div>
-        )}
-      </section>
-    </div>
+          )}
+        </section>
+      </div>
 
       {/* Status Update Dialog */}
       <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-lg">Update Status</DialogTitle>
-            <DialogDescription className="text-sm">
-              Change the status of this inquiry to {STATUS_CONFIG[newStatus]?.label}
+            <DialogTitle className="text-xl">Update RFQ Status</DialogTitle>
+            <DialogDescription>
+              Change the status of this RFQ to {STATUS_CONFIG[newStatus]?.label}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3.5 py-3">
+          <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="status" className="text-sm font-medium mb-2 block">
-                New Status
-              </Label>
+              <Label htmlFor="status" className="text-sm font-medium">New Status</Label>
               <Select value={newStatus} onValueChange={(v) => setNewStatus(v as RFQStatus)}>
-                <SelectTrigger id="status" className="h-10 text-sm">
+                <SelectTrigger id="status" className="mt-2 h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                    <SelectItem key={status} value={status} className="text-sm">
+                    <SelectItem key={status} value={status}>
                       {config.label}
                     </SelectItem>
                   ))}
@@ -605,22 +609,20 @@ export default function RFQsPage() {
 
             {(newStatus === 'responded' || newStatus === 'won') && (
               <div>
-                <Label htmlFor="response" className="text-sm font-medium mb-2 block">
-                  Response Message <span className="text-muted-foreground font-normal">(Optional)</span>
-                </Label>
+                <Label htmlFor="response" className="text-sm font-medium">Response Message (Optional)</Label>
                 <Textarea
                   id="response"
                   placeholder="Add a note about your response..."
                   value={responseMessage}
                   onChange={(e) => setResponseMessage(e.target.value)}
                   rows={4}
-                  className="text-sm resize-none"
+                  className="mt-2"
                 />
               </div>
             )}
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
@@ -628,13 +630,11 @@ export default function RFQsPage() {
                 setSelectedRfq(null)
                 setResponseMessage('')
               }}
-              className="h-9 text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={() => selectedRfq && handleStatusChange(selectedRfq, newStatus)}
-              className="h-9 text-sm"
             >
               Update Status
             </Button>

@@ -27,10 +27,14 @@ export default async function HelpPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
+
       <div className="relative">
         {/* Page Header */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Help & Support</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-2">
@@ -40,7 +44,7 @@ export default async function HelpPage() {
         </section>
 
         {/* Help Resources */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/20 bg-background/80 backdrop-blur-sm">
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
             {helpResources.map((resource) => {
               const Icon = resource.icon
@@ -67,7 +71,7 @@ export default async function HelpPage() {
         </section>
 
         {/* FAQ Section */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-background/60 backdrop-blur-sm min-h-[500px]">
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="max-w-4xl">
             <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
               <div className="flex items-center gap-2 mb-4">

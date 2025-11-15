@@ -1,5 +1,4 @@
 import { getEffectiveUserAndProfile } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { 
   Package, 
@@ -15,7 +14,6 @@ import {
   Clock
 } from 'lucide-react'
 import Link from 'next/link'
-import { formatDistanceToNow } from 'date-fns'
 
 export default async function DashboardPage() {
   const { profile, organization } = await getEffectiveUserAndProfile()
@@ -23,28 +21,6 @@ export default async function DashboardPage() {
   const organizationName = organization?.name || organization?.company_name || 'there'
   const userName = profile?.full_name || profile?.email?.split('@')[0] || 'User'
   
-  // Fetch real metrics from database
-  const supabase = await createClient()
-  
-  // Get products count
-  const { count: productsCount } = await supabase
-    .from('products')
-    .select('*', { count: 'exact', head: true })
-    .eq('org_id', organization?.id || '')
-    
-  // Get RFQs count
-  const { count: rfqsCount } = await supabase
-    .from('product_rfqs')
-    .select('*', { count: 'exact', head: true })
-    .eq('org_id', organization?.id || '')
-    
-  // Get RFQs by status for status breakdown
-  const { data: rfqsByStatus } = await supabase
-    .from('product_rfqs')
-    .select('status')
-    .eq('org_id', organization?.id || '')
-  
-  const newRfqsCount = rfqsByStatus?.filter(r => r.status === 'new').length || 0
 
   // Mock metrics data - in production, fetch from database
   type MetricChangeType = 'positive' | 'negative' | 'neutral'
@@ -58,7 +34,7 @@ export default async function DashboardPage() {
   }> = [
     {
       label: 'Products',
-      value: productsCount?.toString() || '0',
+      value: '0',
       icon: Package,
       change: '+0%',
       changeType: 'neutral',
@@ -79,10 +55,10 @@ export default async function DashboardPage() {
     },
     {
       label: 'RFQs Received',
-      value: rfqsCount?.toString() || '0',
+      value: '0',
       icon: MessageSquare,
-      change: newRfqsCount > 0 ? `${newRfqsCount} new` : '+0%',
-      changeType: newRfqsCount > 0 ? 'positive' : 'neutral',
+      change: '+0%',
+      changeType: 'neutral',
     },
     {
       label: 'Conversion Rate',
@@ -121,21 +97,7 @@ export default async function DashboardPage() {
     },
   ]
 
-  // Fetch recent RFQs for activity feed
-  const { data: recentRfqs } = await supabase
-    .from('product_rfqs')
-    .select('rfq_id, name, company, submitted_at, status, products(product_name)')
-    .eq('org_id', organization?.id || '')
-    .order('submitted_at', { ascending: false })
-    .limit(3)
-
-  const recentActivities = recentRfqs && recentRfqs.length > 0 ? recentRfqs.map((rfq) => ({
-    icon: MessageSquare,
-    title: `New RFQ from ${rfq.name}`,
-    description: `${rfq.company} - ${rfq.products?.product_name || 'Product'}`,
-    time: formatDistanceToNow(new Date(rfq.submitted_at), { addSuffix: true }),
-    type: 'info' as const,
-  })) : [
+  const recentActivities = [
     {
       icon: CheckCircle2,
       title: 'Welcome to Pitchivo!',
@@ -160,10 +122,14 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
+
       <div className="relative">
         {/* Welcome Section */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -216,7 +182,7 @@ export default async function DashboardPage() {
         </section>
 
         {/* Metrics Overview */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/20 bg-background/80 backdrop-blur-sm">
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
           <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
             Metrics Overview
           </h2>
@@ -253,7 +219,7 @@ export default async function DashboardPage() {
         </section>
 
         {/* Recent Activity */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-background/60 backdrop-blur-sm">
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
             Recent Activity
           </h2>

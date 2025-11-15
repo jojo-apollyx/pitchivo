@@ -12,36 +12,36 @@ export default async function SettingsPage() {
 
   if (!organization) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
-          <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold">Settings</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+      <div className="min-h-screen bg-background">
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Settings</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
               Manage your organization settings
             </p>
           </div>
         </section>
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <p className="text-muted-foreground text-sm">No organization found.</p>
+          <p className="text-muted-foreground">No organization found.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background via-50% to-accent/5 relative">
+    <div className="min-h-screen bg-background">
       {/* Page Header */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
-        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold">Settings</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Manage your organization settings and preferences
+      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Settings</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            Manage your organization information and preferences
           </p>
         </div>
       </section>
 
       {/* Tabs Content */}
-      <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 bg-background/60 backdrop-blur-sm min-h-[500px]">
+      <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <SettingsTabs
           organization={organization}
           userRole={profile?.org_role || null}
