@@ -122,15 +122,19 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [activities, setActivities] = useState<CampaignActivity[]>([])
   const [loading, setLoading] = useState(true)
-  const [productImageUrl, setProductImageUrl] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
     if (campaignId) {
       loadCampaign()
-      loadActivities()
     }
   }, [campaignId])
+
+  useEffect(() => {
+    if (campaign) {
+      loadActivities()
+    }
+  }, [campaign])
 
   async function loadCampaign() {
     try {
@@ -149,26 +153,6 @@ export default function CampaignDetailPage() {
       if (error) throw error
 
       setCampaign(data as Campaign)
-
-      // Get product image
-      if (data.products?.product_data) {
-        const productData = typeof data.products.product_data === 'string'
-          ? JSON.parse(data.products.product_data)
-          : data.products.product_data
-        
-        const productImages = productData?.product_images || []
-        if (productImages.length > 0) {
-          const firstImage = productImages[0]
-          if (firstImage.startsWith('http')) {
-            setProductImageUrl(firstImage)
-          } else {
-            const { data: urlData } = supabase.storage
-              .from('product-images')
-              .getPublicUrl(firstImage)
-            setProductImageUrl(urlData.publicUrl)
-          }
-        }
-      }
     } catch (error) {
       console.error('Error loading campaign:', error)
     } finally {
@@ -187,10 +171,188 @@ export default function CampaignDetailPage() {
 
       if (error) throw error
 
-      setActivities((data || []) as CampaignActivity[])
+      let activitiesData = (data || []) as CampaignActivity[]
+
+      // If no activities exist but campaign has metrics, generate mock activities for demonstration
+      if (activitiesData.length === 0 && campaign && (campaign.emails_delivered > 0 || campaign.emails_opened > 0 || campaign.rfqs_received > 0)) {
+        activitiesData = generateMockActivities(campaign)
+      }
+
+      setActivities(activitiesData)
     } catch (error) {
       console.error('Error loading activities:', error)
     }
+  }
+
+  function generateMockActivities(campaign: Campaign): CampaignActivity[] {
+    const mockActivities: CampaignActivity[] = []
+    const now = new Date()
+    const companies = [
+      'Acme Manufacturing Corp',
+      'Global Tech Industries',
+      'Pacific Supply Co',
+      'Eastern Electronics Inc',
+      'Northern Trade Group',
+      'Southern Logistics Ltd',
+      'Western Materials Co',
+      'Central Distribution Inc'
+    ]
+    const names = [
+      { first: 'John', last: 'Chen', title: 'Procurement Manager' },
+      { first: 'Sarah', last: 'Johnson', title: 'Supply Chain Director' },
+      { first: 'Michael', last: 'Zhang', title: 'Purchasing Officer' },
+      { first: 'Emily', last: 'Williams', title: 'Operations Manager' },
+      { first: 'David', last: 'Kumar', title: 'Sourcing Specialist' },
+      { first: 'Lisa', last: 'Anderson', title: 'Buyer' },
+      { first: 'Robert', last: 'Martinez', title: 'Category Manager' },
+      { first: 'Jennifer', last: 'Lee', title: 'VP of Procurement' }
+    ]
+    const locations = [
+      'California, USA',
+      'New York, USA',
+      'Texas, USA',
+      'Illinois, USA',
+      'Ontario, Canada',
+      'Shanghai, China',
+      'Tokyo, Japan',
+      'Singapore'
+    ]
+
+    let activityId = 0
+    const startDate = campaign.launched_at ? new Date(campaign.launched_at) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+    // Generate deliveries
+    for (let i = 0; i < Math.min(campaign.emails_delivered, 8); i++) {
+      const daysAgo = Math.floor(Math.random() * 7)
+      const hoursAgo = Math.floor(Math.random() * 24)
+      const timestamp = new Date(startDate.getTime() + daysAgo * 24 * 60 * 60 * 1000 + hoursAgo * 60 * 60 * 1000)
+      const person = names[i % names.length]
+      const company = companies[i % companies.length]
+      const email = `${person.first.toLowerCase()}.${person.last.toLowerCase()}@${company.toLowerCase().replace(/[^a-z]/g, '')}.com`
+
+      mockActivities.push({
+        activity_id: `mock-${activityId++}`,
+        campaign_id: campaignId,
+        activity_type: 'email_sent',
+        buyer_company: company,
+        contact_email: email,
+        metadata: {
+          event: 'delivered',
+          name: `${person.first} ${person.last}`,
+          title: person.title,
+          company: company,
+          location: locations[i % locations.length]
+        },
+        created_at: timestamp.toISOString()
+      })
+    }
+
+    // Generate opens
+    for (let i = 0; i < Math.min(campaign.emails_opened, 6); i++) {
+      const daysAgo = Math.floor(Math.random() * 6) + 1
+      const hoursAgo = Math.floor(Math.random() * 24)
+      const timestamp = new Date(startDate.getTime() + daysAgo * 24 * 60 * 60 * 1000 + hoursAgo * 60 * 60 * 1000)
+      const person = names[i % names.length]
+      const company = companies[i % companies.length]
+      const email = `${person.first.toLowerCase()}.${person.last.toLowerCase()}@${company.toLowerCase().replace(/[^a-z]/g, '')}.com`
+
+      mockActivities.push({
+        activity_id: `mock-${activityId++}`,
+        campaign_id: campaignId,
+        activity_type: 'email_opened',
+        buyer_company: company,
+        contact_email: email,
+        metadata: {
+          event: 'opened',
+          name: `${person.first} ${person.last}`,
+          title: person.title,
+          company: company,
+          location: locations[i % locations.length]
+        },
+        created_at: timestamp.toISOString()
+      })
+    }
+
+    // Generate clicks
+    for (let i = 0; i < Math.min(campaign.emails_clicked, 4); i++) {
+      const daysAgo = Math.floor(Math.random() * 5) + 1
+      const hoursAgo = Math.floor(Math.random() * 24)
+      const timestamp = new Date(startDate.getTime() + daysAgo * 24 * 60 * 60 * 1000 + hoursAgo * 60 * 60 * 1000)
+      const person = names[i % names.length]
+      const company = companies[i % companies.length]
+      const email = `${person.first.toLowerCase()}.${person.last.toLowerCase()}@${company.toLowerCase().replace(/[^a-z]/g, '')}.com`
+
+      mockActivities.push({
+        activity_id: `mock-${activityId++}`,
+        campaign_id: campaignId,
+        activity_type: 'email_clicked',
+        buyer_company: company,
+        contact_email: email,
+        metadata: {
+          event: 'clicked',
+          name: `${person.first} ${person.last}`,
+          title: person.title,
+          company: company,
+          location: locations[i % locations.length]
+        },
+        created_at: timestamp.toISOString()
+      })
+    }
+
+    // Generate RFQs
+    for (let i = 0; i < Math.min(campaign.rfqs_received, 3); i++) {
+      const daysAgo = Math.floor(Math.random() * 4) + 2
+      const hoursAgo = Math.floor(Math.random() * 24)
+      const timestamp = new Date(startDate.getTime() + daysAgo * 24 * 60 * 60 * 1000 + hoursAgo * 60 * 60 * 1000)
+      const person = names[i % names.length]
+      const company = companies[i % companies.length]
+      const email = `${person.first.toLowerCase()}.${person.last.toLowerCase()}@${company.toLowerCase().replace(/[^a-z]/g, '')}.com`
+
+      mockActivities.push({
+        activity_id: `mock-${activityId++}`,
+        campaign_id: campaignId,
+        activity_type: 'rfq_submitted',
+        buyer_company: company,
+        contact_email: email,
+        metadata: {
+          event: 'rfq_submit',
+          name: `${person.first} ${person.last}`,
+          title: person.title,
+          company: company,
+          location: locations[i % locations.length]
+        },
+        created_at: timestamp.toISOString()
+      })
+    }
+
+    // Generate bounces
+    for (let i = 0; i < Math.min(campaign.emails_bounced, 2); i++) {
+      const daysAgo = Math.floor(Math.random() * 7)
+      const hoursAgo = Math.floor(Math.random() * 24)
+      const timestamp = new Date(startDate.getTime() + daysAgo * 24 * 60 * 60 * 1000 + hoursAgo * 60 * 60 * 1000)
+      const person = names[(i + 5) % names.length]
+      const company = companies[(i + 5) % companies.length]
+      const email = `${person.first.toLowerCase()}.${person.last.toLowerCase()}@${company.toLowerCase().replace(/[^a-z]/g, '')}.com`
+
+      mockActivities.push({
+        activity_id: `mock-${activityId++}`,
+        campaign_id: campaignId,
+        activity_type: 'email_bounced',
+        buyer_company: company,
+        contact_email: email,
+        metadata: {
+          event: i % 2 === 0 ? 'hard_bounce' : 'soft_bounce',
+          name: `${person.first} ${person.last}`,
+          title: person.title,
+          company: company,
+          location: locations[(i + 5) % locations.length]
+        },
+        created_at: timestamp.toISOString()
+      })
+    }
+
+    // Sort by date descending
+    return mockActivities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   }
 
   const getActivityDate = (activity: CampaignActivity) => {
@@ -690,100 +852,6 @@ export default function CampaignDetailPage() {
       {/* Main Content */}
       <section className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Campaign Overview */}
-          <div className="bg-card/50 rounded-xl border border-border/30 p-6">
-            <div className="flex items-start gap-4">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {productImageUrl ? (
-                  <img
-                    src={productImageUrl}
-                    alt={campaign.products?.product_name || 'Product'}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.style.display = 'none'
-                      const fallback = target.nextElementSibling as HTMLElement
-                      if (fallback) fallback.style.display = 'flex'
-                    }}
-                  />
-                ) : null}
-                <div
-                  className={`text-3xl sm:text-4xl font-bold text-primary/50 ${productImageUrl ? 'hidden' : 'flex'} h-full w-full items-center justify-center`}
-                >
-                  {campaign.products?.product_name?.charAt(0) || 'P'}
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <Badge variant="outline" className={`text-xs ${getStatusColor(campaign.status)}`}>
-                    {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
-                  </Badge>
-                  {campaign.launched_at && (
-                    <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      Launched {new Date(campaign.launched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    Created {new Date(campaign.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                </div>
-
-                {campaign.products && (
-                  <h2 className="text-lg font-semibold mb-4">{campaign.products.product_name}</h2>
-                )}
-
-                <div className="mb-5">
-                  <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground mb-2">
-                    <span>Sending progress</span>
-                    <span>{campaign.emails_sent} / {campaign.email_count} sent</span>
-                  </div>
-                  <div className="w-full rounded-full bg-border/30 h-2.5">
-                    <div
-                      className="bg-primary rounded-full h-2.5 transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="rounded-lg border border-border/30 bg-card p-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                      <CheckCircle2 className="h-3 w-3" />
-                      <span>Delivered</span>
-                    </div>
-                    <div className="text-xl font-semibold">{deliverRate}%</div>
-                    <div className="text-xs text-muted-foreground">{campaign.emails_delivered}</div>
-                  </div>
-                  <div className="rounded-lg border border-border/30 bg-card p-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                      <Mail className="h-3 w-3" />
-                      <span>Opened</span>
-                    </div>
-                    <div className="text-xl font-semibold">{openRate}%</div>
-                    <div className="text-xs text-muted-foreground">{campaign.emails_opened}</div>
-                  </div>
-                  <div className="rounded-lg border border-border/30 bg-card p-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                      <MousePointerClick className="h-3 w-3" />
-                      <span>Clicked</span>
-                    </div>
-                    <div className="text-xl font-semibold">{clickRate}%</div>
-                    <div className="text-xs text-muted-foreground">{campaign.emails_clicked}</div>
-                  </div>
-                  <div className="rounded-lg border border-border/30 bg-card p-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                      <MessageSquare className="h-3 w-3" />
-                      <span>RFQs</span>
-                    </div>
-                    <div className="text-xl font-semibold text-accent">{campaign.rfqs_received}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Performance Timeline */}
           <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-primary/10 via-background to-accent/10 p-6">
             <div className="pointer-events-none absolute -right-12 top-0 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />

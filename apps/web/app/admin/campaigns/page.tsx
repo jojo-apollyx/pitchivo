@@ -1,11 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Mail, Send, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Plus, Minus, RefreshCw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Mail, Send, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Plus, Minus, RefreshCw, BarChart3, Settings, Eye, CheckCircle2, XCircle, PauseCircle, PlayCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
 
 interface Campaign {
@@ -32,6 +40,7 @@ interface Campaign {
 }
 
 export default function AdminCampaignsPage() {
+  const router = useRouter()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [loading, setLoading] = useState(true)
@@ -141,6 +150,30 @@ export default function AdminCampaignsPage() {
     }
   }
 
+  async function handleStatusChange(campaignId: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      await loadCampaigns()
+      alert('Campaign status updated successfully!')
+    } catch (error) {
+      console.error('Error updating campaign status:', error)
+      alert('Failed to update campaign status. Please try again.')
+    }
+  }
+
+  function handleViewCampaignDetails(campaignId: string) {
+    router.push(`/dashboard/campaigns/${campaignId}`)
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -236,7 +269,7 @@ export default function AdminCampaignsPage() {
                   {/* Campaign Info */}
                   <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl p-6 border border-border/30">
                     <div className="flex items-start justify-between mb-4">
-                      <div>
+                      <div className="flex-1">
                         <h2 className="text-xl font-semibold mb-2">{selectedCampaign.campaign_name}</h2>
                         {selectedCampaign.organizations && (
                           <p className="text-sm text-muted-foreground">
@@ -251,17 +284,81 @@ export default function AdminCampaignsPage() {
                           </p>
                         )}
                       </div>
-                      <Badge variant="outline" className={getStatusColor(selectedCampaign.status)}>
-                        {selectedCampaign.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={getStatusColor(selectedCampaign.status)}>
+                          {selectedCampaign.status}
+                        </Badge>
+                      </div>
                     </div>
 
                     {selectedCampaign.launched_at && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mb-4">
                         <Calendar className="h-3 w-3" />
                         Launched: {new Date(selectedCampaign.launched_at).toLocaleString()}
                       </p>
                     )}
+
+                    {/* Admin Actions */}
+                    <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-border/30">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleViewCampaignDetails(selectedCampaign.campaign_id)}
+                        className="gap-2"
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        View Detailed Analytics
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="status-change" className="text-xs text-muted-foreground whitespace-nowrap">Change Status:</Label>
+                        <Select
+                          value={selectedCampaign.status}
+                          onValueChange={(value) => handleStatusChange(selectedCampaign.campaign_id, value)}
+                        >
+                          <SelectTrigger className="h-8 w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="draft">
+                              <div className="flex items-center gap-2">
+                                <Settings className="h-3 w-3" />
+                                Draft
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="scheduled">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-3 w-3" />
+                                Scheduled
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="active">
+                              <div className="flex items-center gap-2">
+                                <PlayCircle className="h-3 w-3" />
+                                Active
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="paused">
+                              <div className="flex items-center gap-2">
+                                <PauseCircle className="h-3 w-3" />
+                                Paused
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="completed">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Completed
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="cancelled">
+                              <div className="flex items-center gap-2">
+                                <XCircle className="h-3 w-3" />
+                                Cancelled
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Metrics with Manual Controls */}

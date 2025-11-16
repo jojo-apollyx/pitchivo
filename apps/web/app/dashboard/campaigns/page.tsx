@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2 } from 'lucide-react'
+import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2, Copy, Download, BarChart3, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -282,6 +282,89 @@ export default function CampaignsPage() {
     }
   }
 
+  async function handleDuplicateCampaign(campaignId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    
+    setCancellingCampaign(campaignId)
+    try {
+      // Get the campaign to duplicate
+      const { data: campaign, error: fetchError } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Create a new campaign with the same data but reset metrics
+      const { error: createError } = await supabase
+        .from('campaigns')
+        .insert({
+          org_id: campaign.org_id,
+          product_id: campaign.product_id,
+          campaign_name: `${campaign.campaign_name} (Copy)`,
+          email_count: campaign.email_count,
+          status: 'draft',
+          emails_sent: 0,
+          emails_delivered: 0,
+          emails_opened: 0,
+          emails_clicked: 0,
+          emails_bounced: 0,
+          rfqs_received: 0
+        })
+
+      if (createError) throw createError
+
+      alert('Campaign duplicated successfully!')
+      await loadCampaigns()
+    } catch (error) {
+      console.error('Error duplicating campaign:', error)
+      alert('Failed to duplicate campaign. Please try again.')
+    } finally {
+      setCancellingCampaign(null)
+    }
+  }
+
+  async function handleExportCampaignData(campaignId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    
+    try {
+      const campaign = campaigns.find(c => c.campaign_id === campaignId)
+      if (!campaign) return
+
+      // Create CSV data
+      const csvData = [
+        ['Campaign Name', campaign.campaign_name],
+        ['Status', campaign.status],
+        ['Total Recipients', campaign.email_count],
+        ['Emails Sent', campaign.emails_sent],
+        ['Delivered', campaign.emails_delivered],
+        ['Opened', campaign.emails_opened],
+        ['Clicked', campaign.emails_clicked],
+        ['Bounced', campaign.emails_bounced],
+        ['RFQs Received', campaign.rfqs_received],
+        ['Open Rate', `${campaign.openRate}%`],
+        ['Click Rate', `${campaign.clickRate}%`],
+        ['Created', new Date(campaign.created_at).toLocaleString()],
+        ['Launched', campaign.launched_at ? new Date(campaign.launched_at).toLocaleString() : 'Not launched']
+      ]
+
+      const csvContent = csvData.map(row => row.join(',')).join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `campaign-${campaign.campaign_name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting campaign data:', error)
+      alert('Failed to export campaign data. Please try again.')
+    }
+  }
+
   function handleCreateCampaign() {
     router.push('/dashboard/campaigns/create/product')
   }
@@ -432,19 +515,19 @@ export default function CampaignsPage() {
                         {/* Action Buttons */}
                         <div className="flex items-center gap-2">
                           <Button
-                            variant="ghost"
+                            variant="default"
                             size="sm"
                             onClick={() => handleViewDetails(campaign.campaign_id)}
                             className="gap-2"
                           >
-                            <Activity className="h-4 w-4" />
-                            View Details
+                            <BarChart3 className="h-4 w-4" />
+                            View Analytics
                           </Button>
                           
                           {/* Primary Actions */}
                           {canResume && (
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
                               onClick={(e) => handleResumeCampaign(campaign.campaign_id, e)}
                               disabled={isLoading}
@@ -456,7 +539,7 @@ export default function CampaignsPage() {
                           )}
                           {canPause && (
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
                               onClick={(e) => handlePauseCampaign(campaign.campaign_id, e)}
                               disabled={isLoading}
@@ -481,21 +564,34 @@ export default function CampaignsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem
+                                onClick={(e) => handleDuplicateCampaign(campaign.campaign_id, e)}
+                              >
+                                <Copy className="h-4 w-4 mr-2" />
+                                Duplicate Campaign
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => handleExportCampaignData(campaign.campaign_id, e)}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Export Data (CSV)
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               {canCancel && (
                                 <DropdownMenuItem
                                   onClick={(e) => handleCancelCampaign(campaign.campaign_id, e)}
-                                  className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/20"
+                                  className="text-orange-600 focus:text-orange-700 focus:bg-orange-50 dark:focus:bg-orange-950/20"
                                 >
                                   <X className="h-4 w-4 mr-2" />
                                   Cancel Campaign
                                 </DropdownMenuItem>
                               )}
-                              {(campaign.status === 'completed' || campaign.status === 'cancelled' || campaign.status === 'paused') && (
+                              {(campaign.status === 'completed' || campaign.status === 'cancelled') && (
                                 <DropdownMenuItem
                                   onClick={(e) => handleArchiveCampaign(campaign.campaign_id, e)}
                                 >
                                   <Archive className="h-4 w-4 mr-2" />
-                                  {campaign.status === 'completed' ? 'Mark as Archived' : 'Archive'}
+                                  Archive
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
