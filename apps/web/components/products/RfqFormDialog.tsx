@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Loader2, Send, Mail, Building2, Phone, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -46,6 +47,8 @@ export function RfqFormDialog({
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
+    setValue,
   } = useForm<RfqFormData>({
     resolver: zodResolver(rfqSchema),
   })
@@ -194,10 +197,10 @@ export function RfqFormDialog({
           {/* Target Date (Optional) */}
           <div className="space-y-2">
             <Label htmlFor="targetDate">Target Delivery Date</Label>
-            <Input
-              id="targetDate"
-              type="date"
-              {...register('targetDate')}
+            <DatePicker
+              value={watch('targetDate')}
+              onChange={(value) => setValue('targetDate', value)}
+              placeholder="Select target delivery date"
             />
           </div>
 

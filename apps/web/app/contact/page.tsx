@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles, Send, Mail, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -206,11 +207,11 @@ export default function ContactPage() {
                     <label className="text-sm font-medium text-foreground mb-1.5 block">
                       Message <span className="text-destructive">*</span>
                     </label>
-                    <textarea
+                    <Textarea
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       placeholder="Tell us more..."
-                      className="w-full min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-all duration-300 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      className="min-h-[120px] transition-all duration-300"
                       required
                     />
                   </div>

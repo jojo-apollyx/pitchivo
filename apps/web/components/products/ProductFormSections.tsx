@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import {
   COUNTRIES,
@@ -224,19 +226,21 @@ export function ProductFormSections({
           {/* Origin Country */}
           <div>
             <Label htmlFor="originCountry">Origin Country *</Label>
-            <select
-              id="originCountry"
+            <Select
               value={formData.originCountry}
-              onChange={(e) => onChange({ originCountry: e.target.value })}
-              className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+              onValueChange={(value) => onChange({ originCountry: value })}
             >
-              <option value="">Select country</option>
-              {COUNTRIES.map((country) => (
-                <option key={country} value={country}>
-                  {country}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((country) => (
+                  <SelectItem key={country} value={country}>
+                    {country}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Manufacturer Name */}
@@ -275,19 +279,21 @@ export function ProductFormSections({
           {/* Category */}
           <div>
             <Label htmlFor="category">Category</Label>
-            <select
-              id="category"
+            <Select
               value={formData.category}
-              onChange={(e) => onChange({ category: e.target.value })}
-              className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+              onValueChange={(value) => onChange({ category: value })}
             >
-              <option value="">Select category</option>
-              {PRODUCT_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRODUCT_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Applications */}
@@ -379,55 +385,61 @@ export function ProductFormSections({
           {/* Packaging Type */}
           <div>
             <Label htmlFor="packagingType">Packaging Type</Label>
-            <select
-              id="packagingType"
+            <Select
               value={formData.packagingType}
-              onChange={(e) => onChange({ packagingType: e.target.value })}
-              className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+              onValueChange={(value) => onChange({ packagingType: value })}
             >
-              <option value="">Select packaging</option>
-              {PACKAGING_TYPES.map((pkg) => (
-                <option key={pkg} value={pkg}>
-                  {pkg}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select packaging" />
+              </SelectTrigger>
+              <SelectContent>
+                {PACKAGING_TYPES.map((pkg) => (
+                  <SelectItem key={pkg} value={pkg}>
+                    {pkg}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Payment Terms */}
           <div>
             <Label htmlFor="paymentTerms">Payment Terms</Label>
-            <select
-              id="paymentTerms"
+            <Select
               value={formData.paymentTerms}
-              onChange={(e) => onChange({ paymentTerms: e.target.value })}
-              className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+              onValueChange={(value) => onChange({ paymentTerms: value })}
             >
-              <option value="">Select payment terms</option>
-              {PAYMENT_TERMS.map((term) => (
-                <option key={term} value={term}>
-                  {term}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select payment terms" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_TERMS.map((term) => (
+                  <SelectItem key={term} value={term}>
+                    {term}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Incoterm */}
           <div>
             <Label htmlFor="incoterm">Incoterm</Label>
-            <select
-              id="incoterm"
+            <Select
               value={formData.incoterm}
-              onChange={(e) => onChange({ incoterm: e.target.value })}
-              className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+              onValueChange={(value) => onChange({ incoterm: value })}
             >
-              <option value="">Select incoterm</option>
-              {INCOTERMS.map((term) => (
-                <option key={term} value={term}>
-                  {term}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select incoterm" />
+              </SelectTrigger>
+              <SelectContent>
+                {INCOTERMS.map((term) => (
+                  <SelectItem key={term} value={term}>
+                    {term}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </section>
@@ -439,16 +451,18 @@ export function ProductFormSections({
           {/* Provide Sample */}
           <div>
             <Label htmlFor="provideSample">Provide Sample</Label>
-            <select
-              id="provideSample"
+            <Select
               value={formData.provideSample}
-              onChange={(e) => onChange({ provideSample: e.target.value })}
-              className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+              onValueChange={(value) => onChange({ provideSample: value })}
             >
-              <option value="">Select</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes">Yes</SelectItem>
+                <SelectItem value="no">No</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {formData.provideSample === 'yes' && (
@@ -456,19 +470,21 @@ export function ProductFormSections({
               {/* Sample Type */}
               <div>
                 <Label htmlFor="sampleType">Sample Type</Label>
-                <select
-                  id="sampleType"
+                <Select
                   value={formData.sampleType}
-                  onChange={(e) => onChange({ sampleType: e.target.value })}
-                  className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+                  onValueChange={(value) => onChange({ sampleType: value })}
                 >
-                  <option value="">Select type</option>
-                  {SAMPLE_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SAMPLE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {formData.sampleType === 'Paid' && (
@@ -535,11 +551,10 @@ export function ProductFormSections({
           {/* Certificate Expiry */}
           <div>
             <Label htmlFor="certificateExpiryDate">Certificate Expiry Date</Label>
-            <Input
-              id="certificateExpiryDate"
-              type="date"
+            <DatePicker
               value={formData.certificateExpiryDate}
-              onChange={(e) => onChange({ certificateExpiryDate: e.target.value })}
+              onChange={(value) => onChange({ certificateExpiryDate: value })}
+              placeholder="Select expiry date"
             />
           </div>
         </div>
@@ -554,18 +569,21 @@ export function ProductFormSections({
               <div className="flex-1 grid grid-cols-3 gap-3">
                 <div>
                   <Label className="text-xs">Country</Label>
-                  <select
+                  <Select
                     value={location.country}
-                    onChange={(e) => updateWarehouseLocation(location.id, { country: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-input bg-background text-sm"
+                    onValueChange={(value) => updateWarehouseLocation(location.id, { country: value })}
                   >
-                    <option value="">Select</option>
-                    {COUNTRIES.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="text-xs">City</Label>
