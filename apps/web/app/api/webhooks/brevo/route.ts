@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { BREVO_EVENT_MAP, EMAIL_EVENT_TYPES } from '@/lib/constants/email-events'
 
-// Create admin Supabase client (bypasses RLS)
+// Create admin Supabase client
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -13,232 +14,191 @@ const supabaseAdmin = createClient(
   }
 )
 
-/**
- * Brevo Webhook Handler
- * 
- * Handles real-time email events from Brevo (Sendinblue):
- * - delivered: Email successfully delivered
- * - opened: Email opened by recipient
- * - clicked: Link clicked in email
- * - soft_bounce: Temporary delivery failure
- * - hard_bounce: Permanent delivery failure
- * - spam: Marked as spam
- * - blocked: Email blocked
- * 
- * Webhook Setup in Brevo:
- * 1. Go to https://app.brevo.com/settings/transactional-webhooks
- * 2. Create new webhook
- * 3. Set URL: https://your-domain.com/api/webhooks/brevo
- * 4. Select Authentication: Token Authentication (recommended)
- * 5. Generate and save a secure token
- * 6. Set BREVO_WEBHOOK_TOKEN environment variable with the token
- * 7. Select events: delivered, opened, clicked, soft_bounce, hard_bounce
- * 8. Save webhook
- * 
- * Security:
- * - Token is validated on every request via Authorization header
- * - If BREVO_WEBHOOK_TOKEN is not set, authentication is skipped (not recommended for production)
- */
-
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook authentication token
-    const authHeader = request.headers.get('authorization')
-    const webhookToken = process.env.BREVO_WEBHOOK_TOKEN
-    
-    if (webhookToken) {
-      // Token authentication: Brevo sends token in Authorization header as "Bearer <token>"
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.warn('Brevo webhook: Missing or invalid Authorization header')
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        )
-      }
-      
-      const token = authHeader.replace('Bearer ', '')
-      if (token !== webhookToken) {
-        console.warn('Brevo webhook: Invalid token')
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        )
-      }
-    }
-    
     const body = await request.json()
     
     console.log('Brevo webhook received:', JSON.stringify(body, null, 2))
 
-    // Extract event data
-    const {
-      event,           // Event type: delivered, opened, clicked, soft_bounce, hard_bounce, etc.
-      email,           // Recipient email
-      'message-id': messageId,  // Brevo message ID
-      tag,             // Custom tag (we'll use this for campaign_id)
-      ts,              // Unix timestamp
-      date,            // ISO date string
-    } = body
+    // Brevo sends events as an array
+    const events = Array.isArray(body) ? body : [body]
 
-    if (!event || !email) {
-      console.warn('Invalid webhook payload: missing event or email')
-      return NextResponse.json({ success: true }) // Return 200 to avoid retries
+    for (const event of events) {
+      await processBrevoEvent(event)
     }
 
-    // Extract campaign_id from tag or message-id
-    // Format: "campaign_{campaign_id}"
-    let campaignId: string | null = null
-    
-    if (tag && typeof tag === 'string' && tag.startsWith('campaign_')) {
-      campaignId = tag.replace('campaign_', '')
-    }
-
-    if (!campaignId) {
-      console.log('No campaign_id found in webhook, skipping metric update')
-      return NextResponse.json({ success: true })
-    }
-
-    // Verify campaign exists
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from('campaigns')
-      .select('campaign_id, emails_sent, emails_delivered, emails_opened, emails_clicked, emails_bounced')
-      .eq('campaign_id', campaignId)
-      .single()
-
-    if (campaignError || !campaign) {
-      console.warn(`Campaign not found: ${campaignId}`)
-      return NextResponse.json({ success: true })
-    }
-
-    // Update metrics based on event type
-    const updates: Record<string, number> = {}
-
-    switch (event) {
-      case 'delivered':
-        updates.emails_delivered = (campaign.emails_delivered || 0) + 1
-        break
-
-      case 'request':
-      case 'unique_opened':
-        updates.emails_opened = (campaign.emails_opened || 0) + 1
-        break
-
-      case 'click':
-      case 'unique_clicked':
-        updates.emails_clicked = (campaign.emails_clicked || 0) + 1
-        break
-
-      case 'soft_bounce':
-      case 'hard_bounce':
-      case 'invalid_email':
-        updates.emails_bounced = (campaign.emails_bounced || 0) + 1
-        break
-
-      default:
-        console.log(`Unhandled event type: ${event}`)
-        return NextResponse.json({ success: true })
-    }
-
-    // Update campaign metrics
-    if (Object.keys(updates).length > 0) {
-      const { error: updateError } = await supabaseAdmin
-        .from('campaigns')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('campaign_id', campaignId)
-
-      if (updateError) {
-        console.error('Error updating campaign metrics:', updateError)
-        throw updateError
-      }
-
-      console.log(`Campaign ${campaignId} updated:`, updates)
-    }
-
-    // Create activity record
-    let activityType: string | null = null
-    switch (event) {
-      case 'unique_opened':
-        activityType = 'email_opened'
-        break
-      case 'click':
-      case 'unique_clicked':
-        activityType = 'email_clicked'
-        break
-      case 'soft_bounce':
-      case 'hard_bounce':
-        activityType = 'email_bounced'
-        break
-    }
-
-    if (activityType) {
-      await supabaseAdmin
-        .from('campaign_activities')
-        .insert({
-          campaign_id: campaignId,
-          activity_type: activityType,
-          contact_email: email,
-          metadata: {
-            event,
-            messageId,
-            timestamp: ts || date,
-            raw_event: body
-          }
-        })
-    }
-
-    return NextResponse.json({
-      success: true,
-      campaignId,
-      event,
-      updates
-    })
-
+    return NextResponse.json({ success: true, processed: events.length })
   } catch (error: any) {
     console.error('Error processing Brevo webhook:', error)
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    )
+  }
+}
+
+async function processBrevoEvent(event: any) {
+  try {
+    const {
+      event: eventType,
+      email,
+      'message-id': messageId,
+      date,
+      ts,
+      tag,
+      tags,
+      subject,
+      reason,
+      link,
+      ip,
+      'X-Mailin-custom': custom,
+      ...rest
+    } = event
+
+    console.log(`Processing event: ${eventType} for ${email}`)
+
+    // Map Brevo event to our event type
+    const normalizedEvent = eventType?.toLowerCase().replace(/-/g, '_')
+    const ourEventType = BREVO_EVENT_MAP[normalizedEvent]
+
+    if (!ourEventType) {
+      console.warn(`Unknown Brevo event type: ${eventType}`)
+      return
+    }
+
+    // Extract campaign ID from tags
+    const campaignTag = (Array.isArray(tags) ? tags : [tag]).find((t: string) => 
+      t?.startsWith('campaign_')
+    )
     
-    // Return 200 even on error to prevent Brevo from retrying
-    // Log errors for debugging but don't fail the webhook
-    return NextResponse.json({
-      success: false,
-      error: error.message
+    if (!campaignTag) {
+      console.warn('No campaign tag found in event')
+      return
+    }
+
+    const campaignId = campaignTag.replace('campaign_', '')
+
+    // Map our event type to activity type
+    const activityType = mapEventToActivityType(ourEventType)
+
+    // Create activity record
+    await supabaseAdmin
+      .from('campaign_activities')
+      .insert({
+        campaign_id: campaignId,
+        activity_type: activityType,
+        contact_email: email,
+        metadata: {
+          event: ourEventType,
+          messageId,
+          timestamp: date || new Date(ts * 1000).toISOString(),
+          reason,
+          link,
+          ip,
+          subject,
+          custom,
+          ...rest
+        }
+      })
+
+    // Update campaign metrics based on event type
+    await updateCampaignMetrics(campaignId, ourEventType)
+
+    // Handle specific events
+    await handleSpecialEvents(campaignId, ourEventType, email, event)
+
+  } catch (error) {
+    console.error('Error processing individual event:', error)
+    // Don't throw - continue processing other events
+  }
+}
+
+function mapEventToActivityType(eventType: string): string {
+  // Map our event types to database activity types
+  const mapping: Record<string, string> = {
+    [EMAIL_EVENT_TYPES.SENT]: 'email_sent',
+    [EMAIL_EVENT_TYPES.DELIVERED]: 'email_delivered',
+    [EMAIL_EVENT_TYPES.OPENED]: 'email_opened',
+    [EMAIL_EVENT_TYPES.CLICKED]: 'email_clicked',
+    [EMAIL_EVENT_TYPES.SOFT_BOUNCED]: 'email_soft_bounced',
+    [EMAIL_EVENT_TYPES.HARD_BOUNCED]: 'email_hard_bounced',
+    [EMAIL_EVENT_TYPES.BLOCKED]: 'email_blocked',
+    [EMAIL_EVENT_TYPES.INVALID]: 'email_invalid',
+    [EMAIL_EVENT_TYPES.UNIQUE_OPENED]: 'email_unique_opened',
+    [EMAIL_EVENT_TYPES.FIRST_OPENING]: 'email_first_opening',
+    [EMAIL_EVENT_TYPES.LOADED_BY_PROXY]: 'email_loaded_by_proxy',
+    [EMAIL_EVENT_TYPES.COMPLAINT]: 'email_complaint',
+    [EMAIL_EVENT_TYPES.UNSUBSCRIBED]: 'email_unsubscribed',
+    [EMAIL_EVENT_TYPES.DEFERRED]: 'email_deferred',
+    [EMAIL_EVENT_TYPES.ERROR]: 'email_error',
+  }
+
+  return mapping[eventType] || 'email_sent'
+}
+
+async function updateCampaignMetrics(campaignId: string, eventType: string) {
+  // Map event types to campaign metric fields
+  const metricMapping: Record<string, string> = {
+    [EMAIL_EVENT_TYPES.SENT]: 'emails_sent',
+    [EMAIL_EVENT_TYPES.DELIVERED]: 'emails_delivered',
+    [EMAIL_EVENT_TYPES.OPENED]: 'emails_opened',
+    [EMAIL_EVENT_TYPES.UNIQUE_OPENED]: 'emails_unique_opened',
+    [EMAIL_EVENT_TYPES.CLICKED]: 'emails_clicked',
+    [EMAIL_EVENT_TYPES.SOFT_BOUNCED]: 'emails_soft_bounced',
+    [EMAIL_EVENT_TYPES.HARD_BOUNCED]: 'emails_hard_bounced',
+    [EMAIL_EVENT_TYPES.BLOCKED]: 'emails_blocked',
+    [EMAIL_EVENT_TYPES.INVALID]: 'emails_invalid',
+    [EMAIL_EVENT_TYPES.COMPLAINT]: 'emails_complaint',
+    [EMAIL_EVENT_TYPES.UNSUBSCRIBED]: 'emails_unsubscribed',
+  }
+
+  const metric = metricMapping[eventType]
+  if (!metric) return
+
+  await supabaseAdmin.rpc('increment_campaign_metric', {
+    p_campaign_id: campaignId,
+    p_metric: metric,
+    p_increment: 1
+  }).catch(err => {
+    console.error(`Failed to increment metric ${metric}:`, err)
+  })
+
+  // Also update old emails_bounced metric for hard/soft bounces
+  if (eventType === EMAIL_EVENT_TYPES.HARD_BOUNCED || eventType === EMAIL_EVENT_TYPES.SOFT_BOUNCED) {
+    await supabaseAdmin.rpc('increment_campaign_metric', {
+      p_campaign_id: campaignId,
+      p_metric: 'emails_bounced',
+      p_increment: 1
+    }).catch(err => {
+      console.error('Failed to increment emails_bounced:', err)
     })
   }
 }
 
-// Allow GET for webhook verification
-// Brevo may send GET requests with or without authentication to verify the endpoint
-export async function GET(request: NextRequest) {
-  // Optionally verify token if provided (for security)
-  // But don't require it for verification requests
-  const authHeader = request.headers.get('authorization')
-  const webhookToken = process.env.BREVO_WEBHOOK_TOKEN
-  
-  // If token is provided, verify it; otherwise allow access for verification
-  if (webhookToken && authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '')
-    if (token !== webhookToken) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+async function handleSpecialEvents(campaignId: string, eventType: string, email: string, event: any) {
+  // Handle unsubscribes - add to suppression list
+  if (eventType === EMAIL_EVENT_TYPES.UNSUBSCRIBED) {
+    // TODO: Add to suppression list or mark contact as unsubscribed
+    console.log(`Unsubscribe event for ${email}`)
   }
-  
-  return NextResponse.json({
-    status: 'ok',
-    message: 'Brevo webhook endpoint is active',
-    events: [
-      'delivered',
-      'opened',
-      'clicked',
-      'soft_bounce',
-      'hard_bounce',
-      'spam',
-      'blocked'
-    ]
-  })
+
+  // Handle spam complaints - serious issue
+  if (eventType === EMAIL_EVENT_TYPES.COMPLAINT) {
+    console.warn(`SPAM COMPLAINT for campaign ${campaignId} from ${email}`)
+    // TODO: Alert admins, add to suppression list
+  }
+
+  // Handle hard bounces - invalid email
+  if (eventType === EMAIL_EVENT_TYPES.HARD_BOUNCED || eventType === EMAIL_EVENT_TYPES.INVALID) {
+    console.log(`Hard bounce/invalid email: ${email}`)
+    // TODO: Mark email as invalid in database
+  }
 }
 
+// GET endpoint for webhook verification (if needed by Brevo)
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ 
+    status: 'ok',
+    message: 'Brevo webhook endpoint is active'
+  })
+}

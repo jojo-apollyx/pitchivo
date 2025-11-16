@@ -19,6 +19,7 @@ import { EmailQualityChecker } from '@/components/admin/email-quality-checker'
 import { EmailTemplateManager } from '@/components/admin/email-template-manager'
 import { ScheduledEmailsViewer } from '@/components/admin/scheduled-emails-viewer'
 import { BatchEmailScheduler } from '@/components/admin/batch-email-scheduler'
+import { EmailEventStats } from '@/components/email/email-event-stats'
 
 interface Campaign {
   campaign_id: string
@@ -462,6 +463,12 @@ P.S. Feel free to submit an RFQ directly through our product page if you'd like 
                         </Select>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Detailed Email Event Statistics - Admin Only */}
+                  <div className="bg-card/50 rounded-xl p-6 border border-border/30">
+                    <h3 className="text-lg font-semibold mb-4">Detailed Email Events (Admin)</h3>
+                    <EmailEventStats campaignId={selectedCampaign.campaign_id} isAdmin={true} />
                   </div>
 
                   {/* Metrics with Manual Controls */}

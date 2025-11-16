@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
+import { EmailEventStats } from '@/components/email/email-event-stats'
 
 const chartColors = {
   delivered: 'hsl(var(--primary))',
@@ -1106,6 +1107,15 @@ export default function CampaignDetailPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Email Event Statistics - User View (Common Statuses Only) */}
+          <div className="rounded-xl border border-border/30 bg-card/60 p-4 sm:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Mail className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Email Performance</h3>
+            </div>
+            <EmailEventStats campaignId={campaignId} isAdmin={false} />
           </div>
 
           <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1.75fr,1fr]">
