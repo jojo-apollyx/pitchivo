@@ -1452,7 +1452,7 @@ export default function CreateProductPage() {
       </header>
 
       {/* Main Content - Split Layout */}
-      <main className="px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+      <main className="px-4 sm:px-6 lg:px-8 pt-6 pb-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
           {/* Right: File Upload Panel (first on mobile, second on desktop) */}
           <div className="order-1 lg:order-2 lg:border-l border-border/30 lg:pl-6">
@@ -1475,7 +1475,7 @@ export default function CreateProductPage() {
           {/* Left: Product Form (second on mobile, first on desktop) */}
           <div className="order-2 lg:order-1">
             <div className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-              <div className="px-1 pr-6 pb-4">
+              <div className="px-1 pr-6 pb-24">
                 <FoodSupplementForm
                   formData={formData}
                   onChange={handleFormChange}
@@ -1498,10 +1498,10 @@ export default function CreateProductPage() {
       </main>
 
       {/* Footer - Fixed Action Bar */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 bg-background/95 backdrop-blur-sm border-t border-border/50">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+      <footer className="fixed bottom-16 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-t border-border/50 lg:bottom-0 safe-area-inset-bottom">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 max-w-7xl mx-auto">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground hidden sm:block">
               {completedFilesCount > 0 && (
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -1509,12 +1509,12 @@ export default function CreateProductPage() {
                 </span>
               )}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               <Button
                 variant="outline"
                 onClick={handleSaveDraft}
                 disabled={isSaving || isPublishing}
-                className="w-full sm:w-auto">
+                className="flex-1 sm:flex-initial sm:w-auto h-11 flex-shrink-0">
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1527,7 +1527,7 @@ export default function CreateProductPage() {
               <Button
                 onClick={handlePublish}
                 disabled={!formData.product_name || isSaving || isPublishing}
-                className="w-full sm:w-auto">
+                className="flex-1 sm:flex-initial sm:w-auto h-11 flex-shrink-0">
                 {isPublishing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
