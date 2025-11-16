@@ -8,9 +8,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Multiselect } from '@/components/ui/multiselect'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar as CalendarIcon } from 'lucide-react'
+import { format } from 'date-fns'
+import { Calendar } from '@/components/ui/calendar'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
 import { SENDER_ADDRESSES, getSenderHealthLabel, getSenderHealthGrade, calculateCampaignMetrics } from '@/lib/mock-data/buyers'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 export default function ConfigureSendingPage() {
   const router = useRouter()
@@ -22,6 +28,7 @@ export default function ConfigureSendingPage() {
   const [orgSlug, setOrgSlug] = useState('yourcompany')
   const [selectedLocations, setSelectedLocations] = useState<string[]>((draft as any).priorityLocations || [])
   const [reputationDialogOpen, setReputationDialogOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const supabase = createClient()
 
   const availableCountries = ['USA', 'Canada', 'UK', 'Germany', 'Australia', 'Japan', 'France', 'Italy', 'Spain', 'Netherlands', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Belgium', 'Austria', 'Poland', 'Brazil', 'Mexico', 'India', 'China', 'South Korea', 'Singapore', 'New Zealand']
@@ -211,23 +218,60 @@ export default function ConfigureSendingPage() {
                   </div>
                 </div>
 
-                {/* Start Date - Compact */}
+                {/* Start Date & Location Preferences - Same Line */}
                 <div className="pb-6 border-b border-border/30">
-                  <div className="flex items-end gap-4">
-                    <div className="flex-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
                       <Label htmlFor="startDate" className="text-base font-semibold mb-3 block">
                         Start sending on
                       </Label>
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="max-w-xs"
-                      />
+                      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal h-11 bg-background border-border shadow-sm hover:bg-accent",
+                              !startDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+                            {startDate ? format(new Date(startDate + 'T00:00:00'), 'PPP') : 'Select date (optional)'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 shadow-lg border-border/50" align="start">
+                          <Calendar
+                            value={startDate ? new Date(startDate + 'T00:00:00') : undefined}
+                            onChange={(date) => {
+                              if (date) {
+                                const dateStr = format(date, 'yyyy-MM-dd')
+                                setStartDate(dateStr)
+                                setCalendarOpen(false)
+                              } else {
+                                setStartDate('')
+                              }
+                            }}
+                            minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <p className="text-xs text-muted-foreground mt-2">
                         Leave blank to start immediately.
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">
+                        Location Preferences
+                      </Label>
+                      <Multiselect
+                        options={availableCountries}
+                        value={selectedLocations}
+                        onChange={setSelectedLocations}
+                        placeholder="Select locations (optional)..."
+                        searchable={true}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Prioritize sending to companies in these locations. Leave empty to target all locations equally.
                       </p>
                     </div>
                   </div>
@@ -240,21 +284,21 @@ export default function ConfigureSendingPage() {
                   </Label>
                   <div className="space-y-3">
                     <div className="flex gap-2">
-                      <select
-                        id="sender"
-                        value={senderEmail}
-                        onChange={(e) => setSenderEmail(e.target.value)}
-                        className="flex-1 h-11 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        {SENDER_ADDRESSES.map((sender) => (
-                          <option key={sender.email} value={sender.email}>
-                            {sender.email.replace('{org}', orgSlug)}
-                          </option>
-                        ))}
-                      </select>
+                      <Select value={senderEmail} onValueChange={setSenderEmail}>
+                        <SelectTrigger className="flex-1 h-11">
+                          <SelectValue placeholder="Select sender address" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SENDER_ADDRESSES.map((sender) => (
+                            <SelectItem key={sender.email} value={sender.email}>
+                              {sender.email.replace('{org}', orgSlug)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       {/* Redesigned Health Indicator */}
                       <div className={`
-                        flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+                        flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap
                         ${senderHealth === 'healthy' ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' : 
                           senderHealth === 'warming_up' ? 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800' :
                           senderHealth === 'caution' ? 'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800' :
@@ -352,24 +396,6 @@ export default function ConfigureSendingPage() {
                       </Dialog>
                     </div>
                   </div>
-                </div>
-
-                {/* Location Preferences */}
-                <div className="pb-6 border-b border-border/30">
-                  <Label className="text-base font-semibold mb-3 block">
-                    Location Preferences
-                  </Label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Prioritize sending to companies in these locations. Leave empty to target all locations equally.
-                  </p>
-                  <Multiselect
-                    options={availableCountries}
-                    value={selectedLocations}
-                    onChange={setSelectedLocations}
-                    placeholder="Select locations (optional)..."
-                    searchable={true}
-                    className="max-w-md"
-                  />
                 </div>
               </div>
             </div>

@@ -61,35 +61,42 @@ export function Multiselect({
             className
           )}
         >
-          <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+          <div className="flex flex-wrap gap-1 flex-1 min-w-0 overflow-hidden">
             {value.length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
             ) : (
-              value.map((option) => (
-                <span
-                  key={option}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded"
-                >
-                  {option}
+              <>
+                {value.slice(0, 3).map((option) => (
                   <span
-                    onClick={(e) => handleRemove(option, e)}
-                    className="ml-1 hover:bg-primary/20 rounded-full p-0.5 cursor-pointer inline-flex items-center"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        handleRemove(option, e as any)
-                      }
-                    }}
+                    key={option}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-md flex-shrink-0 max-w-full"
                   >
-                    <X className="h-3 w-3" />
+                    <span className="truncate">{option}</span>
+                    <span
+                      onClick={(e) => handleRemove(option, e)}
+                      className="ml-1 hover:bg-primary/20 rounded-full p-0.5 cursor-pointer inline-flex items-center flex-shrink-0"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleRemove(option, e as any)
+                        }
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </span>
                   </span>
-                </span>
-              ))
+                ))}
+                {value.length > 3 && (
+                  <span className="inline-flex items-center px-2 py-0.5 text-xs bg-muted text-muted-foreground rounded-md flex-shrink-0">
+                    +{value.length - 3} more
+                  </span>
+                )}
+              </>
             )}
           </div>
-          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
