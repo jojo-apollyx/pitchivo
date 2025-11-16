@@ -20,14 +20,23 @@ export async function POST(request: NextRequest) {
     
     console.log('Brevo webhook received:', JSON.stringify(body, null, 2))
 
-    // Brevo sends events as an array
+    // Brevo can send single event or array of events
+    // Brevo 2025 API sends events in this format:
+    // Single: { event: "delivered", email: "...", ... }
+    // Batch: [{ event: "...", ... }, { event: "...", ... }]
     const events = Array.isArray(body) ? body : [body]
 
+    const results = []
     for (const event of events) {
-      await processBrevoEvent(event)
+      const result = await processBrevoEvent(event)
+      results.push(result)
     }
 
-    return NextResponse.json({ success: true, processed: events.length })
+    return NextResponse.json({ 
+      success: true, 
+      processed: events.length,
+      results
+    })
   } catch (error: any) {
     console.error('Error processing Brevo webhook:', error)
     return NextResponse.json(
@@ -58,22 +67,25 @@ async function processBrevoEvent(event: any) {
     console.log(`Processing event: ${eventType} for ${email}`)
 
     // Map Brevo event to our event type
+    // Brevo 2025 uses: delivered, request, opened, click, hard_bounce, soft_bounce, etc.
     const normalizedEvent = eventType?.toLowerCase().replace(/-/g, '_')
     const ourEventType = BREVO_EVENT_MAP[normalizedEvent]
 
     if (!ourEventType) {
       console.warn(`Unknown Brevo event type: ${eventType}`)
-      return
+      return { success: false, error: 'Unknown event type', eventType }
     }
 
     // Extract campaign ID from tags
-    const campaignTag = (Array.isArray(tags) ? tags : [tag]).find((t: string) => 
+    // Brevo sends tags as array or single tag
+    const allTags = tags || (tag ? [tag] : [])
+    const campaignTag = allTags.find((t: string) => 
       t?.startsWith('campaign_')
     )
     
     if (!campaignTag) {
-      console.warn('No campaign tag found in event')
-      return
+      console.warn('No campaign tag found in event', { tags, tag })
+      return { success: false, error: 'No campaign tag' }
     }
 
     const campaignId = campaignTag.replace('campaign_', '')
@@ -82,7 +94,7 @@ async function processBrevoEvent(event: any) {
     const activityType = mapEventToActivityType(ourEventType)
 
     // Create activity record
-    await supabaseAdmin
+    const { error: insertError } = await supabaseAdmin
       .from('campaign_activities')
       .insert({
         campaign_id: campaignId,
@@ -91,7 +103,7 @@ async function processBrevoEvent(event: any) {
         metadata: {
           event: ourEventType,
           messageId,
-          timestamp: date || new Date(ts * 1000).toISOString(),
+          timestamp: date || (ts ? new Date(ts * 1000).toISOString() : new Date().toISOString()),
           reason,
           link,
           ip,
@@ -101,15 +113,29 @@ async function processBrevoEvent(event: any) {
         }
       })
 
+    if (insertError) {
+      console.error('Error inserting activity:', insertError)
+    }
+
     // Update campaign metrics based on event type
     await updateCampaignMetrics(campaignId, ourEventType)
 
     // Handle specific events
     await handleSpecialEvents(campaignId, ourEventType, email, event)
 
+    return { 
+      success: true, 
+      campaignId, 
+      eventType: ourEventType, 
+      email 
+    }
+
   } catch (error) {
     console.error('Error processing individual event:', error)
-    // Don't throw - continue processing other events
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
   }
 }
 
