@@ -10,57 +10,57 @@ import { format } from 'date-fns'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 
 const chartColors = {
-  delivered: '#6366F1',
-  opened: '#22C55E',
-  rfq: '#F97316',
-  bounced: '#EF4444'
+  delivered: 'hsl(var(--primary))',
+  opened: 'hsl(var(--accent))',
+  rfq: 'hsl(var(--primary-dark))',
+  bounced: 'hsl(var(--destructive))'
 } as const
 
 const deliveryStatusVisuals = {
   sent: {
     label: 'Sent',
-    badgeClass: 'bg-blue-100/70 text-blue-700 border-transparent',
-    dotClass: 'bg-blue-500/80'
+    badgeClass: 'bg-primary/10 text-primary border-transparent',
+    dotClass: 'bg-primary/80'
   },
   delivered: {
     label: 'Delivered',
-    badgeClass: 'bg-emerald-100/70 text-emerald-700 border-transparent',
-    dotClass: 'bg-emerald-500/80'
+    badgeClass: 'bg-primary/10 text-primary border-transparent',
+    dotClass: 'bg-primary/80'
   },
   opened: {
     label: 'Opened',
-    badgeClass: 'bg-green-100/70 text-green-700 border-transparent',
-    dotClass: 'bg-green-500/80'
+    badgeClass: 'bg-accent/10 text-accent-dark border-transparent',
+    dotClass: 'bg-accent/80'
   },
   clicked: {
     label: 'Clicked',
-    badgeClass: 'bg-indigo-100/70 text-indigo-700 border-transparent',
-    dotClass: 'bg-indigo-500/80'
+    badgeClass: 'bg-primary/15 text-primary-dark border-transparent',
+    dotClass: 'bg-primary-dark/80'
   },
   rfq: {
     label: 'RFQ Submitted',
-    badgeClass: 'bg-amber-100/80 text-amber-800 border-transparent',
-    dotClass: 'bg-amber-500/80'
+    badgeClass: 'bg-accent text-accent-foreground border-transparent',
+    dotClass: 'bg-accent'
   },
   bounced: {
     label: 'Bounced',
-    badgeClass: 'bg-red-100/80 text-red-700 border-transparent',
-    dotClass: 'bg-red-500/80'
+    badgeClass: 'bg-destructive/10 text-destructive border-transparent',
+    dotClass: 'bg-destructive/80'
   },
   spam: {
     label: 'Marked as Spam',
-    badgeClass: 'bg-orange-100/80 text-orange-700 border-transparent',
-    dotClass: 'bg-orange-500/80'
+    badgeClass: 'bg-destructive/15 text-destructive border-transparent',
+    dotClass: 'bg-destructive'
   },
   blocked: {
     label: 'Blocked',
-    badgeClass: 'bg-slate-200/80 text-slate-700 border-transparent',
-    dotClass: 'bg-slate-500/80'
+    badgeClass: 'bg-muted text-muted-foreground border-transparent',
+    dotClass: 'bg-muted-foreground/80'
   },
   viewed: {
     label: 'Viewed Product',
-    badgeClass: 'bg-purple-100/70 text-purple-700 border-transparent',
-    dotClass: 'bg-purple-500/80'
+    badgeClass: 'bg-primary/10 text-primary border-transparent',
+    dotClass: 'bg-primary/80'
   }
 } as const
 
@@ -711,11 +711,11 @@ export default function CampaignDetailPage() {
       case 'scheduled':
         return 'bg-primary/10 text-primary border-primary/30'
       case 'completed':
-        return 'bg-green-100 text-green-700 border-green-300'
+        return 'bg-accent/10 text-accent-dark border-accent/30'
       case 'paused':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300'
+        return 'bg-muted text-muted-foreground border-border'
       case 'cancelled':
-        return 'bg-red-100 text-red-700 border-red-300'
+        return 'bg-destructive/10 text-destructive border-destructive/30'
       default:
         return 'bg-muted text-muted-foreground border-border'
     }
@@ -743,17 +743,17 @@ export default function CampaignDetailPage() {
   const getActivityColor = (type: string) => {
     switch (type) {
       case 'email_sent':
-        return 'text-blue-600'
-      case 'email_opened':
-        return 'text-green-600'
-      case 'email_clicked':
         return 'text-primary'
+      case 'email_opened':
+        return 'text-accent'
+      case 'email_clicked':
+        return 'text-primary-dark'
       case 'email_bounced':
-        return 'text-red-600'
+        return 'text-destructive'
       case 'rfq_submitted':
         return 'text-accent'
       case 'product_viewed':
-        return 'text-purple-600'
+        return 'text-primary'
       default:
         return 'text-muted-foreground'
     }
@@ -963,40 +963,40 @@ export default function CampaignDetailPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push('/dashboard/campaigns')}
-              className="gap-2"
+              className="gap-2 min-h-[44px]"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
-            <div className="flex-1">
-              <h1 className="text-xl sm:text-2xl font-semibold">{campaign.campaign_name}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold truncate">{campaign.campaign_name}</h1>
             </div>
           </div>
         </div>
       </section>
 
       {/* Main Content */}
-      <section className="px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
           {/* Performance Timeline */}
-          <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-primary/10 via-background to-accent/10 p-6">
+          <div className="relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4 sm:p-6">
             <div className="pointer-events-none absolute -right-12 top-0 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-16 left-10 h-48 w-48 rounded-full bg-accent/10 blur-3xl" />
 
-            <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-col gap-4 sm:gap-6 xl:flex-row xl:items-start xl:justify-between">
               <div>
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
                   <BarChart3 className="h-4 w-4" />
                   Performance timeline
                 </div>
-                <h2 className="mt-2 text-lg sm:text-xl font-semibold tracking-tight">Engagement velocity</h2>
-                <p className="text-xs text-muted-foreground mt-1">
+                <h2 className="mt-2 text-base sm:text-lg font-semibold">Engagement velocity</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Since {firstActivityDateLabel} • {timelineData.length || 0} datapoint{timelineData.length === 1 ? '' : 's'}
                 </p>
                 {mostRecentActivityTimestamp && (
@@ -1006,7 +1006,7 @@ export default function CampaignDetailPage() {
                 )}
               </div>
 
-              <div className="grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {performanceSummary.map((item) => (
                   <div key={item.label} className="rounded-lg border border-border/20 bg-background/70 p-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1016,7 +1016,7 @@ export default function CampaignDetailPage() {
                       />
                       <span>{item.label}</span>
                     </div>
-                    <div className="mt-2 text-lg font-semibold">
+                    <div className="mt-2 text-base sm:text-lg font-semibold">
                       {item.value ?? 0}
                     </div>
                   </div>
@@ -1024,7 +1024,7 @@ export default function CampaignDetailPage() {
               </div>
             </div>
 
-            <div className="mt-6 h-72">
+            <div className="mt-4 sm:mt-6 h-64 sm:h-72">
               {hasTimelineData ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
@@ -1037,24 +1037,27 @@ export default function CampaignDetailPage() {
                       stroke="hsl(var(--muted-foreground) / 0.6)"
                       tickLine={false}
                       axisLine={false}
+                      style={{ fontSize: '12px' }}
                     />
                     <YAxis
                       allowDecimals={false}
                       stroke="hsl(var(--muted-foreground) / 0.6)"
                       tickLine={false}
                       axisLine={false}
+                      style={{ fontSize: '12px' }}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: 'hsl(var(--background))',
                         borderRadius: '12px',
                         border: '1px solid hsl(var(--border))',
-                        boxShadow: '0 16px 24px -12px rgba(15, 23, 42, 0.2)'
+                        boxShadow: '0 16px 24px -12px rgba(15, 23, 42, 0.2)',
+                        fontSize: '14px'
                       }}
                       formatter={(value: number, name) => [value, name]}
                       labelFormatter={(label) => `As of ${label}`}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line
                       type="monotone"
                       dataKey="sent"
@@ -1094,10 +1097,10 @@ export default function CampaignDetailPage() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-background/60 p-8 text-center">
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-background/60 p-6 sm:p-8 text-center">
                   <Sparkles className="h-8 w-8 text-primary mb-3" />
                   <p className="text-sm font-medium">No engagement data yet</p>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm">
                     Once this campaign begins delivering, we&apos;ll chart every delivery, open, bounce, and RFQ in real time.
                   </p>
                 </div>
@@ -1105,16 +1108,16 @@ export default function CampaignDetailPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[1.75fr,1fr]">
+          <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1.75fr,1fr]">
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-border/30 bg-card/60 p-6">
+                  <div className="rounded-xl border border-border/30 bg-card/60 p-4 sm:p-6">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           <Activity className="h-4 w-4 text-primary" />
                           Engagement feed
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                           {activities.length} event{activities.length === 1 ? '' : 's'} · {uniqueContacts} engaged contact{uniqueContacts === 1 ? '' : 's'}
                         </p>
                       </div>
@@ -1126,17 +1129,17 @@ export default function CampaignDetailPage() {
                       )}
                     </div>
 
-                    <div className="mt-6">
+                    <div className="mt-4 sm:mt-6">
                       {activities.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/50 bg-background/60 py-12 text-center">
-                          <Activity className="h-10 w-10 text-muted-foreground/60 mb-4" />
+                        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 bg-background/60 py-8 sm:py-12 text-center">
+                          <Activity className="h-8 sm:h-10 w-8 sm:w-10 text-muted-foreground/60 mb-3 sm:mb-4" />
                           <p className="text-sm font-medium">No engagement yet</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 px-4">
                             We&apos;ll surface opens, clicks, product views, and RFQs the moment buyers interact.
                           </p>
                         </div>
                       ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           {activities.map((activity) => {
                             const narrative = buildActivityNarrative(activity)
                             const contextPieces = [narrative.title, narrative.company, narrative.location].filter(Boolean)
@@ -1144,9 +1147,9 @@ export default function CampaignDetailPage() {
                             return (
                               <div
                                 key={activity.activity_id}
-                                className="rounded-xl border border-border/20 bg-background/60 p-4 transition-colors hover:border-primary/40 hover:bg-background/80"
+                                className="rounded-lg border border-border/20 bg-background/60 p-3 sm:p-4 transition-colors hover:border-primary/40 hover:bg-background/80"
                               >
-                                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+                                <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:justify-between">
                                   <div className="flex gap-3">
                                     <div
                                       className={`h-10 w-10 flex-shrink-0 rounded-lg border border-border/30 bg-card/70 flex items-center justify-center ${getActivityColor(activity.activity_type)}`}
@@ -1156,7 +1159,7 @@ export default function CampaignDetailPage() {
                                     <div className="min-w-0 space-y-2">
                                       <div className="flex flex-wrap items-center gap-2">
                                         <span className="text-sm font-semibold">{narrative.name}</span>
-                                        <Badge variant="outline" className="text-[11px]">
+                                        <Badge variant="outline" className="text-xs">
                                           {getActivityLabel(activity.activity_type)}
                                         </Badge>
                                         {narrative.rawEvent && (
@@ -1217,25 +1220,25 @@ export default function CampaignDetailPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-border/30 bg-card/60 p-6">
+                  <div className="rounded-xl border border-border/30 bg-card/60 p-4 sm:p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          <MailCheck className="h-4 w-4 text-emerald-500" />
+                          <MailCheck className="h-4 w-4 text-primary" />
                           Delivery status by contact
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                           {deliveryStatuses.length} contact{deliveryStatuses.length === 1 ? '' : 's'} tracked across delivery, opens, and RFQs.
                         </p>
                       </div>
                     </div>
 
-                    <div className="mt-6 space-y-3">
+                    <div className="mt-4 sm:mt-6 space-y-3">
                       {deliveryStatuses.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/50 bg-background/60 py-12 text-center">
-                          <MailX className="h-10 w-10 text-muted-foreground/60 mb-4" />
+                        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 bg-background/60 py-8 sm:py-12 text-center">
+                          <MailX className="h-8 sm:h-10 w-8 sm:w-10 text-muted-foreground/60 mb-3 sm:mb-4" />
                           <p className="text-sm font-medium">Delivery updates will appear here</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 px-4">
                             We&apos;ll log every delivery, bounce, spam complaint, and RFQ per recipient.
                           </p>
                         </div>
@@ -1246,7 +1249,7 @@ export default function CampaignDetailPage() {
                           return (
                             <div 
                               key={contact.email} 
-                              className="rounded-xl bg-background/60 overflow-hidden transition-all hover:bg-background/80"
+                              className="rounded-lg bg-background/60 overflow-hidden transition-all hover:bg-background/80"
                             >
                               {/* Header - Always visible */}
                               <button
@@ -1259,13 +1262,13 @@ export default function CampaignDetailPage() {
                                   }
                                   setExpandedContacts(newExpanded)
                                 }}
-                                className="w-full p-4 text-left transition-colors"
+                                className="w-full p-3 sm:p-4 text-left transition-colors min-h-[44px]"
                               >
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start justify-between gap-3 sm:gap-4">
                                   <div className="flex-1 min-w-0 space-y-1">
                                     {/* First line: Name - Most recent step */}
-                                    <div className="flex items-center gap-3 flex-wrap">
-                                      <p className="text-sm font-semibold">
+                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                      <p className="text-sm font-semibold truncate">
                                         {contact.name || contact.email}
                                       </p>
                                       <span className="text-xs text-muted-foreground">-</span>
@@ -1279,7 +1282,7 @@ export default function CampaignDetailPage() {
                                       )}
                                     </div>
                                     {/* Second line: Title Company */}
-                                    <div className="flex items-center gap-3 flex-wrap">
+                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                                       {contact.title && (
                                         <span className="text-xs text-muted-foreground">{contact.title}</span>
                                       )}
@@ -1303,7 +1306,7 @@ export default function CampaignDetailPage() {
 
                               {/* Timeline - Expanded view */}
                               {isExpanded && contact.timeline.length > 0 && (
-                                <div className="border-t border-border/20 bg-background/40 px-4 py-3">
+                                <div className="border-t border-border/20 bg-background/40 px-3 sm:px-4 py-3">
                                   <div className="space-y-3">
                                     {contact.timeline.map((item, idx) => {
                                       const eventLabel = getTimelineEventLabel(item)
