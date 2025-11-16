@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import { EmailQualityChecker } from '@/components/admin/email-quality-checker'
 import { EmailTemplateManager } from '@/components/admin/email-template-manager'
 import { BatchEmailScheduler } from '@/components/admin/batch-email-scheduler'
@@ -99,7 +100,7 @@ export default function CampaignSettingsPage() {
 
   async function handleSendEmail() {
     if (!campaign || !emailTo || !emailSubject || !emailContent) {
-      alert('Please fill in all fields')
+      toast.error('Please fill in all fields')
       return
     }
 
@@ -118,11 +119,11 @@ export default function CampaignSettingsPage() {
 
       if (!response.ok) throw new Error('Failed to send email')
 
-      alert('Email sent successfully!')
+      toast.success('Email sent successfully!')
       setEmailTo('')
     } catch (error) {
       console.error('Error sending email:', error)
-      alert('Failed to send email')
+      toast.error('Failed to send email')
     } finally {
       setSending(false)
     }
@@ -132,7 +133,7 @@ export default function CampaignSettingsPage() {
     setEmailSubject(template.subject)
     setEmailContent(template.content)
     setActiveTab('send')
-    alert(`Template "${template.template_name}" loaded!`)
+    toast.success(`Template "${template.template_name}" loaded!`)
   }
 
   if (loading) {

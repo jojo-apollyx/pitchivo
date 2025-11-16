@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 interface Campaign {
   campaign_id: string
@@ -112,10 +113,10 @@ export default function AdminCampaignsPage() {
       if (error) throw error
 
       await loadCampaigns()
-      alert('Campaign status updated successfully!')
+      toast.success('Campaign status updated successfully!')
     } catch (error) {
       console.error('Error updating campaign status:', error)
-      alert('Failed to update campaign status.')
+      toast.error('Failed to update campaign status.')
     }
   }
 

@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { Calendar, Send, XCircle, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -30,6 +41,9 @@ export function ScheduledEmailsViewer({ campaignId }: ScheduledEmailsViewerProps
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'sent' | 'failed'>('all')
   const [sendingId, setSendingId] = useState<string | null>(null)
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false)
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+  const [emailToAction, setEmailToAction] = useState<string | null>(null)
 
   useEffect(() => {
     loadScheduledEmails()
@@ -53,49 +67,64 @@ export function ScheduledEmailsViewer({ campaignId }: ScheduledEmailsViewerProps
     }
   }
 
-  async function handleSendNow(scheduledEmailId: string) {
-    if (!confirm('Send this email immediately?')) return
+  function handleSendNowClick(scheduledEmailId: string) {
+    setEmailToAction(scheduledEmailId)
+    setConfirmSendOpen(true)
+  }
 
-    setSendingId(scheduledEmailId)
+  async function handleSendNow() {
+    if (!emailToAction) return
+
+    setSendingId(emailToAction)
+    setConfirmSendOpen(false)
     try {
       const response = await fetch('/api/admin/campaigns/send-scheduled', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduledEmailId })
+        body: JSON.stringify({ scheduledEmailId: emailToAction })
       })
 
       if (!response.ok) throw new Error('Failed to send email')
 
-      alert('Email sent successfully!')
+      toast.success('Email sent successfully!')
       await loadScheduledEmails()
     } catch (error) {
       console.error('Error sending email:', error)
-      alert('Failed to send email')
+      toast.error('Failed to send email')
     } finally {
       setSendingId(null)
+      setEmailToAction(null)
     }
   }
 
-  async function handleCancel(scheduledEmailId: string) {
-    if (!confirm('Cancel this scheduled email?')) return
+  function handleCancelClick(scheduledEmailId: string) {
+    setEmailToAction(scheduledEmailId)
+    setConfirmCancelOpen(true)
+  }
 
+  async function handleCancel() {
+    if (!emailToAction) return
+
+    setConfirmCancelOpen(false)
     try {
       const response = await fetch('/api/admin/campaigns/scheduled-emails', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          scheduledEmailId,
+          scheduledEmailId: emailToAction,
           status: 'cancelled'
         })
       })
 
       if (!response.ok) throw new Error('Failed to cancel email')
 
-      alert('Email cancelled successfully!')
+      toast.success('Email cancelled successfully!')
       await loadScheduledEmails()
     } catch (error) {
       console.error('Error cancelling email:', error)
-      alert('Failed to cancel email')
+      toast.error('Failed to cancel email')
+    } finally {
+      setEmailToAction(null)
     }
   }
 
@@ -253,7 +282,7 @@ export function ScheduledEmailsViewer({ campaignId }: ScheduledEmailsViewerProps
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => handleSendNow(email.scheduled_email_id)}
+                                onClick={() => handleSendNowClick(email.scheduled_email_id)}
                                 disabled={sendingId === email.scheduled_email_id}
                                 className="gap-1"
                               >
@@ -263,7 +292,7 @@ export function ScheduledEmailsViewer({ campaignId }: ScheduledEmailsViewerProps
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleCancel(email.scheduled_email_id)}
+                                onClick={() => handleCancelClick(email.scheduled_email_id)}
                               >
                                 <XCircle className="h-3 w-3" />
                               </Button>
@@ -278,7 +307,42 @@ export function ScheduledEmailsViewer({ campaignId }: ScheduledEmailsViewerProps
           })}
         </div>
       )}
+
+      {/* Send Now Confirmation Dialog */}
+      <AlertDialog open={confirmSendOpen} onOpenChange={setConfirmSendOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Email Immediately?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send the email right away, bypassing the scheduled time. Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendNow}>Send Now</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Email Confirmation Dialog */}
+      <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Scheduled Email?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will cancel the scheduled email. The email will not be sent. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Scheduled</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Cancel Email
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
+
 

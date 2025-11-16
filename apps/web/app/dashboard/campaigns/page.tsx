@@ -20,6 +20,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 
 interface Campaign {
@@ -77,6 +88,7 @@ export default function CampaignsPage() {
   const [cancellingCampaign, setCancellingCampaign] = useState<string | null>(null)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [campaignToAction, setCampaignToAction] = useState<string | null>(null)
   const supabase = createClient()
 
@@ -181,7 +193,7 @@ export default function CampaignsPage() {
       setCampaignToAction(null)
     } catch (error) {
       console.error('Error cancelling campaign:', error)
-      alert('Failed to cancel campaign. Please try again.')
+      toast.error('Failed to cancel campaign. Please try again.')
     } finally {
       setCancellingCampaign(null)
     }
@@ -206,7 +218,7 @@ export default function CampaignsPage() {
       await loadCampaigns()
     } catch (error) {
       console.error('Error pausing campaign:', error)
-      alert('Failed to pause campaign. Please try again.')
+      toast.error('Failed to pause campaign. Please try again.')
     } finally {
       setCancellingCampaign(null)
     }
@@ -231,20 +243,23 @@ export default function CampaignsPage() {
       await loadCampaigns()
     } catch (error) {
       console.error('Error resuming campaign:', error)
-      alert('Failed to resume campaign. Please try again.')
+      toast.error('Failed to resume campaign. Please try again.')
     } finally {
       setCancellingCampaign(null)
     }
   }
 
-  async function handleArchiveCampaign(campaignId: string, e: React.MouseEvent) {
+  function handleArchiveClick(campaignId: string, e: React.MouseEvent) {
     e.stopPropagation()
-    
-    if (!confirm('Are you sure you want to archive this campaign? You can restore it later.')) {
-      return
-    }
+    setCampaignToAction(campaignId)
+    setArchiveDialogOpen(true)
+  }
 
-    setCancellingCampaign(campaignId)
+  async function handleArchiveCampaign() {
+    if (!campaignToAction) return
+
+    setArchiveDialogOpen(false)
+    setCancellingCampaign(campaignToAction)
     try {
       const { error } = await supabase
         .from('campaigns')
@@ -252,17 +267,19 @@ export default function CampaignsPage() {
           status: 'completed',
           updated_at: new Date().toISOString()
         })
-        .eq('campaign_id', campaignId)
+        .eq('campaign_id', campaignToAction)
 
       if (error) throw error
 
       // Reload campaigns
       await loadCampaigns()
+      toast.success('Campaign archived successfully')
     } catch (error) {
       console.error('Error archiving campaign:', error)
-      alert('Failed to archive campaign. Please try again.')
+      toast.error('Failed to archive campaign. Please try again.')
     } finally {
       setCancellingCampaign(null)
+      setCampaignToAction(null)
     }
   }
 
@@ -555,7 +572,7 @@ export default function CampaignsPage() {
                               )}
                               {(campaign.status === 'completed' || campaign.status === 'cancelled') && (
                                 <DropdownMenuItem
-                                  onClick={(e) => handleArchiveCampaign(campaign.campaign_id, e)}
+                                  onClick={(e) => handleArchiveClick(campaign.campaign_id, e)}
                                 >
                                   <Archive className="h-4 w-4 mr-2" />
                                   Archive
@@ -703,6 +720,22 @@ export default function CampaignsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Archive Campaign Confirmation Dialog */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive this campaign? You can restore it later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchiveCampaign}>Archive</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

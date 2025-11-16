@@ -5,6 +5,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { FileText, Plus, Edit, Trash, Save, Star } from 'lucide-react'
 
 interface EmailTemplate {
@@ -28,6 +39,8 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null)
   
   // Form state
   const [templateName, setTemplateName] = useState('')
@@ -56,7 +69,7 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
 
   async function handleSaveTemplate() {
     if (!templateName || !subject || !content) {
-      alert('Please fill in all fields')
+      toast.error('Please fill in all fields')
       return
     }
 
@@ -92,7 +105,7 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
 
       if (!response.ok) throw new Error('Failed to save template')
 
-      alert(`Template ${editingTemplate ? 'updated' : 'created'} successfully!`)
+      toast.success(`Template ${editingTemplate ? 'updated' : 'created'} successfully!`)
       
       // Reset form
       setTemplateName('')
@@ -106,27 +119,35 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
       await loadTemplates()
     } catch (error) {
       console.error('Error saving template:', error)
-      alert('Failed to save template')
+      toast.error('Failed to save template')
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleDeleteTemplate(templateId: string) {
-    if (!confirm('Are you sure you want to delete this template?')) return
+  function handleDeleteClick(templateId: string) {
+    setTemplateToDelete(templateId)
+    setDeleteDialogOpen(true)
+  }
 
+  async function handleDeleteTemplate() {
+    if (!templateToDelete) return
+
+    setDeleteDialogOpen(false)
     try {
-      const response = await fetch(`/api/admin/campaigns/templates?templateId=${templateId}`, {
+      const response = await fetch(`/api/admin/campaigns/templates?templateId=${templateToDelete}`, {
         method: 'DELETE'
       })
 
       if (!response.ok) throw new Error('Failed to delete template')
 
-      alert('Template deleted successfully!')
+      toast.success('Template deleted successfully!')
       await loadTemplates()
     } catch (error) {
       console.error('Error deleting template:', error)
-      alert('Failed to delete template')
+      toast.error('Failed to delete template')
+    } finally {
+      setTemplateToDelete(null)
     }
   }
 
@@ -288,7 +309,7 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleDeleteTemplate(template.template_id)}
+                    onClick={() => handleDeleteClick(template.template_id)}
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
@@ -298,6 +319,27 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
           ))}
         </div>
       )}
+
+      {/* Delete Template Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this template? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteTemplate}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

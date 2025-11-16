@@ -4,6 +4,17 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { CalendarDays, Upload, Zap } from 'lucide-react'
 
 interface BatchSchedulerProps {
@@ -15,15 +26,17 @@ export function BatchEmailScheduler({ campaignId, onScheduleComplete }: BatchSch
   const [recipients, setRecipients] = useState('')
   const [scheduling, setScheduling] = useState(false)
   const [scheduleResult, setScheduleResult] = useState<any>(null)
+  const [confirmScheduleOpen, setConfirmScheduleOpen] = useState(false)
+  const [recipientListToSchedule, setRecipientListToSchedule] = useState<any[]>([])
   
   // Settings
   const [dailyLimit, setDailyLimit] = useState('50')
   const [emailsPerHour, setEmailsPerHour] = useState('10')
   const [sendingHours, setSendingHours] = useState('9,10,11,14,15,16')
 
-  async function handleAutoSchedule() {
+  function handleAutoScheduleClick() {
     if (!recipients.trim()) {
-      alert('Please enter recipient emails')
+      toast.error('Please enter recipient emails')
       return
     }
 
@@ -39,14 +52,16 @@ export function BatchEmailScheduler({ campaignId, onScheduleComplete }: BatchSch
     }).filter(r => r.email && r.email.includes('@'))
 
     if (recipientList.length === 0) {
-      alert('No valid email addresses found')
+      toast.error('No valid email addresses found')
       return
     }
 
-    if (!confirm(`Schedule emails for ${recipientList.length} recipients?`)) {
-      return
-    }
+    setRecipientListToSchedule(recipientList)
+    setConfirmScheduleOpen(true)
+  }
 
+  async function handleAutoSchedule() {
+    setConfirmScheduleOpen(false)
     setScheduling(true)
     try {
       const response = await fetch('/api/admin/campaigns/auto-schedule', {
@@ -54,7 +69,7 @@ export function BatchEmailScheduler({ campaignId, onScheduleComplete }: BatchSch
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           campaignId,
-          recipients: recipientList,
+          recipients: recipientListToSchedule,
           dailyLimit: parseInt(dailyLimit) || 50,
           emailsPerHour: parseInt(emailsPerHour) || 10,
           sendingHours: sendingHours.split(',').map(h => parseInt(h.trim())).filter(h => h >= 0 && h <= 23)
@@ -65,7 +80,7 @@ export function BatchEmailScheduler({ campaignId, onScheduleComplete }: BatchSch
 
       const result = await response.json()
       setScheduleResult(result)
-      alert(`Successfully scheduled ${result.totalScheduled} emails!`)
+      toast.success(`Successfully scheduled ${result.totalScheduled} emails!`)
       setRecipients('')
       
       if (onScheduleComplete) {
@@ -73,9 +88,10 @@ export function BatchEmailScheduler({ campaignId, onScheduleComplete }: BatchSch
       }
     } catch (error) {
       console.error('Error scheduling emails:', error)
-      alert('Failed to schedule emails')
+      toast.error('Failed to schedule emails')
     } finally {
       setScheduling(false)
+      setRecipientListToSchedule([])
     }
   }
 
@@ -161,7 +177,7 @@ buyer3@company3.com`}
         </div>
 
         <Button
-          onClick={handleAutoSchedule}
+          onClick={handleAutoScheduleClick}
           disabled={scheduling || !recipients.trim()}
           className="w-full gap-2"
         >
@@ -182,6 +198,23 @@ buyer3@company3.com`}
           </div>
         </div>
       )}
+
+      {/* Schedule Confirmation Dialog */}
+      <AlertDialog open={confirmScheduleOpen} onOpenChange={setConfirmScheduleOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Schedule Emails?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Schedule emails for {recipientListToSchedule.length} recipients? 
+              The system will automatically distribute them across safe time slots based on your settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAutoSchedule}>Schedule Emails</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

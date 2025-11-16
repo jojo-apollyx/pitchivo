@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 import { Sparkles, AlertTriangle, CheckCircle, Info } from 'lucide-react'
 
 interface EmailAnalysis {
@@ -39,7 +40,7 @@ export function EmailQualityChecker({
 
   async function analyzeEmail() {
     if (!subject || !content) {
-      alert('Please provide both subject and content')
+      toast.error('Please provide both subject and content')
       return
     }
 
@@ -57,7 +58,7 @@ export function EmailQualityChecker({
       setAnalysis(data)
     } catch (error) {
       console.error('Error analyzing email:', error)
-      alert('Failed to analyze email')
+      toast.error('Failed to analyze email')
     } finally {
       setAnalyzing(false)
     }
