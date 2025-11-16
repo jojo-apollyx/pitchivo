@@ -31,8 +31,13 @@ The integration tracks the following metrics automatically:
    - Click "Add a new webhook" button
    - Enter webhook details:
      - **Name**: Pitchivo Campaign Tracking
-     - **URL**: `https://your-domain.com/api/webhooks/brevo`
+     - **URL**: `https://www.pitchivo.com/api/webhooks/brevo` ⚠️ **Use your production domain!**
+       - ✅ Correct: `https://www.pitchivo.com/api/webhooks/brevo`
+       - ❌ Wrong: Preview URLs or localhost URLs won't work
      - **Description**: Real-time campaign metrics tracking
+     - **Authentication**: Select **Token Authentication** (recommended)
+       - Token: `f8c2bdc1c5484593fd78fb66e2addf5b65ab5b050b69cb650dbd4dd0c1db3b25`
+       - Brevo will send this token in the `Authorization: Bearer <token>` header
 
 4. **Select Events to Track**:
    Check these events:
@@ -49,16 +54,49 @@ The integration tracks the following metrics automatically:
    - Click "Save"
    - Brevo will test the endpoint (it should return 200 OK)
 
-### Step 2: Verify Webhook is Active
+### Step 2: Configure Webhook Token
+
+1. **Set Environment Variable**:
+   Add the webhook token to your environment variables:
+   
+   ```bash
+   # In your .env.local or production environment
+   BREVO_WEBHOOK_TOKEN=your_webhook_token_here
+   ```
+   
+   **Important**: 
+   - Use the same token you configured in Brevo's webhook settings
+   - This token should be a secure random string (e.g., generated with `openssl rand -hex 32`)
+   - Never commit this token to git
+
+2. **For Production** (Vercel/Next.js):
+   - Go to your Vercel project dashboard: https://vercel.com/dashboard
+   - Select your project → **Settings** → **Environment Variables**
+   - Click **Add New**
+   - Add the following:
+     - **Name**: `BREVO_WEBHOOK_TOKEN`
+     - **Value**: `f8c2bdc1c5484593fd78fb66e2addf5b65ab5b050b69cb650dbd4dd0c1db3b25`
+     - **Environment**: Select all (Production, Preview, Development)
+   - Click **Save**
+   - **Redeploy your application** for the changes to take effect
+   
+   **Note**: This webhook runs in Next.js API routes, not Supabase Edge Functions, so you don't need to add it to Supabase secrets.
+
+### Step 3: Verify Webhook is Active
 
 1. In the webhooks list, you should see:
    - Status: ✅ Active
    - Your webhook URL
+   - Authentication: Token
    - Number of events selected
 
 2. Test the webhook:
    ```bash
-   curl https://your-domain.com/api/webhooks/brevo
+   # Test GET endpoint (should return 200 OK)
+   curl https://www.pitchivo.com/api/webhooks/brevo
+   
+   # Expected response:
+   # {"status":"ok","message":"Brevo webhook endpoint is active",...}
    ```
    
    Expected response:
@@ -78,7 +116,7 @@ The integration tracks the following metrics automatically:
    }
    ```
 
-### Step 3: Configure Campaign Emails
+### Step 4: Configure Campaign Emails
 
 When sending emails via the admin panel, make sure to include campaign tags. This is automatically handled in the implementation:
 
@@ -243,8 +281,15 @@ const bounceRate = emails_sent > 0
 
 2. **Verify URL is accessible**:
    ```bash
+   # Test without authentication (should return 401 if token is set)
    curl -X POST https://your-domain.com/api/webhooks/brevo \
      -H "Content-Type: application/json" \
+     -d '{"event":"delivered","email":"test@test.com","tag":"campaign_test"}'
+   
+   # Test with authentication (should return 200)
+   curl -X POST https://your-domain.com/api/webhooks/brevo \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_WEBHOOK_TOKEN" \
      -d '{"event":"delivered","email":"test@test.com","tag":"campaign_test"}'
    ```
 
@@ -259,11 +304,16 @@ const bounceRate = emails_sent > 0
    - Check email sending code includes `tags: ["campaign_{id}"]`
    - Tag format must be exactly: `campaign_` + campaign UUID
 
-2. **Check database permissions**:
+2. **Check authentication**:
+   - Verify `BREVO_WEBHOOK_TOKEN` is set in environment
+   - Ensure token matches the one configured in Brevo
+   - Check webhook logs for "Unauthorized" errors
+
+3. **Check database permissions**:
    - Webhook uses admin Supabase client
    - Verify `SUPABASE_SERVICE_ROLE_KEY` is set in environment
 
-3. **Inspect webhook logs**:
+4. **Inspect webhook logs**:
    ```typescript
    console.log('Brevo webhook received:', JSON.stringify(body, null, 2))
    ```
@@ -279,24 +329,30 @@ Brevo may send duplicate webhook events. The implementation handles this by:
 
 ### Webhook Authentication
 
-While Brevo doesn't include HMAC signatures by default, you can:
+**Recommended: Token Authentication** ✅
 
-1. **Use secret URL path**:
-   ```
-   https://your-domain.com/api/webhooks/brevo-2k4j3h2k4j3h
-   ```
+The implementation uses **Token Authentication**, which is the most secure option:
 
-2. **Verify IP whitelist** (Brevo's IPs):
-   - Add IP validation in webhook handler
-   - Check `request.headers.get('x-forwarded-for')`
+1. **How it works**:
+   - Brevo sends the token in the `Authorization: Bearer <token>` header
+   - The webhook handler verifies the token matches `BREVO_WEBHOOK_TOKEN`
+   - Invalid or missing tokens return 401 Unauthorized
 
-3. **Use API key header** (if supported):
-   ```typescript
-   const apiKey = request.headers.get('x-brevo-api-key')
-   if (apiKey !== process.env.BREVO_WEBHOOK_KEY) {
-     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-   }
-   ```
+2. **Setup**:
+   - Generate a secure token: `openssl rand -hex 32`
+   - Configure it in Brevo webhook settings (Token Authentication)
+   - Set `BREVO_WEBHOOK_TOKEN` environment variable
+   - The token is validated on every webhook request
+
+3. **Alternative: Basic Authentication** (not recommended):
+   - Uses username/password
+   - Less secure than token authentication
+   - Not implemented in this codebase
+
+4. **Additional Security** (optional):
+   - **IP Whitelisting**: Verify requests come from Brevo's IP ranges
+   - **Secret URL Path**: Use a long random path instead of `/brevo`
+   - **Rate Limiting**: Prevent abuse (see below)
 
 ### Rate Limiting
 
@@ -362,9 +418,10 @@ Extract email client from webhook:
 # Test GET (verification)
 curl https://your-domain.com/api/webhooks/brevo
 
-# Test POST (event)
+# Test POST (event) - with authentication
 curl -X POST https://your-domain.com/api/webhooks/brevo \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_WEBHOOK_TOKEN" \
   -d '{
     "event": "opened",
     "email": "test@test.com",
@@ -402,9 +459,13 @@ tail -f logs/campaign.log | grep "Campaign .* updated"
 ## ✅ Implementation Checklist
 
 - [ ] Create webhook in Brevo dashboard
+- [ ] **Configure Token Authentication** in Brevo webhook settings
+- [ ] Generate secure webhook token (e.g., `openssl rand -hex 32`)
+- [ ] Set `BREVO_WEBHOOK_TOKEN` environment variable
 - [ ] Select all tracking events (delivered, opened, clicked, bounced)
 - [ ] Verify webhook URL is accessible
 - [ ] Test webhook with GET request
+- [ ] Test webhook with POST request (with authentication)
 - [ ] Ensure `SUPABASE_SERVICE_ROLE_KEY` is set
 - [ ] Send test email with campaign tag
 - [ ] Verify metrics update in dashboard

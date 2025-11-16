@@ -29,12 +29,43 @@ const supabaseAdmin = createClient(
  * 1. Go to https://app.brevo.com/settings/transactional-webhooks
  * 2. Create new webhook
  * 3. Set URL: https://your-domain.com/api/webhooks/brevo
- * 4. Select events: delivered, opened, clicked, soft_bounce, hard_bounce
- * 5. Save webhook
+ * 4. Select Authentication: Token Authentication (recommended)
+ * 5. Generate and save a secure token
+ * 6. Set BREVO_WEBHOOK_TOKEN environment variable with the token
+ * 7. Select events: delivered, opened, clicked, soft_bounce, hard_bounce
+ * 8. Save webhook
+ * 
+ * Security:
+ * - Token is validated on every request via Authorization header
+ * - If BREVO_WEBHOOK_TOKEN is not set, authentication is skipped (not recommended for production)
  */
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify webhook authentication token
+    const authHeader = request.headers.get('authorization')
+    const webhookToken = process.env.BREVO_WEBHOOK_TOKEN
+    
+    if (webhookToken) {
+      // Token authentication: Brevo sends token in Authorization header as "Bearer <token>"
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.warn('Brevo webhook: Missing or invalid Authorization header')
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
+      
+      const token = authHeader.replace('Bearer ', '')
+      if (token !== webhookToken) {
+        console.warn('Brevo webhook: Invalid token')
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
+    }
+    
     const body = await request.json()
     
     console.log('Brevo webhook received:', JSON.stringify(body, null, 2))
@@ -178,7 +209,24 @@ export async function POST(request: NextRequest) {
 }
 
 // Allow GET for webhook verification
+// Brevo may send GET requests with or without authentication to verify the endpoint
 export async function GET(request: NextRequest) {
+  // Optionally verify token if provided (for security)
+  // But don't require it for verification requests
+  const authHeader = request.headers.get('authorization')
+  const webhookToken = process.env.BREVO_WEBHOOK_TOKEN
+  
+  // If token is provided, verify it; otherwise allow access for verification
+  if (webhookToken && authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.replace('Bearer ', '')
+    if (token !== webhookToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+  }
+  
   return NextResponse.json({
     status: 'ok',
     message: 'Brevo webhook endpoint is active',
