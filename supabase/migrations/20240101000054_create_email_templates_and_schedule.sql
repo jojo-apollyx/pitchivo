@@ -58,53 +58,63 @@ ALTER TABLE scheduled_emails ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_quality_scores ENABLE ROW LEVEL SECURITY;
 
 -- Policies for email_templates
+DROP POLICY IF EXISTS "Allow authenticated users to view email templates" ON email_templates;
 CREATE POLICY "Allow authenticated users to view email templates"
   ON email_templates FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to insert email templates" ON email_templates;
 CREATE POLICY "Allow authenticated users to insert email templates"
   ON email_templates FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to update email templates" ON email_templates;
 CREATE POLICY "Allow authenticated users to update email templates"
   ON email_templates FOR UPDATE
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to delete email templates" ON email_templates;
 CREATE POLICY "Allow authenticated users to delete email templates"
   ON email_templates FOR DELETE
   TO authenticated
   USING (true);
 
 -- Policies for scheduled_emails
+DROP POLICY IF EXISTS "Allow authenticated users to view scheduled emails" ON scheduled_emails;
 CREATE POLICY "Allow authenticated users to view scheduled emails"
   ON scheduled_emails FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to insert scheduled emails" ON scheduled_emails;
 CREATE POLICY "Allow authenticated users to insert scheduled emails"
   ON scheduled_emails FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to update scheduled emails" ON scheduled_emails;
 CREATE POLICY "Allow authenticated users to update scheduled emails"
   ON scheduled_emails FOR UPDATE
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to delete scheduled emails" ON scheduled_emails;
 CREATE POLICY "Allow authenticated users to delete scheduled emails"
   ON scheduled_emails FOR DELETE
   TO authenticated
   USING (true);
 
 -- Policies for email_quality_scores
+DROP POLICY IF EXISTS "Allow authenticated users to view email quality scores" ON email_quality_scores;
 CREATE POLICY "Allow authenticated users to view email quality scores"
   ON email_quality_scores FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Allow authenticated users to insert email quality scores" ON email_quality_scores;
 CREATE POLICY "Allow authenticated users to insert email quality scores"
   ON email_quality_scores FOR INSERT
   TO authenticated
