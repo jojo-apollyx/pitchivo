@@ -1233,7 +1233,7 @@ export default function CampaignDetailPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 sm:mt-6 space-y-3">
+                    <div className="mt-4 sm:mt-6 space-y-4">
                       {deliveryStatuses.length === 0 ? (
                         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 bg-background/60 py-8 sm:py-12 text-center">
                           <MailX className="h-8 sm:h-10 w-8 sm:w-10 text-muted-foreground/60 mb-3 sm:mb-4" />
@@ -1265,7 +1265,7 @@ export default function CampaignDetailPage() {
                                 className="w-full p-3 sm:p-4 text-left transition-colors min-h-[44px]"
                               >
                                 <div className="flex items-start justify-between gap-3 sm:gap-4">
-                                  <div className="flex-1 min-w-0 space-y-1">
+                                  <div className="flex-1 min-w-0 space-y-2">
                                     {/* First line: Name - Most recent step */}
                                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                                       <p className="text-sm font-semibold truncate">
