@@ -1,16 +1,18 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Building2, Users } from 'lucide-react'
+import { ArrowLeft, Building2, Users, MapPin, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
 import { MOCK_BUYERS, generateMockBuyers } from '@/lib/mock-data/buyers'
 import { useEffect, useState } from 'react'
+import React from 'react'
 
 export default function MatchedBuyersPage() {
   const router = useRouter()
   const { draft, setDraft, nextStep, prevStep } = useCampaignStore()
   const [allBuyers, setAllBuyers] = useState(MOCK_BUYERS)
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     // Load full buyer list
@@ -41,6 +43,16 @@ export default function MatchedBuyersPage() {
   const totalContacts = 8932
   const avgContactsPerBuyer = (totalContacts / totalBuyers).toFixed(1)
 
+  function toggleRow(index: number) {
+    const newExpanded = new Set(expandedRows)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
+    }
+    setExpandedRows(newExpanded)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Bar */}
@@ -56,7 +68,7 @@ export default function MatchedBuyersPage() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <div className="flex-1 text-center sm:text-left">
+            <div className="flex-1 flex items-center justify-between">
               <h1 className="text-base sm:text-lg font-semibold">Campaign Setup</h1>
               <p className="text-xs sm:text-sm text-muted-foreground">Step 2 of 4</p>
             </div>
@@ -72,7 +84,7 @@ export default function MatchedBuyersPage() {
             <div className="lg:col-span-2">
               <div className="mb-4">
                 <h2 className="text-xl sm:text-2xl font-semibold mb-2">
-                  Matched Buyers from Pitchville Database
+                  Matched Buyers from Pitchivo Database
                 </h2>
                 <p className="text-sm sm:text-base text-muted-foreground">
                   These companies have purchased or sourced this ingredient in the past.
@@ -94,25 +106,75 @@ export default function MatchedBuyersPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
-                      {allBuyers.slice(0, 10).map((buyer, index) => (
-                        <tr
-                          key={index}
-                          className="hover:bg-accent/5 transition-colors"
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="text-sm font-medium">{buyer.company}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Users className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-sm">{buyer.contacts}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {allBuyers.slice(0, 10).map((buyer, index) => {
+                        const topContacts = buyer.contactDetails?.slice(0, 5) || []
+                        const isExpanded = expandedRows.has(index)
+                        return (
+                          <React.Fragment key={index}>
+                            <tr
+                              className="hover:bg-accent/5 transition-colors"
+                            >
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  <span className="text-sm font-medium">{buyer.company}</span>
+                                  {buyer.country && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <MapPin className="h-3 w-3" />
+                                      <span>{buyer.country}</span>
+                                    </div>
+                                  )}
+                                  {buyer.website && (
+                                    <a
+                                      href={buyer.website}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-xs text-primary hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                      <span>Website</span>
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => toggleRow(index)}
+                                  className="flex items-center justify-end gap-1 w-full text-right hover:text-primary transition-colors"
+                                >
+                                  <Users className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-sm">{buyer.contacts}</span>
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && topContacts.length > 0 && (
+                              <tr className="bg-muted/20">
+                                <td colSpan={2} className="px-4 py-3">
+                                  <div className="pl-6 space-y-2">
+                                    <div className="font-semibold text-xs text-muted-foreground mb-2">
+                                      Showing {topContacts.length} {topContacts.length === 1 ? 'contact' : 'contacts'} out of {buyer.contacts}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      {topContacts.map((contact, idx) => (
+                                        <div key={idx} className="text-xs">
+                                          <div className="font-medium text-foreground">{contact.name}</div>
+                                          <div className="text-muted-foreground">{contact.title || contact.role}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -127,7 +189,7 @@ export default function MatchedBuyersPage() {
                   </p>
                   <div className="pt-3 border-t border-border/30">
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Source:</span> Pitchville Curated Database (auto-updated monthly based on verified sourcing records)
+                      <span className="font-medium">Source:</span> Pitchivo Curated Database (auto-updated monthly based on verified sourcing records)
                     </p>
                   </div>
                 </div>

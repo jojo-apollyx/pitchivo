@@ -1,9 +1,10 @@
-// Mock data for buyers and contacts in Pitchville Database
+// Mock data for buyers and contacts in Pitchivo Database
 
 export interface BuyerContact {
   name: string
   email: string
   role: string
+  title?: string
 }
 
 export interface Buyer {
@@ -12,34 +13,57 @@ export interface Buyer {
   country: string
   industry: string
   matchedIngredients: string[]
+  website?: string
+  contactDetails?: BuyerContact[]
+}
+
+// Helper to generate mock contact details
+function generateContactDetails(count: number, company: string): BuyerContact[] {
+  const roles = ['Procurement Manager', 'Sourcing Director', 'Product Development Manager', 'Quality Assurance Lead', 'Supply Chain Coordinator', 'R&D Manager', 'Purchasing Agent', 'Operations Director']
+  const firstNames = ['John', 'Sarah', 'Michael', 'Emily', 'David', 'Jessica', 'Robert', 'Amanda', 'James', 'Lisa', 'William', 'Michelle', 'Richard', 'Jennifer', 'Joseph']
+  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas']
+  
+  const contacts: BuyerContact[] = []
+  for (let i = 0; i < Math.min(count, 5); i++) {
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
+    const role = roles[Math.floor(Math.random() * roles.length)]
+    contacts.push({
+      name: `${firstName} ${lastName}`,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${company.toLowerCase().replace(/\s+/g, '')}.com`,
+      role: role,
+      title: role
+    })
+  }
+  return contacts
 }
 
 export const MOCK_BUYERS: Buyer[] = [
-  { company: 'Vital Proteins', contacts: 26, country: 'USA', industry: 'Nutraceuticals', matchedIngredients: ['collagen', 'peptides', 'protein'] },
-  { company: 'Nestlé Health Science', contacts: 14, country: 'Switzerland', industry: 'Health Nutrition', matchedIngredients: ['vitamins', 'minerals', 'protein'] },
-  { company: "Nature's Bounty", contacts: 22, country: 'USA', industry: 'Supplements', matchedIngredients: ['herbal', 'vitamins', 'minerals'] },
-  { company: 'Swisse Wellness', contacts: 17, country: 'Australia', industry: 'Wellness', matchedIngredients: ['vitamins', 'superfoods', 'omega-3'] },
-  { company: 'NOW Foods', contacts: 31, country: 'USA', industry: 'Natural Products', matchedIngredients: ['amino acids', 'botanicals', 'enzymes'] },
-  { company: 'Garden of Life', contacts: 19, country: 'USA', industry: 'Organic Supplements', matchedIngredients: ['organic', 'probiotics', 'protein'] },
-  { company: 'GNC Holdings', contacts: 28, country: 'USA', industry: 'Sports Nutrition', matchedIngredients: ['protein', 'creatine', 'amino acids'] },
-  { company: 'Herbalife Nutrition', contacts: 24, country: 'USA', industry: 'Nutrition & Weight Loss', matchedIngredients: ['protein', 'fiber', 'vitamins'] },
-  { company: 'Amway (Nutrilite)', contacts: 15, country: 'USA', industry: 'Dietary Supplements', matchedIngredients: ['phytonutrients', 'vitamins', 'minerals'] },
-  { company: 'Pharmavite (Nature Made)', contacts: 21, country: 'USA', industry: 'Vitamins & Supplements', matchedIngredients: ['vitamins', 'minerals', 'omega-3'] },
-  { company: 'Solgar', contacts: 18, country: 'USA', industry: 'Premium Supplements', matchedIngredients: ['amino acids', 'antioxidants', 'minerals'] },
-  { company: 'New Chapter', contacts: 16, country: 'USA', industry: 'Organic Supplements', matchedIngredients: ['fermented', 'organic', 'turmeric'] },
-  { company: 'Thorne Research', contacts: 12, country: 'USA', industry: 'Professional Supplements', matchedIngredients: ['amino acids', 'vitamins', 'minerals'] },
-  { company: 'Pure Encapsulations', contacts: 11, country: 'USA', industry: 'Hypoallergenic Supplements', matchedIngredients: ['vitamins', 'minerals', 'omega-3'] },
-  { company: 'Life Extension', contacts: 20, country: 'USA', industry: 'Anti-Aging Supplements', matchedIngredients: ['resveratrol', 'NAD+', 'antioxidants'] },
-  { company: 'Jarrow Formulas', contacts: 23, country: 'USA', industry: 'Nutritional Supplements', matchedIngredients: ['probiotics', 'coQ10', 'vitamins'] },
-  { company: 'Nordic Naturals', contacts: 13, country: 'USA', industry: 'Omega-3 Products', matchedIngredients: ['omega-3', 'fish oil', 'algae oil'] },
-  { company: 'MegaFood', contacts: 14, country: 'USA', industry: 'Farm Fresh Supplements', matchedIngredients: ['whole food', 'vitamins', 'minerals'] },
-  { company: 'Rainbow Light', contacts: 10, country: 'USA', industry: 'Natural Nutrition', matchedIngredients: ['probiotics', 'enzymes', 'vitamins'] },
-  { company: 'Country Life', contacts: 9, country: 'USA', industry: 'Natural Supplements', matchedIngredients: ['vitamins', 'minerals', 'omega-3'] },
-  { company: 'Source Naturals', contacts: 25, country: 'USA', industry: 'Wellness Formulas', matchedIngredients: ['adaptogens', 'nootropics', 'antioxidants'] },
-  { company: 'Bluebonnet Nutrition', contacts: 8, country: 'USA', industry: 'Kosher Supplements', matchedIngredients: ['vitamins', 'minerals', 'protein'] },
-  { company: 'Youtheory', contacts: 27, country: 'USA', industry: 'Beauty & Wellness', matchedIngredients: ['collagen', 'turmeric', 'ashwagandha'] },
-  { company: 'Zhou Nutrition', contacts: 30, country: 'USA', industry: 'Sports & Wellness', matchedIngredients: ['apple cider vinegar', 'keto', 'energy'] },
-  { company: 'Sports Research', contacts: 29, country: 'USA', industry: 'Performance Nutrition', matchedIngredients: ['collagen', 'MCT oil', 'vitamins'] }
+  { company: 'Vital Proteins', contacts: 26, country: 'USA', industry: 'Nutraceuticals', matchedIngredients: ['collagen', 'peptides', 'protein'], website: 'https://www.vitalproteins.com', contactDetails: generateContactDetails(26, 'Vital Proteins') },
+  { company: 'Nestlé Health Science', contacts: 14, country: 'Switzerland', industry: 'Health Nutrition', matchedIngredients: ['vitamins', 'minerals', 'protein'], website: 'https://www.nestlehealthscience.com', contactDetails: generateContactDetails(14, 'Nestlé Health Science') },
+  { company: "Nature's Bounty", contacts: 22, country: 'USA', industry: 'Supplements', matchedIngredients: ['herbal', 'vitamins', 'minerals'], website: 'https://www.naturesbounty.com', contactDetails: generateContactDetails(22, "Nature's Bounty") },
+  { company: 'Swisse Wellness', contacts: 17, country: 'Australia', industry: 'Wellness', matchedIngredients: ['vitamins', 'superfoods', 'omega-3'], website: 'https://www.swisse.com', contactDetails: generateContactDetails(17, 'Swisse Wellness') },
+  { company: 'NOW Foods', contacts: 31, country: 'USA', industry: 'Natural Products', matchedIngredients: ['amino acids', 'botanicals', 'enzymes'], website: 'https://www.nowfoods.com', contactDetails: generateContactDetails(31, 'NOW Foods') },
+  { company: 'Garden of Life', contacts: 19, country: 'USA', industry: 'Organic Supplements', matchedIngredients: ['organic', 'probiotics', 'protein'], website: 'https://www.gardenoflife.com', contactDetails: generateContactDetails(19, 'Garden of Life') },
+  { company: 'GNC Holdings', contacts: 28, country: 'USA', industry: 'Sports Nutrition', matchedIngredients: ['protein', 'creatine', 'amino acids'], website: 'https://www.gnc.com', contactDetails: generateContactDetails(28, 'GNC Holdings') },
+  { company: 'Herbalife Nutrition', contacts: 24, country: 'USA', industry: 'Nutrition & Weight Loss', matchedIngredients: ['protein', 'fiber', 'vitamins'], website: 'https://www.herbalife.com', contactDetails: generateContactDetails(24, 'Herbalife Nutrition') },
+  { company: 'Amway (Nutrilite)', contacts: 15, country: 'USA', industry: 'Dietary Supplements', matchedIngredients: ['phytonutrients', 'vitamins', 'minerals'], website: 'https://www.amway.com', contactDetails: generateContactDetails(15, 'Amway') },
+  { company: 'Pharmavite (Nature Made)', contacts: 21, country: 'USA', industry: 'Vitamins & Supplements', matchedIngredients: ['vitamins', 'minerals', 'omega-3'], website: 'https://www.naturemade.com', contactDetails: generateContactDetails(21, 'Pharmavite') },
+  { company: 'Solgar', contacts: 18, country: 'USA', industry: 'Premium Supplements', matchedIngredients: ['amino acids', 'antioxidants', 'minerals'], website: 'https://www.solgar.com', contactDetails: generateContactDetails(18, 'Solgar') },
+  { company: 'New Chapter', contacts: 16, country: 'USA', industry: 'Organic Supplements', matchedIngredients: ['fermented', 'organic', 'turmeric'], website: 'https://www.newchapter.com', contactDetails: generateContactDetails(16, 'New Chapter') },
+  { company: 'Thorne Research', contacts: 12, country: 'USA', industry: 'Professional Supplements', matchedIngredients: ['amino acids', 'vitamins', 'minerals'], website: 'https://www.thorne.com', contactDetails: generateContactDetails(12, 'Thorne Research') },
+  { company: 'Pure Encapsulations', contacts: 11, country: 'USA', industry: 'Hypoallergenic Supplements', matchedIngredients: ['vitamins', 'minerals', 'omega-3'], website: 'https://www.pureencapsulations.com', contactDetails: generateContactDetails(11, 'Pure Encapsulations') },
+  { company: 'Life Extension', contacts: 20, country: 'USA', industry: 'Anti-Aging Supplements', matchedIngredients: ['resveratrol', 'NAD+', 'antioxidants'], website: 'https://www.lifeextension.com', contactDetails: generateContactDetails(20, 'Life Extension') },
+  { company: 'Jarrow Formulas', contacts: 23, country: 'USA', industry: 'Nutritional Supplements', matchedIngredients: ['probiotics', 'coQ10', 'vitamins'], website: 'https://www.jarrow.com', contactDetails: generateContactDetails(23, 'Jarrow Formulas') },
+  { company: 'Nordic Naturals', contacts: 13, country: 'USA', industry: 'Omega-3 Products', matchedIngredients: ['omega-3', 'fish oil', 'algae oil'], website: 'https://www.nordicnaturals.com', contactDetails: generateContactDetails(13, 'Nordic Naturals') },
+  { company: 'MegaFood', contacts: 14, country: 'USA', industry: 'Farm Fresh Supplements', matchedIngredients: ['whole food', 'vitamins', 'minerals'], website: 'https://www.megafood.com', contactDetails: generateContactDetails(14, 'MegaFood') },
+  { company: 'Rainbow Light', contacts: 10, country: 'USA', industry: 'Natural Nutrition', matchedIngredients: ['probiotics', 'enzymes', 'vitamins'], contactDetails: generateContactDetails(10, 'Rainbow Light') },
+  { company: 'Country Life', contacts: 9, country: 'USA', industry: 'Natural Supplements', matchedIngredients: ['vitamins', 'minerals', 'omega-3'], website: 'https://www.countrylifevitamins.com', contactDetails: generateContactDetails(9, 'Country Life') },
+  { company: 'Source Naturals', contacts: 25, country: 'USA', industry: 'Wellness Formulas', matchedIngredients: ['adaptogens', 'nootropics', 'antioxidants'], website: 'https://www.sourcenaturals.com', contactDetails: generateContactDetails(25, 'Source Naturals') },
+  { company: 'Bluebonnet Nutrition', contacts: 8, country: 'USA', industry: 'Kosher Supplements', matchedIngredients: ['vitamins', 'minerals', 'protein'], website: 'https://www.bluebonnetnutrition.com', contactDetails: generateContactDetails(8, 'Bluebonnet Nutrition') },
+  { company: 'Youtheory', contacts: 27, country: 'USA', industry: 'Beauty & Wellness', matchedIngredients: ['collagen', 'turmeric', 'ashwagandha'], website: 'https://www.youtheory.com', contactDetails: generateContactDetails(27, 'Youtheory') },
+  { company: 'Zhou Nutrition', contacts: 30, country: 'USA', industry: 'Sports & Wellness', matchedIngredients: ['apple cider vinegar', 'keto', 'energy'], website: 'https://www.zhounutrition.com', contactDetails: generateContactDetails(30, 'Zhou Nutrition') },
+  { company: 'Sports Research', contacts: 29, country: 'USA', industry: 'Performance Nutrition', matchedIngredients: ['collagen', 'MCT oil', 'vitamins'], website: 'https://www.sportsresearch.com', contactDetails: generateContactDetails(29, 'Sports Research') }
 ]
 
 // Generate additional buyers to reach 2,450 total
@@ -57,12 +81,16 @@ export function generateMockBuyers(count: number = 2450): Buyer[] {
   while (baseBuyers.length < count) {
     const company = companies[Math.floor(Math.random() * companies.length)]
     const number = Math.floor(Math.random() * 10000)
+    const companyName = `${company} ${number}`
+    const contactsCount = Math.floor(Math.random() * 35) + 5
     baseBuyers.push({
-      company: `${company} ${number}`,
-      contacts: Math.floor(Math.random() * 35) + 5,
+      company: companyName,
+      contacts: contactsCount,
       country: countries[Math.floor(Math.random() * countries.length)],
       industry: industries[Math.floor(Math.random() * industries.length)],
-      matchedIngredients: ['vitamins', 'minerals', 'protein']
+      matchedIngredients: ['vitamins', 'minerals', 'protein'],
+      website: Math.random() > 0.3 ? `https://www.${companyName.toLowerCase().replace(/\s+/g, '')}.com` : undefined,
+      contactDetails: generateContactDetails(contactsCount, companyName)
     })
   }
   

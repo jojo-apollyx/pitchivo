@@ -20,6 +20,7 @@ export interface CampaignDraft {
   startDate?: Date
   senderEmail: string
   senderHealth: 'healthy' | 'warming_up' | 'caution' | 'poor'
+  priorityLocations?: string[]
   
   // Metadata
   currentStep: number

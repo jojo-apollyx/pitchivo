@@ -42,11 +42,20 @@ export default function ChooseProductPage() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setProducts(data || [])
+      
+      // Parse product_data if it's a string
+      const productsWithParsedData = (data || []).map(product => ({
+        ...product,
+        product_data: typeof product.product_data === 'string' 
+          ? JSON.parse(product.product_data) 
+          : product.product_data
+      }))
+      
+      setProducts(productsWithParsedData)
 
       // Auto-select if only one product
-      if (data && data.length === 1) {
-        handleSelectProduct(data[0])
+      if (productsWithParsedData.length === 1) {
+        handleSelectProduct(productsWithParsedData[0])
       }
     } catch (error) {
       console.error('Error loading products:', error)
@@ -57,12 +66,16 @@ export default function ChooseProductPage() {
 
   function handleSelectProduct(product: Product) {
     setSelectedProductId(product.product_id)
+    const productData = typeof product.product_data === 'string' 
+      ? JSON.parse(product.product_data) 
+      : product.product_data
+    const filesCount = productData?.uploaded_files?.length || 0
     setDraft({
       productId: product.product_id,
       productName: product.product_name,
       productIndustry: product.industry_code,
-      productTags: product.product_data?.tags || [],
-      attachedFilesCount: product.product_data?.documents?.length || 0
+      productTags: productData?.tags || [],
+      attachedFilesCount: filesCount
     })
   }
 
@@ -88,7 +101,7 @@ export default function ChooseProductPage() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <div className="flex-1 text-center sm:text-left">
+            <div className="flex-1 flex items-center justify-between">
               <h1 className="text-base sm:text-lg font-semibold">Campaign Setup</h1>
               <p className="text-xs sm:text-sm text-muted-foreground">Step 1 of 4</p>
             </div>
@@ -123,8 +136,13 @@ export default function ChooseProductPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {products.map((product) => {
                 const isSelected = selectedProductId === product.product_id
-                const tags = product.product_data?.tags || []
-                const filesCount = product.product_data?.documents?.length || 0
+                const productData = typeof product.product_data === 'string' 
+                  ? JSON.parse(product.product_data) 
+                  : product.product_data
+                const tags = productData?.tags || []
+                const filesCount = productData?.uploaded_files?.length || 0
+                const productImages = productData?.product_images || []
+                const firstImage = productImages.length > 0 ? productImages[0] : null
 
                 return (
                   <button
@@ -149,8 +167,33 @@ export default function ChooseProductPage() {
                     )}
 
                     {/* Product Thumbnail */}
-                    <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 mb-3 flex items-center justify-center">
-                      <div className="text-4xl font-bold text-primary/30">
+                    <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 mb-3 flex items-center justify-center overflow-hidden">
+                      {firstImage ? (() => {
+                        // Get public URL from Supabase storage
+                        let imageUrl = firstImage
+                        if (!firstImage.startsWith('http')) {
+                          // It's a storage path, get public URL
+                          const { data } = supabase.storage
+                            .from('product-images')
+                            .getPublicUrl(firstImage)
+                          imageUrl = data.publicUrl
+                        }
+                        return (
+                          <img 
+                            src={imageUrl}
+                            alt={product.product_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to first letter if image fails to load
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                              const fallback = target.nextElementSibling as HTMLElement
+                              if (fallback) fallback.style.display = 'flex'
+                            }}
+                          />
+                        )
+                      })() : null}
+                      <div className={`text-4xl font-bold text-primary/30 ${firstImage ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
                         {product.product_name.charAt(0)}
                       </div>
                     </div>
@@ -160,10 +203,69 @@ export default function ChooseProductPage() {
                       {product.product_name}
                     </h3>
 
+                    {/* Identifying Information */}
+                    <div className="space-y-1.5 mb-2">
+                      {/* Category */}
+                      {productData?.category && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground/70">Category:</span>
+                          <span>{productData.category}</span>
+                        </div>
+                      )}
+                      
+                      {/* Form & Grade */}
+                      {(productData?.form || productData?.grade) && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          {productData?.form && productData?.grade ? (
+                            <>
+                              <span className="font-medium text-foreground/70">Form:</span>
+                              <span>{productData.form}</span>
+                              <span className="text-foreground/40">•</span>
+                              <span className="font-medium text-foreground/70">Grade:</span>
+                              <span>{productData.grade}</span>
+                            </>
+                          ) : (
+                            <>
+                              {productData?.form && (
+                                <>
+                                  <span className="font-medium text-foreground/70">Form:</span>
+                                  <span>{productData.form}</span>
+                                </>
+                              )}
+                              {productData?.grade && (
+                                <>
+                                  <span className="font-medium text-foreground/70">Grade:</span>
+                                  <span>{productData.grade}</span>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Manufacturer */}
+                      {productData?.manufacturer_name && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground/70">Manufacturer:</span>
+                          <span className="line-clamp-1">{productData.manufacturer_name}</span>
+                        </div>
+                      )}
+                      
+                      {/* CAS Number or Origin Country */}
+                      {(productData?.cas_number || productData?.origin_country) && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          {productData?.cas_number && (
+                            <span className="font-medium text-foreground/70">CAS:</span>
+                          )}
+                          <span>{productData?.cas_number || productData?.origin_country}</span>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Tags */}
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2">
-                        {tags.slice(0, 2).map((tag, index) => (
+                        {tags.slice(0, 2).map((tag: string, index: number) => (
                           <Badge
                             key={index}
                             variant="outline"
@@ -181,10 +283,12 @@ export default function ChooseProductPage() {
                     )}
 
                     {/* Files Count */}
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <FileText className="h-3 w-3" />
-                      <span>{filesCount} {filesCount === 1 ? 'file' : 'files'} attached</span>
-                    </div>
+                    {filesCount > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <FileText className="h-3 w-3" />
+                        <span>{filesCount} {filesCount === 1 ? 'file' : 'files'}</span>
+                      </div>
+                    )}
 
                     {/* Select Button */}
                     {isSelected && (
@@ -211,7 +315,6 @@ export default function ChooseProductPage() {
               <div className="h-2 w-2 rounded-full bg-border"></div>
               <div className="h-2 w-2 rounded-full bg-border"></div>
             </div>
-
             {/* Next Button */}
             <Button
               onClick={handleNext}

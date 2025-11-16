@@ -102,7 +102,7 @@ export default function ReviewLaunchPage() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <div className="flex-1 text-center sm:text-left">
+            <div className="flex-1 flex items-center justify-between">
               <h1 className="text-base sm:text-lg font-semibold">Campaign Setup</h1>
               <p className="text-xs sm:text-sm text-muted-foreground">Step 4 of 4</p>
             </div>
@@ -174,7 +174,7 @@ export default function ReviewLaunchPage() {
                   <div className="col-span-2">
                     <div className="text-xs text-muted-foreground mb-1">Data source</div>
                     <div className="text-sm font-semibold">
-                      Pitchville Curated DB
+                      Pitchivo Curated DB
                     </div>
                   </div>
                 </div>
@@ -289,7 +289,7 @@ export default function ReviewLaunchPage() {
                   className="mt-1"
                 />
                 <span className="text-sm">
-                  I confirm all campaign details are correct and I agree to Pitchville Terms.
+                  I confirm all campaign details are correct and I agree to Pitchivo Terms.
                 </span>
               </label>
             </div>
