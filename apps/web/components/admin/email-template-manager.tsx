@@ -1,0 +1,304 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { FileText, Plus, Edit, Trash, Save, Star } from 'lucide-react'
+
+interface EmailTemplate {
+  template_id: string
+  campaign_id: string
+  template_name: string
+  subject: string
+  content: string
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+interface EmailTemplateManagerProps {
+  campaignId: string
+  onSelectTemplate?: (template: EmailTemplate) => void
+}
+
+export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemplateManagerProps) {
+  const [templates, setTemplates] = useState<EmailTemplate[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null)
+  
+  // Form state
+  const [templateName, setTemplateName] = useState('')
+  const [subject, setSubject] = useState('')
+  const [content, setContent] = useState('')
+  const [isDefault, setIsDefault] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    loadTemplates()
+  }, [campaignId])
+
+  async function loadTemplates() {
+    try {
+      const response = await fetch(`/api/admin/campaigns/templates?campaignId=${campaignId}`)
+      if (!response.ok) throw new Error('Failed to load templates')
+      
+      const data = await response.json()
+      setTemplates(data.templates || [])
+    } catch (error) {
+      console.error('Error loading templates:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSaveTemplate() {
+    if (!templateName || !subject || !content) {
+      alert('Please fill in all fields')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const url = editingTemplate
+        ? '/api/admin/campaigns/templates'
+        : '/api/admin/campaigns/templates'
+      
+      const method = editingTemplate ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          editingTemplate
+            ? {
+                templateId: editingTemplate.template_id,
+                templateName,
+                subject,
+                content,
+                isDefault
+              }
+            : {
+                campaignId,
+                templateName,
+                subject,
+                content,
+                isDefault
+              }
+        )
+      })
+
+      if (!response.ok) throw new Error('Failed to save template')
+
+      alert(`Template ${editingTemplate ? 'updated' : 'created'} successfully!`)
+      
+      // Reset form
+      setTemplateName('')
+      setSubject('')
+      setContent('')
+      setIsDefault(false)
+      setEditingTemplate(null)
+      setShowForm(false)
+      
+      // Reload templates
+      await loadTemplates()
+    } catch (error) {
+      console.error('Error saving template:', error)
+      alert('Failed to save template')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDeleteTemplate(templateId: string) {
+    if (!confirm('Are you sure you want to delete this template?')) return
+
+    try {
+      const response = await fetch(`/api/admin/campaigns/templates?templateId=${templateId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) throw new Error('Failed to delete template')
+
+      alert('Template deleted successfully!')
+      await loadTemplates()
+    } catch (error) {
+      console.error('Error deleting template:', error)
+      alert('Failed to delete template')
+    }
+  }
+
+  function handleEditTemplate(template: EmailTemplate) {
+    setEditingTemplate(template)
+    setTemplateName(template.template_name)
+    setSubject(template.subject)
+    setContent(template.content)
+    setIsDefault(template.is_default)
+    setShowForm(true)
+  }
+
+  function handleCancelEdit() {
+    setEditingTemplate(null)
+    setTemplateName('')
+    setSubject('')
+    setContent('')
+    setIsDefault(false)
+    setShowForm(false)
+  }
+
+  if (loading) {
+    return <div className="text-sm text-muted-foreground">Loading templates...</div>
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Email Templates
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Save and reuse email templates for this campaign
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowForm(!showForm)}
+          variant={showForm ? 'outline' : 'default'}
+          className="gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          {showForm ? 'Cancel' : 'New Template'}
+        </Button>
+      </div>
+
+      {/* Template Form */}
+      {showForm && (
+        <div className="bg-card/50 rounded-xl p-4 border border-border/30 space-y-4">
+          <h4 className="font-semibold">
+            {editingTemplate ? 'Edit Template' : 'Create New Template'}
+          </h4>
+          
+          <div>
+            <Label htmlFor="templateName">Template Name</Label>
+            <Input
+              id="templateName"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g., Initial Outreach"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="templateSubject">Subject Line</Label>
+            <Input
+              id="templateSubject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Email subject"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="templateContent">Email Content</Label>
+            <textarea
+              id="templateContent"
+              className="w-full min-h-[200px] rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Email content with placeholders..."
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isDefault"
+              checked={isDefault}
+              onChange={(e) => setIsDefault(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="isDefault" className="cursor-pointer">
+              Set as default template for this campaign
+            </Label>
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={handleSaveTemplate} disabled={saving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : editingTemplate ? 'Update Template' : 'Save Template'}
+            </Button>
+            <Button onClick={handleCancelEdit} variant="outline">
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Templates List */}
+      {templates.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p>No templates yet. Create one to get started!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {templates.map((template) => (
+            <div
+              key={template.template_id}
+              className="bg-background/60 rounded-lg p-4 border border-border/20 hover:border-primary/30 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="font-semibold">{template.template_name}</h4>
+                    {template.is_default && (
+                      <Badge variant="outline" className="gap-1">
+                        <Star className="h-3 w-3 fill-current" />
+                        Default
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    <strong>Subject:</strong> {template.subject}
+                  </p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {template.content.substring(0, 150)}...
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {onSelectTemplate && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onSelectTemplate(template)}
+                    >
+                      Use
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEditTemplate(template)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteTemplate(template.template_id)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+

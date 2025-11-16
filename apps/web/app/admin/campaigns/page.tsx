@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Send, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Plus, Minus, RefreshCw, BarChart3, Settings, Eye, CheckCircle2, XCircle, PauseCircle, PlayCircle, AlertCircle, Search } from 'lucide-react'
+import { Mail, Send, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Plus, Minus, RefreshCw, BarChart3, Settings, Eye, CheckCircle2, XCircle, PauseCircle, PlayCircle, AlertCircle, Search, FileText, Sparkles, CalendarDays, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +15,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
+import { EmailQualityChecker } from '@/components/admin/email-quality-checker'
+import { EmailTemplateManager } from '@/components/admin/email-template-manager'
+import { ScheduledEmailsViewer } from '@/components/admin/scheduled-emails-viewer'
+import { BatchEmailScheduler } from '@/components/admin/batch-email-scheduler'
 
 interface Campaign {
   campaign_id: string
@@ -47,6 +51,7 @@ export default function AdminCampaignsPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState<'send' | 'templates' | 'schedule' | 'scheduled' | 'quality'>('send')
   
   // Email form state
   const [emailTo, setEmailTo] = useState('')
@@ -579,75 +584,162 @@ P.S. Feel free to submit an RFQ directly through our product page if you'd like 
                     </div>
                   </div>
 
-                  {/* Email Sending Form */}
-                  <div className="bg-card/50 rounded-xl p-6 border border-border/30">
-                    <h3 className="text-lg font-semibold mb-4">Send Campaign Email</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="emailTo">Recipient Email</Label>
-                        <Input
-                          id="emailTo"
-                          type="email"
-                          placeholder="buyer@company.com"
-                          value={emailTo}
-                          onChange={(e) => setEmailTo(e.target.value)}
-                        />
+                  {/* Email Management Tabs */}
+                  <div className="bg-card/50 rounded-xl border border-border/30">
+                    {/* Tab Navigation */}
+                    <div className="border-b border-border/30 px-6 pt-6">
+                      <div className="flex gap-2 overflow-x-auto">
+                        <Button
+                          variant={activeTab === 'send' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setActiveTab('send')}
+                          className="gap-2"
+                        >
+                          <Send className="h-4 w-4" />
+                          Send Email
+                        </Button>
+                        <Button
+                          variant={activeTab === 'quality' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setActiveTab('quality')}
+                          className="gap-2"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Quality Check
+                        </Button>
+                        <Button
+                          variant={activeTab === 'templates' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setActiveTab('templates')}
+                          className="gap-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Templates
+                        </Button>
+                        <Button
+                          variant={activeTab === 'schedule' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setActiveTab('schedule')}
+                          className="gap-2"
+                        >
+                          <Zap className="h-4 w-4" />
+                          Batch Schedule
+                        </Button>
+                        <Button
+                          variant={activeTab === 'scheduled' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setActiveTab('scheduled')}
+                          className="gap-2"
+                        >
+                          <CalendarDays className="h-4 w-4" />
+                          Scheduled Emails
+                        </Button>
                       </div>
+                    </div>
 
-                      <div>
-                        <Label htmlFor="emailSubject">Subject Line</Label>
-                        <Input
-                          id="emailSubject"
-                          type="text"
-                          placeholder="Introducing our premium collagen peptides"
-                          value={emailSubject}
-                          onChange={(e) => setEmailSubject(e.target.value)}
-                        />
-                      </div>
+                    {/* Tab Content */}
+                    <div className="p-6">
+                      {activeTab === 'send' && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">Send Campaign Email</h3>
+                          <div>
+                            <Label htmlFor="emailTo">Recipient Email</Label>
+                            <Input
+                              id="emailTo"
+                              type="email"
+                              placeholder="buyer@company.com"
+                              value={emailTo}
+                              onChange={(e) => setEmailTo(e.target.value)}
+                            />
+                          </div>
 
-                      <div>
-                        <Label htmlFor="emailContent">Email Content</Label>
-                        <textarea
-                          id="emailContent"
-                          className="w-full min-h-[200px] rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="Hi {{buyer_name}},&#10;&#10;I noticed your company sources ingredients for health and wellness products. We've recently launched our premium product.&#10;&#10;View full details: {{product_link}}&#10;&#10;Best regards"
-                          value={emailContent}
-                          onChange={(e) => setEmailContent(e.target.value)}
-                        />
-                        <div className="mt-2 bg-primary/5 rounded-lg p-3 border border-primary/20">
-                          <p className="text-xs font-semibold text-primary mb-2">📝 Available Placeholders:</p>
-                          <div className="space-y-1 text-xs text-muted-foreground">
-                            <div className="flex items-start gap-2">
-                              <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{product_link}}'}</code>
-                              <span>→ Full URL to product page</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{product_name}}'}</code>
-                              <span>→ Product name</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{buyer_name}}'}</code>
-                              <span>→ Buyer company name</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{org_name}}'}</code>
-                              <span>→ Your organization name</span>
+                          <div>
+                            <Label htmlFor="emailSubject">Subject Line</Label>
+                            <Input
+                              id="emailSubject"
+                              type="text"
+                              placeholder="Introducing our premium collagen peptides"
+                              value={emailSubject}
+                              onChange={(e) => setEmailSubject(e.target.value)}
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="emailContent">Email Content</Label>
+                            <textarea
+                              id="emailContent"
+                              className="w-full min-h-[200px] rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="Hi {{buyer_name}},&#10;&#10;I noticed your company sources ingredients for health and wellness products. We've recently launched our premium product.&#10;&#10;View full details: {{product_link}}&#10;&#10;Best regards"
+                              value={emailContent}
+                              onChange={(e) => setEmailContent(e.target.value)}
+                            />
+                            <div className="mt-2 bg-primary/5 rounded-lg p-3 border border-primary/20">
+                              <p className="text-xs font-semibold text-primary mb-2">📝 Available Placeholders:</p>
+                              <div className="space-y-1 text-xs text-muted-foreground">
+                                <div className="flex items-start gap-2">
+                                  <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{product_link}}'}</code>
+                                  <span>→ Full URL to product page</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{product_name}}'}</code>
+                                  <span>→ Product name</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{buyer_name}}'}</code>
+                                  <span>→ Buyer company name</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <code className="bg-background px-1.5 py-0.5 rounded font-mono text-primary">{'{{org_name}}'}</code>
+                                  <span>→ Your organization name</span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-2 italic">
+                                Placeholders will be automatically replaced when email is sent.
+                              </p>
                             </div>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-2 italic">
-                            Placeholders will be automatically replaced when email is sent.
-                          </p>
-                        </div>
-                      </div>
 
-                      <Button
-                        onClick={handleSendEmail}
-                        disabled={sending || !emailTo || !emailSubject || !emailContent}
-                        className="w-full gap-2 min-h-[44px]"
-                      >
-                        <Send className="h-4 w-4" />
-                        {sending ? 'Sending...' : 'Send Email'}
-                      </Button>
+                          <Button
+                            onClick={handleSendEmail}
+                            disabled={sending || !emailTo || !emailSubject || !emailContent}
+                            className="w-full gap-2 min-h-[44px]"
+                          >
+                            <Send className="h-4 w-4" />
+                            {sending ? 'Sending...' : 'Send Email Immediately'}
+                          </Button>
+                        </div>
+                      )}
+
+                      {activeTab === 'quality' && (
+                        <EmailQualityChecker
+                          subject={emailSubject}
+                          content={emailContent}
+                          onSubjectChange={setEmailSubject}
+                          onContentChange={setEmailContent}
+                        />
+                      )}
+
+                      {activeTab === 'templates' && (
+                        <EmailTemplateManager
+                          campaignId={selectedCampaign.campaign_id}
+                          onSelectTemplate={(template) => {
+                            setEmailSubject(template.subject)
+                            setEmailContent(template.content)
+                            setActiveTab('send')
+                          }}
+                        />
+                      )}
+
+                      {activeTab === 'schedule' && (
+                        <BatchEmailScheduler
+                          campaignId={selectedCampaign.campaign_id}
+                          onScheduleComplete={() => setActiveTab('scheduled')}
+                        />
+                      )}
+
+                      {activeTab === 'scheduled' && (
+                        <ScheduledEmailsViewer campaignId={selectedCampaign.campaign_id} />
+                      )}
                     </div>
                   </div>
                 </div>
