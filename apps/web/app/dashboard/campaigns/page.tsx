@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, ExternalLink, Activity } from 'lucide-react'
+import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { createClient } from '@/lib/supabase/client'
-import { generateMockActivities } from '@/lib/mock-data/buyers'
 
 interface Campaign {
   campaign_id: string
@@ -16,27 +22,51 @@ interface Campaign {
   emails_sent: number
   emails_opened: number
   emails_clicked: number
+  emails_delivered: number
+  emails_bounced: number
   rfqs_received: number
   launched_at: string | null
   created_at: string
+  product_id: string
   products?: {
     product_name: string
+    product_data?: any
   }
 }
 
-interface Activity {
-  time: string
-  type: string
-  buyerCompany: string
-  description: string
+interface CampaignActivity {
+  activity_id: string
+  campaign_id: string
+  activity_type: 'email_sent' | 'email_opened' | 'email_clicked' | 'email_bounced' | 'product_viewed' | 'rfq_submitted'
+  buyer_company: string | null
+  contact_email: string | null
+  metadata: {
+    name?: string
+    title?: string
+    location?: string
+    company?: string
+    event?: string
+    messageId?: string
+    timestamp?: string
+    [key: string]: any
+  } | null
+  created_at: string
+}
+
+interface CampaignWithDetails extends Campaign {
+  productImageUrl?: string | null
+  activities?: CampaignActivity[]
+  expanded?: boolean
+  progress?: number
+  openRate?: number
+  clickRate?: number
 }
 
 export default function CampaignsPage() {
   const router = useRouter()
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
-  const [activities, setActivities] = useState<Activity[]>([])
+  const [cancellingCampaign, setCancellingCampaign] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -47,38 +77,61 @@ export default function CampaignsPage() {
     try {
       const { data, error } = await supabase
         .from('campaigns')
-        .select('*, products(product_name)')
+        .select(`
+          *,
+          products(
+            product_name,
+            product_data
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      // Simulate some progress for demo
-      const campaignsWithProgress = (data || []).map(campaign => {
-        const progress = Math.min((campaign.emails_sent / campaign.email_count) * 100, 100)
-        const openRate = campaign.emails_sent > 0 
-          ? Math.round((campaign.emails_opened / campaign.emails_sent) * 100) 
-          : 0
-        const clickRate = campaign.emails_sent > 0
-          ? Math.round((campaign.emails_clicked / campaign.emails_sent) * 100)
-          : 0
+      // Process campaigns with product images and progress
+      const campaignsWithDetails: CampaignWithDetails[] = await Promise.all(
+        (data || []).map(async (campaign) => {
+          const progress = Math.min((campaign.emails_sent / campaign.email_count) * 100, 100)
+          const openRate = campaign.emails_sent > 0 
+            ? Math.round((campaign.emails_opened / campaign.emails_sent) * 100) 
+            : 0
+          const clickRate = campaign.emails_sent > 0
+            ? Math.round((campaign.emails_clicked / campaign.emails_sent) * 100)
+            : 0
 
-        return {
-          ...campaign,
-          progress,
-          openRate,
-          clickRate
-        }
-      })
+          // Get product image
+          let productImageUrl: string | null = null
+          if (campaign.products?.product_data) {
+            const productData = typeof campaign.products.product_data === 'string'
+              ? JSON.parse(campaign.products.product_data)
+              : campaign.products.product_data
+            
+            const productImages = productData?.product_images || []
+            if (productImages.length > 0) {
+              const firstImage = productImages[0]
+              if (firstImage.startsWith('http')) {
+                productImageUrl = firstImage
+              } else {
+                const { data: urlData } = supabase.storage
+                  .from('product-images')
+                  .getPublicUrl(firstImage)
+                productImageUrl = urlData.publicUrl
+              }
+            }
+          }
 
-      setCampaigns(campaignsWithProgress as Campaign[])
+          return {
+            ...campaign,
+            progress,
+            openRate,
+            clickRate,
+            productImageUrl,
+            activities: []
+          } as CampaignWithDetails
+        })
+      )
 
-      // Auto-select first campaign if exists
-      if (campaignsWithProgress.length > 0) {
-        const first = campaignsWithProgress[0]
-        setSelectedCampaign(first as Campaign)
-        // @ts-ignore
-        setActivities(generateMockActivities(first.campaign_name))
-      }
+      setCampaigns(campaignsWithDetails)
     } catch (error) {
       console.error('Error loading campaigns:', error)
     } finally {
@@ -86,13 +139,151 @@ export default function CampaignsPage() {
     }
   }
 
-  function handleCreateCampaign() {
-    router.push('/dashboard/campaigns/create/product')
+  function handleViewDetails(campaignId: string) {
+    router.push(`/dashboard/campaigns/${campaignId}`)
   }
 
-  function handleSelectCampaign(campaign: Campaign) {
-    setSelectedCampaign(campaign)
-    setActivities(generateMockActivities(campaign.campaign_name))
+  async function handleCancelCampaign(campaignId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    
+    if (!confirm('Are you sure you want to cancel this campaign? This action cannot be undone.')) {
+      return
+    }
+
+    setCancellingCampaign(campaignId)
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      // Reload campaigns
+      await loadCampaigns()
+    } catch (error) {
+      console.error('Error cancelling campaign:', error)
+      alert('Failed to cancel campaign. Please try again.')
+    } finally {
+      setCancellingCampaign(null)
+    }
+  }
+
+  async function handlePauseCampaign(campaignId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    
+    setCancellingCampaign(campaignId)
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          status: 'paused',
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      // Reload campaigns
+      await loadCampaigns()
+    } catch (error) {
+      console.error('Error pausing campaign:', error)
+      alert('Failed to pause campaign. Please try again.')
+    } finally {
+      setCancellingCampaign(null)
+    }
+  }
+
+  async function handleResumeCampaign(campaignId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    
+    setCancellingCampaign(campaignId)
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      // Reload campaigns
+      await loadCampaigns()
+    } catch (error) {
+      console.error('Error resuming campaign:', error)
+      alert('Failed to resume campaign. Please try again.')
+    } finally {
+      setCancellingCampaign(null)
+    }
+  }
+
+  async function handleArchiveCampaign(campaignId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    
+    if (!confirm('Are you sure you want to archive this campaign? You can restore it later.')) {
+      return
+    }
+
+    setCancellingCampaign(campaignId)
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      // Reload campaigns
+      await loadCampaigns()
+    } catch (error) {
+      console.error('Error archiving campaign:', error)
+      alert('Failed to archive campaign. Please try again.')
+    } finally {
+      setCancellingCampaign(null)
+    }
+  }
+
+  async function handleDeleteCampaign(campaignId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    
+    if (!confirm('Are you sure you want to permanently delete this campaign? This action cannot be undone and all associated data will be lost.')) {
+      return
+    }
+
+    if (!confirm('This is your final warning. The campaign and all its activities will be permanently deleted.')) {
+      return
+    }
+
+    setCancellingCampaign(campaignId)
+    try {
+      // Delete campaign (cascade will delete activities)
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      // Reload campaigns
+      await loadCampaigns()
+    } catch (error) {
+      console.error('Error deleting campaign:', error)
+      alert('Failed to delete campaign. Please try again.')
+    } finally {
+      setCancellingCampaign(null)
+    }
+  }
+
+  function handleCreateCampaign() {
+    router.push('/dashboard/campaigns/create/product')
   }
 
   const getStatusColor = (status: string) => {
@@ -111,33 +302,6 @@ export default function CampaignsPage() {
     }
   }
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'email_opened':
-        return <Mail className="h-3 w-3" />
-      case 'email_clicked':
-        return <MousePointerClick className="h-3 w-3" />
-      case 'product_viewed':
-        return <ExternalLink className="h-3 w-3" />
-      case 'rfq_submitted':
-        return <MessageSquare className="h-3 w-3" />
-      default:
-        return <Activity className="h-3 w-3" />
-    }
-  }
-
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case 'rfq_submitted':
-        return 'text-accent'
-      case 'product_viewed':
-        return 'text-primary'
-      case 'email_clicked':
-        return 'text-blue-600'
-      default:
-        return 'text-muted-foreground'
-    }
-  }
 
   if (loading) {
     return (
@@ -150,11 +314,9 @@ export default function CampaignsPage() {
   if (campaigns.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-        {/* Decorative background elements */}
         <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
         <div className="relative">
-          {/* Page Header */}
           <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
             <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -172,7 +334,6 @@ export default function CampaignsPage() {
             </div>
           </section>
 
-          {/* Empty State */}
           <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div className="max-w-2xl mx-auto text-center">
               <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
@@ -195,7 +356,6 @@ export default function CampaignsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Page Header */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -213,38 +373,47 @@ export default function CampaignsPage() {
         </div>
       </section>
 
-      {/* Main Content */}
       <section className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto">
-          {/* Campaigns List */}
           <div className="divide-y divide-border/30">
             {campaigns.map((campaign) => {
-              // @ts-ignore
-              const progress = campaign.progress || 0
-              // @ts-ignore
-              const openRate = campaign.openRate || 0
-              // @ts-ignore
-              const clickRate = campaign.clickRate || 0
+              const canCancel = campaign.status === 'scheduled' || campaign.status === 'active'
+              const canPause = campaign.status === 'active'
+              const canResume = campaign.status === 'paused'
+              const isLoading = cancellingCampaign === campaign.campaign_id
 
               return (
-                <button
+                <div
                   key={campaign.campaign_id}
-                  onClick={() => handleSelectCampaign(campaign)}
-                  className={`
-                    w-full text-left p-4 sm:p-6 hover:bg-accent/5 transition-colors
-                    ${selectedCampaign?.campaign_id === campaign.campaign_id ? 'bg-primary/5' : ''}
-                  `}
+                  className="p-4 sm:p-6 hover:bg-accent/5 transition-colors"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                    {/* Left: Campaign Info */}
+                  <div className="flex items-start gap-3">
+                    {/* Product Image */}
+                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {campaign.productImageUrl ? (
+                        <img 
+                          src={campaign.productImageUrl}
+                          alt={campaign.products?.product_name || 'Product'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                            const fallback = target.nextElementSibling as HTMLElement
+                            if (fallback) fallback.style.display = 'flex'
+                          }}
+                        />
+                      ) : null}
+                      <div className={`text-xl sm:text-2xl font-bold text-primary/50 ${campaign.productImageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                        {campaign.products?.product_name?.charAt(0) || 'P'}
+                      </div>
+                    </div>
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-3 mb-2">
-                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-                          <Mail className="h-5 w-5 text-primary" />
-                        </div>
+                      {/* Row 1: Campaign Name, Status, Date */}
+                      <div className="flex items-start justify-between gap-4 mb-2">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-base mb-1">{campaign.campaign_name}</h3>
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <Badge variant="outline" className={`text-xs ${getStatusColor(campaign.status)}`}>
                               {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
                             </Badge>
@@ -254,13 +423,95 @@ export default function CampaignsPage() {
                                 {new Date(campaign.launched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </span>
                             )}
+                            {campaign.products && (
+                              <span className="text-xs text-muted-foreground">• {campaign.products.product_name}</span>
+                            )}
                           </div>
-                          {/* @ts-ignore */}
-                          {campaign.products && <p className="text-sm text-muted-foreground">{campaign.products.product_name}</p>}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(campaign.campaign_id)}
+                            className="gap-2"
+                          >
+                            <Activity className="h-4 w-4" />
+                            View Details
+                          </Button>
+                          
+                          {/* Primary Actions */}
+                          {canResume && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleResumeCampaign(campaign.campaign_id, e)}
+                              disabled={isLoading}
+                              className="gap-2"
+                            >
+                              <Play className="h-4 w-4" />
+                              Resume
+                            </Button>
+                          )}
+                          {canPause && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handlePauseCampaign(campaign.campaign_id, e)}
+                              disabled={isLoading}
+                              className="gap-2"
+                            >
+                              <Pause className="h-4 w-4" />
+                              Pause
+                            </Button>
+                          )}
+
+                          {/* More Actions Dropdown */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={isLoading}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-8 w-8 p-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {canCancel && (
+                                <DropdownMenuItem
+                                  onClick={(e) => handleCancelCampaign(campaign.campaign_id, e)}
+                                  className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/20"
+                                >
+                                  <X className="h-4 w-4 mr-2" />
+                                  Cancel Campaign
+                                </DropdownMenuItem>
+                              )}
+                              {(campaign.status === 'completed' || campaign.status === 'cancelled' || campaign.status === 'paused') && (
+                                <DropdownMenuItem
+                                  onClick={(e) => handleArchiveCampaign(campaign.campaign_id, e)}
+                                >
+                                  <Archive className="h-4 w-4 mr-2" />
+                                  {campaign.status === 'completed' ? 'Mark as Archived' : 'Archive'}
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => handleDeleteCampaign(campaign.campaign_id, e)}
+                                className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/20"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Permanently
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
-                      {/* Progress Bar */}
+                      {/* Row 2: Progress Bar */}
                       <div className="mb-3">
                         <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                           <span>Progress</span>
@@ -269,26 +520,26 @@ export default function CampaignsPage() {
                         <div className="w-full bg-border/30 rounded-full h-2">
                           <div
                             className="bg-primary rounded-full h-2 transition-all duration-300"
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${campaign.progress || 0}%` }}
                           />
                         </div>
                       </div>
 
-                      {/* Metrics */}
+                      {/* Row 3: Metrics */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="bg-card/50 rounded-lg p-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <TrendingUp className="h-3 w-3" />
                             <span>Opens</span>
                           </div>
-                          <div className="text-base font-bold">{openRate}%</div>
+                          <div className="text-base font-bold">{campaign.openRate || 0}%</div>
                         </div>
                         <div className="bg-card/50 rounded-lg p-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <MousePointerClick className="h-3 w-3" />
                             <span>Clicks</span>
                           </div>
-                          <div className="text-base font-bold">{clickRate}%</div>
+                          <div className="text-base font-bold">{campaign.clickRate || 0}%</div>
                         </div>
                         <div className="bg-card/50 rounded-lg p-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
@@ -307,33 +558,10 @@ export default function CampaignsPage() {
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
               )
             })}
           </div>
-
-          {/* Activity Feed */}
-          {selectedCampaign && activities.length > 0 && (
-            <div className="mt-8 pt-8 border-t border-border/50">
-              <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-              <div className="divide-y divide-border/30">
-                {activities.map((activity, index) => (
-                  <div key={index} className="py-3 flex items-start gap-3">
-                    <div className={`h-8 w-8 rounded-lg bg-card/50 flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-medium text-sm">{activity.buyerCompany}</span>
-                        <span className="text-xs text-muted-foreground">{activity.time}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{activity.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </section>
     </div>
