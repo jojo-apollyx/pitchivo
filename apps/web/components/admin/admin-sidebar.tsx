@@ -10,8 +10,7 @@ import {
   UserPlus,
   Shield,
   BarChart3,
-  ArrowLeft,
-  FileText
+  ArrowLeft
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -45,11 +44,6 @@ const menuItems = [
     label: 'Domain Control',
     href: '/admin/domains',
     icon: Shield,
-  },
-  {
-    label: 'Product Templates',
-    href: '/admin/templates',
-    icon: FileText,
   },
   {
     label: 'System Metrics',
