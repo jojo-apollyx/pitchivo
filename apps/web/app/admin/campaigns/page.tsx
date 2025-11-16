@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Send, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Plus, Minus, RefreshCw, BarChart3, Settings, Eye, CheckCircle2, XCircle, PauseCircle, PlayCircle, AlertCircle } from 'lucide-react'
+import { Mail, Send, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Plus, Minus, RefreshCw, BarChart3, Settings, Eye, CheckCircle2, XCircle, PauseCircle, PlayCircle, AlertCircle, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,9 +42,11 @@ interface Campaign {
 export default function AdminCampaignsPage() {
   const router = useRouter()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   
   // Email form state
   const [emailTo, setEmailTo] = useState('')
@@ -57,6 +59,29 @@ export default function AdminCampaignsPage() {
     loadCampaigns()
   }, [])
 
+  // Filter campaigns based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredCampaigns(campaigns)
+    } else {
+      const query = searchQuery.toLowerCase()
+      const filtered = campaigns.filter((campaign) => {
+        const campaignName = campaign.campaign_name?.toLowerCase() || ''
+        const orgName = campaign.organizations?.name?.toLowerCase() || ''
+        const productName = campaign.products?.product_name?.toLowerCase() || ''
+        const status = campaign.status?.toLowerCase() || ''
+        
+        return (
+          campaignName.includes(query) ||
+          orgName.includes(query) ||
+          productName.includes(query) ||
+          status.includes(query)
+        )
+      })
+      setFilteredCampaigns(filtered)
+    }
+  }, [searchQuery, campaigns])
+
   async function loadCampaigns() {
     try {
       const { data, error } = await supabase
@@ -66,6 +91,7 @@ export default function AdminCampaignsPage() {
 
       if (error) throw error
       setCampaigns(data || [])
+      setFilteredCampaigns(data || [])
       
       if (data && data.length > 0) {
         setSelectedCampaign(data[0])
@@ -171,7 +197,57 @@ export default function AdminCampaignsPage() {
   }
 
   function handleViewCampaignDetails(campaignId: string) {
-    router.push(`/dashboard/campaigns/${campaignId}`)
+    // Check if user is admin and create impersonation context
+    router.push(`/admin/campaigns/${campaignId}/analytics`)
+  }
+  
+  // Set default email subject and content when a campaign is selected
+  useEffect(() => {
+    if (selectedCampaign) {
+      // Set default subject
+      if (!emailSubject || emailSubject === getDefaultSubject(null)) {
+        setEmailSubject(getDefaultSubject(selectedCampaign))
+      }
+      
+      // Set default content
+      if (!emailContent || emailContent === getDefaultContent(null)) {
+        setEmailContent(getDefaultContent(selectedCampaign))
+      }
+    }
+  }, [selectedCampaign])
+  
+  function getDefaultSubject(campaign: Campaign | null): string {
+    if (!campaign) return ''
+    
+    const productName = campaign.products?.product_name || 'our product'
+    return `Introducing ${productName} - Premium Solution for Your Business`
+  }
+  
+  function getDefaultContent(campaign: Campaign | null): string {
+    if (!campaign) return ''
+    
+    const orgName = campaign.organizations?.name || 'Our Company'
+    const productName = campaign.products?.product_name || 'our premium product'
+    
+    return `Hi {{buyer_name}},
+
+I hope this message finds you well. I'm reaching out from ${orgName} to introduce ${productName}.
+
+We've noticed your company's commitment to quality, and we believe our solution could be a great fit for your needs. Our product offers:
+
+• Premium quality and reliability
+• Competitive pricing and flexible terms
+• Dedicated support and partnership
+
+I'd love to share more details with you. You can view our complete product information here:
+{{product_link}}
+
+Would you be interested in learning more or discussing how we can support your business?
+
+Best regards,
+${orgName} Team
+
+P.S. Feel free to submit an RFQ directly through our product page if you'd like to move forward.`
   }
 
   const getStatusColor = (status: string) => {
@@ -203,7 +279,7 @@ export default function AdminCampaignsPage() {
       {/* Page Header */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">Campaign Management</h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-2">
@@ -214,6 +290,18 @@ export default function AdminCampaignsPage() {
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by campaign, company, product, or status..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
         </div>
       </section>
@@ -226,13 +314,23 @@ export default function AdminCampaignsPage() {
               <Mail className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">No campaigns yet</p>
             </div>
+          ) : filteredCampaigns.length === 0 ? (
+            <div className="text-center py-12">
+              <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No campaigns found matching "{searchQuery}"</p>
+              <Button onClick={() => setSearchQuery('')} variant="outline" className="mt-4">
+                Clear Search
+              </Button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left: Campaign List */}
               <div className="lg:col-span-1 space-y-3">
-                <h2 className="text-lg font-semibold mb-4">All Campaigns</h2>
+                <h2 className="text-lg font-semibold mb-4">
+                  {searchQuery ? `Results (${filteredCampaigns.length})` : 'All Campaigns'}
+                </h2>
                 <div className="divide-y divide-border/30 border border-border/30 rounded-xl overflow-hidden">
-                  {campaigns.map((campaign) => (
+                  {filteredCampaigns.map((campaign) => (
                     <button
                       key={campaign.campaign_id}
                       onClick={() => setSelectedCampaign(campaign)}
