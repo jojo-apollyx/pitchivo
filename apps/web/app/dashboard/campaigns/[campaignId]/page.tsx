@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Mail, MousePointerClick, MessageSquare, ExternalLink, Activity, Building2, MapPin, CheckCircle2, XCircle, Calendar, MailCheck, MailX, BarChart3, Sparkles } from 'lucide-react'
+import { ArrowLeft, Mail, MousePointerClick, MessageSquare, ExternalLink, Activity, Building2, MapPin, CheckCircle2, XCircle, Calendar, MailCheck, MailX, BarChart3, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
@@ -122,6 +122,7 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [activities, setActivities] = useState<CampaignActivity[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedContacts, setExpandedContacts] = useState<Set<string>>(new Set())
   const supabase = createClient()
 
   useEffect(() => {
@@ -178,10 +179,44 @@ export default function CampaignDetailPage() {
         activitiesData = generateMockActivities(campaign)
       }
 
-      setActivities(activitiesData)
+      // Deduplicate activities - remove duplicates based on email + activity_type + timestamp (within 1 minute)
+      const deduplicated = deduplicateActivities(activitiesData)
+
+      setActivities(deduplicated)
     } catch (error) {
       console.error('Error loading activities:', error)
     }
+  }
+
+  function deduplicateActivities(activities: CampaignActivity[]): CampaignActivity[] {
+    const seen = new Map<string, CampaignActivity>()
+    
+    for (const activity of activities) {
+      const email = (activity.contact_email || activity.metadata?.email || '').toLowerCase()
+      const type = activity.activity_type
+      const event = (activity.metadata?.event || '').toLowerCase()
+      
+      // For RFQ, normalize both 'rfq_submitted' activity_type and 'rfq_submit' event to avoid duplicates
+      // If event is 'rfq_submit', treat it as 'rfq_submitted' regardless of activity_type
+      let normalizedType = type
+      if (type === 'rfq_submitted' || event === 'rfq_submit') {
+        normalizedType = 'rfq_submitted'
+      }
+      
+      // Create a key based on email, normalized type, and timestamp (rounded to nearest minute)
+      const timestamp = new Date(activity.created_at)
+      const minuteKey = Math.floor(timestamp.getTime() / 60000) // Round to nearest minute
+      const key = `${email}:${normalizedType}:${minuteKey}`
+      
+      // Keep the first occurrence (most recent due to ordering)
+      if (!seen.has(key)) {
+        seen.set(key, activity)
+      }
+    }
+    
+    return Array.from(seen.values()).sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
   }
 
   function generateMockActivities(campaign: Campaign): CampaignActivity[] {
@@ -524,6 +559,11 @@ export default function CampaignDetailPage() {
         title: string | null
         company: string | null
         location: string | null
+        emailStatus: {
+          key: keyof typeof deliveryStatusVisuals
+          label: string
+          badgeClass: string
+        } | null
         currentStatus: {
           key: keyof typeof deliveryStatusVisuals
           label: string
@@ -535,6 +575,7 @@ export default function CampaignDetailPage() {
           label: string
           timestamp: string
           dotClass: string
+          type: string
         }>
       }
     >()
@@ -554,6 +595,7 @@ export default function CampaignDetailPage() {
           title: (metadata.title as string) || null,
           company: activity.buyer_company || (metadata.company as string) || null,
           location: (metadata.location as string) || null,
+          emailStatus: null,
           currentStatus: null,
           priority: -Infinity,
           lastTimestamp: isoTimestamp,
@@ -572,8 +614,20 @@ export default function CampaignDetailPage() {
           record.timeline.push({
             label,
             timestamp: isoTimestamp,
-            dotClass: visuals.dotClass
+            dotClass: visuals.dotClass,
+            type: activity.activity_type
           })
+
+          // Track email delivery status (delivered, bounced, etc.)
+          if (status.key === 'delivered' || status.key === 'bounced' || status.key === 'spam' || status.key === 'blocked') {
+            if (!record.emailStatus || deliveryStatusPriority[status.key] > deliveryStatusPriority[record.emailStatus.key as keyof typeof deliveryStatusPriority]) {
+              record.emailStatus = {
+                key: status.key,
+                label,
+                badgeClass: visuals.badgeClass
+              }
+            }
+          }
 
           const priority = deliveryStatusPriority[status.key]
 
@@ -612,7 +666,28 @@ export default function CampaignDetailPage() {
     const items = Array.from(records.values())
 
     items.forEach((item) => {
-      item.timeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      // Sort timeline chronologically (oldest first for display)
+      item.timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      
+      // Set default email status if not set
+      if (!item.emailStatus) {
+        // Check if there's a sent/delivered event
+        const hasDelivery = item.timeline.some(t => t.label === 'Delivered' || t.label === 'Sent')
+        if (hasDelivery) {
+          item.emailStatus = {
+            key: 'delivered',
+            label: deliveryStatusVisuals.delivered.label,
+            badgeClass: deliveryStatusVisuals.delivered.badgeClass
+          }
+        } else {
+          item.emailStatus = {
+            key: 'sent',
+            label: deliveryStatusVisuals.sent.label,
+            badgeClass: deliveryStatusVisuals.sent.badgeClass
+          }
+        }
+      }
+      
       if (!item.currentStatus) {
         item.currentStatus = {
           key: 'sent',
@@ -718,6 +793,33 @@ export default function CampaignDetailPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
+  const getTimelineEventLabel = (item: { label: string; type: string }) => {
+    // Map timeline labels to user-friendly event names
+    const label = item.label.toLowerCase()
+    const type = item.type.toLowerCase()
+    
+    if (label.includes('sent') || label.includes('delivered')) {
+      return 'Email sent'
+    }
+    if (label.includes('opened') || type === 'email_opened') {
+      return 'Email opened'
+    }
+    if (label.includes('clicked') || type === 'email_clicked') {
+      return 'Link clicked'
+    }
+    if (label.includes('viewed') || type === 'product_viewed') {
+      return 'Web viewed'
+    }
+    if (label.includes('rfq') || label.includes('submit') || type === 'rfq_submitted') {
+      return 'RFQ submitted'
+    }
+    if (label.includes('bounce')) {
+      return 'Email bounced'
+    }
+    
+    return item.label
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -785,7 +887,37 @@ export default function CampaignDetailPage() {
     const title = (metadata.title as string) || ''
     const company = activity.buyer_company || (metadata.company as string) || ''
     const location = (metadata.location as string) || ''
-    const rawEvent = metadata.event ? String(metadata.event).replace(/_/g, ' ') : null
+    
+    // Normalize rawEvent - don't show if it's redundant with activity label
+    let rawEvent = metadata.event ? String(metadata.event).replace(/_/g, ' ') : null
+    const activityLabel = getActivityLabel(activity.activity_type).toLowerCase()
+    
+    if (rawEvent) {
+      const normalizedRawEvent = rawEvent.toLowerCase().trim()
+      
+      // Check if rawEvent is essentially the same as the activity label
+      // Map common event variations to activity labels
+      const eventToLabelMap: Record<string, string[]> = {
+        'opened': ['opened', 'open'],
+        'clicked': ['clicked', 'click'],
+        'sent': ['sent', 'send', 'delivered'],
+        'bounced': ['bounced', 'bounce'],
+        'rfq submitted': ['rfq', 'submit', 'submitted'],
+        'product viewed': ['viewed', 'view']
+      }
+      
+      // Check if rawEvent matches the activity label or any of its variations
+      const labelVariations = eventToLabelMap[activityLabel] || [activityLabel]
+      const isRedundant = labelVariations.some(variation => 
+        normalizedRawEvent === variation || 
+        normalizedRawEvent.includes(variation) && variation.length > 3
+      )
+      
+      if (isRedundant) {
+        rawEvent = null
+      }
+    }
+    
     let action = 'interacted with your campaign'
 
     switch (activity.activity_type) {
@@ -1036,7 +1168,7 @@ export default function CampaignDetailPage() {
                                       <p className="text-sm leading-relaxed">
                                         <span className="font-medium">{narrative.name}</span> {narrative.action}.
                                       </p>
-                                      {(contextPieces.length > 0 || narrative.email) && (
+                                      {(contextPieces.length > 0 || (narrative.email && activity.activity_type === 'rfq_submitted')) && (
                                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                                           {narrative.title && (
                                             <span>{narrative.title}</span>
@@ -1053,10 +1185,16 @@ export default function CampaignDetailPage() {
                                               {narrative.location}
                                             </span>
                                           )}
-                                          {narrative.email && (
+                                          {narrative.email && activity.activity_type === 'rfq_submitted' && (
                                             <span className="flex items-center gap-1">
                                               <Mail className="h-3 w-3" />
                                               {narrative.email}
+                                            </span>
+                                          )}
+                                          {narrative.email && activity.activity_type !== 'rfq_submitted' && (
+                                            <span className="flex items-center gap-1 text-muted-foreground/50">
+                                              <Mail className="h-3 w-3" />
+                                              <span className="blur-[2px] select-none">••••@••••.com</span>
                                             </span>
                                           )}
                                         </div>
@@ -1064,9 +1202,6 @@ export default function CampaignDetailPage() {
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-start sm:items-end gap-1 text-xs text-muted-foreground">
-                                    <Badge variant="outline" className="border-border/60 text-[10px]">
-                                      {formatTime(narrative.timestampIso)}
-                                    </Badge>
                                     <span className="text-muted-foreground/70">
                                       {formatShortTimestamp(narrative.timestampIso)}
                                     </span>
@@ -1105,65 +1240,110 @@ export default function CampaignDetailPage() {
                           </p>
                         </div>
                       ) : (
-                        deliveryStatuses.map((contact) => (
-                          <div key={contact.email} className="rounded-xl border border-border/20 bg-background/60 p-4">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="space-y-1">
-                                <p className="text-sm font-semibold leading-tight">
-                                  {contact.name || contact.email}
-                                </p>
-                                <div className="text-xs text-muted-foreground space-y-1">
-                                  {contact.title && (
-                                    <p>{contact.title}</p>
-                                  )}
-                                  {(contact.company || contact.location) && (
-                                    <p className="flex flex-wrap items-center gap-2">
+                        deliveryStatuses.map((contact) => {
+                          const isExpanded = expandedContacts.has(contact.email)
+
+                          return (
+                            <div 
+                              key={contact.email} 
+                              className="rounded-xl bg-background/60 overflow-hidden transition-all hover:bg-background/80"
+                            >
+                              {/* Header - Always visible */}
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedContacts)
+                                  if (isExpanded) {
+                                    newExpanded.delete(contact.email)
+                                  } else {
+                                    newExpanded.add(contact.email)
+                                  }
+                                  setExpandedContacts(newExpanded)
+                                }}
+                                className="w-full p-4 text-left transition-colors"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    {/* First line: Name - Most recent step */}
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <p className="text-sm font-semibold">
+                                        {contact.name || contact.email}
+                                      </p>
+                                      <span className="text-xs text-muted-foreground">-</span>
+                                      {contact.currentStatus && (
+                                        <Badge
+                                          variant="outline"
+                                          className={`text-xs font-medium ${contact.currentStatus.badgeClass}`}
+                                        >
+                                          {contact.currentStatus.label}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {/* Second line: Title Company */}
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      {contact.title && (
+                                        <span className="text-xs text-muted-foreground">{contact.title}</span>
+                                      )}
                                       {contact.company && (
-                                        <span className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
                                           <Building2 className="h-3 w-3" />
                                           {contact.company}
                                         </span>
                                       )}
-                                      {contact.location && (
-                                        <span className="flex items-center gap-1">
-                                          <MapPin className="h-3 w-3" />
-                                          {contact.location}
-                                        </span>
-                                      )}
-                                    </p>
-                                  )}
-                                  <p className="flex items-center gap-1">
-                                    <Mail className="h-3 w-3" />
-                                    {contact.email}
-                                  </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex-shrink-0">
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                              {contact.currentStatus && (
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs font-medium ${contact.currentStatus.badgeClass}`}
-                                >
-                                  {contact.currentStatus.label}
-                                </Badge>
+                              </button>
+
+                              {/* Timeline - Expanded view */}
+                              {isExpanded && contact.timeline.length > 0 && (
+                                <div className="border-t border-border/20 bg-background/40 px-4 py-3">
+                                  <div className="space-y-3">
+                                    {contact.timeline.map((item, idx) => {
+                                      const eventLabel = getTimelineEventLabel(item)
+                                      const isLast = idx === contact.timeline.length - 1
+                                      
+                                      return (
+                                        <div
+                                          key={`${item.timestamp}-${item.label}-${idx}`}
+                                          className="flex items-start gap-3 relative"
+                                        >
+                                          {/* Timeline line */}
+                                          {!isLast && (
+                                            <div className="absolute left-[11px] top-6 w-0.5 h-full bg-border/30" />
+                                          )}
+                                          
+                                          {/* Dot */}
+                                          <div className="relative z-10 flex-shrink-0">
+                                            <span className={`inline-flex h-5 w-5 rounded-full ${item.dotClass} border-2 border-background flex items-center justify-center`}>
+                                              <span className={`h-2 w-2 rounded-full ${item.dotClass.replace('/80', '')}`} />
+                                            </span>
+                                          </div>
+                                          
+                                          {/* Content */}
+                                          <div className="flex-1 min-w-0 pt-0.5">
+                                            <p className="text-sm font-medium text-foreground">
+                                              {eventLabel}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                              {formatShortTimestamp(item.timestamp)}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
                               )}
                             </div>
-
-                            <div className="mt-3 space-y-1.5">
-                              {contact.timeline.slice(0, 4).map((item) => (
-                                <div
-                                  key={`${item.timestamp}-${item.label}`}
-                                  className="flex items-center gap-2 text-xs text-muted-foreground"
-                                >
-                                  <span className={`inline-flex h-2 w-2 flex-shrink-0 rounded-full ${item.dotClass}`} />
-                                  <span className="flex-1">{item.label}</span>
-                                  <span className="whitespace-nowrap text-[11px] text-muted-foreground/70">
-                                    {formatShortTimestamp(item.timestamp)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))
+                          )
+                        })
                       )}
                     </div>
                   </div>

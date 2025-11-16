@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2, Copy, Download, BarChart3, RefreshCw } from 'lucide-react'
+import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2, Download, BarChart3, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -12,6 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 
 interface Campaign {
@@ -67,6 +75,9 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [cancellingCampaign, setCancellingCampaign] = useState<string | null>(null)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [campaignToAction, setCampaignToAction] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -143,14 +154,16 @@ export default function CampaignsPage() {
     router.push(`/dashboard/campaigns/${campaignId}`)
   }
 
-  async function handleCancelCampaign(campaignId: string, e: React.MouseEvent) {
+  function openCancelDialog(campaignId: string, e: React.MouseEvent) {
     e.stopPropagation()
-    
-    if (!confirm('Are you sure you want to cancel this campaign? This action cannot be undone.')) {
-      return
-    }
+    setCampaignToAction(campaignId)
+    setCancelDialogOpen(true)
+  }
 
-    setCancellingCampaign(campaignId)
+  async function handleCancelCampaign() {
+    if (!campaignToAction) return
+
+    setCancellingCampaign(campaignToAction)
     try {
       const { error } = await supabase
         .from('campaigns')
@@ -158,12 +171,14 @@ export default function CampaignsPage() {
           status: 'cancelled',
           updated_at: new Date().toISOString()
         })
-        .eq('campaign_id', campaignId)
+        .eq('campaign_id', campaignToAction)
 
       if (error) throw error
 
       // Reload campaigns
       await loadCampaigns()
+      setCancelDialogOpen(false)
+      setCampaignToAction(null)
     } catch (error) {
       console.error('Error cancelling campaign:', error)
       alert('Failed to cancel campaign. Please try again.')
@@ -251,29 +266,29 @@ export default function CampaignsPage() {
     }
   }
 
-  async function handleDeleteCampaign(campaignId: string, e: React.MouseEvent) {
+  function openDeleteDialog(campaignId: string, e: React.MouseEvent) {
     e.stopPropagation()
-    
-    if (!confirm('Are you sure you want to permanently delete this campaign? This action cannot be undone and all associated data will be lost.')) {
-      return
-    }
+    setCampaignToAction(campaignId)
+    setDeleteDialogOpen(true)
+  }
 
-    if (!confirm('This is your final warning. The campaign and all its activities will be permanently deleted.')) {
-      return
-    }
+  async function handleDeleteCampaign() {
+    if (!campaignToAction) return
 
-    setCancellingCampaign(campaignId)
+    setCancellingCampaign(campaignToAction)
     try {
       // Delete campaign (cascade will delete activities)
       const { error } = await supabase
         .from('campaigns')
         .delete()
-        .eq('campaign_id', campaignId)
+        .eq('campaign_id', campaignToAction)
 
       if (error) throw error
 
       // Reload campaigns
       await loadCampaigns()
+      setDeleteDialogOpen(false)
+      setCampaignToAction(null)
     } catch (error) {
       console.error('Error deleting campaign:', error)
       alert('Failed to delete campaign. Please try again.')
@@ -282,48 +297,6 @@ export default function CampaignsPage() {
     }
   }
 
-  async function handleDuplicateCampaign(campaignId: string, e: React.MouseEvent) {
-    e.stopPropagation()
-    
-    setCancellingCampaign(campaignId)
-    try {
-      // Get the campaign to duplicate
-      const { data: campaign, error: fetchError } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .single()
-
-      if (fetchError) throw fetchError
-
-      // Create a new campaign with the same data but reset metrics
-      const { error: createError } = await supabase
-        .from('campaigns')
-        .insert({
-          org_id: campaign.org_id,
-          product_id: campaign.product_id,
-          campaign_name: `${campaign.campaign_name} (Copy)`,
-          email_count: campaign.email_count,
-          status: 'draft',
-          emails_sent: 0,
-          emails_delivered: 0,
-          emails_opened: 0,
-          emails_clicked: 0,
-          emails_bounced: 0,
-          rfqs_received: 0
-        })
-
-      if (createError) throw createError
-
-      alert('Campaign duplicated successfully!')
-      await loadCampaigns()
-    } catch (error) {
-      console.error('Error duplicating campaign:', error)
-      alert('Failed to duplicate campaign. Please try again.')
-    } finally {
-      setCancellingCampaign(null)
-    }
-  }
 
   async function handleExportCampaignData(campaignId: string, e: React.MouseEvent) {
     e.stopPropagation()
@@ -565,12 +538,6 @@ export default function CampaignsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenuItem
-                                onClick={(e) => handleDuplicateCampaign(campaign.campaign_id, e)}
-                              >
-                                <Copy className="h-4 w-4 mr-2" />
-                                Duplicate Campaign
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
                                 onClick={(e) => handleExportCampaignData(campaign.campaign_id, e)}
                               >
                                 <Download className="h-4 w-4 mr-2" />
@@ -579,7 +546,7 @@ export default function CampaignsPage() {
                               <DropdownMenuSeparator />
                               {canCancel && (
                                 <DropdownMenuItem
-                                  onClick={(e) => handleCancelCampaign(campaign.campaign_id, e)}
+                                  onClick={(e) => openCancelDialog(campaign.campaign_id, e)}
                                   className="text-orange-600 focus:text-orange-700 focus:bg-orange-50 dark:focus:bg-orange-950/20"
                                 >
                                   <X className="h-4 w-4 mr-2" />
@@ -596,7 +563,7 @@ export default function CampaignsPage() {
                               )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={(e) => handleDeleteCampaign(campaign.campaign_id, e)}
+                                onClick={(e) => openDeleteDialog(campaign.campaign_id, e)}
                                 className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/20"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -660,6 +627,82 @@ export default function CampaignsPage() {
           </div>
         </div>
       </section>
+
+      {/* Cancel Campaign Dialog */}
+      <Dialog 
+        open={cancelDialogOpen} 
+        onOpenChange={(open) => {
+          setCancelDialogOpen(open)
+          if (!open) {
+            setCampaignToAction(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Campaign</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this campaign? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelDialogOpen(false)
+                setCampaignToAction(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelCampaign}
+              disabled={cancellingCampaign !== null}
+            >
+              {cancellingCampaign ? 'Cancelling...' : 'Cancel Campaign'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Campaign Dialog */}
+      <Dialog 
+        open={deleteDialogOpen} 
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open)
+          if (!open) {
+            setCampaignToAction(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Campaign Permanently</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete this campaign? This action cannot be undone and all associated data will be lost, including all campaign activities and metrics.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false)
+                setCampaignToAction(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCampaign}
+              disabled={cancellingCampaign !== null}
+            >
+              {cancellingCampaign ? 'Deleting...' : 'Delete Permanently'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
