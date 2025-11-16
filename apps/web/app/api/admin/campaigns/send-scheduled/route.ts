@@ -108,20 +108,22 @@ export async function POST(request: NextRequest) {
       }
 
       // Update campaign metrics
-      await supabaseAdmin.rpc('increment_campaign_metric', {
+      const { error: sentMetricError } = await supabaseAdmin.rpc('increment_campaign_metric', {
         p_campaign_id: scheduledEmail.campaign_id,
         p_metric: 'emails_sent',
         p_increment: 1
-      }).catch(console.error)
+      })
+      if (sentMetricError) console.error('Error incrementing emails_sent metric:', sentMetricError)
 
-      await supabaseAdmin.rpc('increment_campaign_metric', {
+      const { error: deliveredMetricError } = await supabaseAdmin.rpc('increment_campaign_metric', {
         p_campaign_id: scheduledEmail.campaign_id,
         p_metric: 'emails_delivered',
         p_increment: 1
-      }).catch(console.error)
+      })
+      if (deliveredMetricError) console.error('Error incrementing emails_delivered metric:', deliveredMetricError)
 
       // Log activity
-      await supabaseAdmin
+      const { error: activityError } = await supabaseAdmin
         .from('campaign_activities')
         .insert({
           campaign_id: scheduledEmail.campaign_id,
@@ -135,7 +137,7 @@ export async function POST(request: NextRequest) {
             messageId: result.messageId
           }
         })
-        .catch(console.error)
+      if (activityError) console.error('Error logging activity:', activityError)
 
       return NextResponse.json({
         success: true,
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
       console.error('Error sending scheduled email:', emailError)
 
       // Update status to failed
-      await supabaseAdmin
+      const { error: updateFailedError } = await supabaseAdmin
         .from('scheduled_emails')
         .update({
           status: 'failed',
@@ -154,7 +156,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         })
         .eq('scheduled_email_id', scheduledEmailId)
-        .catch(console.error)
+      if (updateFailedError) console.error('Error updating scheduled email to failed status:', updateFailedError)
 
       return NextResponse.json(
         { error: 'Failed to send email', details: emailError.message },

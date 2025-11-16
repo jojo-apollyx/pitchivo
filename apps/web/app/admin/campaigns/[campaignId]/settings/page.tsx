@@ -360,9 +360,9 @@ export default function CampaignSettingsPage() {
                         </h4>
                         <ul className="text-xs text-blue-800 space-y-1">
                           <li>• Create templates to reuse email content</li>
-                          <li>• Set one template as "default" - it auto-loads when sending</li>
-                          <li>• Click "Use" on any template to load it into the send form</li>
-                          <li>• Templates support all placeholders ({{product_name}}, etc.)</li>
+                          <li>• Set one template as &quot;default&quot; - it auto-loads when sending</li>
+                          <li>• Click &quot;Use&quot; on any template to load it into the send form</li>
+                          <li>• Templates support all placeholders (&#123;&#123;product_name&#125;&#125;, etc.)</li>
                         </ul>
                       </div>
                     </div>

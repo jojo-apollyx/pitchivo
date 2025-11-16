@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { campaignId: string } }
+  { params }: { params: Promise<{ campaignId: string }> }
 ) {
   try {
-    const { campaignId } = params
+    const { campaignId } = await params
     
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Get campaign to verify access
     const { data: campaign, error: campaignError } = await supabase
