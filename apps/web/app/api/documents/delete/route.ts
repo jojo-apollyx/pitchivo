@@ -30,7 +30,7 @@ export async function DELETE(request: NextRequest) {
     // Get user's organization for permission check
     const { data: userData, error: userError } = await supabase
       .from('user_profiles')
-      .select('organization_id')
+      .select('id, organization_id, metadata, org_role')
       .eq('id', user.id)
       .single()
 

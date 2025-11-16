@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Verify user is member of product's organization
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('organization_id')
+      .select('id, organization_id, metadata, org_role')
       .eq('id', user.id)
       .single()
 

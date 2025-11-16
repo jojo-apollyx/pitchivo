@@ -24,7 +24,7 @@ export default function ConfigureSendingPage() {
   const [emailCount, setEmailCount] = useState(draft.emailCount)
   const [durationDays, setDurationDays] = useState(draft.durationDays)
   const [startDate, setStartDate] = useState('')
-  const [senderEmail, setSenderEmail] = useState(draft.senderEmail)
+  const [senderEmail, setSenderEmail] = useState(draft.senderEmail || '')
   const [orgSlug, setOrgSlug] = useState('yourcompany')
   const [selectedLocations, setSelectedLocations] = useState<string[]>((draft as any).priorityLocations || [])
   const [reputationDialogOpen, setReputationDialogOpen] = useState(false)
@@ -39,31 +39,47 @@ export default function ConfigureSendingPage() {
 
   async function loadOrgSlug() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        console.error('Error getting user:', userError)
+        return
+      }
 
-      const { data: profile } = await supabase
+      // Select multiple columns exactly like auth/callback/page.tsx does (which works)
+      // PostgREST sometimes rejects single-column selects from browser client
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select(`
-          organization_id,
-          organizations (
-            slug
-          )
-        `)
+        .select('id, domain, organization_id, metadata, org_role')
         .eq('id', user.id)
         .single()
 
-      if (profile?.organizations && Array.isArray(profile.organizations) && profile.organizations.length > 0) {
-        setOrgSlug(profile.organizations[0].slug || 'yourcompany')
-      } else if (profile?.organizations && typeof profile.organizations === 'object' && 'slug' in profile.organizations) {
-        setOrgSlug((profile.organizations as any).slug || 'yourcompany')
+      if (profileError) {
+        console.error('Error loading profile:', profileError)
+        return
+      }
+
+      if (profile?.organization_id) {
+        const { data: org, error: orgError } = await supabase
+          .from('organizations')
+          .select('slug')
+          .eq('id', profile.organization_id)
+          .single()
+
+        if (orgError) {
+          console.error('Error loading organization:', orgError)
+          return
+        }
+
+        if (org?.slug) {
+          setOrgSlug(org.slug)
+        }
       }
     } catch (error) {
       console.error('Error loading org:', error)
     }
   }
 
-  const selectedSender = SENDER_ADDRESSES.find(s => s.email === senderEmail)
+  const selectedSender = senderEmail ? SENDER_ADDRESSES.find(s => s.email === senderEmail) : null
   const senderHealth: 'healthy' | 'warming_up' | 'caution' | 'poor' = selectedSender?.health || 'healthy'
   const senderHealthInfo = getSenderHealthLabel(senderHealth)
   const deliveryRate = selectedSender?.deliveryRate || 98
@@ -78,7 +94,7 @@ export default function ConfigureSendingPage() {
       emailCount,
       durationDays,
       startDate: startDate ? new Date(startDate) : undefined,
-      senderEmail: senderEmail.replace('{org}', orgSlug),
+      senderEmail: senderEmail ? senderEmail.replace('{org}', orgSlug) : '',
       senderHealth,
       priorityLocations: selectedLocations
     })
@@ -280,13 +296,13 @@ export default function ConfigureSendingPage() {
                 {/* Sender Identity */}
                 <div>
                   <Label htmlFor="sender" className="text-base font-semibold mb-3 block">
-                    Select sender address
+                    Select sender address <span className="text-muted-foreground font-normal text-sm">(optional)</span>
                   </Label>
                   <div className="space-y-3">
                     <div className="flex gap-2">
-                      <Select value={senderEmail} onValueChange={setSenderEmail}>
+                      <Select value={senderEmail || undefined} onValueChange={(value) => setSenderEmail(value)}>
                         <SelectTrigger className="flex-1 h-11">
-                          <SelectValue placeholder="Select sender address" />
+                          <SelectValue placeholder="We'll choose the best sender address for you" />
                         </SelectTrigger>
                         <SelectContent>
                           {SENDER_ADDRESSES.map((sender) => (
@@ -296,22 +312,29 @@ export default function ConfigureSendingPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {/* Redesigned Health Indicator */}
-                      <div className={`
-                        flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap
-                        ${senderHealth === 'healthy' ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' : 
-                          senderHealth === 'warming_up' ? 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800' :
-                          senderHealth === 'caution' ? 'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800' :
-                          'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'}
-                      `}>
-                        {senderHealth === 'healthy' ? <CheckCircle2 className="h-4 w-4" /> :
-                         senderHealth === 'warming_up' ? <Clock className="h-4 w-4" /> :
-                         senderHealth === 'caution' ? <AlertTriangle className="h-4 w-4" /> :
-                         <XCircle className="h-4 w-4" />}
-                        <span>{senderHealthInfo.label}</span>
-                        <span className="text-xs opacity-70">({getSenderHealthGrade(deliveryRate)})</span>
-                      </div>
+                      {/* Redesigned Health Indicator - Only show if sender is selected */}
+                      {senderEmail && (
+                        <div className={`
+                          flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap
+                          ${senderHealth === 'healthy' ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' : 
+                            senderHealth === 'warming_up' ? 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800' :
+                            senderHealth === 'caution' ? 'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800' :
+                            'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'}
+                        `}>
+                          {senderHealth === 'healthy' ? <CheckCircle2 className="h-4 w-4" /> :
+                           senderHealth === 'warming_up' ? <Clock className="h-4 w-4" /> :
+                           senderHealth === 'caution' ? <AlertTriangle className="h-4 w-4" /> :
+                           <XCircle className="h-4 w-4" />}
+                          <span>{senderHealthInfo.label}</span>
+                          <span className="text-xs opacity-70">({getSenderHealthGrade(deliveryRate)})</span>
+                        </div>
+                      )}
                     </div>
+                    {!senderEmail && (
+                      <p className="text-xs text-muted-foreground">
+                        We'll automatically choose the best sender address for you based on deliverability and reputation.
+                      </p>
+                    )}
                     <div className="bg-muted/30 rounded-lg p-4 space-y-2">
                       <p className="text-xs text-muted-foreground">
                         Sender health is calculated based on bounce rate, open rate, and domain age.

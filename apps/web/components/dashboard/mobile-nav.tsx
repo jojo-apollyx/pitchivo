@@ -46,7 +46,7 @@ export function MobileNav() {
       if (user) {
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('is_pitchivo_admin')
+          .select('id, is_pitchivo_admin, organization_id, metadata, org_role')
           .eq('id', user.id)
           .single()
         

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Get user's organization
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('organization_id')
+      .select('id, organization_id, metadata, org_role')
       .eq('id', user.id)
       .single()
 
@@ -116,7 +116,7 @@ export async function PATCH(request: NextRequest) {
     // Verify user has access to this RFQ
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('organization_id')
+      .select('id, organization_id, metadata, org_role')
       .eq('id', user.id)
       .single()
 

@@ -25,12 +25,22 @@ export default function ReviewLaunchPage() {
 
   async function loadOrgId() {
     try {
-      const { data: profile } = await supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Select multiple columns like auth/callback/page.tsx does (which works)
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('organization_id')
+        .select('id, domain, organization_id, metadata, org_role')
+        .eq('id', user.id)
         .single()
 
-      if (profile) {
+      if (profileError) {
+        console.error('Error loading profile:', profileError)
+        return
+      }
+
+      if (profile?.organization_id) {
         setOrgId(profile.organization_id)
       }
     } catch (error) {

@@ -43,7 +43,7 @@ export async function GET(
         if (product) {
           const { data: userProfile } = await supabase
             .from('user_profiles')
-            .select('organization_id')
+            .select('id, organization_id, metadata, org_role')
             .eq('id', user.id)
             .single()
 
