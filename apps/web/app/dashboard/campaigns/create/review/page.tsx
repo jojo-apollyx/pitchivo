@@ -1,27 +1,50 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Rocket, Building2, Users, Mail } from 'lucide-react'
+import { ArrowLeft, Rocket, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
-import { getSenderHealthLabel, getSenderHealthGrade, calculateCampaignMetrics } from '@/lib/mock-data/buyers'
+import { getSenderHealthLabel, calculateCampaignMetrics } from '@/lib/mock-data/buyers'
 import { createClient } from '@/lib/supabase/client'
-import { useEffect } from 'react'
+
+interface ProductData {
+  category?: string
+  form?: string
+  grade?: string
+  manufacturer_name?: string
+  cas_number?: string
+  origin_country?: string
+  tags?: string[]
+  product_images?: string[]
+  uploaded_files?: Array<{ file_id: string; name: string }>
+}
 
 export default function ReviewLaunchPage() {
   const router = useRouter()
-  const { draft, prevStep, resetDraft } = useCampaignStore()
+  const { draft, prevStep, resetDraft, initializeFromStorage } = useCampaignStore()
   const [confirmed, setConfirmed] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
   const [launching, setLaunching] = useState(false)
   const [orgId, setOrgId] = useState<string | null>(null)
+  const [productData, setProductData] = useState<ProductData | null>(null)
+  const [mounted, setMounted] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
+    // Initialize from localStorage on client mount
+    initializeFromStorage()
+    setMounted(true)
+  }, [initializeFromStorage])
+
+  useEffect(() => {
+    if (!mounted) return
     loadOrgId()
-  }, [])
+    if (draft.productId) {
+      loadProductData()
+    }
+  }, [mounted, draft.productId])
 
   async function loadOrgId() {
     try {
@@ -48,8 +71,40 @@ export default function ReviewLaunchPage() {
     }
   }
 
+  async function loadProductData() {
+    if (!draft.productId) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('product_data')
+        .eq('product_id', draft.productId)
+        .single()
+
+      if (error) throw error
+
+      if (data?.product_data) {
+        const parsed = typeof data.product_data === 'string' 
+          ? JSON.parse(data.product_data) 
+          : data.product_data
+        setProductData(parsed)
+      }
+    } catch (error) {
+      console.error('Error loading product data:', error)
+    }
+  }
+
   const metrics = calculateCampaignMetrics(draft.emailCount, draft.durationDays)
   const senderHealthInfo = getSenderHealthLabel(draft.senderHealth)
+  const productImages = productData?.product_images || []
+  const firstImage = productImages.length > 0 ? productImages[0] : null
+  const getImageUrl = () => {
+    if (!firstImage) return null
+    if (firstImage.startsWith('http')) return firstImage
+    const { data } = supabase.storage.from('product-images').getPublicUrl(firstImage)
+    return data.publicUrl
+  }
+  const imageUrl = getImageUrl()
 
   async function handleLaunch() {
     if (!confirmed || !orgId || !draft.productId) return
@@ -57,6 +112,8 @@ export default function ReviewLaunchPage() {
     setLaunching(true)
 
     try {
+      const priorityLocations = (draft as any).priorityLocations || []
+      
       // Create campaign in database
       const { data, error } = await supabase
         .from('campaigns')
@@ -71,6 +128,7 @@ export default function ReviewLaunchPage() {
           start_date: draft.startDate?.toISOString() || new Date().toISOString(),
           sender_email: draft.senderEmail,
           sender_health: draft.senderHealth,
+          priority_locations: priorityLocations.length > 0 ? priorityLocations : null,
           status: 'scheduled',
           launched_at: new Date().toISOString()
         })
@@ -132,34 +190,125 @@ export default function ReviewLaunchPage() {
             </p>
           </div>
 
+          {!mounted ? (
+            <div className="py-12 text-center text-muted-foreground">
+              Loading campaign details...
+            </div>
+          ) : (
           <div className="space-y-6">
             {/* Section 1: Product Summary */}
             <div className="pb-6 border-b border-border/30">
               <h3 className="text-lg font-semibold mb-4">Product Summary</h3>
               <div className="bg-card/50 rounded-xl p-4 flex items-start gap-4">
-                {/* Thumbnail */}
-                <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl font-bold text-primary/50">
+                {/* Product Image */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {imageUrl ? (
+                    <img 
+                      src={imageUrl}
+                      alt={draft.productName || 'Product'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                        const fallback = target.nextElementSibling as HTMLElement
+                        if (fallback) fallback.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  <div className={`text-2xl sm:text-3xl font-bold text-primary/50 ${imageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
                     {draft.productName?.charAt(0) || 'P'}
-                  </span>
+                  </div>
                 </div>
 
                 {/* Details */}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-base mb-2">{draft.productName}</h4>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {draft.productTags?.slice(0, 3).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="text-xs px-2 py-1 rounded-md bg-primary/10 text-primary"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  
+                  {/* Identifying Information */}
+                  <div className="space-y-1.5 mb-2">
+                    {/* Category */}
+                    {productData?.category && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground/70">Category:</span>
+                        <span>{productData.category}</span>
+                      </div>
+                    )}
+                    
+                    {/* Form & Grade */}
+                    {(productData?.form || productData?.grade) && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {productData?.form && productData?.grade ? (
+                          <>
+                            <span className="font-medium text-foreground/70">Form:</span>
+                            <span>{productData.form}</span>
+                            <span className="text-foreground/40">•</span>
+                            <span className="font-medium text-foreground/70">Grade:</span>
+                            <span>{productData.grade}</span>
+                          </>
+                        ) : (
+                          <>
+                            {productData?.form && (
+                              <>
+                                <span className="font-medium text-foreground/70">Form:</span>
+                                <span>{productData.form}</span>
+                              </>
+                            )}
+                            {productData?.grade && (
+                              <>
+                                <span className="font-medium text-foreground/70">Grade:</span>
+                                <span>{productData.grade}</span>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Manufacturer */}
+                    {productData?.manufacturer_name && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground/70">Manufacturer:</span>
+                        <span className="line-clamp-1">{productData.manufacturer_name}</span>
+                      </div>
+                    )}
+                    
+                    {/* CAS Number or Origin Country */}
+                    {(productData?.cas_number || productData?.origin_country) && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {productData?.cas_number && (
+                          <span className="font-medium text-foreground/70">CAS:</span>
+                        )}
+                        <span>{productData?.cas_number || productData?.origin_country}</span>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {draft.attachedFilesCount || 0} {draft.attachedFilesCount === 1 ? 'file' : 'files'} attached
-                  </p>
+
+                  {/* Tags */}
+                  {draft.productTags && draft.productTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {draft.productTags.slice(0, 3).map((tag, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="text-xs px-2 py-0.5"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                      {draft.productTags.length > 3 && (
+                        <Badge variant="outline" className="text-xs px-2 py-0.5">
+                          +{draft.productTags.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Files Count */}
+                  {draft.attachedFilesCount && draft.attachedFilesCount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {draft.attachedFilesCount} {draft.attachedFilesCount === 1 ? 'file' : 'files'} attached
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -167,48 +316,19 @@ export default function ReviewLaunchPage() {
             {/* Section 2: Audience Summary */}
             <div className="pb-6 border-b border-border/30">
               <h3 className="text-lg font-semibold mb-4">Audience Summary</h3>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Total buyers</div>
-                    <div className="text-xl font-bold text-primary">
-                      {draft.buyerCount.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Total contacts</div>
-                    <div className="text-xl font-bold">
-                      {draft.totalContacts.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="text-xs text-muted-foreground mb-1">Data source</div>
-                    <div className="text-sm font-semibold">
-                      Pitchivo Curated DB
-                    </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Total buyers</div>
+                  <div className="text-xl font-bold text-primary">
+                    {draft.buyerCount.toLocaleString()}
                   </div>
                 </div>
-
-                {/* Sample Buyers */}
-                {draft.sampleBuyers && draft.sampleBuyers.length > 0 && (
-                  <div className="bg-muted/30 rounded-lg p-4 mt-4">
-                    <p className="text-xs text-muted-foreground mb-3">Sample buyers:</p>
-                    <div className="space-y-2">
-                      {draft.sampleBuyers.slice(0, 3).map((buyer, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium">{buyer.company}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Users className="h-3 w-3" />
-                            <span>{buyer.contacts}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Total contacts</div>
+                  <div className="text-xl font-bold">
+                    {draft.totalContacts.toLocaleString()}
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -246,48 +366,20 @@ export default function ReviewLaunchPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">Sender identity:</span>{' '}
-                    <span className="font-mono text-xs">{draft.senderEmail}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Sender health:</span>{' '}
-                    <span className={`font-semibold ${senderHealthInfo.color}`}>
-                      {senderHealthInfo.icon} {senderHealthInfo.label}
+                    <span className="font-mono text-xs break-all">
+                      {draft.senderEmail || 'We\'ll choose the best sender address for you'}
                     </span>
                   </div>
+                  {draft.senderEmail && (
+                    <div>
+                      <span className="text-muted-foreground">Sender health:</span>{' '}
+                      <span className={`font-semibold ${senderHealthInfo.color}`}>
+                        {senderHealthInfo.icon} {senderHealthInfo.label}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Preview Email Section (Collapsible) */}
-            <div className="pb-6 border-b border-border/30">
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center justify-between w-full text-left hover:bg-accent/5 rounded-lg p-2 -mx-2 transition-colors"
-              >
-                <h3 className="text-lg font-semibold">Preview AI-generated outreach sample</h3>
-                {showPreview ? (
-                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                )}
-              </button>
-
-              {showPreview && (
-                <div className="mt-4 bg-muted/30 rounded-lg p-4 text-sm">
-                  <p className="text-muted-foreground italic">
-                    Subject: Introducing {draft.productName} - Premium Quality for Your Products
-                  </p>
-                  <p className="text-muted-foreground mt-3">
-                    Hi [First Name],
-                  </p>
-                  <p className="text-muted-foreground mt-2">
-                    I noticed your company sources ingredients for health and wellness products. We've recently launched {draft.productName}, which might be perfect for your formulations...
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-4 italic">
-                    (Sample text for preview purposes only)
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Confirmation Checkbox */}
@@ -317,11 +409,12 @@ export default function ReviewLaunchPage() {
                   {launching ? 'Launching...' : 'Launch Campaign'}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Emails will start sending within 15 minutes.
+                  Email will start sending within next 24 hours.
                 </p>
               </div>
             </div>
           </div>
+          )}
         </div>
       </section>
 

@@ -33,6 +33,7 @@ interface CampaignStore {
   nextStep: () => void
   prevStep: () => void
   goToStep: (step: number) => void
+  initializeFromStorage: () => void
 }
 
 const DEFAULT_DRAFT: CampaignDraft = {
@@ -46,30 +47,125 @@ const DEFAULT_DRAFT: CampaignDraft = {
   currentStep: 1
 }
 
-export const useCampaignStore = create<CampaignStore>((set) => ({
-  draft: DEFAULT_DRAFT,
-  
-  setDraft: (updates) =>
-    set((state) => ({
-      draft: { ...state.draft, ...updates }
-    })),
-  
-  resetDraft: () =>
-    set({ draft: DEFAULT_DRAFT }),
-  
-  nextStep: () =>
-    set((state) => ({
-      draft: { ...state.draft, currentStep: Math.min(state.draft.currentStep + 1, 4) }
-    })),
-  
-  prevStep: () =>
-    set((state) => ({
-      draft: { ...state.draft, currentStep: Math.max(state.draft.currentStep - 1, 1) }
-    })),
-  
-  goToStep: (step) =>
-    set((state) => ({
-      draft: { ...state.draft, currentStep: step }
-    }))
-}))
+const STORAGE_KEY = 'pitchivo-campaign-draft'
+
+// Helper to serialize draft for storage (Date -> string)
+function serializeDraft(draft: CampaignDraft): string {
+  const serializable = {
+    ...draft,
+    startDate: draft.startDate ? draft.startDate.toISOString() : undefined
+  }
+  return JSON.stringify(serializable)
+}
+
+// Helper to deserialize draft from storage (string -> Date)
+function deserializeDraft(stored: string): CampaignDraft {
+  const parsed = JSON.parse(stored)
+  return {
+    ...parsed,
+    startDate: parsed.startDate ? new Date(parsed.startDate) : undefined
+  }
+}
+
+export const useCampaignStore = create<CampaignStore>((set, get) => {
+  // Initialize from localStorage if available
+  let initialDraft = DEFAULT_DRAFT
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      try {
+        initialDraft = deserializeDraft(stored)
+      } catch (e) {
+        console.error('Failed to load campaign draft from storage:', e)
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    }
+  }
+
+  return {
+    draft: initialDraft,
+    
+    setDraft: (updates) => {
+      set((state) => {
+        const newDraft = { ...state.draft, ...updates }
+        // Persist to localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(STORAGE_KEY, serializeDraft(newDraft))
+          } catch (e) {
+            console.error('Failed to save campaign draft to storage:', e)
+          }
+        }
+        return { draft: newDraft }
+      })
+    },
+    
+    resetDraft: () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+      set({ draft: DEFAULT_DRAFT })
+    },
+    
+    nextStep: () => {
+      set((state) => {
+        const newDraft = { ...state.draft, currentStep: Math.min(state.draft.currentStep + 1, 4) }
+        // Persist to localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(STORAGE_KEY, serializeDraft(newDraft))
+          } catch (e) {
+            console.error('Failed to save campaign draft to storage:', e)
+          }
+        }
+        return { draft: newDraft }
+      })
+    },
+    
+    prevStep: () => {
+      set((state) => {
+        const newDraft = { ...state.draft, currentStep: Math.max(state.draft.currentStep - 1, 1) }
+        // Persist to localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(STORAGE_KEY, serializeDraft(newDraft))
+          } catch (e) {
+            console.error('Failed to save campaign draft to storage:', e)
+          }
+        }
+        return { draft: newDraft }
+      })
+    },
+    
+    goToStep: (step) => {
+      set((state) => {
+        const newDraft = { ...state.draft, currentStep: step }
+        // Persist to localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(STORAGE_KEY, serializeDraft(newDraft))
+          } catch (e) {
+            console.error('Failed to save campaign draft to storage:', e)
+          }
+        }
+        return { draft: newDraft }
+      })
+    },
+
+    initializeFromStorage: () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (stored) {
+          try {
+            const draft = deserializeDraft(stored)
+            set({ draft })
+          } catch (e) {
+            console.error('Failed to load campaign draft from storage:', e)
+            localStorage.removeItem(STORAGE_KEY)
+          }
+        }
+      }
+    }
+  }
+})
 
