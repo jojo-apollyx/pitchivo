@@ -100,6 +100,7 @@ export default function OrganizationSetup() {
   const [existingOrgId, setExistingOrgId] = useState<string | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const hasLoadedData = useRef(false)
   
   // Use hardcoded industries instead of loading from database
   const allIndustries = getAllIndustries()
@@ -138,8 +139,12 @@ export default function OrganizationSetup() {
 
   // Get user email and auto-fill domain, and load existing organization data
   useEffect(() => {
+    // Prevent multiple runs
+    if (hasLoadedData.current) return
+    
     const loadUserData = async () => {
       try {
+        hasLoadedData.current = true
         const supabase = createClient()
         
         // Wait a bit for session to be established
@@ -236,8 +241,11 @@ export default function OrganizationSetup() {
                 .single()
 
               if (organization) {
-                if (organization.name) {
-                  setValue('companyName', organization.name)
+                // Only populate company name if it's different from the domain
+                // If name equals domain, leave it empty so user can enter actual company name
+                // This prevents the domain name from being pre-filled
+                if (organization.name && organization.name !== domain) {
+                  setValue('companyName', organization.name, { shouldDirty: false })
                 }
                 if (organization.industry && industries.includes(organization.industry)) {
                   setValue('industry', organization.industry as OrganizationSetupFormData['industry'])
@@ -270,7 +278,8 @@ export default function OrganizationSetup() {
     }
 
     loadUserData()
-  }, [router, setValue, industries])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount - don't re-run when industries or other deps change
 
   // Filter role suggestions based on input
   useEffect(() => {

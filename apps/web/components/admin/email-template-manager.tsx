@@ -91,14 +91,14 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
                 templateName,
                 subject,
                 content,
-                isDefault
+                isDefault: editingTemplate.is_default // Preserve existing default status
               }
             : {
                 campaignId,
                 templateName,
                 subject,
                 content,
-                isDefault
+                isDefault: false // New templates are not default by default
               }
         )
       })
@@ -169,6 +169,41 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
     setShowForm(false)
   }
 
+  async function handleUseTemplate(template: EmailTemplate) {
+    try {
+      // Set as default template
+      if (!template.is_default) {
+        const response = await fetch('/api/admin/campaigns/templates', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateId: template.template_id,
+            isDefault: true
+          })
+        })
+
+        if (!response.ok) throw new Error('Failed to set default template')
+        
+        // Update local state
+        setTemplates(prev => prev.map(t => 
+          t.template_id === template.template_id 
+            ? { ...t, is_default: true }
+            : { ...t, is_default: false }
+        ))
+      }
+
+      // Load template into send form
+      if (onSelectTemplate) {
+        onSelectTemplate(template)
+      }
+
+      toast.success(`Template "${template.template_name}" set as default and loaded!`)
+    } catch (error) {
+      console.error('Error using template:', error)
+      toast.error('Failed to set default template')
+    }
+  }
+
   if (loading) {
     return <div className="text-sm text-muted-foreground">Loading templates...</div>
   }
@@ -190,7 +225,7 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
           variant={showForm ? 'outline' : 'default'}
           className="gap-2"
         >
-          <Plus className="h-4 w-4" />
+          {!showForm && <Plus className="h-4 w-4" />}
           {showForm ? 'Cancel' : 'New Template'}
         </Button>
       </div>
@@ -233,26 +268,10 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isDefault"
-              checked={isDefault}
-              onChange={(e) => setIsDefault(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            <Label htmlFor="isDefault" className="cursor-pointer">
-              Set as default template for this campaign
-            </Label>
-          </div>
-
           <div className="flex gap-2">
             <Button onClick={handleSaveTemplate} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? 'Saving...' : editingTemplate ? 'Update Template' : 'Save Template'}
-            </Button>
-            <Button onClick={handleCancelEdit} variant="outline">
-              Cancel
             </Button>
           </div>
         </div>
@@ -294,7 +313,7 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onSelectTemplate(template)}
+                      onClick={() => handleUseTemplate(template)}
                     >
                       Use
                     </Button>

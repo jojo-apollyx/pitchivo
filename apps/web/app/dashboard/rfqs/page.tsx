@@ -188,125 +188,125 @@ export default function RFQsPage() {
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
-      <div className="relative max-w-7xl mx-auto">
-        {/* Page Header */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">
-                    Requests for Quotation
-                  </h1>
-                  {!isLoading && (
-                    <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2.5 py-1">
-                      {totalCount} {totalCount === 1 ? 'RFQ' : 'RFQs'}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground font-normal">
-                  Manage and respond to buyer inquiries
-                </p>
+      {/* Page Header */}
+      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">
+                  Requests for Quotation
+                </h1>
+                {!isLoading && (
+                  <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2.5 py-1">
+                    {totalCount} {totalCount === 1 ? 'RFQ' : 'RFQs'}
+                  </Badge>
+                )}
               </div>
-              {totalCount > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {Object.entries(STATUS_CONFIG).map(([status, config]) => {
-                    const count = statusCounts[status] || 0
-                    if (count === 0) return null
-                    return (
-                      <Badge
-                        key={status}
-                        variant="outline"
-                        className={`${config.color} border px-2.5 py-1 text-xs sm:text-sm font-medium`}
-                      >
-                        {config.label}: {count}
-                      </Badge>
-                    )
-                  })}
-                </div>
-              )}
+              <p className="text-xs sm:text-sm text-muted-foreground font-normal">
+                Manage and respond to buyer inquiries
+              </p>
             </div>
+            {totalCount > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {Object.entries(STATUS_CONFIG).map(([status, config]) => {
+                  const count = statusCounts[status] || 0
+                  if (count === 0) return null
+                  return (
+                    <Badge
+                      key={status}
+                      variant="outline"
+                      className={`${config.color} border px-2.5 py-1 text-xs sm:text-sm font-medium`}
+                    >
+                      {config.label}: {count}
+                    </Badge>
+                  )
+                })}
+              </div>
+            )}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Filters */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b border-border/30 bg-background/50">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
-            {/* Search */}
-            <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search RFQs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+      <div className="relative max-w-7xl mx-auto">
+        {/* Filters - Only show when there are RFQs */}
+        {!isLoading && totalCount > 0 && (
+          <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30 bg-background/50">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search RFQs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
 
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                  <SelectItem key={status} value={status}>
-                    {config.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Product Filter */}
-            {products.length > 0 && (
-              <Select value={productFilter} onValueChange={setProductFilter}>
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="All Products" />
+                  <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Products</SelectItem>
-                  {products.map(([id, name]) => (
-                    <SelectItem key={id} value={id}>
-                      {name}
+                  <SelectItem value="all">All Status</SelectItem>
+                  {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                    <SelectItem key={status} value={status}>
+                      {config.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="gap-2"
-              >
-                <X className="h-4 w-4" />
-                Clear
-              </Button>
-            )}
-          </div>
+              {/* Product Filter */}
+              {products.length > 0 && (
+                <Select value={productFilter} onValueChange={setProductFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="All Products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    {products.map(([id, name]) => (
+                      <SelectItem key={id} value={id}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
-          {/* Results count */}
-          {!isLoading && (
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {/* Results count */}
             <div className="mt-3 text-xs sm:text-sm text-muted-foreground font-normal">
               Showing {rfqs.length} of {totalCount} RFQ{totalCount !== 1 ? 's' : ''}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* RFQs List */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+        <section className="px-4 sm:px-6 lg:px-8 py-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-3">
