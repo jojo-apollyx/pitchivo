@@ -100,6 +100,14 @@ export function RealPagePreview({
   onDownload?: (fileId: string, filename: string) => void
 }) {
   // NEW: Always show fields, but check if they're locked
+  // Helper to unwrap locked field objects from API
+  const unwrapLockedField = (value: any): any => {
+    if (value && typeof value === 'object' && value._locked === true) {
+      return value._preview
+    }
+    return value
+  }
+
   const shouldShow = (fieldName: string): boolean => {
     // Always show all fields (they'll be wrapped in LockedField if restricted)
     return true
@@ -123,9 +131,7 @@ export function RealPagePreview({
   // NEW: Render field value with lock if needed
   const renderFieldValue = (value: any, fieldName: string, className?: string) => {
     // Handle locked field objects from API
-    const actualValue = (value && typeof value === 'object' && value._locked === true) 
-      ? value._preview 
-      : value
+    const actualValue = unwrapLockedField(value)
     
     const formatted = formatValue(actualValue, fieldName)
     
@@ -145,15 +151,13 @@ export function RealPagePreview({
   }
 
   const formatValue = (value: any, fieldName: string): string => {
-    // Handle locked field objects from API
-    if (value && typeof value === 'object' && value._locked === true) {
-      return value._preview || ''
-    }
+    // Value should already be unwrapped by caller, but double-check
+    const unwrapped = unwrapLockedField(value)
     
-    if (!value || (Array.isArray(value) && value.length === 0)) return ''
+    if (!unwrapped || (Array.isArray(unwrapped) && unwrapped.length === 0)) return ''
 
-    if (fieldName === 'price_lead_time' && Array.isArray(value)) {
-      return value.map((tier: any) => {
+    if (fieldName === 'price_lead_time' && Array.isArray(unwrapped)) {
+      return unwrapped.map((tier: any) => {
         const parts = []
         if (tier.moq) parts.push(`MOQ: ${tier.moq}`)
         if (tier.price) parts.push(`Price: ${tier.price}`)
@@ -162,8 +166,8 @@ export function RealPagePreview({
       }).join(' | ')
     }
     
-    if (fieldName === 'samples' && Array.isArray(value)) {
-      return value.map((sample: any) => {
+    if (fieldName === 'samples' && Array.isArray(unwrapped)) {
+      return unwrapped.map((sample: any) => {
         const parts = []
         if (sample.sample_type) parts.push(`Type: ${sample.sample_type}`)
         if (sample.price) parts.push(`Price: ${sample.price}`)
@@ -172,15 +176,15 @@ export function RealPagePreview({
       }).join(' | ')
     }
     
-    if (Array.isArray(value)) return value.join(', ')
-    if (typeof value === 'object' && value !== null) {
-      const entries = Object.entries(value).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+    if (Array.isArray(unwrapped)) return unwrapped.join(', ')
+    if (typeof unwrapped === 'object' && unwrapped !== null) {
+      const entries = Object.entries(unwrapped).filter(([_, v]) => v !== null && v !== undefined && v !== '')
       if (entries.length > 0) {
         return entries.map(([k, v]) => `${k}: ${v}`).join(', ')
       }
     }
     
-    return String(value)
+    return String(unwrapped)
   }
 
   const handleDownload = async (fileId: string, filename: string) => {
@@ -957,7 +961,11 @@ export function RealPagePreview({
         {/* Documentation Files */}
         {(() => {
           const formDataAny = formData as any
-          const hasUploadedFiles = formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
+          
+          // Unwrap locked field object if present
+          const uploadedFiles = unwrapLockedField(formDataAny.uploaded_files)
+          
+          const hasUploadedFiles = uploadedFiles && Array.isArray(uploadedFiles) && uploadedFiles.length > 0
           
           if (!hasUploadedFiles) return null
           
@@ -988,7 +996,7 @@ export function RealPagePreview({
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {formDataAny.uploaded_files.map((f: any, idx: number) => {
+                {uploadedFiles.map((f: any, idx: number) => {
                   const fullDoc = f.file_id ? documentMetadata[f.file_id] : null
                   const docData = fullDoc || f
                   
