@@ -1023,35 +1023,42 @@ export function RealPagePreview({
                               "font-semibold mb-1 text-sm sm:text-base line-clamp-2",
                               isLocked ? "text-muted-foreground" : "text-foreground"
                             )}>
-                              {isLocked ? `Document ${idx + 1}` : (docData.filename || f.filename || f.file_id || `Document ${idx + 1}`)}
+                              {isLocked 
+                                ? (docType ? `${docType} Document` : `Document ${idx + 1}`)
+                                : (docData.filename || f.filename || f.file_id || `Document ${idx + 1}`)
+                              }
                             </p>
+                            {isLocked && docType && (
+                              <p className="text-xs text-amber-600 dark:text-amber-500">
+                                {docType}
+                              </p>
+                            )}
                           </div>
                         </div>
-                        {!isLocked && (
-                          <div className="flex flex-wrap items-center gap-1.5 mt-auto">
-                            {docType && (
-                              <Badge variant="outline" className="text-xs">
-                                {docType}
-                              </Badge>
-                            )}
-                            {pageCount && (
-                              <span className="text-xs text-muted-foreground">
-                                {pageCount}p
-                              </span>
-                            )}
-                            {fileSize && (
-                              <span className="text-xs text-muted-foreground">{fileSize}</span>
-                            )}
-                          </div>
-                        )}
-                        {isLocked && (
-                          <div className="mt-auto pt-2">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-auto">
+                          {docType && (
+                            <Badge variant="outline" className={cn(
+                              "text-xs",
+                              isLocked && "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                            )}>
+                              {docType}
+                            </Badge>
+                          )}
+                          {!isLocked && pageCount && (
+                            <span className="text-xs text-muted-foreground">
+                              {pageCount}p
+                            </span>
+                          )}
+                          {!isLocked && fileSize && (
+                            <span className="text-xs text-muted-foreground">{fileSize}</span>
+                          )}
+                          {isLocked && (
                             <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
                               <span>🔒</span>
                               <span>Locked</span>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                         {canDownload && f.file_id && (
                           <Button
                             variant="ghost"
