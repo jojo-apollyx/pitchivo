@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DatePicker } from '@/components/ui/date-picker'
 import { toast } from 'sonner'
 import {
   Users,
@@ -55,7 +56,12 @@ import {
   Ban,
   AlertTriangle,
   TrendingUp,
-  Eye
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { format } from 'date-fns'
 import {
@@ -79,6 +85,15 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'bounced' | 'unsubscribed'>('all')
   const [scheduleFilter, setScheduleFilter] = useState<'all' | 'pending' | 'sent' | 'delivered' | 'opened' | 'clicked'>('all')
   
+  // Sorting
+  const [leadSortBy, setLeadSortBy] = useState<'name' | 'email' | 'company' | 'added_at'>('added_at')
+  const [leadSortOrder, setLeadSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [emailSortOrder, setEmailSortOrder] = useState<'asc' | 'desc'>('asc')
+  
+  // Pagination for leads
+  const [currentPage, setCurrentPage] = useState(1)
+  const leadsPerPage = 20
+  
   // Add lead dialog
   const [addLeadOpen, setAddLeadOpen] = useState(false)
   const [newLead, setNewLead] = useState({ email: '', name: '', title: '', company: '' })
@@ -90,6 +105,7 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
   // Edit scheduled email
   const [editEmailOpen, setEditEmailOpen] = useState(false)
   const [emailToEdit, setEmailToEdit] = useState<ScheduledEmailWithBrevoStatus | null>(null)
+  const [editedScheduleDate, setEditedScheduleDate] = useState('')
   const [editedScheduleTime, setEditedScheduleTime] = useState('')
   
   // Cancel confirmation
@@ -102,8 +118,8 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
 
   function loadData() {
     setLoading(true)
-    // Load mock data
-    const mockLeads = generateMockLeads(campaignId, 50)
+    // Load mock data - now generates 200 leads by default
+    const mockLeads = generateMockLeads(campaignId)
     const mockScheduled = generateMockScheduledEmails(campaignId, mockLeads)
     
     setLeads(mockLeads)
@@ -111,29 +127,83 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     setLoading(false)
   }
 
-  // Filter leads
-  const filteredLeads = leads.filter(lead => {
-    const matchesSearch = 
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.company.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter
-    
-    return matchesSearch && matchesStatus
-  })
+  // Filter, sort, and paginate leads
+  const { sortedAndFilteredLeads, paginatedLeads, totalPages } = useMemo(() => {
+    // Filter
+    let filtered = leads.filter(lead => {
+      const matchesSearch = 
+        lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.company.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesStatus = statusFilter === 'all' || lead.status === statusFilter
+      
+      return matchesSearch && matchesStatus
+    })
 
-  // Filter scheduled emails
-  const filteredScheduledEmails = scheduledEmails.filter(email => {
-    const matchesFilter = scheduleFilter === 'all' || 
-      (scheduleFilter === 'pending' && email.status === 'pending') ||
-      (scheduleFilter === 'sent' && email.status === 'sent') ||
-      (scheduleFilter === 'delivered' && email.brevo_status === 'delivered') ||
-      (scheduleFilter === 'opened' && email.brevo_status === 'opened') ||
-      (scheduleFilter === 'clicked' && email.brevo_status === 'clicked')
-    
-    return matchesFilter
-  })
+    // Sort
+    filtered.sort((a, b) => {
+      let aValue: string | number = ''
+      let bValue: string | number = ''
+      
+      switch (leadSortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase()
+          bValue = b.name.toLowerCase()
+          break
+        case 'email':
+          aValue = a.email.toLowerCase()
+          bValue = b.email.toLowerCase()
+          break
+        case 'company':
+          aValue = a.company.toLowerCase()
+          bValue = b.company.toLowerCase()
+          break
+        case 'added_at':
+          aValue = new Date(a.added_at).getTime()
+          bValue = new Date(b.added_at).getTime()
+          break
+      }
+      
+      if (aValue < bValue) return leadSortOrder === 'asc' ? -1 : 1
+      if (aValue > bValue) return leadSortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+
+    // Paginate
+    const total = Math.ceil(filtered.length / leadsPerPage)
+    const startIndex = (currentPage - 1) * leadsPerPage
+    const paginated = filtered.slice(startIndex, startIndex + leadsPerPage)
+
+    return {
+      sortedAndFilteredLeads: filtered,
+      paginatedLeads: paginated,
+      totalPages: total
+    }
+  }, [leads, searchTerm, statusFilter, leadSortBy, leadSortOrder, currentPage, leadsPerPage])
+
+  // Filter and sort scheduled emails
+  const sortedScheduledEmails = useMemo(() => {
+    let filtered = scheduledEmails.filter(email => {
+      const matchesFilter = scheduleFilter === 'all' || 
+        (scheduleFilter === 'pending' && email.status === 'pending') ||
+        (scheduleFilter === 'sent' && email.status === 'sent') ||
+        (scheduleFilter === 'delivered' && email.brevo_status === 'delivered') ||
+        (scheduleFilter === 'opened' && email.brevo_status === 'opened') ||
+        (scheduleFilter === 'clicked' && email.brevo_status === 'clicked')
+      
+      return matchesFilter
+    })
+
+    // Sort by scheduled time
+    filtered.sort((a, b) => {
+      const aTime = new Date(a.scheduled_time).getTime()
+      const bTime = new Date(b.scheduled_time).getTime()
+      return emailSortOrder === 'asc' ? aTime - bTime : bTime - aTime
+    })
+
+    return filtered
+  }, [scheduledEmails, scheduleFilter, emailSortOrder])
 
   // Stats
   const stats = {
@@ -189,22 +259,43 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
 
   function handleEditSchedule(email: ScheduledEmailWithBrevoStatus) {
     setEmailToEdit(email)
-    setEditedScheduleTime(email.scheduled_time)
+    const dateObj = new Date(email.scheduled_time)
+    setEditedScheduleDate(format(dateObj, 'yyyy-MM-dd'))
+    setEditedScheduleTime(format(dateObj, 'HH:mm'))
     setEditEmailOpen(true)
   }
 
   function handleUpdateSchedule() {
-    if (!emailToEdit || !editedScheduleTime) return
+    if (!emailToEdit || !editedScheduleDate) return
+    
+    // Combine date and time
+    const timeStr = editedScheduleTime || '09:00'
+    const newScheduleTime = `${editedScheduleDate}T${timeStr}:00.000Z`
     
     setScheduledEmails(scheduledEmails.map(e => 
       e.scheduled_email_id === emailToEdit.scheduled_email_id
-        ? { ...e, scheduled_time: editedScheduleTime, updated_at: new Date().toISOString() }
+        ? { ...e, scheduled_time: newScheduleTime, updated_at: new Date().toISOString() }
         : e
     ))
     
     setEditEmailOpen(false)
     setEmailToEdit(null)
+    setEditedScheduleDate('')
+    setEditedScheduleTime('')
     toast.success('Schedule updated successfully!')
+  }
+  
+  function toggleLeadSort(column: typeof leadSortBy) {
+    if (leadSortBy === column) {
+      setLeadSortOrder(leadSortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setLeadSortBy(column)
+      setLeadSortOrder('asc')
+    }
+  }
+  
+  function toggleEmailSort() {
+    setEmailSortOrder(emailSortOrder === 'asc' ? 'desc' : 'asc')
   }
 
   function handleCancelEmail(emailId: string) {
@@ -338,17 +429,69 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleLeadSort('name')}
+                    >
+                      Name
+                      {leadSortBy === 'name' && (
+                        leadSortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                      )}
+                      {leadSortBy !== 'name' && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleLeadSort('email')}
+                    >
+                      Email
+                      {leadSortBy === 'email' && (
+                        leadSortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                      )}
+                      {leadSortBy !== 'email' && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
+                    </Button>
+                  </TableHead>
                   <TableHead>Title</TableHead>
-                  <TableHead>Company</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleLeadSort('company')}
+                    >
+                      Company
+                      {leadSortBy === 'company' && (
+                        leadSortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                      )}
+                      {leadSortBy !== 'company' && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
+                    </Button>
+                  </TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Added</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleLeadSort('added_at')}
+                    >
+                      Added
+                      {leadSortBy === 'added_at' && (
+                        leadSortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                      )}
+                      {leadSortBy !== 'added_at' && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLeads.map((lead) => (
+                {paginatedLeads.map((lead) => (
                   <TableRow key={lead.lead_id}>
                     <TableCell className="font-medium">{lead.name}</TableCell>
                     <TableCell>{lead.email}</TableCell>
@@ -387,7 +530,7 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredLeads.length === 0 && (
+                {paginatedLeads.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No leads found
@@ -397,6 +540,60 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * leadsPerPage + 1} to {Math.min(currentPage * leadsPerPage, sortedAndFilteredLeads.length)} of {sortedAndFilteredLeads.length} leads
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? 'default' : 'outline'}
+                        size="sm"
+                        className="w-9"
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Scheduled Emails Tab */}
@@ -464,14 +661,24 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                   <TableHead>Recipient</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Company</TableHead>
-                  <TableHead>Scheduled Time</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      onClick={() => toggleEmailSort()}
+                    >
+                      Scheduled Time
+                      {emailSortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Brevo Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredScheduledEmails.map((email) => {
+                {sortedScheduledEmails.map((email) => {
                   const brevoInfo = getBrevoStatusBadge(email.brevo_status)
                   return (
                     <TableRow key={email.scheduled_email_id}>
@@ -563,7 +770,7 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                     </TableRow>
                   )
                 })}
-                {filteredScheduledEmails.length === 0 && (
+                {sortedScheduledEmails.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No scheduled emails found
@@ -673,14 +880,25 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                 <div><strong>Company:</strong> {emailToEdit.recipient_company}</div>
                 <div><strong>Subject:</strong> {emailToEdit.subject}</div>
               </div>
-              <div>
-                <Label htmlFor="scheduledTime">Scheduled Time</Label>
-                <Input
-                  id="scheduledTime"
-                  type="datetime-local"
-                  value={editedScheduleTime ? format(new Date(editedScheduleTime), "yyyy-MM-dd'T'HH:mm") : ''}
-                  onChange={(e) => setEditedScheduleTime(new Date(e.target.value).toISOString())}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="scheduledDate">Scheduled Date</Label>
+                  <DatePicker
+                    value={editedScheduleDate}
+                    onChange={setEditedScheduleDate}
+                    placeholder="Select date"
+                    minDate={new Date()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="scheduledTime">Time</Label>
+                  <Input
+                    id="scheduledTime"
+                    type="time"
+                    value={editedScheduleTime}
+                    onChange={(e) => setEditedScheduleTime(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setEditEmailOpen(false)}>
