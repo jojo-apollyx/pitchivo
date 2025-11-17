@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
 // AlertDialog will be created inline for now
 
 export default function ProductsPage() {
@@ -511,20 +512,20 @@ export default function ProductsPage() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-sm mb-1">Marketing Channel Links</h4>
                       <p className="text-xs text-muted-foreground mb-3">
-                        Create secure links for different marketing channels with more details visible
+                        Create and manage secure links for different marketing channels
                       </p>
-                      <div className="p-4 rounded-lg border border-dashed bg-muted/30 text-center">
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Marketing links are configured during the publish process
-                        </p>
-                        <Link href={`/dashboard/products/${selectedProduct.product_id}/preview-publish`}>
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-3 w-3 mr-1" />
-                            Go to Preview & Publish
-                          </Button>
-                        </Link>
-                      </div>
                     </div>
+                  </div>
+                  
+                  {/* Embed the SharingLinksPanel */}
+                  <div className="pl-11">
+                    <SharingLinksPanel 
+                      productId={selectedProduct.product_id}
+                      onShowQR={(url, name) => {
+                        // Could add QR dialog here if needed
+                        toast.success(`QR code for ${name} - Feature coming soon`)
+                      }}
+                    />
                   </div>
                 </div>
               </div>

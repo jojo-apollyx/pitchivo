@@ -10,70 +10,13 @@ import { useProduct } from '@/lib/api/products'
 import { cn } from '@/lib/utils'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { ACCESS_LEVEL_CONFIG } from '@/lib/constants/access-levels'
-
-// Note: Full page preview will be added in future iteration
+import { PRODUCT_FIELDS } from '@/lib/industries/food-supplement/extraction-schema'
+import { RealPagePreview } from '@/app/products/[slug]/RealPagePreview'
 
 // Permission levels
 type AccessLevel = 'public' | 'after_click' | 'after_rfq'
 type FieldPermission = {
   [fieldName: string]: AccessLevel
-}
-
-// Step indicator component
-function StepIndicator({ currentStep, onStepClick }: { currentStep: number; onStepClick: (step: number) => void }) {
-  const steps = [
-    { number: 1, title: 'Edit Permissions', icon: FileText },
-    { number: 2, title: 'Preview', icon: Eye },
-  ]
-
-  return (
-    <div className="flex items-center justify-center gap-4 py-6">
-      {steps.map((step, index) => {
-        const Icon = step.icon
-        const isActive = currentStep === step.number
-        const isCompleted = currentStep > step.number
-        const isClickable = step.number < currentStep
-
-        return (
-          <div key={step.number} className="flex items-center">
-            <button
-              onClick={() => isClickable && onStepClick(step.number)}
-              disabled={!isClickable}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg border transition-all',
-                isActive && 'bg-primary text-primary-foreground border-primary shadow-lg',
-                isCompleted && 'bg-accent/10 text-accent-dark border-accent/30 cursor-pointer hover:bg-accent/20',
-                !isActive && !isCompleted && 'bg-muted/30 text-muted-foreground border-border/30 cursor-not-allowed'
-              )}
-            >
-              <div
-                className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-full transition-all',
-                  isActive && 'bg-primary-foreground text-primary',
-                  isCompleted && 'bg-accent text-accent-foreground',
-                  !isActive && !isCompleted && 'bg-muted text-muted-foreground'
-                )}
-              >
-                {isCompleted ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-medium">Step {step.number}</p>
-                <p className="text-sm font-semibold">{step.title}</p>
-              </div>
-            </button>
-            {index < steps.length - 1 && (
-              <div
-                className={cn(
-                  'h-0.5 w-12 mx-2 transition-all',
-                  isCompleted ? 'bg-accent' : 'bg-border/30'
-                )}
-              />
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
 }
 
 // Permission Widget Component
@@ -179,10 +122,11 @@ export default function PreviewPublishPageNew() {
   const params = useParams()
   const productId = params.productId as string
 
-  const [currentStep, setCurrentStep] = useState(1)
+  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit')
   const [permissions, setPermissions] = useState<FieldPermission>({})
-  const [previewStage, setPreviewStage] = useState<'guest' | 'link' | 'rfq'>('guest')
+  const [previewStage, setPreviewStage] = useState<'public' | 'after_click' | 'after_rfq'>('public')
   const [isPublishing, setIsPublishing] = useState(false)
+  const [documentMetadata, setDocumentMetadata] = useState<Record<string, any>>({})
 
   const permissionsInitialized = useRef(false)
 
@@ -197,7 +141,7 @@ export default function PreviewPublishPageNew() {
       : productData.product_data
   }, [productData])
 
-  // Initialize permissions
+  // Initialize permissions and document metadata
   useEffect(() => {
     if (!formData || permissionsInitialized.current) return
 
@@ -227,6 +171,37 @@ export default function PreviewPublishPageNew() {
 
     setPermissions(defaultPermissions)
     permissionsInitialized.current = true
+  }, [formData])
+
+  // Fetch document metadata for uploaded files
+  useEffect(() => {
+    if (!formData) return
+    
+    const formDataAny = formData as any
+    const uploadedFiles = formDataAny.uploaded_files || []
+    
+    if (uploadedFiles.length === 0) return
+
+    const fileIds = uploadedFiles
+      .map((f: any) => f.file_id)
+      .filter((id: string) => id && !documentMetadata[id])
+
+    if (fileIds.length === 0) return
+
+    fetch(`/api/documents/list?fileIds=${fileIds.join(',')}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.documents && data.documents.length > 0) {
+          const metadata: Record<string, any> = {}
+          data.documents.forEach((doc: any) => {
+            metadata[doc.id] = doc
+          })
+          setDocumentMetadata(prev => ({ ...prev, ...metadata }))
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching document metadata:', error)
+      })
   }, [formData])
 
   const handlePermissionChange = (fieldName: string, level: AccessLevel) => {
@@ -326,16 +301,43 @@ export default function PreviewPublishPageNew() {
         </div>
       </header>
 
-      {/* Step Indicator */}
-      <StepIndicator currentStep={currentStep} onStepClick={setCurrentStep} />
+      {/* Tab Navigation */}
+      <div className="border-b border-border/30 bg-muted/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setViewMode('edit')}
+              className={cn(
+                'px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+                viewMode === 'edit'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Edit Permissions
+            </button>
+            <button
+              onClick={() => setViewMode('preview')}
+              className={cn(
+                'px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+                viewMode === 'preview'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Preview
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {/* Step Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        {currentStep === 1 && (
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {viewMode === 'edit' && (
           <div className="space-y-6">
             {/* Explanation Banner */}
             <div className="p-6 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
-              <h2 className="text-lg font-semibold mb-3">Step 1: Control What Visitors See</h2>
+              <h2 className="text-lg font-semibold mb-3">Control What Visitors See</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 Set the visibility level for each field. You can always change these later.
               </p>
@@ -387,7 +389,7 @@ export default function PreviewPublishPageNew() {
                 </div>
               </div>
 
-              <div className="space-y-1 max-h-[500px] overflow-y-auto">
+              <div className="space-y-1">
                 {fieldsWithValues.map((fieldName) => {
                   const value = formData[fieldName as keyof typeof formData]
                   const label = fieldName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -407,20 +409,47 @@ export default function PreviewPublishPageNew() {
             </div>
 
             {/* Navigation */}
-            <div className="flex justify-end">
-              <Button size="lg" onClick={() => setCurrentStep(2)} className="gap-2">
-                Continue to Preview
-                <ArrowRight className="h-5 w-5" />
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => router.push('/dashboard/products')}
+              >
+                Save as Draft
               </Button>
+              <div className="flex gap-3">
+                <Button size="lg" variant="outline" onClick={() => setViewMode('preview')} className="gap-2">
+                  Continue to Preview
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={handlePublish}
+                  disabled={isPublishing}
+                  className="gap-2"
+                >
+                  {isPublishing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Publishing...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-5 w-5" />
+                      Publish Now
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
-        {currentStep === 2 && (
+        {viewMode === 'preview' && (
           <div className="space-y-6">
             {/* Explanation Banner */}
             <div className="p-6 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
-              <h2 className="text-lg font-semibold mb-3">Step 2: Preview Your Product Page</h2>
+              <h2 className="text-lg font-semibold mb-3">Preview Your Product Page</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 See exactly how your product appears to different visitors. Switch between stages below.
               </p>
@@ -429,10 +458,10 @@ export default function PreviewPublishPageNew() {
             {/* Stage Selector */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
-                onClick={() => setPreviewStage('guest')}
+                onClick={() => setPreviewStage('public')}
                 className={cn(
                   'p-4 rounded-lg border text-left transition-all',
-                  previewStage === 'guest'
+                  previewStage === 'public'
                     ? 'bg-primary text-primary-foreground border-primary shadow-lg'
                     : 'bg-card hover:bg-muted/50 border-border/30'
                 )}
@@ -441,16 +470,16 @@ export default function PreviewPublishPageNew() {
                   <Globe className="h-5 w-5" />
                   <span className="text-sm font-semibold">Guest Visitor</span>
                 </div>
-                <p className={cn('text-xs', previewStage === 'guest' ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+                <p className={cn('text-xs', previewStage === 'public' ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
                   Anyone browsing without a special link sees only basic information
                 </p>
               </button>
 
               <button
-                onClick={() => setPreviewStage('link')}
+                onClick={() => setPreviewStage('after_click')}
                 className={cn(
                   'p-4 rounded-lg border text-left transition-all',
-                  previewStage === 'link'
+                  previewStage === 'after_click'
                     ? 'bg-primary text-primary-foreground border-primary shadow-lg'
                     : 'bg-card hover:bg-muted/50 border-border/30'
                 )}
@@ -459,16 +488,16 @@ export default function PreviewPublishPageNew() {
                   <Mail className="h-5 w-5" />
                   <span className="text-sm font-semibold">Marketing Link</span>
                 </div>
-                <p className={cn('text-xs', previewStage === 'link' ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+                <p className={cn('text-xs', previewStage === 'after_click' ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
                   People who click your email, social, or QR code links see more details
                 </p>
               </button>
 
               <button
-                onClick={() => setPreviewStage('rfq')}
+                onClick={() => setPreviewStage('after_rfq')}
                 className={cn(
                   'p-4 rounded-lg border text-left transition-all',
-                  previewStage === 'rfq'
+                  previewStage === 'after_rfq'
                     ? 'bg-primary text-primary-foreground border-primary shadow-lg'
                     : 'bg-card hover:bg-muted/50 border-border/30'
                 )}
@@ -477,71 +506,38 @@ export default function PreviewPublishPageNew() {
                   <CheckCircle2 className="h-5 w-5" />
                   <span className="text-sm font-semibold">After Quote</span>
                 </div>
-                <p className={cn('text-xs', previewStage === 'rfq' ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+                <p className={cn('text-xs', previewStage === 'after_rfq' ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
                   After submitting a quote request, visitors see everything including downloads
                 </p>
               </button>
             </div>
 
-            {/* Preview Content */}
-            <div className="rounded-xl border border-border/30 bg-card p-6">
-              <h3 className="text-lg font-semibold mb-4">
-                What {previewStage === 'guest' ? 'Guest Visitors' : previewStage === 'link' ? 'Marketing Link Visitors' : 'Quote Requesters'} Can See
-              </h3>
-              
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {fieldsWithValues.map((fieldName) => {
-                  const label = fieldName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-                  const permission = permissions[fieldName] || 'public'
-                  
-                  // Determine if field is visible in current preview stage
-                  let isVisible = false
-                  if (previewStage === 'guest') {
-                    isVisible = permission === 'public'
-                  } else if (previewStage === 'link') {
-                    isVisible = permission === 'public' || permission === 'after_click'
-                  } else {
-                    isVisible = true // rfq stage sees everything
-                  }
-                  
-                  return (
-                    <div 
-                      key={fieldName}
-                      className={cn(
-                        'p-3 rounded-lg border flex items-center justify-between',
-                        isVisible 
-                          ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/50'
-                          : 'bg-muted/30 border-border/30 opacity-50'
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        {isVisible ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500 flex-shrink-0" />
-                        ) : (
-                          <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
-                        )}
-                        <span className="text-sm font-medium">{label}</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {permission === 'public' ? '👀 Basic' : permission === 'after_click' ? '🔗 More' : '✅ All'}
-                      </Badge>
-                    </div>
-                  )
-                })}
+            {/* Preview Content - Real Product Page */}
+            <div className="rounded-xl border-2 border-primary/20 overflow-hidden shadow-lg">
+              <div className="bg-muted/50 border-b border-border/30 px-4 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Preview as {previewStage === 'public' ? 'Guest' : previewStage === 'after_click' ? 'Marketing Link Visitor' : 'Quote Requester'}
+                  </span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {previewStage === 'public' ? '👀 Basic Info' : previewStage === 'after_click' ? '🔗 More Details' : '✅ Complete Access'}
+                </Badge>
               </div>
-              
-              <div className="mt-4 p-4 rounded-lg bg-muted/30 border border-dashed border-border/30">
-                <p className="text-xs text-muted-foreground text-center">
-                  {previewStage === 'guest' && `${fieldsWithValues.filter(f => (permissions[f] || 'public') === 'public').length} of ${fieldsWithValues.length} fields visible`}
-                  {previewStage === 'link' && `${fieldsWithValues.filter(f => ['public', 'after_click'].includes(permissions[f] || 'public')).length} of ${fieldsWithValues.length} fields visible`}
-                  {previewStage === 'rfq' && `All ${fieldsWithValues.length} fields visible + file downloads enabled`}
-                </p>
+              <div className="bg-background">
+                <RealPagePreview
+                  formData={formData}
+                  permissions={permissions}
+                  viewMode={previewStage}
+                  documentMetadata={documentMetadata}
+                />
               </div>
             </div>
 
             {/* Navigation */}
             <div className="flex justify-between">
-              <Button variant="outline" size="lg" onClick={() => setCurrentStep(1)} className="gap-2">
+              <Button variant="outline" size="lg" onClick={() => setViewMode('edit')} className="gap-2">
                 <ArrowLeft className="h-5 w-5" />
                 Back to Permissions
               </Button>

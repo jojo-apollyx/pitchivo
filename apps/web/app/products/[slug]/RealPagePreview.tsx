@@ -951,19 +951,35 @@ export function RealPagePreview({
         {/* Documentation Files */}
         {(() => {
           const formDataAny = formData as any
-          const hasUploadedFiles = shouldShow('uploaded_files') && formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
+          const hasUploadedFiles = formDataAny.uploaded_files && Array.isArray(formDataAny.uploaded_files) && formDataAny.uploaded_files.length > 0
           
           if (!hasUploadedFiles) return null
           
-          const canDownload = viewMode === 'after_rfq'
+          const isLocked = isFieldLocked('uploaded_files')
+          const requiredLevel = getRequiredLevel('uploaded_files')
+          const canDownload = !isLocked
           
           return (
             <motion.section variants={itemVariants} className="max-w-7xl mx-auto">
-              <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-foreground">Documentation & Files</h2>
-              {!canDownload && (
-                <p className="text-sm sm:text-base text-muted-foreground mb-6">
-                  Documents are available for viewing. Submit a request to download files.
-                </p>
+              <div className="flex items-center gap-3 mb-6">
+                <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Documentation & Files</h2>
+                {isLocked && (
+                  <Badge variant="outline" className="text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                    🔒 {requiredLevel === 'after_click' ? 'Request Info' : 'Request Quote to Download'}
+                  </Badge>
+                )}
+              </div>
+              {isLocked && (
+                <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-900 dark:text-amber-200 font-medium mb-1">
+                    📄 Documents Available
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    {requiredLevel === 'after_click' 
+                      ? 'Click a marketing link or request information to see document details and download.'
+                      : 'Submit a quote request to unlock full document access and downloads.'}
+                  </p>
+                </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {formDataAny.uploaded_files.map((f: any, idx: number) => {
@@ -979,37 +995,63 @@ export function RealPagePreview({
                     <motion.div
                       key={idx}
                       variants={itemVariants}
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-3 sm:p-4 hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
+                      whileHover={!isLocked ? { scale: 1.02, y: -2 } : {}}
+                      className={cn(
+                        "group relative overflow-hidden rounded-xl border bg-gradient-to-br p-3 sm:p-4 transition-all duration-300",
+                        isLocked 
+                          ? "border-amber-200 dark:border-amber-800 from-amber-50/50 dark:from-amber-950/10 to-background cursor-not-allowed opacity-75"
+                          : "border-border/30 from-background to-muted/20 hover:border-primary/50 hover:shadow-lg"
+                      )}
                     >
                       <div className="flex flex-col h-full">
                         <div className="flex items-start gap-3 mb-3">
                           <div className="flex-shrink-0">
-                            <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors duration-300">
-                              <FileIcon className="h-4 w-4 text-primary" />
+                            <div className={cn(
+                              "rounded-lg p-2 transition-colors duration-300",
+                              isLocked 
+                                ? "bg-amber-100 dark:bg-amber-900/20" 
+                                : "bg-primary/10 group-hover:bg-primary/20"
+                            )}>
+                              <FileIcon className={cn(
+                                "h-4 w-4",
+                                isLocked ? "text-amber-600 dark:text-amber-500" : "text-primary"
+                              )} />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-foreground mb-1 text-sm sm:text-base line-clamp-2">
-                              {docData.filename || f.filename || f.file_id || `Document ${idx + 1}`}
+                            <p className={cn(
+                              "font-semibold mb-1 text-sm sm:text-base line-clamp-2",
+                              isLocked ? "text-muted-foreground" : "text-foreground"
+                            )}>
+                              {isLocked ? `Document ${idx + 1}` : (docData.filename || f.filename || f.file_id || `Document ${idx + 1}`)}
                             </p>
                           </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-auto">
-                          {docType && (
-                            <Badge variant="outline" className="text-xs">
-                              {docType}
-                            </Badge>
-                          )}
-                          {pageCount && (
-                            <span className="text-xs text-muted-foreground">
-                              {pageCount}p
-                            </span>
-                          )}
-                          {fileSize && (
-                            <span className="text-xs text-muted-foreground">{fileSize}</span>
-                          )}
-                        </div>
+                        {!isLocked && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-auto">
+                            {docType && (
+                              <Badge variant="outline" className="text-xs">
+                                {docType}
+                              </Badge>
+                            )}
+                            {pageCount && (
+                              <span className="text-xs text-muted-foreground">
+                                {pageCount}p
+                              </span>
+                            )}
+                            {fileSize && (
+                              <span className="text-xs text-muted-foreground">{fileSize}</span>
+                            )}
+                          </div>
+                        )}
+                        {isLocked && (
+                          <div className="mt-auto pt-2">
+                            <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                              <span>🔒</span>
+                              <span>Locked</span>
+                            </div>
+                          </div>
+                        )}
                         {canDownload && f.file_id && (
                           <Button
                             variant="ghost"
