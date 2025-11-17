@@ -70,13 +70,15 @@ export async function POST(request: NextRequest) {
     const buyerName = to.split('@')[1]?.split('.')[0] || 'Valued Partner'
 
     // Build placeholder values
+    const orgName = campaign.products?.organizations?.name || 'Pitchivo'
     const placeholders: Record<string, string> = {
       '{{product_link}}': campaign.products 
         ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaign.products.product_id}`
         : '',
       '{{product_name}}': campaign.products?.product_name || 'Our Product',
       '{{buyer_name}}': buyerName.charAt(0).toUpperCase() + buyerName.slice(1),
-      '{{org_name}}': campaign.products?.organizations?.name || 'Pitchivo'
+      '{{org_name}}': orgName,
+      '{{organization_name}}': orgName  // Support both placeholder formats
     }
 
     // Replace placeholders in content and subject

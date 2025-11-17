@@ -13,6 +13,7 @@ import { EmailQualityChecker } from '@/components/admin/email-quality-checker'
 import { EmailTemplateManager } from '@/components/admin/email-template-manager'
 import { BatchEmailScheduler } from '@/components/admin/batch-email-scheduler'
 import { CampaignEmailManagement } from '@/components/admin/campaign-email-management'
+import { TestEmailTracker } from '@/components/admin/test-email-tracker'
 
 interface Campaign {
   campaign_id: string
@@ -120,7 +121,14 @@ export default function CampaignSettingsPage() {
 
       if (!response.ok) throw new Error('Failed to send email')
 
-      toast.success('Email sent successfully!')
+      const result = await response.json()
+      
+      // Add to test email tracker
+      if ((window as any).addTestEmailEvent) {
+        (window as any).addTestEmailEvent(emailTo, emailSubject, result.brevoMessageId)
+      }
+
+      toast.success('Email sent successfully! Check the event tracker below.')
       setEmailTo('')
     } catch (error) {
       console.error('Error sending email:', error)
@@ -348,6 +356,11 @@ export default function CampaignSettingsPage() {
                     <Send className="h-4 w-4" />
                     {sending ? 'Sending...' : 'Send Email Immediately'}
                   </Button>
+
+                  {/* Test Email Event Tracker */}
+                  <div className="mt-8 pt-8 border-t border-border/30">
+                    <TestEmailTracker campaignId={campaignId} />
+                  </div>
                 </div>
               )}
 

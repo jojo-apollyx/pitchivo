@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { AddLeadDialog } from '@/components/admin/add-lead-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
@@ -96,7 +97,6 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
   
   // Add lead dialog
   const [addLeadOpen, setAddLeadOpen] = useState(false)
-  const [newLead, setNewLead] = useState({ email: '', name: '', title: '', company: '' })
   
   // Delete confirmation
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -220,34 +220,10 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     bouncedEmails: scheduledEmails.filter(e => e.brevo_status === 'hard_bounce' || e.brevo_status === 'soft_bounce').length
   }
 
-  function handleAddLead() {
-    if (!newLead.email || !newLead.name || !newLead.company) {
-      toast.error('Please fill in all required fields')
-      return
-    }
-    
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(newLead.email)) {
-      toast.error('Invalid email address')
-      return
-    }
-    
-    const lead: Lead = {
-      lead_id: `lead_${campaignId}_${Date.now()}`,
-      campaign_id: campaignId,
-      email: newLead.email,
-      name: newLead.name,
-      title: newLead.title,
-      company: newLead.company,
-      status: 'active',
-      added_at: new Date().toISOString()
-    }
-    
-    setLeads([lead, ...leads])
-    setAddLeadOpen(false)
-    setNewLead({ email: '', name: '', title: '', company: '' })
-    toast.success('Lead added successfully!')
+  function handleLeadsAdded(newLeads: Lead[]) {
+    setLeads([...newLeads, ...leads])
+    // Reset to first page to show new leads
+    setCurrentPage(1)
   }
 
   function handleDeleteLead(leadId: string) {
@@ -784,63 +760,12 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
       </Tabs>
 
       {/* Add Lead Dialog */}
-      <Dialog open={addLeadOpen} onOpenChange={setAddLeadOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Lead</DialogTitle>
-            <DialogDescription>
-              Add a new lead to this campaign. They will be available for scheduling emails.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john.doe@company.com"
-                value={newLead.email}
-                onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                placeholder="John Doe"
-                value={newLead.name}
-                onChange={(e) => setNewLead({ ...newLead, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                placeholder="Procurement Manager"
-                value={newLead.title}
-                onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="company">Company *</Label>
-              <Input
-                id="company"
-                placeholder="Company Name"
-                value={newLead.company}
-                onChange={(e) => setNewLead({ ...newLead, company: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAddLeadOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddLead}>
-                Add Lead
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddLeadDialog
+        open={addLeadOpen}
+        onOpenChange={setAddLeadOpen}
+        campaignId={campaignId}
+        onLeadsAdded={handleLeadsAdded}
+      />
 
       {/* Delete Lead Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
