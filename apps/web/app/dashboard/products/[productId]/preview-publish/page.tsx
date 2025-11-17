@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Loader2, Eye, Globe, Mail, FileText, Plus, QrCode, Download, Package, MapPin, File, FileCheck, FileX, FileImage, FileSpreadsheet, FileCode, FileJson, Image as ImageIcon, Package2, Box, ExternalLink, Copy, Edit, Lock, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -234,29 +234,27 @@ function RestrictedFieldDisplay({
   const levelName = getAccessLevelName(requiredLevel)
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="relative group">
-            <div className="blur-sm select-none pointer-events-none">
-              {children}
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-md border border-dashed border-muted-foreground/30">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Lock className="h-4 w-4" />
-                <span className="text-xs font-medium">{levelName} Access Required</span>
-              </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="relative group">
+          <div className="blur-sm select-none pointer-events-none">
+            {children}
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-md border border-dashed border-muted-foreground/30">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Lock className="h-4 w-4" />
+              <span className="text-xs font-medium">{levelName} Access Required</span>
             </div>
           </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1">
-            <p className="font-medium">{levelName} Access Required</p>
-            <p className="text-xs">{hint}</p>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        <div className="space-y-1">
+          <p className="font-medium">{levelName} Access Required</p>
+          <p className="text-xs">{hint}</p>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -1126,6 +1124,9 @@ export default function PreviewPublishPage() {
   const [showQrDialog, setShowQrDialog] = useState(false)
   const [selectedQrChannel, setSelectedQrChannel] = useState<ChannelLink | null>(null)
   
+  // Track if we've initialized permissions to prevent re-initialization
+  const permissionsInitialized = useRef(false)
+  
   // Note: Channel state moved to SharingLinksPanel component
 
   // Load product data
@@ -1170,83 +1171,80 @@ export default function PreviewPublishPage() {
       .catch(error => {
         console.error('Error fetching document metadata:', error)
       })
-  }, [formData, documentMetadata])
+  }, [formData])
 
   // Load saved permissions and channels or initialize defaults
   useEffect(() => {
-    if (formData) {
-      const formDataAny = formData as any
-      
-      // Load saved permissions from product_data
-      if (Object.keys(permissions).length === 0) {
-        if (formDataAny.field_permissions && typeof formDataAny.field_permissions === 'object') {
-          setPermissions(formDataAny.field_permissions)
-        }
-      }
-      
-      // Note: Channel management moved to SharingLinksPanel component
-      // Channels are now loaded and managed within that component
-      
-      // If we loaded saved permissions, don't initialize defaults
-      if (formDataAny.field_permissions && typeof formDataAny.field_permissions === 'object') {
+    // Only initialize once when formData is available
+    if (!formData || permissionsInitialized.current) return
+    
+    const formDataAny = formData as any
+    
+    // Load saved permissions from product_data
+    if (formDataAny.field_permissions && typeof formDataAny.field_permissions === 'object') {
+      setPermissions(formDataAny.field_permissions)
+      permissionsInitialized.current = true
+      return
+    }
+    
+    // Note: Channel management moved to SharingLinksPanel component
+    // Channels are now loaded and managed within that component
+    
+    // If no saved permissions, initialize with defaults
+    const defaultPermissions: FieldPermission = {}
+    
+    // Sensitive fields that should default to after_rfq (most restricted)
+    const afterRfqFields = [
+      'price_lead_time',
+      'samples',
+      'coa_file',
+      'tds_file',
+      'msds_file',
+      'spec_sheet',
+      'certificate_files',
+      'other_files',
+      'uploaded_files',
+    ]
+    
+    // Fields that should default to after_click (moderately sensitive)
+    const afterClickFields = [
+      'cas_number',
+      'assay',
+      'certificates',
+      'fda_number',
+      'einecs',
+      'manufacturer_name',
+    ]
+    
+    // Set default permissions for all fields in formData
+    Object.keys(formData).forEach((key) => {
+      // Skip internal/metadata fields (but include uploaded_files)
+      if (key.startsWith('_') || key === 'field_permissions' || key === 'channel_links') {
         return
       }
       
-      // If no saved permissions, initialize with defaults
-      const defaultPermissions: FieldPermission = {}
+      // Note: uploaded_files is handled in afterRfqFields list above
       
-      // Sensitive fields that should default to after_rfq (most restricted)
-      const afterRfqFields = [
-        'price_lead_time',
-        'samples',
-        'coa_file',
-        'tds_file',
-        'msds_file',
-        'spec_sheet',
-        'certificate_files',
-        'other_files',
-        'uploaded_files',
-      ]
+      // Check if field has a meaningful value
+      const value = formData[key as keyof typeof formData]
+      const hasValue = value !== null && value !== undefined && value !== '' && 
+        (!Array.isArray(value) || value.length > 0) &&
+        (typeof value !== 'object' || Object.keys(value).length > 0)
       
-      // Fields that should default to after_click (moderately sensitive)
-      const afterClickFields = [
-        'cas_number',
-        'assay',
-        'certificates',
-        'fda_number',
-        'einecs',
-        'manufacturer_name',
-      ]
-      
-      // Set default permissions for all fields in formData
-      Object.keys(formData).forEach((key) => {
-        // Skip internal/metadata fields (but include uploaded_files)
-        if (key.startsWith('_') || key === 'field_permissions' || key === 'channel_links') {
-          return
+      if (hasValue) {
+        if (afterRfqFields.includes(key)) {
+          defaultPermissions[key] = 'after_rfq'
+        } else if (afterClickFields.includes(key)) {
+          defaultPermissions[key] = 'after_click'
+        } else {
+          defaultPermissions[key] = 'public'
         }
-        
-        // Note: uploaded_files is handled in afterRfqFields list above
-        
-        // Check if field has a meaningful value
-        const value = formData[key as keyof typeof formData]
-        const hasValue = value !== null && value !== undefined && value !== '' && 
-          (!Array.isArray(value) || value.length > 0) &&
-          (typeof value !== 'object' || Object.keys(value).length > 0)
-        
-        if (hasValue) {
-          if (afterRfqFields.includes(key)) {
-            defaultPermissions[key] = 'after_rfq'
-          } else if (afterClickFields.includes(key)) {
-            defaultPermissions[key] = 'after_click'
-          } else {
-            defaultPermissions[key] = 'public'
-          }
-        }
-      })
-      
-      setPermissions(defaultPermissions)
-    }
-  }, [formData, permissions])
+      }
+    })
+    
+    setPermissions(defaultPermissions)
+    permissionsInitialized.current = true
+  }, [formData])
 
   // Calculate permission statistics
   const permissionStats = useMemo(() => {
