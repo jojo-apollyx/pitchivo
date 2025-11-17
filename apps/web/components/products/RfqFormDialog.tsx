@@ -119,7 +119,7 @@ export function RfqFormDialog({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Product Info */}
-          <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+          <div className="p-3 rounded-lg border border-border/30">
             <p className="text-sm font-medium text-foreground">Product</p>
             <p className="text-sm text-muted-foreground">{productName}</p>
           </div>
