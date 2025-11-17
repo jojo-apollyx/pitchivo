@@ -122,7 +122,12 @@ export function RealPagePreview({
 
   // NEW: Render field value with lock if needed
   const renderFieldValue = (value: any, fieldName: string, className?: string) => {
-    const formatted = formatValue(value, fieldName)
+    // Handle locked field objects from API
+    const actualValue = (value && typeof value === 'object' && value._locked === true) 
+      ? value._preview 
+      : value
+    
+    const formatted = formatValue(actualValue, fieldName)
     
     if (isFieldLocked(fieldName)) {
       return (
@@ -140,8 +145,13 @@ export function RealPagePreview({
   }
 
   const formatValue = (value: any, fieldName: string): string => {
-    if (!value || (Array.isArray(value) && value.length === 0)) return ''
+    // Handle locked field objects from API
+    if (value && typeof value === 'object' && value._locked === true) {
+      return value._preview || ''
+    }
     
+    if (!value || (Array.isArray(value) && value.length === 0)) return ''
+
     if (fieldName === 'price_lead_time' && Array.isArray(value)) {
       return value.map((tier: any) => {
         const parts = []
