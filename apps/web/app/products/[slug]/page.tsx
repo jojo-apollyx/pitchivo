@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Package2, ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useProduct } from '@/lib/api/products'
 import type { FoodSupplementProductData } from '@/components/products/industries/food-supplement/types'
 import { RealPagePreview } from './RealPagePreview'
@@ -261,9 +262,88 @@ export default function PublicProductPage() {
 
   if (!formData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-destructive">Product not found</p>
+      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent/10 relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="pointer-events-none absolute -right-12 top-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 left-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+        
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
+          <div className="w-full max-w-2xl">
+            <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 sm:p-12 shadow-xl">
+              {/* Icon */}
+              <div className="flex justify-center mb-6">
+                <div className="rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6">
+                  <Package2 className="h-16 w-16 text-amber-600 dark:text-amber-500" />
+                </div>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-3 text-foreground">
+                Product Not Available
+              </h2>
+
+              {/* Description */}
+              <div className="text-center space-y-3 mb-8">
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  This product cannot be found or is not currently available for viewing.
+                </p>
+                
+                {/* Possible reasons */}
+                <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-border/30 text-left">
+                  <p className="text-sm font-medium text-foreground mb-3">Possible reasons:</p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 mt-0.5">•</span>
+                      <span>The product hasn't been published yet (still in draft)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 mt-0.5">•</span>
+                      <span>The product link is incorrect or has been changed</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 mt-0.5">•</span>
+                      <span>The product has been removed by the seller</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {isMerchant && (
+                  <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+                    <p className="text-sm font-medium text-primary mb-2">
+                      👋 Product Owner?
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      If this is your product and it's still in draft, publish it from your dashboard to make it accessible. 
+                      Only published products are visible to others.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => window.history.back()}
+                  variant="outline"
+                  size="lg"
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                  Go Back
+                </Button>
+                {isMerchant && (
+                  <Button
+                    onClick={() => window.location.href = '/dashboard/products'}
+                    size="lg"
+                    className="gap-2"
+                  >
+                    <Package2 className="h-5 w-5" />
+                    My Products
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )

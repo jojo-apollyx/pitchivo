@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Package, Plus, Edit, Eye, FileText, Search, X, Trash2, BarChart3, MoreVertical } from 'lucide-react'
+import { Package, Plus, Edit, Eye, FileText, Search, X, Trash2, BarChart3, MoreVertical, Link2, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { useProducts, useDeleteProduct, useUpdateProduct } from '@/lib/api/products'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,8 @@ export default function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
+  const [showLinksDialog, setShowLinksDialog] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
 
   const allProducts = data?.products || []
 
@@ -347,6 +349,30 @@ export default function ProductsPage() {
                                     Preview & Publish
                                   </DropdownMenuItem>
                                 </Link>
+                                {product.status === 'published' && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+                                        const publicUrl = `${baseUrl}/products/${product.product_id}`
+                                        navigator.clipboard.writeText(publicUrl)
+                                        toast.success('Public link copied to clipboard!')
+                                      }}
+                                    >
+                                      <Link2 className="h-4 w-4 mr-2" />
+                                      Copy Public Link
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedProduct(product)
+                                        setShowLinksDialog(true)
+                                      }}
+                                    >
+                                      <Share2 className="h-4 w-4 mr-2" />
+                                      Manage Marketing Links
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => {
@@ -408,6 +434,114 @@ export default function ProductsPage() {
               >
                 {deleteProduct.isPending ? 'Deleting...' : 'Delete'}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Marketing Links Dialog */}
+      {showLinksDialog && selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background border border-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            {/* Dialog Header */}
+            <div className="px-6 py-4 border-b border-border/30 flex items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Marketing Links</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedProduct.product_name || 'Product'}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowLinksDialog(false)
+                  setSelectedProduct(null)
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Dialog Content - Scrollable */}
+            <div className="px-6 py-6 overflow-y-auto flex-1">
+              <div className="space-y-6">
+                {/* Public Link Section */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-primary/10 p-2 mt-0.5">
+                      <Link2 className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-sm mb-1">Public Product Link</h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Basic product information visible to everyone
+                      </p>
+                      <div className="p-3 rounded-lg border bg-card">
+                        <p className="text-xs text-muted-foreground truncate font-mono mb-2">
+                          {typeof window !== 'undefined' && `${window.location.origin}/products/${selectedProduct.product_id}`}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs"
+                          onClick={() => {
+                            const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+                            const publicUrl = `${baseUrl}/products/${selectedProduct.product_id}`
+                            navigator.clipboard.writeText(publicUrl)
+                            toast.success('Public link copied!')
+                          }}
+                        >
+                          <Link2 className="h-3 w-3 mr-1" />
+                          Copy Public Link
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t" />
+
+                {/* Marketing Channels Section */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-accent/10 p-2 mt-0.5">
+                      <Share2 className="h-4 w-4 text-accent-dark" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-sm mb-1">Marketing Channel Links</h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Create secure links for different marketing channels with more details visible
+                      </p>
+                      <div className="p-4 rounded-lg border border-dashed bg-muted/30 text-center">
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Marketing links are configured during the publish process
+                        </p>
+                        <Link href={`/dashboard/products/${selectedProduct.product_id}/preview-publish`}>
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-3 w-3 mr-1" />
+                            Go to Preview & Publish
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Dialog Footer */}
+            <div className="px-6 py-4 border-t border-border/30 bg-muted/30">
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => {
+                    setShowLinksDialog(false)
+                    setSelectedProduct(null)
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
