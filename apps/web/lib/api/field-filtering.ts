@@ -90,11 +90,47 @@ export function filterProductFields(
 }
 
 /**
+ * Get document type from file object
+ */
+function getDocumentTypeFromFile(file: any): string {
+  // Try extraction first
+  if (file.extraction?.extracted_values?.document_type) {
+    return file.extraction.extracted_values.document_type
+  }
+  
+  // Try file summary
+  if (file.extraction?.file_summary?.document_type) {
+    return file.extraction.file_summary.document_type
+  }
+  
+  // Fall back to filename analysis
+  const filename = (file.filename || '').toLowerCase()
+  if (filename.includes('coa') || filename.includes('analysis')) return 'COA'
+  if (filename.includes('tds') || filename.includes('technical')) return 'TDS'
+  if (filename.includes('msds') || filename.includes('sds') || filename.includes('safety')) return 'MSDS'
+  if (filename.includes('spec') || filename.includes('specification')) return 'Specification'
+  if (filename.includes('cert')) return 'Certificate'
+  
+  return 'Document'
+}
+
+/**
  * Get a preview of a locked field value
  * Shows partial info so users know what they're missing
+ * 
+ * For uploaded_files, returns array of document type objects
+ * For other fields, returns string preview
  */
-function getFieldPreview(value: any, fieldName: string): string {
+function getFieldPreview(value: any, fieldName: string): any {
   if (!value) return ''
+  
+  // Special handling for uploaded_files - return document type info
+  if (fieldName === 'uploaded_files' && Array.isArray(value)) {
+    return value.map((file) => ({
+      type: getDocumentTypeFromFile(file),
+      // Don't include filename or file_id to maintain privacy
+    }))
+  }
   
   // For strings, show first few characters
   if (typeof value === 'string') {
