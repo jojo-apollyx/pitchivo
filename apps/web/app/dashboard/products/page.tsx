@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
+import QRCode from 'react-qr-code'
 // AlertDialog will be created inline for now
 
 export default function ProductsPage() {
@@ -30,6 +31,8 @@ export default function ProductsPage() {
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
   const [showLinksDialog, setShowLinksDialog] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [showQrDialog, setShowQrDialog] = useState(false)
+  const [qrData, setQrData] = useState<{ url: string; name: string } | null>(null)
 
   const allProducts = data?.products || []
 
@@ -443,7 +446,7 @@ export default function ProductsPage() {
       {/* Marketing Links Dialog */}
       {showLinksDialog && selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background border border-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-background border border-border rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
             {/* Dialog Header */}
             <div className="px-6 py-4 border-b border-border/30 flex items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5">
               <div>
@@ -522,8 +525,8 @@ export default function ProductsPage() {
                     <SharingLinksPanel 
                       productId={selectedProduct.product_id}
                       onShowQR={(url, name) => {
-                        // Could add QR dialog here if needed
-                        toast.success(`QR code for ${name} - Feature coming soon`)
+                        setQrData({ url, name })
+                        setShowQrDialog(true)
                       }}
                     />
                   </div>
@@ -543,6 +546,43 @@ export default function ProductsPage() {
                   Close
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Dialog */}
+      {showQrDialog && qrData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background border border-border rounded-xl max-w-md w-full overflow-hidden shadow-2xl">
+            <div className="px-6 py-4 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+              <h3 className="text-lg font-semibold text-foreground">QR Code - {qrData.name}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Scan this QR code to open the product page
+              </p>
+            </div>
+            <div className="px-6 py-6 flex flex-col items-center gap-4">
+              <div className="p-4 bg-white rounded-lg inline-block">
+                <QRCode
+                  value={qrData.url}
+                  size={256}
+                  style={{ display: 'block', margin: '0 auto' }}
+                  viewBox="0 0 256 256"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground text-center max-w-sm break-all">
+                {qrData.url}
+              </p>
+            </div>
+            <div className="px-6 py-4 border-t border-border/30 bg-muted/30 flex justify-end">
+              <Button
+                onClick={() => {
+                  setShowQrDialog(false)
+                  setQrData(null)
+                }}
+              >
+                Close
+              </Button>
             </div>
           </div>
         </div>

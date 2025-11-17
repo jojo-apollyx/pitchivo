@@ -205,7 +205,33 @@ export default function PreviewPublishPageNew() {
   }, [formData])
 
   const handlePermissionChange = (fieldName: string, level: AccessLevel) => {
-    setPermissions((prev) => ({ ...prev, [fieldName]: level }))
+    setPermissions((prev) => {
+      const newPermissions = { ...prev, [fieldName]: level }
+      // Auto-save permissions to database
+      saveDraftWithPermissions(newPermissions)
+      return newPermissions
+    })
+  }
+
+  const saveDraftWithPermissions = async (updatedPermissions: FieldPermission) => {
+    try {
+      const updatedProductData = {
+        ...formData,
+        field_permissions: updatedPermissions,
+      }
+
+      await fetch('/api/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          status: productData?.status || 'draft',
+          product_data: updatedProductData,
+        }),
+      })
+    } catch (error) {
+      console.error('Error auto-saving permissions:', error)
+    }
   }
 
   const handlePublish = async () => {
@@ -264,7 +290,43 @@ export default function PreviewPublishPageNew() {
     )
   }
 
-  const fieldsWithValues = Object.keys(formData).filter((key) => {
+  // Field order based on importance (matches form structure)
+  const FIELD_ORDER = [
+    // Core Product Information
+    'product_name', 'origin_country', 'manufacturer_name', 'cas_number', 'fda_number',
+    'einecs', 'category', 'form', 'grade', 'applications', 'description',
+    // Origin & Source
+    'botanical_name', 'extraction_ratio', 'carrier_material',
+    // Physical & Sensory Properties
+    'appearance', 'odor', 'taste', 'solubility', 'particle_size', 'mesh_size', 'bulk_density',
+    // Chemical Analysis
+    'assay', 'ph', 'moisture', 'ash_content', 'loss_on_drying', 'residual_solvents',
+    // Heavy Metals
+    'heavy_metals_total', 'lead', 'arsenic', 'cadmium', 'mercury',
+    // Contaminants
+    'pesticide_residue', 'aflatoxins',
+    // Microbiological
+    'total_plate_count', 'yeast_mold', 'coliforms', 'e_coli_presence',
+    'salmonella_presence', 'staphylococcus_presence',
+    // Pricing & MOQ
+    'price_lead_time',
+    // Packaging & Logistics
+    'packaging_type', 'net_weight', 'gross_weight', 'packages_per_pallet',
+    'shelf_life', 'storage_conditions', 'storage_temperature', 'payment_terms', 'incoterm',
+    // Sample Options
+    'samples',
+    // Certifications & Compliance
+    'certificates', 'allergen_info', 'gmo_status', 'irradiation_status',
+    'bse_statement', 'halal_certified', 'kosher_certified', 'organic_certification_body',
+    // Files
+    'uploaded_files', 'coa_file', 'tds_file', 'msds_file', 'spec_sheet',
+    // Product Images
+    'product_images',
+    // Inventory
+    'inventory_locations',
+  ]
+
+  const fieldsWithValues = FIELD_ORDER.filter((key) => {
     if (key.startsWith('_') || key === 'field_permissions' || key === 'channel_links') return false
     const value = formData[key as keyof typeof formData]
     return value !== null && value !== undefined && value !== '' &&
