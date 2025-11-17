@@ -10,7 +10,9 @@ interface EmailRequest {
   to: string | string[]
   subject: string
   htmlContent?: string
+  html?: string  // Alias for htmlContent
   textContent?: string
+  text?: string  // Alias for textContent
   templateId?: number
   params?: Record<string, any>
   sender?: {
@@ -21,6 +23,7 @@ interface EmailRequest {
     name?: string
     email: string
   }
+  tags?: string[]  // Campaign tracking tags
 }
 
 interface BrevoEmailPayload {
@@ -125,8 +128,8 @@ Deno.serve(async (req) => {
         const fromEmail = emailData.sender?.email || brevoSenderEmail
         const fromName = emailData.sender?.name || brevoSenderName
         const subject = emailData.subject
-        const htmlContent = emailData.htmlContent || emailData.textContent || ""
-        const textContent = emailData.textContent || emailData.htmlContent?.replace(/<[^>]*>/g, "") || ""
+        const htmlContent = emailData.htmlContent || emailData.html || emailData.textContent || emailData.text || ""
+        const textContent = emailData.textContent || emailData.text || emailData.htmlContent?.replace(/<[^>]*>/g, "") || emailData.html?.replace(/<[^>]*>/g, "") || ""
         
         // Build email message in RFC 2822 format
         const messageId = `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@pitchivo.local>`
@@ -290,8 +293,8 @@ Deno.serve(async (req) => {
           fromName: emailData.sender?.name || brevoSenderName,
           to: toEmails,
           subject: emailData.subject,
-          htmlContent: emailData.htmlContent,
-          textContent: emailData.textContent,
+          htmlContent: emailData.htmlContent || emailData.html,
+          textContent: emailData.textContent || emailData.text,
           timestamp: new Date().toISOString(),
         }
         
@@ -351,8 +354,8 @@ Deno.serve(async (req) => {
         return { email: email.email, name: email.name }
       }),
       subject: emailData.subject,
-      htmlContent: emailData.htmlContent,
-      textContent: emailData.textContent,
+      htmlContent: emailData.htmlContent || emailData.html,
+      textContent: emailData.textContent || emailData.text,
     }
 
     // Add template ID if provided

@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { EmailQualityChecker } from '@/components/admin/email-quality-checker'
 import { EmailTemplateManager } from '@/components/admin/email-template-manager'
 import { BatchEmailScheduler } from '@/components/admin/batch-email-scheduler'
+import { CampaignEmailManagement } from '@/components/admin/campaign-email-management'
 
 interface Campaign {
   campaign_id: string
@@ -42,7 +43,7 @@ export default function CampaignSettingsPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [defaultTemplate, setDefaultTemplate] = useState<EmailTemplate | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'send' | 'quality' | 'templates' | 'schedule'>('send')
+  const [activeTab, setActiveTab] = useState<'send' | 'quality' | 'templates' | 'schedule' | 'manage'>('manage')
   
   // Email form state
   const [emailTo, setEmailTo] = useState('')
@@ -253,6 +254,15 @@ export default function CampaignSettingsPage() {
                   <Zap className="h-4 w-4" />
                   Batch Schedule
                 </Button>
+                <Button
+                  variant={activeTab === 'manage' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab('manage')}
+                  className="gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Manage Leads & Emails
+                </Button>
               </div>
             </div>
 
@@ -381,6 +391,30 @@ export default function CampaignSettingsPage() {
                   campaignId={campaignId}
                   onScheduleComplete={() => router.push(`/admin/campaigns/${campaignId}/tracking`)}
                 />
+              )}
+
+              {activeTab === 'manage' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 border border-primary/20 mb-4">
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-foreground text-sm mb-1">
+                          Comprehensive Campaign Management
+                        </h4>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>• View and manage all leads for this campaign</li>
+                          <li>• Add or remove leads from the campaign</li>
+                          <li>• View scheduled emails with Brevo delivery tracking</li>
+                          <li>• Edit schedule times, send immediately, or cancel emails</li>
+                          <li>• Track email status: delivered, opened, clicked, bounced</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <CampaignEmailManagement campaignId={campaignId} />
+                </div>
               )}
             </div>
           </div>
