@@ -182,20 +182,27 @@ export function SharingLinksPanel({ productId, initialChannels = [], onChannelsC
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
-                      {channel.url ? (
-                        <>
-                          <p className="text-xs text-muted-foreground truncate font-mono mb-1">
-                            {channel.url}
-                          </p>
-                          <Badge variant="outline" className="text-[10px] h-4 px-1.5">
-                            Expires in {channel.expiresInDays} days
-                          </Badge>
-                        </>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Click "Generate" to create this link
-                        </p>
-                      )}
+                          {channel.url ? (
+                            <>
+                              <p className="text-xs text-muted-foreground truncate font-mono mb-1">
+                                {channel.url}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {channel.generatedAt && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Created {new Date(channel.generatedAt).toLocaleDateString()}
+                                  </span>
+                                )}
+                                <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                                  Expires in {channel.expiresInDays} days
+                                </Badge>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              Click "Generate" to create this link
+                            </p>
+                          )}
                     </div>
                   </div>
                   <div className="flex gap-2">

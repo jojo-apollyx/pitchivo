@@ -19,11 +19,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
 import QRCode from 'react-qr-code'
+import { useQueryClient } from '@tanstack/react-query'
 // AlertDialog will be created inline for now
 
 export default function ProductsPage() {
   const { data, isLoading, error } = useProducts()
   const deleteProduct = useDeleteProduct()
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -553,6 +555,9 @@ export default function ProductsPage() {
                               product_data: updatedProductData,
                             }),
                           })
+                          
+                          // Refresh products list to show updated data
+                          await queryClient.invalidateQueries({ queryKey: ['products'] })
                         } catch (error) {
                           console.error('Error saving channels:', error)
                         }

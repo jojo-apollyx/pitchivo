@@ -246,10 +246,14 @@ export function RealPagePreview({
                   {formData.product_name}
                 </motion.h1>
               )}
-              {formData.category && (
-                <motion.div variants={itemVariants} className="mb-4">
-                  {renderFieldValue(formData.category, 'category', 'text-base sm:text-lg text-muted-foreground font-medium')}
-                </motion.div>
+              {shouldShow('category') && formData.category && (
+                <motion.p
+                  variants={itemVariants}
+                  className="text-base sm:text-lg text-muted-foreground font-medium mb-4"
+                  itemProp="category"
+                >
+                  {formData.category}
+                </motion.p>
               )}
               {shouldShow('description') && formData.description && (
                 <motion.p
@@ -1021,24 +1025,15 @@ export function RealPagePreview({
                           )}
                         </div>
 
-                        {/* Document Title and Subtitle */}
+                        {/* Document Subtitle */}
                         <div className="flex-1 min-w-0 mb-3">
-                          <h4 className={cn(
-                            "font-semibold text-base mb-1.5 line-clamp-1",
-                            isLocked ? "text-muted-foreground" : "text-foreground"
-                          )}>
-                            {isLocked 
-                              ? (docType || `Document ${idx + 1}`)
-                              : (docType || 'Document')
-                            }
-                          </h4>
                           {!isLocked && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            <p className="text-sm text-foreground font-medium line-clamp-2 leading-relaxed mb-1">
                               {docData.filename || f.filename || f.file_id || 'No filename'}
                             </p>
                           )}
                           {isLocked && (
-                            <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                            <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1 mt-1">
                               <span>🔒</span>
                               <span>Locked - Request access to view</span>
                             </p>

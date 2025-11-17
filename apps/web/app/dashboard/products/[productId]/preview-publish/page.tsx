@@ -12,6 +12,7 @@ import type { FoodSupplementProductData } from '@/components/products/industries
 import { ACCESS_LEVEL_CONFIG } from '@/lib/constants/access-levels'
 import { PRODUCT_FIELDS } from '@/lib/industries/food-supplement/extraction-schema'
 import { RealPagePreview } from '@/app/products/[slug]/RealPagePreview'
+import { useQueryClient } from '@tanstack/react-query'
 
 // Permission levels
 type AccessLevel = 'public' | 'after_click' | 'after_rfq'
@@ -121,6 +122,7 @@ export default function PreviewPublishPageNew() {
   const router = useRouter()
   const params = useParams()
   const productId = params.productId as string
+  const queryClient = useQueryClient()
 
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit')
   const [permissions, setPermissions] = useState<FieldPermission>({})
@@ -156,6 +158,8 @@ export default function PreviewPublishPageNew() {
     // Default permissions
     const defaultPermissions: FieldPermission = {}
     const sensitiveFields = ['price_lead_time', 'samples', 'coa_file', 'tds_file', 'uploaded_files']
+    // Core fields that must ALWAYS be public (not lockable)
+    const alwaysPublicFields = ['product_name', 'category', 'description', 'product_images']
 
     Object.keys(formData).forEach((key) => {
       if (key.startsWith('_') || key === 'field_permissions' || key === 'channel_links') return
@@ -165,7 +169,12 @@ export default function PreviewPublishPageNew() {
         (!Array.isArray(value) || value.length > 0)
 
       if (hasValue) {
-        defaultPermissions[key] = sensitiveFields.includes(key) ? 'after_rfq' : 'public'
+        // Force core identity fields to always be public
+        if (alwaysPublicFields.includes(key)) {
+          defaultPermissions[key] = 'public'
+        } else {
+          defaultPermissions[key] = sensitiveFields.includes(key) ? 'after_rfq' : 'public'
+        }
       }
     })
 
@@ -205,6 +214,13 @@ export default function PreviewPublishPageNew() {
   }, [formData])
 
   const handlePermissionChange = (fieldName: string, level: AccessLevel) => {
+    // Prevent changing permissions on core identity fields
+    const alwaysPublicFields = ['product_name', 'category', 'description', 'product_images']
+    if (alwaysPublicFields.includes(fieldName)) {
+      toast.error(`${fieldName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} must always be public`)
+      return
+    }
+
     setPermissions((prev) => {
       const newPermissions = { ...prev, [fieldName]: level }
       // Auto-save permissions to database
@@ -257,6 +273,8 @@ export default function PreviewPublishPageNew() {
       }
 
       toast.success('Product published successfully!')
+      // Invalidate and refetch products list
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
       router.push('/dashboard/products')
     } catch (error) {
       console.error('Error publishing product:', error)
@@ -455,16 +473,22 @@ export default function PreviewPublishPageNew() {
                 {fieldsWithValues.map((fieldName) => {
                   const value = formData[fieldName as keyof typeof formData]
                   const label = fieldName.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                  const alwaysPublicFields = ['product_name', 'category', 'description', 'product_images']
+                  const isAlwaysPublic = alwaysPublicFields.includes(fieldName)
 
                   return (
-                    <FieldDisplay
-                      key={fieldName}
-                      label={label}
-                      value={value}
-                      fieldName={fieldName}
-                      permission={permissions[fieldName] || 'public'}
-                      onPermissionChange={handlePermissionChange}
-                    />
+                    <div key={fieldName} className={cn(isAlwaysPublic && "opacity-60 pointer-events-none")}>
+                      <FieldDisplay
+                        label={label}
+                        value={value}
+                        fieldName={fieldName}
+                        permission={permissions[fieldName] || 'public'}
+                        onPermissionChange={handlePermissionChange}
+                      />
+                      {isAlwaysPublic && (
+                        <p className="text-[10px] text-muted-foreground ml-2">Always public</p>
+                      )}
+                    </div>
                   )
                 })}
               </div>
