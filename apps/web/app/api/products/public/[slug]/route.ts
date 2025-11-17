@@ -61,12 +61,18 @@ export async function GET(
     )
 
     // Get product by product_id (slug is productId for now)
-    const { data: product, error } = await supabase
+    // Merchants can preview draft products, others can only see published
+    let query = supabase
       .from('products')
       .select('*')
       .eq('product_id', slug)
-      .eq('status', 'published') // Only return published products
-      .single()
+    
+    // Only add status filter if not a merchant (merchants can see drafts for preview)
+    if (!isMerchant) {
+      query = query.eq('status', 'published')
+    }
+    
+    const { data: product, error } = await query.single()
 
     if (error || !product) {
       return NextResponse.json(

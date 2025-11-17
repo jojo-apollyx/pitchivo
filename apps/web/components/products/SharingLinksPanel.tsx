@@ -1,6 +1,6 @@
 /**
- * Sharing Links Panel
- * Clear, organized panel showing all ways to share a product with different access levels
+ * Sharing Links Panel - Redesigned for Clarity
+ * Simple, intuitive panel for generating and sharing product links
  */
 
 'use client'
@@ -9,9 +9,9 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Copy, Loader2, QrCode, Plus, X, ExternalLink, Info } from 'lucide-react'
+import { Copy, Loader2, QrCode, Plus, X, ExternalLink, Eye, Mail, CheckCircle2, Globe, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
-import { ACCESS_LEVEL_CONFIG, CHANNEL_PRESETS, type ChannelPreset } from '@/lib/constants/access-levels'
+import { CHANNEL_PRESETS, type ChannelPreset } from '@/lib/constants/access-levels'
 import {
   Tooltip,
   TooltipContent,
@@ -134,270 +134,278 @@ export function SharingLinksPanel({ productId, onShowQR }: SharingLinksPanelProp
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        {/* Section 1: Browse Mode (Public) */}
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{ACCESS_LEVEL_CONFIG.public.icon}</span>
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">{ACCESS_LEVEL_CONFIG.public.userLabel}</h3>
-              <p className="text-xs text-muted-foreground">
-                {ACCESS_LEVEL_CONFIG.public.description}
-              </p>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs text-xs">{ACCESS_LEVEL_CONFIG.public.example}</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+      <div className="space-y-5">
+        {/* Info Banner */}
+        <div className="p-3 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+          <p className="text-xs text-foreground font-medium mb-1">
+            💡 What are these links for?
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Share your product with different people and control what information they can see. 
+            You can create multiple links for different marketing channels.
+          </p>
+        </div>
 
-          <div className="p-3 rounded-lg border bg-card">
-            <div className="flex items-start gap-2 mb-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium mb-1">Public Product Link</p>
+        {/* Section 1: Basic Product Link */}
+        <section className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-primary/10 p-2 mt-0.5">
+              <Globe className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm mb-1">Basic Product Link</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Anyone with this link sees basic product information only. Perfect for public listings or website.
+              </p>
+              <div className="p-3 rounded-lg border bg-card space-y-2">
                 <p className="text-xs text-muted-foreground truncate font-mono">{publicUrl}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 text-xs"
-                onClick={() => handleCopyLink(publicUrl, 'Public link')}
-              >
-                <Copy className="h-3 w-3 mr-1" />
-                Copy Link
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => window.open(publicUrl, '_blank')}
-              >
-                <ExternalLink className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <div className="border-t" />
-
-        {/* Section 2: Link Access (Marketing) */}
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{ACCESS_LEVEL_CONFIG.after_click.icon}</span>
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">{ACCESS_LEVEL_CONFIG.after_click.userLabel}</h3>
-              <p className="text-xs text-muted-foreground">
-                {ACCESS_LEVEL_CONFIG.after_click.description}
-              </p>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs text-xs">{ACCESS_LEVEL_CONFIG.after_click.example}</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {channels.length === 0 ? (
-            <div className="p-4 rounded-lg border border-dashed text-center">
-              <p className="text-xs text-muted-foreground mb-2">
-                No marketing channels yet
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowAddChannel(true)}
-                className="text-xs"
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Add Channel
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {channels.map(channel => (
-                <div key={channel.id} className="p-3 rounded-lg border bg-card">
-                  <div className="flex items-start gap-2 mb-2">
-                    <span className="text-lg">{channel.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium">{channel.name}</p>
-                      {channel.url ? (
-                        <>
-                          <p className="text-xs text-muted-foreground truncate font-mono">
-                            {channel.url}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Expires in {channel.expiresInDays} days
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Click to generate secure link
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveChannel(channel.id)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 text-xs"
-                      onClick={() => handleCopyOrGenerate(channel)}
-                      disabled={isGenerating(channel.id)}
-                    >
-                      {isGenerating(channel.id) ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3 w-3 mr-1" />
-                          {channel.url ? 'Copy Link' : 'Generate & Copy'}
-                        </>
-                      )}
-                    </Button>
-                    {channel.url && onShowQR && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onShowQR(channel.url!, channel.name)}
-                      >
-                        <QrCode className="h-3 w-3" />
-                      </Button>
-                    )}
-                    {channel.url && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => window.open(channel.url, '_blank')}
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!showAddChannel && channels.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowAddChannel(true)}
-              className="w-full text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Add Another Channel
-            </Button>
-          )}
-
-          {showAddChannel && (
-            <div className="p-3 rounded-lg border bg-muted/30 space-y-2">
-              <p className="text-xs font-medium">Choose a channel type:</p>
-              <div className="grid grid-cols-2 gap-2">
-                {CHANNEL_PRESETS.map(preset => (
+                <div className="flex gap-2">
                   <Button
-                    key={preset.id}
                     size="sm"
                     variant="outline"
-                    className="text-xs justify-start h-auto py-2"
-                    onClick={() => handleAddChannel(preset)}
+                    className="flex-1 text-xs"
+                    onClick={() => handleCopyLink(publicUrl, 'Basic link')}
                   >
-                    <span className="mr-1">{preset.icon}</span>
-                    <span className="text-left flex-1">{preset.name}</span>
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy Link
                   </Button>
-                ))}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => window.open(publicUrl, '_blank')}
+                    title="Open in new tab"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowAddChannel(false)}
-                className="w-full text-xs"
-              >
-                Cancel
-              </Button>
             </div>
-          )}
+          </div>
         </section>
 
         <div className="border-t" />
 
-        {/* Section 3: Full Access (After RFQ) */}
+        {/* Section 2: Marketing Channel Links (More Info) */}
         <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{ACCESS_LEVEL_CONFIG.after_rfq.icon}</span>
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">{ACCESS_LEVEL_CONFIG.after_rfq.userLabel}</h3>
-              <p className="text-xs text-muted-foreground">
-                {ACCESS_LEVEL_CONFIG.after_rfq.description}
-              </p>
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-accent/10 p-2 mt-0.5">
+              <Mail className="h-4 w-4 text-accent-dark" />
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs text-xs">{ACCESS_LEVEL_CONFIG.after_rfq.example}</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm mb-1">Marketing Channel Links</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Create special links for emails, social media, or events. People who click these links see more details like pricing and specifications.
+              </p>
 
-          <div className="p-3 rounded-lg border bg-green-50 dark:bg-green-950/20">
-            <p className="text-xs text-muted-foreground mb-2">
-              <strong>Automatic Upgrade:</strong> When someone submits an RFQ (Request for Quote),
-              they automatically receive a secure link with full access.
-            </p>
-            <div className="flex items-center gap-2 text-xs">
-              <span>✓ Complete product details</span>
-              <span>✓ File downloads</span>
-              <span>✓ 30-day access</span>
+              {channels.length === 0 ? (
+                <div className="p-4 rounded-lg border border-dashed text-center">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    No marketing channels created yet
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowAddChannel(true)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Create Your First Channel
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {channels.map(channel => (
+                    <div key={channel.id} className="p-3 rounded-lg border bg-card hover:border-primary/30 transition-colors">
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="text-base mt-0.5">{channel.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <p className="text-xs font-medium">{channel.name}</p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveChannel(channel.id)}
+                              className="h-5 w-5 p-0 hover:bg-destructive/10 hover:text-destructive"
+                              title="Remove channel"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {channel.url ? (
+                            <>
+                              <p className="text-xs text-muted-foreground truncate font-mono mb-1">
+                                {channel.url}
+                              </p>
+                              <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                                Expires in {channel.expiresInDays} days
+                              </Badge>
+                            </>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              Click "Generate" to create this link
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => handleCopyOrGenerate(channel)}
+                          disabled={isGenerating(channel.id)}
+                        >
+                          {isGenerating(channel.id) ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Generating...
+                            </>
+                          ) : channel.url ? (
+                            <>
+                              <Copy className="h-3 w-3 mr-1" />
+                              Copy
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-3 w-3 mr-1" />
+                              Generate
+                            </>
+                          )}
+                        </Button>
+                        {channel.url && onShowQR && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onShowQR(channel.url!, channel.name)}
+                            title="Show QR code"
+                          >
+                            <QrCode className="h-3 w-3" />
+                          </Button>
+                        )}
+                        {channel.url && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => window.open(channel.url, '_blank')}
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!showAddChannel && channels.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddChannel(true)}
+                  className="w-full text-xs mt-2"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Another Channel
+                </Button>
+              )}
+
+              {showAddChannel && (
+                <div className="p-3 rounded-lg border bg-muted/30 space-y-2 mt-2">
+                  <p className="text-xs font-medium">Choose a channel type:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CHANNEL_PRESETS.map(preset => (
+                      <Button
+                        key={preset.id}
+                        size="sm"
+                        variant="outline"
+                        className="text-xs justify-start h-auto py-2 hover:bg-primary/10 hover:border-primary/30"
+                        onClick={() => handleAddChannel(preset)}
+                      >
+                        <span className="mr-2">{preset.icon}</span>
+                        <span className="text-left flex-1">{preset.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowAddChannel(false)}
+                    className="w-full text-xs"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
         <div className="border-t" />
 
-        {/* Merchant Link */}
+        {/* Section 3: Complete Access (After Quote Request) */}
+        <section className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-green-100 dark:bg-green-950/30 p-2 mt-0.5">
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm mb-1">Complete Access</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                When someone submits a quote request (RFQ), they automatically get a special link that shows everything including downloadable files.
+              </p>
+              <div className="p-3 rounded-lg border bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/50">
+                <p className="text-xs font-medium mb-2 text-foreground">
+                  🎁 Automatic Benefit
+                </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-500 flex-shrink-0" />
+                    <span>Full product specifications</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-500 flex-shrink-0" />
+                    <span>Download certificates & documents</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-500 flex-shrink-0" />
+                    <span>Valid for 30 days</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="border-t" />
+
+        {/* Merchant Preview Link */}
         <section>
-          <details className="text-xs">
-            <summary className="cursor-pointer text-muted-foreground hover:text-foreground mb-2">
-              Merchant Preview Link
+          <details className="group">
+            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground mb-2 flex items-center gap-2 list-none">
+              <Eye className="h-3 w-3" />
+              <span>Preview Link (For Testing)</span>
+              <ChevronDown className="h-3 w-3 group-open:rotate-180 transition-transform" />
             </summary>
-            <div className="p-3 rounded-lg border bg-card">
-              <p className="text-xs text-muted-foreground mb-2">
-                Use this link to preview with full merchant access:
+            <div className="p-3 rounded-lg border bg-muted/30 mt-2">
+              <p className="text-xs text-muted-foreground mb-3">
+                This special link lets you preview your product page with all information visible, even before publishing. Don't share this publicly!
               </p>
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   variant="outline"
                   className="flex-1 text-xs"
-                  onClick={() => handleCopyLink(merchantUrl, 'Merchant link')}
+                  onClick={() => handleCopyLink(merchantUrl, 'Preview link')}
                 >
                   <Copy className="h-3 w-3 mr-1" />
-                  Copy Merchant Link
+                  Copy Preview Link
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => window.open(merchantUrl, '_blank')}
+                  title="Open preview in new tab"
                 >
                   <ExternalLink className="h-3 w-3" />
                 </Button>

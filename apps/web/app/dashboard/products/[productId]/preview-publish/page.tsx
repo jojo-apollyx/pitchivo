@@ -71,7 +71,7 @@ function PermissionWidget({
         title={ACCESS_LEVEL_CONFIG.public.description}
       >
         <span className="flex-shrink-0">👀</span>
-        <span className="hidden sm:inline">Browse</span>
+        <span className="hidden sm:inline">Basic</span>
       </button>
       <button
         type="button"
@@ -88,7 +88,7 @@ function PermissionWidget({
         title={ACCESS_LEVEL_CONFIG.after_click.description}
       >
         <span className="flex-shrink-0">🔗</span>
-        <span className="hidden sm:inline">Link</span>
+        <span className="hidden sm:inline">More</span>
       </button>
       <button
         type="button"
@@ -105,7 +105,7 @@ function PermissionWidget({
         title={ACCESS_LEVEL_CONFIG.after_rfq.description}
       >
         <span className="flex-shrink-0">✅</span>
-        <span className="hidden sm:inline">Full</span>
+        <span className="hidden sm:inline">All</span>
       </button>
     </div>
   )
@@ -1265,7 +1265,7 @@ export default function PreviewPublishPage() {
       newPermissions[key] = 'public'
     })
     setPermissions(newPermissions)
-    toast.success('👀 All fields set to Browse Mode (public)')
+    toast.success('👀 All fields set to Basic Info')
   }
 
   const handleSetAllRFQ = () => {
@@ -1274,7 +1274,7 @@ export default function PreviewPublishPage() {
       newPermissions[key] = 'after_rfq'
     })
     setPermissions(newPermissions)
-    toast.success('✅ All fields set to Full Access (after RFQ)')
+    toast.success('✅ All fields set to Complete Access')
   }
 
   // Note: Channel management moved to SharingLinksPanel component
@@ -1379,8 +1379,8 @@ export default function PreviewPublishPage() {
       {/* Permission Level Descriptions - Improved Visual Design */}
       <section className="px-4 sm:px-6 lg:px-8 py-4 bg-muted/30 border-b border-border/30">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Access Control Levels</h3>
-          <p className="text-xs text-muted-foreground font-normal">Set visibility for each field. Generate channel links below to grant Link Access.</p>
+          <h3 className="text-sm font-semibold text-foreground mb-1">What Visitors Can See</h3>
+          <p className="text-xs text-muted-foreground font-normal">Control what information is visible at each level. Create marketing links to give people access to more details.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1388,8 +1388,8 @@ export default function PreviewPublishPage() {
               <Globe className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">👀 Browse Mode</p>
-              <p className="text-xs text-muted-foreground leading-relaxed font-normal">Anyone can view basic product information without restrictions</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">👀 Basic Info</p>
+              <p className="text-xs text-muted-foreground leading-relaxed font-normal">Essential product details visible to everyone</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1397,8 +1397,8 @@ export default function PreviewPublishPage() {
               <Mail className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">🔗 Link Access</p>
-              <p className="text-xs text-muted-foreground leading-relaxed font-normal">People with your channel links (email, social, QR codes) see more details like pricing and MOQ</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">🔗 More Details</p>
+              <p className="text-xs text-muted-foreground leading-relaxed font-normal">Additional info like pricing and specs for people with your marketing links</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50 hover:border-primary/30 transition-colors">
@@ -1406,8 +1406,8 @@ export default function PreviewPublishPage() {
               <FileText className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">✅ Full Access</p>
-              <p className="text-xs text-muted-foreground leading-relaxed font-normal">Complete information + file downloads after submitting a Request for Quote (RFQ)</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground mb-0.5">✅ Complete Access</p>
+              <p className="text-xs text-muted-foreground leading-relaxed font-normal">Everything including file downloads after requesting a quote</p>
             </div>
           </div>
         </div>
@@ -1828,7 +1828,7 @@ export default function PreviewPublishPage() {
                   onClick={handleSetAllPublic}
                   className="w-full text-xs"
                 >
-                  👀 Set All to Browse Mode
+                  👀 Set All to Basic Info
                 </Button>
                 <Button
                   variant="outline"
@@ -1836,7 +1836,7 @@ export default function PreviewPublishPage() {
                   onClick={handleSetAllRFQ}
                   className="w-full text-xs"
                 >
-                  ✅ Set All to Full Access
+                  ✅ Set All to Complete Access
                 </Button>
               </div>
             </section>
@@ -1889,8 +1889,8 @@ export default function PreviewPublishPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block font-normal">
-              {permissionStats.public} public • {permissionStats.after_click} after click •{' '}
-              {permissionStats.after_rfq} after RFQ
+              {permissionStats.public} basic • {permissionStats.after_click} more details •{' '}
+              {permissionStats.after_rfq} complete
             </p>
             <Button
               onClick={handlePublish}
