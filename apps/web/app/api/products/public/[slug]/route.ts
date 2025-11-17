@@ -24,31 +24,33 @@ export async function GET(
     const supabase = await createClient()
     const searchParams = request.nextUrl.searchParams
 
-    // Check if user is authenticated merchant
+    // SECURITY: Always check if authenticated user owns this product
+    // Never trust URL parameters for access control!
     let isMerchant = false
-    const merchantParam = searchParams.get('merchant')
-    if (merchantParam === 'true') {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+    
+    // Check if user is authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-      if (user) {
+    if (user) {
+      // Get product organization
+      const { data: product } = await supabase
+        .from('products')
+        .select('org_id')
+        .eq('product_id', slug)
+        .single()
+
+      if (product) {
         // Verify user is member of product's organization
-        const { data: product } = await supabase
-          .from('products')
-          .select('org_id')
-          .eq('product_id', slug)
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('id, organization_id, metadata, org_role')
+          .eq('id', user.id)
           .single()
 
-        if (product) {
-          const { data: userProfile } = await supabase
-            .from('user_profiles')
-            .select('id, organization_id, metadata, org_role')
-            .eq('id', user.id)
-            .single()
-
-          isMerchant = !!userProfile && userProfile.organization_id === product.org_id
-        }
+        // Grant merchant access if user owns this product
+        isMerchant = !!userProfile && userProfile.organization_id === product.org_id
       }
     }
 

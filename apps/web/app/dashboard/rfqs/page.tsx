@@ -357,7 +357,7 @@ export default function RFQsPage() {
                       <div className="flex-shrink-0">
                         {rfq.products ? (
                           <Link
-                            href={`/products/${rfq.product_id}?merchant=true`}
+                            href={`/products/${rfq.product_id}`}
                             className="group block"
                           >
                             {/* Product Image */}
@@ -480,7 +480,7 @@ export default function RFQsPage() {
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
                                       <Link
-                                        href={`/products/${rfq.product_id}?merchant=true`}
+                                        href={`/products/${rfq.product_id}`}
                                       >
                                         <ExternalLink className="h-4 w-4 mr-2" />
                                         View Product

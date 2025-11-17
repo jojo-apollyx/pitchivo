@@ -14,7 +14,6 @@ export default function PublicProductPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const slug = params.slug as string
-  const isMerchant = searchParams.get('merchant') === 'true'
   const token = searchParams.get('token') || undefined
   
   // For now, we'll use slug as productId. In production, you'd query by slug
@@ -26,6 +25,7 @@ export default function PublicProductPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [accessLevel, setAccessLevel] = useState<string>('public')
   const [organizationData, setOrganizationData] = useState<{ name: string | null; domain: string | null } | null>(null)
+  const [isMerchant, setIsMerchant] = useState(false)
   
   // Fetch product data from public API with access control
   useEffect(() => {
@@ -34,7 +34,6 @@ export default function PublicProductPage() {
         setIsLoading(true)
         const url = new URL(`/api/products/public/${slug}`, window.location.origin)
         if (token) url.searchParams.set('token', token)
-        if (isMerchant) url.searchParams.set('merchant', 'true')
         
         const response = await fetch(url.toString())
         if (!response.ok) {
@@ -46,6 +45,9 @@ export default function PublicProductPage() {
         setProductData(data) // API returns filtered product directly, not nested under .product
         const newAccessLevel = data._access_info?.level || 'public'
         setAccessLevel(newAccessLevel)
+        
+        // Check if user has merchant access (server determined this based on authentication)
+        setIsMerchant(data._access_info?.source === 'merchant' || newAccessLevel === 'after_rfq')
         
         // Log access level for debugging
         if (token) {
@@ -59,7 +61,7 @@ export default function PublicProductPage() {
     }
     
     fetchProduct()
-  }, [slug, token, isMerchant])
+  }, [slug, token])
   
   // Fetch organization data for SEO
   useEffect(() => {
