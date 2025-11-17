@@ -257,7 +257,7 @@ export function RealPagePreview({
                   className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
                   itemProp="name"
                 >
-                  {formData.product_name}
+                  {unwrapLockedField(formData.product_name)}
                 </motion.h1>
               )}
               {shouldShow('category') && formData.category && (
@@ -266,7 +266,7 @@ export function RealPagePreview({
                   className="text-base sm:text-lg text-muted-foreground font-medium mb-4"
                   itemProp="category"
                 >
-                  {formData.category}
+                  {unwrapLockedField(formData.category)}
                 </motion.p>
               )}
               {shouldShow('description') && formData.description && (
@@ -275,7 +275,7 @@ export function RealPagePreview({
                   className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap"
                   itemProp="description"
                 >
-                  {formData.description}
+                  {unwrapLockedField(formData.description)}
                 </motion.p>
               )}
             </div>
@@ -303,7 +303,10 @@ export function RealPagePreview({
                     
                     if (!imgSrc) return null
                     
-                    const imageAlt = `${formData.product_name || 'Product'}${formData.category ? ` - ${formData.category}` : ''}${formData.manufacturer_name ? ` by ${formData.manufacturer_name}` : ''}`
+                    const productName = unwrapLockedField(formData.product_name) || 'Product'
+                    const categoryName = unwrapLockedField(formData.category)
+                    const manufacturerName = unwrapLockedField(formData.manufacturer_name)
+                    const imageAlt = `${productName}${categoryName ? ` - ${categoryName}` : ''}${manufacturerName ? ` by ${manufacturerName}` : ''}`
                     
                     return (
                       <img
@@ -962,10 +965,16 @@ export function RealPagePreview({
         {(() => {
           const formDataAny = formData as any
           
+          // Check if field is locked (API returns {_locked, _preview, _required_level})
+          const isLockedObject = formDataAny.uploaded_files && 
+            typeof formDataAny.uploaded_files === 'object' && 
+            '_locked' in formDataAny.uploaded_files
+          
           // Unwrap locked field object if present
           const uploadedFiles = unwrapLockedField(formDataAny.uploaded_files)
           
-          const hasUploadedFiles = uploadedFiles && Array.isArray(uploadedFiles) && uploadedFiles.length > 0
+          // Show section if: it's a locked field OR it has actual files
+          const hasUploadedFiles = isLockedObject || (uploadedFiles && Array.isArray(uploadedFiles) && uploadedFiles.length > 0)
           
           if (!hasUploadedFiles) return null
           
@@ -996,7 +1005,7 @@ export function RealPagePreview({
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {uploadedFiles.map((f: any, idx: number) => {
+                {(Array.isArray(uploadedFiles) ? uploadedFiles : []).map((f: any, idx: number) => {
                   const fullDoc = f.file_id ? documentMetadata[f.file_id] : null
                   const docData = fullDoc || f
                   
