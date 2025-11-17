@@ -231,7 +231,7 @@ export default function RFQsPage() {
       <div className="relative max-w-7xl mx-auto">
         {/* Filters - Only show when there are RFQs */}
         {!isLoading && totalCount > 0 && (
-          <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30 bg-background/50">
+          <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
               {/* Search */}
               <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
