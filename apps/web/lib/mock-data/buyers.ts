@@ -97,8 +97,8 @@ export function generateMockBuyers(count: number = 2450): Buyer[] {
   return baseBuyers.slice(0, count)
 }
 
-// Mock sender addresses
-export const SENDER_ADDRESSES = [
+// Config: All available email addresses for future use
+export const EMAIL_ADDRESSES_CONFIG = [
   {
     email: 'updates@{org}.pitchivo.com',
     health: 'healthy' as const,
@@ -124,6 +124,9 @@ export const SENDER_ADDRESSES = [
     lastWarmup: '2 weeks ago'
   }
 ] as const
+
+// Mock sender addresses (for backward compatibility)
+export const SENDER_ADDRESSES = EMAIL_ADDRESSES_CONFIG
 
 export type SenderHealth = 'healthy' | 'warming_up' | 'caution' | 'poor'
 

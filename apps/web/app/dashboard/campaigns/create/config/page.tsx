@@ -79,22 +79,31 @@ export default function ConfigureSendingPage() {
     }
   }
 
-  const selectedSender = senderEmail ? SENDER_ADDRESSES.find(s => s.email === senderEmail) : null
-  const senderHealth: 'healthy' | 'warming_up' | 'caution' | 'poor' = selectedSender?.health || 'healthy'
+  // For Pitchivo managed email, use default healthy stats
+  const isPitchivoManaged = senderEmail === 'pitchivo-managed'
+  const selectedSender = senderEmail && !isPitchivoManaged ? SENDER_ADDRESSES.find(s => s.email === senderEmail) : null
+  const senderHealth: 'healthy' | 'warming_up' | 'caution' | 'poor' = isPitchivoManaged ? 'healthy' : (selectedSender?.health || 'healthy')
   const senderHealthInfo = getSenderHealthLabel(senderHealth)
-  const deliveryRate = selectedSender?.deliveryRate || 98
-  const lastWarmup = selectedSender?.lastWarmup || '3 days ago'
+  const deliveryRate = isPitchivoManaged ? 98 : (selectedSender?.deliveryRate || 98)
+  const lastWarmup = isPitchivoManaged ? '2 days ago' : (selectedSender?.lastWarmup || '3 days ago')
 
   const metrics = calculateCampaignMetrics(emailCount, durationDays)
   const planQuota = 2000
   const remainingQuota = planQuota - emailCount
 
   function handleNext() {
+    // For Pitchivo managed, store the generic domain, otherwise replace {org} placeholder
+    const finalSenderEmail = isPitchivoManaged 
+      ? `@${orgSlug}.pitchivo.com` 
+      : senderEmail 
+        ? senderEmail.replace('{org}', orgSlug) 
+        : ''
+    
     setDraft({
       emailCount,
       durationDays,
       startDate: startDate ? new Date(startDate) : undefined,
-      senderEmail: senderEmail ? senderEmail.replace('{org}', orgSlug) : '',
+      senderEmail: finalSenderEmail,
       senderHealth,
       priorityLocations: selectedLocations
     })
@@ -305,11 +314,15 @@ export default function ConfigureSendingPage() {
                           <SelectValue placeholder="We'll choose the best sender address for you" />
                         </SelectTrigger>
                         <SelectContent>
-                          {SENDER_ADDRESSES.map((sender) => (
-                            <SelectItem key={sender.email} value={sender.email}>
-                              {sender.email.replace('{org}', orgSlug)}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="pitchivo-managed">
+                            @{orgSlug}.pitchivo.com
+                          </SelectItem>
+                          <SelectItem value="custom-email" disabled>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-muted-foreground">Use your own email</span>
+                              <span className="text-xs text-muted-foreground ml-2">(Supporting soon)</span>
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       {/* Redesigned Health Indicator - Only show if sender is selected */}
@@ -474,7 +487,13 @@ export default function ConfigureSendingPage() {
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Selected</span>
-                      <span className="font-mono text-xs">{senderEmail.replace('{org}', orgSlug).substring(0, 20)}...</span>
+                      <span className="font-mono text-xs">
+                        {isPitchivoManaged 
+                          ? `@${orgSlug}.pitchivo.com` 
+                          : senderEmail 
+                            ? senderEmail.replace('{org}', orgSlug).substring(0, 20) + '...'
+                            : 'Auto-select'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Health</span>
