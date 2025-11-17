@@ -524,6 +524,39 @@ export default function ProductsPage() {
                   <div className="pl-11">
                     <SharingLinksPanel 
                       productId={selectedProduct.product_id}
+                      initialChannels={(() => {
+                        try {
+                          const productData = typeof selectedProduct.product_data === 'string' 
+                            ? JSON.parse(selectedProduct.product_data)
+                            : selectedProduct.product_data
+                          return productData?.channel_links || []
+                        } catch {
+                          return []
+                        }
+                      })()}
+                      onChannelsChange={async (channels) => {
+                        try {
+                          const currentProductData = typeof selectedProduct.product_data === 'string'
+                            ? JSON.parse(selectedProduct.product_data)
+                            : selectedProduct.product_data || {}
+                          
+                          const updatedProductData = {
+                            ...currentProductData,
+                            channel_links: channels,
+                          }
+
+                          await fetch('/api/products', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              product_id: selectedProduct.product_id,
+                              product_data: updatedProductData,
+                            }),
+                          })
+                        } catch (error) {
+                          console.error('Error saving channels:', error)
+                        }
+                      }}
                       onShowQR={(url, name) => {
                         setQrData({ url, name })
                         setShowQrDialog(true)

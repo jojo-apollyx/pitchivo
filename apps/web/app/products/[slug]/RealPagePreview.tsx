@@ -246,14 +246,10 @@ export function RealPagePreview({
                   {formData.product_name}
                 </motion.h1>
               )}
-              {shouldShow('category') && formData.category && (
-                <motion.p
-                  variants={itemVariants}
-                  className="text-base sm:text-lg text-muted-foreground font-medium mb-4"
-                  itemProp="category"
-                >
-                  {formData.category}
-                </motion.p>
+              {formData.category && (
+                <motion.div variants={itemVariants} className="mb-4">
+                  {renderFieldValue(formData.category, 'category', 'text-base sm:text-lg text-muted-foreground font-medium')}
+                </motion.div>
               )}
               {shouldShow('description') && formData.description && (
                 <motion.p
@@ -728,9 +724,7 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {String(formData[field.key as keyof typeof formData])}
-                    </p>
+                    {renderFieldValue(formData[field.key as keyof typeof formData], field.key, 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
                   </motion.div>
                 ))}
                 {hasStorageConditions && formData.storage_conditions && (
@@ -741,9 +735,7 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       Storage Conditions
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {formData.storage_conditions.join(', ')}
-                    </p>
+                    {renderFieldValue(formData.storage_conditions.join(', '), 'storage_conditions', 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
                   </motion.div>
                 )}
               </div>
@@ -997,79 +989,87 @@ export function RealPagePreview({
                       variants={itemVariants}
                       whileHover={!isLocked ? { scale: 1.02, y: -2 } : {}}
                       className={cn(
-                        "group relative overflow-hidden rounded-xl border bg-gradient-to-br p-3 sm:p-4 transition-all duration-300",
+                        "group relative overflow-hidden rounded-xl border bg-gradient-to-br p-4 transition-all duration-300",
                         isLocked 
-                          ? "border-amber-200 dark:border-amber-800 from-amber-50/50 dark:from-amber-950/10 to-background cursor-not-allowed opacity-75"
+                          ? "border-amber-200 dark:border-amber-800 from-amber-50/50 dark:from-amber-950/10 to-background cursor-not-allowed"
                           : "border-border/30 from-background to-muted/20 hover:border-primary/50 hover:shadow-lg"
                       )}
                     >
                       <div className="flex flex-col h-full">
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="flex-shrink-0">
-                            <div className={cn(
-                              "rounded-lg p-2 transition-colors duration-300",
-                              isLocked 
-                                ? "bg-amber-100 dark:bg-amber-900/20" 
-                                : "bg-primary/10 group-hover:bg-primary/20"
-                            )}>
-                              <FileIcon className={cn(
-                                "h-4 w-4",
-                                isLocked ? "text-amber-600 dark:text-amber-500" : "text-primary"
-                              )} />
-                            </div>
+                        {/* Document Icon and Type Header */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={cn(
+                            "rounded-lg p-2.5 transition-colors duration-300",
+                            isLocked 
+                              ? "bg-amber-100 dark:bg-amber-900/20" 
+                              : "bg-primary/10 group-hover:bg-primary/20"
+                          )}>
+                            <FileIcon className={cn(
+                              "h-5 w-5",
+                              isLocked ? "text-amber-600 dark:text-amber-500" : "text-primary"
+                            )} />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={cn(
-                              "font-semibold mb-1 text-sm sm:text-base line-clamp-2",
-                              isLocked ? "text-muted-foreground" : "text-foreground"
-                            )}>
-                              {isLocked 
-                                ? (docType ? `${docType} Document` : `Document ${idx + 1}`)
-                                : (docData.filename || f.filename || f.file_id || `Document ${idx + 1}`)
-                              }
-                            </p>
-                            {isLocked && docType && (
-                              <p className="text-xs text-amber-600 dark:text-amber-500">
-                                {docType}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-auto">
                           {docType && (
                             <Badge variant="outline" className={cn(
-                              "text-xs",
-                              isLocked && "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                              "text-xs font-semibold",
+                              isLocked 
+                                ? "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                                : "bg-primary/10 text-primary border-primary/30"
                             )}>
                               {docType}
                             </Badge>
                           )}
-                          {!isLocked && pageCount && (
-                            <span className="text-xs text-muted-foreground">
-                              {pageCount}p
-                            </span>
-                          )}
-                          {!isLocked && fileSize && (
-                            <span className="text-xs text-muted-foreground">{fileSize}</span>
+                        </div>
+
+                        {/* Document Title and Subtitle */}
+                        <div className="flex-1 min-w-0 mb-3">
+                          <h4 className={cn(
+                            "font-semibold text-base mb-1.5 line-clamp-1",
+                            isLocked ? "text-muted-foreground" : "text-foreground"
+                          )}>
+                            {isLocked 
+                              ? (docType || `Document ${idx + 1}`)
+                              : (docType || 'Document')
+                            }
+                          </h4>
+                          {!isLocked && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                              {docData.filename || f.filename || f.file_id || 'No filename'}
+                            </p>
                           )}
                           {isLocked && (
-                            <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                            <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
                               <span>🔒</span>
-                              <span>Locked</span>
-                            </div>
+                              <span>Locked - Request access to view</span>
+                            </p>
                           )}
                         </div>
-                        {canDownload && f.file_id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownload(f.file_id, docData.filename || f.filename || 'document')}
-                            className="w-full mt-3"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        )}
+
+                        {/* Metadata Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t border-border/30">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {!isLocked && pageCount && (
+                              <span className="flex items-center gap-1">
+                                <FileText className="h-3 w-3" />
+                                {pageCount}p
+                              </span>
+                            )}
+                            {fileSize && (
+                              <span>{fileSize}</span>
+                            )}
+                          </div>
+                          {canDownload && f.file_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownload(f.file_id, docData.filename || f.filename || 'document')}
+                              className="h-8 px-3"
+                            >
+                              <Download className="h-3.5 w-3.5 mr-1.5" />
+                              Download
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   )

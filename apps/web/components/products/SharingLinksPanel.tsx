@@ -29,13 +29,21 @@ interface MarketingChannel {
 
 interface SharingLinksPanelProps {
   productId: string
+  initialChannels?: MarketingChannel[]
+  onChannelsChange?: (channels: MarketingChannel[]) => void
   onShowQR?: (url: string, channelName: string) => void
 }
 
-export function SharingLinksPanel({ productId, onShowQR }: SharingLinksPanelProps) {
-  const [channels, setChannels] = useState<MarketingChannel[]>([])
+export function SharingLinksPanel({ productId, initialChannels = [], onChannelsChange, onShowQR }: SharingLinksPanelProps) {
+  const [channels, setChannels] = useState<MarketingChannel[]>(initialChannels)
   const [generatingTokens, setGeneratingTokens] = useState<Set<string>>(new Set())
   const [showAddChannel, setShowAddChannel] = useState(false)
+
+  // Notify parent when channels change
+  const updateChannels = (newChannels: MarketingChannel[]) => {
+    setChannels(newChannels)
+    onChannelsChange?.(newChannels)
+  }
 
   // Generate secure token for marketing channel
   const generateChannelLink = async (channel: MarketingChannel) => {
@@ -58,18 +66,17 @@ export function SharingLinksPanel({ productId, onShowQR }: SharingLinksPanelProp
 
       if (data.success && data.url) {
         // Update channel with generated link
-        setChannels(prev =>
-          prev.map(c =>
-            c.id === channel.id
-              ? {
-                  ...c,
-                  token: data.token,
-                  url: data.url,
-                  generatedAt: new Date(),
-                }
-              : c
-          )
+        const updatedChannels = channels.map(c =>
+          c.id === channel.id
+            ? {
+                ...c,
+                token: data.token,
+                url: data.url,
+                generatedAt: new Date(),
+              }
+            : c
         )
+        updateChannels(updatedChannels)
         return data.url
       }
 
@@ -112,13 +119,13 @@ export function SharingLinksPanel({ productId, onShowQR }: SharingLinksPanelProp
       icon: preset.icon,
       expiresInDays: preset.expiresInDays,
     }
-    setChannels(prev => [...prev, newChannel])
+    updateChannels([...channels, newChannel])
     setShowAddChannel(false)
     toast.success(`${preset.name} added`)
   }
 
   const handleRemoveChannel = (channelId: string) => {
-    setChannels(prev => prev.filter(c => c.id !== channelId))
+    updateChannels(channels.filter(c => c.id !== channelId))
     toast.success('Channel removed')
   }
 
