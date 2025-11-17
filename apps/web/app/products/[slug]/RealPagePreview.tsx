@@ -1005,14 +1005,56 @@ export function RealPagePreview({
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {(Array.isArray(uploadedFiles) ? uploadedFiles : []).map((f: any, idx: number) => {
-                  const fullDoc = f.file_id ? documentMetadata[f.file_id] : null
-                  const docData = fullDoc || f
+                {(() => {
+                  // If locked but no file details (API returned preview string), create placeholder cards
+                  if (isLocked && !Array.isArray(uploadedFiles) && typeof uploadedFiles === 'string') {
+                    // Extract count from preview string like "5 items" or "3 item"
+                    const countMatch = uploadedFiles.match(/(\d+)/)
+                    const fileCount = countMatch ? parseInt(countMatch[1]) : 3 // Default to 3 if can't parse
+                    
+                    // Create placeholder cards
+                    return Array.from({ length: fileCount }).map((_, idx) => (
+                      <motion.div
+                        key={`placeholder-${idx}`}
+                        variants={itemVariants}
+                        className="group relative overflow-hidden rounded-xl border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/50 dark:from-amber-950/10 to-background p-4 transition-all duration-300 cursor-not-allowed"
+                      >
+                        <div className="flex flex-col h-full">
+                          {/* Document Icon */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="rounded-lg p-2.5 bg-amber-100 dark:bg-amber-900/20">
+                              <File className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                            </div>
+                            <Badge variant="outline" className="text-xs font-semibold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                              Document {idx + 1}
+                            </Badge>
+                          </div>
+                          
+                          {/* Locked message */}
+                          <div className="flex-1 min-w-0 mb-3">
+                            <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                              🔒 Locked - Request access to view
+                            </p>
+                          </div>
+                          
+                          {/* Footer */}
+                          <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-500 border-t border-amber-200 dark:border-amber-800 pt-3 mt-auto">
+                            <span>Requires {requiredLevel === 'after_click' ? 'marketing link' : 'quote request'}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  }
                   
-                  const FileIcon = getFileIcon(docData.mime_type, docData.filename)
-                  const docType = getDocumentType(docData)
-                  const pageCount = getPageCount(docData)
-                  const fileSize = docData.file_size ? formatFileSize(docData.file_size) : null
+                  // Otherwise, show actual file cards
+                  return (Array.isArray(uploadedFiles) ? uploadedFiles : []).map((f: any, idx: number) => {
+                    const fullDoc = f.file_id ? documentMetadata[f.file_id] : null
+                    const docData = fullDoc || f
+                    
+                    const FileIcon = getFileIcon(docData.mime_type, docData.filename)
+                    const docType = getDocumentType(docData)
+                    const pageCount = getPageCount(docData)
+                    const fileSize = docData.file_size ? formatFileSize(docData.file_size) : null
                   
                   return (
                     <motion.div
@@ -1095,7 +1137,8 @@ export function RealPagePreview({
                       </div>
                     </motion.div>
                   )
-                })}
+                  })
+                })()}
               </div>
             </motion.section>
           )
