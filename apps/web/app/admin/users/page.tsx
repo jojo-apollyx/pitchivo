@@ -177,8 +177,8 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleViewDetails = (userId: string) => {
-    router.push(`/admin/users/${userId}`)
+  const handleViewDetails = (organizationId: string) => {
+    router.push(`/admin/users/${organizationId}`)
   }
 
   const columns = useMemo(

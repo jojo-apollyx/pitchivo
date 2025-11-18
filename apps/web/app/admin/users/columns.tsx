@@ -16,7 +16,7 @@ export const createUsersColumns = (
   onImpersonate: (user: User) => void,
   onSuspend: (user: User) => void,
   onUnsuspend: (user: User) => void,
-  onViewDetails: (userId: string) => void
+  onViewDetails: (organizationId: string) => void
 ): ColumnDef<User>[] => [
   createSortableHeader<User>('Email', 'email'),
   createSortableHeader<User>('Name', 'full_name'),
@@ -71,14 +71,15 @@ export const createUsersColumns = (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onViewDetails(user.id)}
+                onClick={() => user.organization_id && onViewDetails(user.organization_id)}
+                disabled={!user.organization_id}
                 className="min-h-[36px] px-2"
               >
                 <Eye className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>View details</p>
+              <p>{user.organization_id ? 'View organization' : 'No organization set up'}</p>
             </TooltipContent>
           </Tooltip>
           <Tooltip>
