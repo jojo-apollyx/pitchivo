@@ -25,6 +25,7 @@ import { sendWaitlistConfirmationEmail, sendWaitlistAdminNotification } from "@/
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { PRICING_TIERS, formatPrice, formatQuota } from "@/lib/constants/pricing";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -1115,58 +1116,37 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
-            {[
-              {
-                name: "Free Trial",
-                price: "$0",
-                period: "/mo",
-                features: [
-                  "1 product page",
-                  "50 cold emails",
-                  "Basic analytics",
-                  "Email support",
-                ],
-                popular: false,
-              },
-              {
-                name: "Basic",
-                price: "$299",
-                period: "/mo",
-                features: [
-                  "5 product pages", 
-                  "500 emails/month", 
-                  "RFQ access",
-                  "Priority support",
-                ],
-                popular: true,
-              },
-              {
-                name: "Pro",
-                price: "$999",
-                period: "/mo",
-                features: [
-                  "20 product pages",
-                  "2,000 emails/month",
-                  "Priority database access",
-                  "Monthly reports",
-                  "API access",
-                ],
-                popular: false,
-              },
-              {
-                name: "Enterprise",
-                price: "Custom",
-                period: "",
-                features: [
-                  "Unlimited pages",
-                  "Unlimited emails",
-                  "Dedicated database",
-                  "SLA guarantee",
-                  "Custom integrations",
-                ],
-                popular: false,
-              },
-            ].map((plan, index) => (
+            {Object.entries(PRICING_TIERS).map(([key, tierConfig]) => {
+              const features = [
+                `${tierConfig.features.productListing} product listings`,
+                `${formatQuota(tierConfig.features.emailQuota)} emails/month`,
+                `${formatQuota(tierConfig.features.qrLinksPerProduct)} QR/custom links per product`,
+                tierConfig.features.browseable ? "Browseable directory" : "Private listings",
+              ]
+              
+              if (!tierConfig.features.aiExposed) {
+                features.push("Not exposed to AI")
+              }
+              if (tierConfig.features.apiAccess) {
+                features.push("Custom API access")
+              }
+              if (tierConfig.features.datasetIntegration) {
+                features.push("Dataset integration")
+              }
+              if (tierConfig.features.sla) {
+                features.push("SLA support")
+              }
+
+              return {
+                key,
+                name: tierConfig.name,
+                price: tierConfig.price === null ? "Custom" : formatPrice(tierConfig.price),
+                period: tierConfig.price === null ? "" : "/mo",
+                features,
+                popular: tierConfig.popular,
+                cta: tierConfig.cta
+              }
+            }).map((plan, index) => (
                 <Card
                   key={index}
                   variant={plan.popular ? "premium" : "default"}
@@ -1198,12 +1178,14 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Button
-                    className="w-full h-11 font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
-                    variant={plan.popular ? "default" : "outline"}
-                  >
-                    {index === 3 ? "Contact Sales" : "Get Started"}
-                  </Button>
+                  <Link href={plan.key === 'enterprise' ? "/contact" : "/dashboard/pricing"} className="w-full">
+                    <Button
+                      className="w-full h-11 font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                      variant={plan.popular ? "default" : "outline"}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}

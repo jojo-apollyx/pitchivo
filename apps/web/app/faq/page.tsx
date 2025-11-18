@@ -39,7 +39,7 @@ const faqStructuredData = {
       name: "How much does Pitchivo cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Pitchivo offers a free trial with 1 product page and 50 cold emails. Paid plans start at $299/month for Basic (5 product pages, 500 emails), $999/month for Pro (20 pages, 2,000 emails), and custom pricing for Enterprise. All plans include RFQ access and analytics.",
+        text: "Pitchivo offers a free plan with unlimited product listings and 30 emails per month. Paid plans start at $499/month for Basic (400 emails/month, 10 QR links per product), $1,999/month for Premium (2,000 emails/month, unlimited QR links), and custom pricing for Enterprise with unlimited emails and features.",
       },
     },
     {
@@ -148,7 +148,7 @@ export default function FAQPage() {
     {
       question: "How much does Pitchivo cost?",
       answer:
-        "Pitchivo offers a free trial with 1 product page and 50 cold emails. Paid plans start at $299/month for Basic (5 product pages, 500 emails), $999/month for Pro (20 pages, 2,000 emails), and custom pricing for Enterprise. All plans include RFQ access and analytics.",
+        "Pitchivo offers a free plan with unlimited product listings and 30 emails per month. Paid plans start at $499/month for Basic (400 emails/month, 10 QR links per product), $1,999/month for Premium (2,000 emails/month, unlimited QR links), and custom pricing for Enterprise with unlimited emails and features.",
     },
     {
       question: "Do I need technical knowledge to use Pitchivo?",

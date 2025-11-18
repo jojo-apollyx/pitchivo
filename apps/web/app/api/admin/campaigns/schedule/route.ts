@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { checkEmailQuota } from '@/lib/utils/quotas'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -124,11 +125,28 @@ export async function POST(request: NextRequest) {
     // Get campaign settings
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
-      .select('daily_email_limit, emails_per_hour, sending_hours, product_id, org_id')
+      .select('daily_email_limit, emails_per_hour, sending_hours, product_id, org_id, is_test')
       .eq('campaign_id', campaignId)
       .single()
 
     if (campaignError) throw campaignError
+
+    // Check quota before scheduling (skip for test campaigns)
+    if (campaign.org_id && !campaign.is_test) {
+      const quotaCheck = await checkEmailQuota(campaign.org_id, recipients.length)
+      if (!quotaCheck.canSend) {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient email quota',
+            message: `You need ${recipients.length} emails but only have ${quotaCheck.remaining} remaining. Please upgrade your plan.`,
+            remaining: quotaCheck.remaining,
+            quota: quotaCheck.quota,
+            required: recipients.length
+          },
+          { status: 429 }
+        )
+      }
+    }
 
     // Get template if templateId is provided
     let template = null

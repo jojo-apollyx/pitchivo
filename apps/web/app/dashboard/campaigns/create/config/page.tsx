@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Info, CheckCircle2, AlertTriangle, Clock, XCircle, MapPin } from 'lucide-react'
+import { ArrowLeft, Info, CheckCircle2, AlertTriangle, Clock, XCircle, MapPin, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,10 @@ import { SENDER_ADDRESSES, getSenderHealthLabel, getSenderHealthGrade, calculate
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { TestDataToggle } from '@/components/admin/test-data-toggle'
+import { useSubscription } from '@/lib/hooks/use-subscription'
+import { QuotaBar } from '@/components/ui/quota-bar'
+import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
+import { Badge } from '@/components/ui/badge'
 
 export default function ConfigureSendingPage() {
   const router = useRouter()
@@ -27,12 +31,17 @@ export default function ConfigureSendingPage() {
   const [startDate, setStartDate] = useState('')
   const [senderEmail, setSenderEmail] = useState(draft.senderEmail || '')
   const [orgSlug, setOrgSlug] = useState('yourcompany')
+  const [orgId, setOrgId] = useState<string | null>(null)
   const [selectedLocations, setSelectedLocations] = useState<string[]>((draft as any).priorityLocations || [])
   const [reputationDialogOpen, setReputationDialogOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [isTest, setIsTest] = useState(draft.isTest || false)
   const [senderSubdomains, setSenderSubdomains] = useState<string[]>(draft.senderSubdomains || ['news', 'updates', 'info', 'alerts'])
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const supabase = createClient()
+  
+  // Get subscription and quota data
+  const { tier, quotaUsage, isLoading: isLoadingSub } = useSubscription(orgId || undefined)
 
   const availableCountries = ['USA', 'Canada', 'UK', 'Germany', 'Australia', 'Japan', 'France', 'Italy', 'Spain', 'Netherlands', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Belgium', 'Austria', 'Poland', 'Brazil', 'Mexico', 'India', 'China', 'South Korea', 'Singapore', 'New Zealand']
   
@@ -69,6 +78,8 @@ export default function ConfigureSendingPage() {
       }
 
       if (profile?.organization_id) {
+        setOrgId(profile.organization_id)
+        
         const { data: org, error: orgError } = await supabase
           .from('organizations')
           .select('slug')
@@ -98,10 +109,20 @@ export default function ConfigureSendingPage() {
   const lastWarmup = isPitchivoManaged ? '2 days ago' : (selectedSender?.lastWarmup || '3 days ago')
 
   const metrics = calculateCampaignMetrics(emailCount, durationDays)
-  const planQuota = 2000
-  const remainingQuota = planQuota - emailCount
+  
+  // Use real subscription quota
+  const planQuota = quotaUsage?.emailsQuota || 30
+  const usedQuota = quotaUsage?.emailsUsed || 0
+  const remainingQuota = quotaUsage?.emailsRemaining || 30
+  const canSendCampaign = remainingQuota >= emailCount
+  const isQuotaSufficient = canSendCampaign || tier === 'enterprise' // Enterprise has unlimited
 
   function handleNext() {
+    // Check quota before proceeding
+    if (!isQuotaSufficient && !isTest) {
+      setShowUpgradePrompt(true)
+      return
+    }
     // For Pitchivo managed, store the generic domain, otherwise replace {org} placeholder
     const finalSenderEmail = isPitchivoManaged 
       ? `@${orgSlug}.pitchivo.com` 
@@ -129,7 +150,7 @@ export default function ConfigureSendingPage() {
     router.push('/dashboard/campaigns/create/buyers')
   }
 
-  const isValid = emailCount >= 50 && emailCount <= planQuota && durationDays >= metrics.minDays
+  const isValid = emailCount >= 50 && emailCount <= planQuota && durationDays >= metrics.minDays && (isQuotaSufficient || isTest)
 
   return (
     <div className="min-h-screen bg-background">
@@ -212,11 +233,42 @@ export default function ConfigureSendingPage() {
                       />
                       <p className="text-xs text-muted-foreground">
                         Remaining: <span className="font-semibold text-foreground">{remainingQuota}</span> emails
-                        {remainingQuota < 0 && (
+                        {!canSendCampaign && (
                           <span className="text-destructive ml-2">⚠️ Upgrade needed</span>
                         )}
                       </p>
                     </div>
+
+                    {/* Quota Status */}
+                    {quotaUsage && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge variant="outline" className="text-xs">
+                            {tier?.toUpperCase()} Plan
+                          </Badge>
+                          {!canSendCampaign && !isTest && (
+                            <Badge className="bg-amber-600 text-xs">Quota Exceeded</Badge>
+                          )}
+                        </div>
+                        <QuotaBar
+                          used={usedQuota + emailCount}
+                          total={planQuota}
+                          label="Campaign Email Usage (including this campaign)"
+                          type="emails"
+                          showPercentage
+                        />
+                        {!canSendCampaign && !isTest && (
+                          <div className="mt-3">
+                            <UpgradePrompt
+                              feature={`Send ${emailCount.toLocaleString()} emails`}
+                              currentTier={tier || 'free'}
+                              recommendedTier={tier === 'free' ? 'basic' : 'premium'}
+                              inline
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Duration */}
@@ -637,6 +689,16 @@ export default function ConfigureSendingPage() {
           </div>
         </div>
       </section>
+
+      {/* Upgrade Prompt Modal */}
+      <UpgradePrompt
+        feature={`Send ${emailCount.toLocaleString()} emails per campaign`}
+        currentTier={tier || 'free'}
+        recommendedTier={tier === 'free' ? 'basic' : 'premium'}
+        open={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        showComparison
+      />
     </div>
   )
 }

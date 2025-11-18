@@ -2,13 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Rocket, Mail } from 'lucide-react'
+import { ArrowLeft, Rocket, Mail, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
 import { getSenderHealthLabel, calculateCampaignMetrics } from '@/lib/mock-data/buyers'
 import { createClient } from '@/lib/supabase/client'
+import { useSubscription } from '@/lib/hooks/use-subscription'
+import { checkEmailQuota } from '@/lib/utils/quotas'
+import { QuotaBar } from '@/components/ui/quota-bar'
+import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
+import { toast } from 'sonner'
 
 interface ProductData {
   category?: string
@@ -30,7 +35,11 @@ export default function ReviewLaunchPage() {
   const [orgId, setOrgId] = useState<string | null>(null)
   const [productData, setProductData] = useState<ProductData | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const supabase = createClient()
+  
+  // Get subscription and quota data
+  const { tier, quotaUsage, isLoading: isLoadingSub } = useSubscription(orgId || undefined)
 
   useEffect(() => {
     // Initialize from localStorage on client mount
@@ -112,6 +121,18 @@ export default function ReviewLaunchPage() {
     setLaunching(true)
 
     try {
+      // Check quota before launching (unless test campaign)
+      if (!draft.isTest && orgId) {
+        const quotaCheck = await checkEmailQuota(orgId, draft.emailCount)
+        if (!quotaCheck.canSend) {
+          toast.error('Insufficient email quota', {
+            description: `You need ${draft.emailCount} emails but only have ${quotaCheck.remaining} remaining. Please upgrade your plan.`
+          })
+          setShowUpgradePrompt(true)
+          setLaunching(false)
+          return
+        }
+      }
       const priorityLocations = (draft as any).priorityLocations || []
       
       // Create campaign in database
@@ -383,6 +404,65 @@ export default function ReviewLaunchPage() {
               </div>
             </div>
 
+            {/* Quota Status Section */}
+            {quotaUsage && !draft.isTest && (
+              <div className="pb-6 border-b border-border/30">
+                <h3 className="text-lg font-semibold mb-4">Quota Status</h3>
+                <div className="bg-card/50 rounded-lg p-4 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="text-xs">
+                      {tier?.toUpperCase()} Plan
+                    </Badge>
+                    {quotaUsage.emailsRemaining < draft.emailCount && (
+                      <Badge className="bg-amber-600 text-xs">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Insufficient Quota
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">
+                        Current Usage
+                      </div>
+                      <QuotaBar
+                        used={quotaUsage.emailsUsed}
+                        total={quotaUsage.emailsQuota}
+                        label="Emails Used This Month"
+                        type="emails"
+                        showPercentage
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">
+                        After This Campaign
+                      </div>
+                      <QuotaBar
+                        used={quotaUsage.emailsUsed + draft.emailCount}
+                        total={quotaUsage.emailsQuota}
+                        label="Projected Email Usage"
+                        type="emails"
+                        showPercentage
+                      />
+                    </div>
+                  </div>
+
+                  {quotaUsage.emailsRemaining < draft.emailCount && (
+                    <div className="mt-4">
+                      <UpgradePrompt
+                        feature={`Send ${draft.emailCount.toLocaleString()} emails`}
+                        currentTier={tier || 'free'}
+                        recommendedTier={tier === 'free' ? 'basic' : 'premium'}
+                        inline
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Confirmation Checkbox */}
             <div className="bg-accent/5 rounded-xl p-4 border border-accent/20">
               <label className="flex items-start gap-3 cursor-pointer">
@@ -443,6 +523,16 @@ export default function ReviewLaunchPage() {
           </div>
         </div>
       </section>
+
+      {/* Upgrade Prompt Modal */}
+      <UpgradePrompt
+        feature={`Send ${draft.emailCount.toLocaleString()} emails per campaign`}
+        currentTier={tier || 'free'}
+        recommendedTier={tier === 'free' ? 'basic' : 'premium'}
+        open={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        showComparison
+      />
     </div>
   )
 }

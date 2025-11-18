@@ -1,0 +1,74 @@
+/**
+ * Stripe Customer Portal API
+ * Creates a customer portal session for billing management
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+// Initialize Stripe (you'll need to install: npm install stripe)
+// Uncomment when Stripe is set up:
+// import Stripe from 'stripe'
+// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+//   apiVersion: '2024-11-20.acacia'
+// })
+
+export async function POST(request: NextRequest) {
+  try {
+    const { orgId } = await request.json()
+
+    if (!orgId) {
+      return NextResponse.json(
+        { error: 'Organization ID required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = createClient()
+
+    // Verify user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get subscription with Stripe customer ID
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('stripe_customer_id')
+      .eq('org_id', orgId)
+      .single()
+
+    if (!subscription?.stripe_customer_id) {
+      return NextResponse.json(
+        { error: 'No Stripe customer found. Please subscribe first.' },
+        { status: 404 }
+      )
+    }
+
+    // TODO: When Stripe is configured, uncomment this:
+    /*
+    // Create portal session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: subscription.stripe_customer_id,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`
+    })
+
+    return NextResponse.json({ url: session.url })
+    */
+
+    // Temporary response when Stripe is not configured
+    return NextResponse.json({
+      error: 'Stripe portal not configured yet',
+      message: 'Would open Stripe billing portal for customer management'
+    }, { status: 501 })
+
+  } catch (error) {
+    console.error('Error creating portal session:', error)
+    return NextResponse.json(
+      { error: 'Failed to create portal session' },
+      { status: 500 }
+    )
+  }
+}
+

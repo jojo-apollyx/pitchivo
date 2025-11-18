@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
 import { createClient } from '@supabase/supabase-js'
+import { checkEmailQuota, incrementEmailUsage } from '@/lib/utils/quotas'
 
 // Create admin Supabase client (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -66,6 +67,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const orgId = campaign.products?.org_id
+
+    // Check quota before sending (skip for test campaigns)
+    if (orgId && !campaign.is_test) {
+      const quotaCheck = await checkEmailQuota(orgId, 1)
+      if (!quotaCheck.canSend) {
+        console.error('Quota exceeded for organization:', orgId)
+        return NextResponse.json(
+          { 
+            error: 'Email quota exceeded',
+            remaining: quotaCheck.remaining,
+            quota: quotaCheck.quota
+          },
+          { status: 429 }
+        )
+      }
+    }
+
     // Extract recipient company name from email
     const buyerName = to.split('@')[1]?.split('.')[0] || 'Valued Partner'
 
@@ -128,6 +147,11 @@ export async function POST(request: NextRequest) {
         // Add campaign tag for webhook tracking
         tags: [`campaign_${campaignId}`]
       })
+
+      // Increment email usage after successful send (skip for test campaigns)
+      if (orgId && !campaign.is_test) {
+        await incrementEmailUsage(orgId, 1)
+      }
 
       return NextResponse.json({
         success: true,

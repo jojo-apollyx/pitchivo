@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAccessToken } from '@/lib/api/access-tokens'
 import { AccessLevel } from '@/lib/api/field-filtering'
+import { checkQRLinksQuota, trackQRLinkCreation } from '@/lib/utils/quotas'
 
 /**
  * Generate a new access token for a product channel
@@ -76,6 +77,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check QR links quota before creating token
+    const quotaCheck = await checkQRLinksQuota(product_id)
+    if (!quotaCheck.canAdd) {
+      return NextResponse.json(
+        {
+          error: 'QR link quota exceeded',
+          message: `You have reached your limit of ${quotaCheck.quota} QR/custom links per product. Please upgrade your plan.`,
+          used: quotaCheck.used,
+          quota: quotaCheck.quota,
+          tier: quotaCheck.tier
+        },
+        { status: 429 }
+      )
+    }
+
     // Create the token
     const result = await createAccessToken(
       {
@@ -104,6 +120,15 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_APP_URL ||
       'http://localhost:3000'
     const fullUrl = `${baseUrl}${result.url}`
+
+    // Track link creation in product_links table
+    await trackQRLinkCreation(
+      product_id,
+      product.org_id,
+      'custom', // or 'qr' depending on channel
+      fullUrl,
+      channel_name
+    )
 
     return NextResponse.json({
       success: true,

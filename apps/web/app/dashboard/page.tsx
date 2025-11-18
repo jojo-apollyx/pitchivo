@@ -30,6 +30,8 @@ export default async function DashboardPage() {
   let productsPublished = 0
   let rfqsTotal = 0
   let rfqsNew = 0
+  let subscriptionTier = 'Free'
+  let subscriptionStatus = 'active'
 
   if (orgId) {
     const [
@@ -37,6 +39,7 @@ export default async function DashboardPage() {
       { count: publishedCount } = { count: 0 },
       { count: rfqsCount } = { count: 0 },
       { count: newRfqsCount } = { count: 0 },
+      { data: subscription } = { data: null },
     ] = await Promise.all([
       supabase
         .from('products')
@@ -56,12 +59,23 @@ export default async function DashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('org_id', orgId)
         .eq('status', 'new'),
+      supabase
+        .from('subscriptions')
+        .select('tier, status')
+        .eq('org_id', orgId)
+        .single(),
     ])
 
     productsTotal = productsCount || 0
     productsPublished = publishedCount || 0
     rfqsTotal = rfqsCount || 0
     rfqsNew = newRfqsCount || 0
+    
+    // Capitalize tier name
+    if (subscription) {
+      subscriptionTier = subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)
+      subscriptionStatus = subscription.status
+    }
   }
 
   // Calculate conversion rate (RFQs / Products, if products > 0)
@@ -77,6 +91,7 @@ export default async function DashboardPage() {
     icon: typeof Package
     change: string
     changeType: MetricChangeType
+    href?: string
   }> = [
     {
       label: 'Products',
@@ -115,10 +130,11 @@ export default async function DashboardPage() {
     },
     {
       label: 'Subscription',
-      value: 'Basic',
+      value: subscriptionTier,
       icon: CreditCard,
-      change: 'Active',
-      changeType: 'positive',
+      change: subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1),
+      changeType: subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? 'positive' : subscriptionStatus === 'past_due' ? 'negative' : 'neutral',
+      href: '/dashboard/billing',
     },
   ]
 
