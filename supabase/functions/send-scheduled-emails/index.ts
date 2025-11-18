@@ -53,10 +53,18 @@ Deno.serve(async (req) => {
     console.log(`Checking for emails scheduled before ${bufferTime.toISOString()}`)
 
     // Fetch pending scheduled emails that should be sent now
+    // Join with campaigns to check if processing is paused by admin
     const { data: scheduledEmails, error: fetchError } = await supabase
       .from('scheduled_emails')
-      .select('*')
+      .select(`
+        *,
+        campaigns!inner(
+          campaign_id,
+          admin_processing_paused
+        )
+      `)
       .eq('status', 'pending')
+      .eq('campaigns.admin_processing_paused', false)
       .lte('scheduled_time', bufferTime.toISOString())
       .order('scheduled_time', { ascending: true })
       .limit(100) // Process up to 100 emails per run
@@ -73,7 +81,7 @@ Deno.serve(async (req) => {
     }
 
     if (!scheduledEmails || scheduledEmails.length === 0) {
-      console.log('No emails to send at this time')
+      console.log('No emails to send at this time (may be paused by admin or none scheduled)')
       return new Response(
         JSON.stringify({ message: 'No emails to send', processed: 0 }),
         {
@@ -83,7 +91,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`Found ${scheduledEmails.length} emails to send`)
+    console.log(`Found ${scheduledEmails.length} emails to send (admin-paused campaigns excluded)`)
 
     const results = {
       sent: 0,

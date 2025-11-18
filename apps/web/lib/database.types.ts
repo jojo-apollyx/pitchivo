@@ -338,6 +338,10 @@ export interface Database {
           emails_bounced: number
           rfqs_received: number
           is_test: boolean
+          admin_processing_paused: boolean
+          admin_pause_reason: string | null
+          admin_paused_at: string | null
+          admin_paused_by: string | null
           created_at: string
           updated_at: string
           launched_at: string | null
@@ -364,6 +368,10 @@ export interface Database {
           emails_bounced?: number
           rfqs_received?: number
           is_test?: boolean
+          admin_processing_paused?: boolean
+          admin_pause_reason?: string | null
+          admin_paused_at?: string | null
+          admin_paused_by?: string | null
           created_at?: string
           updated_at?: string
           launched_at?: string | null
@@ -390,6 +398,10 @@ export interface Database {
           emails_bounced?: number
           rfqs_received?: number
           is_test?: boolean
+          admin_processing_paused?: boolean
+          admin_pause_reason?: string | null
+          admin_paused_at?: string | null
+          admin_paused_by?: string | null
           created_at?: string
           updated_at?: string
           launched_at?: string | null

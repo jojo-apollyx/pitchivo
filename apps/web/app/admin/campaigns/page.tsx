@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Search, RefreshCw, Settings, BarChart3, ChevronRight, Building2, Calendar, TrendingUp, AlertCircle } from 'lucide-react'
+import { Mail, Search, RefreshCw, Settings, BarChart3, ChevronRight, Building2, Calendar, TrendingUp, AlertCircle, Pause, Play, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +33,9 @@ interface Campaign {
   created_at: string
   org_id: string
   is_test: boolean
+  admin_processing_paused: boolean
+  admin_pause_reason: string | null
+  admin_paused_at: string | null
   organizations?: {
     name: string
     domain: string
@@ -50,6 +53,7 @@ export default function AdminCampaignsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showMonitor, setShowMonitor] = useState(true)
+  const [togglingPause, setTogglingPause] = useState<string | null>(null)
   
   const supabase = createClient()
 
@@ -121,6 +125,35 @@ export default function AdminCampaignsPage() {
     } catch (error) {
       console.error('Error updating campaign status:', error)
       toast.error('Failed to update campaign status.')
+    }
+  }
+
+  async function handleToggleProcessing(campaign: Campaign) {
+    setTogglingPause(campaign.campaign_id)
+    try {
+      const response = await fetch(`/api/admin/campaigns/${campaign.campaign_id}/toggle-processing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          paused: !campaign.admin_processing_paused,
+          reason: null
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to toggle processing')
+      }
+
+      const result = await response.json()
+      
+      toast.success(result.message, { duration: 4000 })
+      await loadCampaigns()
+    } catch (error: any) {
+      console.error('Error toggling processing:', error)
+      toast.error(error.message || 'Failed to toggle processing')
+    } finally {
+      setTogglingPause(null)
     }
   }
 
@@ -277,9 +310,19 @@ export default function AdminCampaignsPage() {
                             <Mail className="h-6 w-6 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <h3 className="text-lg font-semibold">{campaign.campaign_name}</h3>
                               <TestDataBadge isTest={campaign.is_test} />
+                              {campaign.admin_processing_paused && (
+                                <Badge 
+                                  variant="outline" 
+                                  className="bg-amber-100 text-amber-700 border-amber-300 gap-1 text-xs"
+                                  title={campaign.admin_pause_reason || 'Processing paused by admin'}
+                                >
+                                  <Pause className="h-3 w-3" />
+                                  Processing Paused
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                               {campaign.organizations && (
@@ -359,6 +402,32 @@ export default function AdminCampaignsPage() {
                         </div>
 
                         <div className="flex flex-col gap-2">
+                          {/* Admin Processing Control */}
+                          <Button
+                            variant={campaign.admin_processing_paused ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleToggleProcessing(campaign)}
+                            disabled={togglingPause === campaign.campaign_id}
+                            className={`gap-2 w-full justify-start ${
+                              campaign.admin_processing_paused 
+                                ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                                : 'hover:bg-accent'
+                            }`}
+                            title={campaign.admin_processing_paused 
+                              ? 'Resume email processing (cron will send emails)' 
+                              : 'Pause email processing (cron will skip this campaign)'
+                            }
+                          >
+                            {togglingPause === campaign.campaign_id ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : campaign.admin_processing_paused ? (
+                              <Play className="h-4 w-4" />
+                            ) : (
+                              <Pause className="h-4 w-4" />
+                            )}
+                            {campaign.admin_processing_paused ? 'Resume Processing' : 'Pause Processing'}
+                          </Button>
+                          
                           <Button
                             variant="default"
                             size="sm"
