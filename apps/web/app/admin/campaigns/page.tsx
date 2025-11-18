@@ -16,6 +16,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { TestDataBadge } from '@/components/admin/test-data-toggle'
+import { EmailProcessorMonitor } from '@/components/admin/email-processor-monitor'
 
 interface Campaign {
   campaign_id: string
@@ -48,6 +49,7 @@ export default function AdminCampaignsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [showMonitor, setShowMonitor] = useState(true)
   
   const supabase = createClient()
 
@@ -208,6 +210,36 @@ export default function AdminCampaignsPage() {
                 <SelectItem value="completed">Completed ({statusCounts.completed})</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
+      </section>
+
+      {/* Email Processor Monitor */}
+      <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-card/50 rounded-xl border border-border/30 overflow-hidden">
+            <button
+              onClick={() => setShowMonitor(!showMonitor)}
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <h2 className="text-lg font-semibold">Email Processor Monitor</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Monitor scheduled email processing and trigger manual runs
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className={`h-5 w-5 transition-transform ${showMonitor ? 'rotate-90' : ''}`} />
+            </button>
+            {showMonitor && (
+              <div className="px-6 pb-6 border-t border-border/30">
+                <div className="pt-6">
+                  <EmailProcessorMonitor />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
