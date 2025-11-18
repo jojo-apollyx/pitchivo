@@ -190,11 +190,21 @@ buyer3@company3.com`}
         <div className="bg-green-50 rounded-xl p-4 border border-green-200">
           <h4 className="font-semibold text-green-900 mb-2">✓ Schedule Created</h4>
           <div className="space-y-1 text-sm text-green-800">
-            <p>Total Emails: {scheduleResult.totalScheduled}</p>
+            <p>Total Emails Scheduled: {scheduleResult.totalScheduled}</p>
             <p>Start Date: {scheduleResult.stats?.startDate}</p>
             <p>End Date: {scheduleResult.stats?.endDate}</p>
             <p>Total Days: {scheduleResult.stats?.totalDays}</p>
             <p>Avg/Day: {scheduleResult.stats?.avgPerDay}</p>
+            {scheduleResult.stats?.existingEmailsConsidered > 0 && (
+              <p className="font-semibold text-green-700 mt-2">
+                ℹ️ Accounted for {scheduleResult.stats.existingEmailsConsidered} existing scheduled emails
+              </p>
+            )}
+            {scheduleResult.stats?.usedCurrentDate && (
+              <p className="font-semibold text-blue-700">
+                📅 Started from today (campaign start date was in the past)
+              </p>
+            )}
           </div>
         </div>
       )}

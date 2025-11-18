@@ -131,15 +131,50 @@ ${orgName} Team
 P.S. Feel free to submit an RFQ directly through our product page if you'd like to move forward.`
     }
 
+    // Fetch existing scheduled emails to avoid exceeding daily limits
+    const { data: existingEmails, error: existingError } = await supabaseAdmin
+      .from('scheduled_emails')
+      .select('scheduled_time')
+      .eq('campaign_id', campaignId)
+      .in('status', ['pending', 'sent'])
+
+    if (existingError) {
+      console.error('Error fetching existing scheduled emails:', existingError)
+    }
+
+    // Group existing emails by date for daily limit checking
+    const existingEmailsByDate: Record<string, number> = {}
+    if (existingEmails) {
+      existingEmails.forEach(email => {
+        const date = new Date(email.scheduled_time)
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+        existingEmailsByDate[dateKey] = (existingEmailsByDate[dateKey] || 0) + 1
+      })
+    }
+
+    // Determine actual start date - use NOW if campaign start_date is in the past
+    const now = new Date()
+    const campaignStartDate = campaign.start_date ? new Date(campaign.start_date) : now
+    const actualStartDate = campaignStartDate < now ? now : campaignStartDate
+
+    console.log('[Auto-Schedule] Campaign:', campaignId)
+    console.log('[Auto-Schedule] Campaign start date:', campaign.start_date)
+    console.log('[Auto-Schedule] Actual start date used:', actualStartDate.toISOString())
+    console.log('[Auto-Schedule] Existing emails by date:', existingEmailsByDate)
+    console.log('[Auto-Schedule] Recipients to schedule:', recipients.length)
+
     // Calculate safe sending schedule
     const schedule = calculateSafeSchedule({
       recipients,
-      startDate: campaign.start_date ? new Date(campaign.start_date) : new Date(),
+      startDate: actualStartDate,
       durationDays: campaign.duration_days || Math.ceil(recipients.length / 50), // Default to 50 emails per day
       dailyLimit: dailyLimit || campaign.daily_email_limit || 50,
       emailsPerHour: emailsPerHour || campaign.emails_per_hour || 10,
-      sendingHours: sendingHours || parseSendingHours(campaign.sending_hours) || [9, 10, 11, 14, 15, 16]
+      sendingHours: sendingHours || parseSendingHours(campaign.sending_hours) || [9, 10, 11, 14, 15, 16],
+      existingEmailsByDate // Pass existing emails to respect daily limits
     })
+
+    console.log('[Auto-Schedule] Schedule calculated:', schedule.length, 'emails')
 
     // Build scheduled emails with placeholder replacement
     const scheduledEmails: EmailSchedule[] = schedule.map((item) => {
@@ -206,10 +241,21 @@ P.S. Feel free to submit an RFQ directly through our product page if you'd like 
     // Calculate statistics
     const stats = calculateScheduleStats(schedule)
 
+    // Add info about existing emails
+    const totalExistingEmails = Object.values(existingEmailsByDate).reduce((sum, count) => sum + count, 0)
+    const daysWithExistingEmails = Object.keys(existingEmailsByDate).length
+
     return NextResponse.json({
       success: true,
       totalScheduled: savedEmails.length,
-      stats,
+      stats: {
+        ...stats,
+        existingEmailsConsidered: totalExistingEmails,
+        daysWithExistingEmails,
+        startDateUsed: actualStartDate.toISOString(),
+        campaignStartDate: campaign.start_date,
+        usedCurrentDate: actualStartDate.toISOString() !== campaignStartDate?.toISOString()
+      },
       schedule: savedEmails
     })
   } catch (error: any) {
@@ -228,6 +274,7 @@ interface ScheduleOptions {
   dailyLimit: number
   emailsPerHour: number
   sendingHours: number[]
+  existingEmailsByDate?: Record<string, number>
 }
 
 interface ScheduleItem {
@@ -244,7 +291,8 @@ function calculateSafeSchedule(options: ScheduleOptions): ScheduleItem[] {
     durationDays,
     dailyLimit,
     emailsPerHour,
-    sendingHours
+    sendingHours,
+    existingEmailsByDate = {}
   } = options
 
   const schedule: ScheduleItem[] = []
@@ -266,20 +314,36 @@ function calculateSafeSchedule(options: ScheduleOptions): ScheduleItem[] {
       continue
     }
 
+    // Get date key for checking existing emails
+    const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
+    
+    // Calculate how many emails are already scheduled for this day
+    const existingEmailsToday = existingEmailsByDate[dateKey] || 0
+    
+    // Calculate remaining capacity for this day
+    const remainingCapacityToday = Math.max(0, dailyLimit - existingEmailsToday)
+    
+    // If no capacity left today, skip to next day
+    if (remainingCapacityToday === 0) {
+      currentDate.setDate(currentDate.getDate() + 1)
+      daysProcessed++
+      continue
+    }
+
     let emailsSentToday = 0
     
     // Sort sending hours to ensure chronological order
     const sortedHours = [...sendingHours].sort((a, b) => a - b)
 
     for (const hour of sortedHours) {
-      if (recipientIndex >= recipients.length || emailsSentToday >= dailyLimit) {
+      if (recipientIndex >= recipients.length || emailsSentToday >= remainingCapacityToday) {
         break
       }
 
       // Distribute emails across the hour with random minutes
       const emailsThisHour = Math.min(
         emailsPerHour,
-        dailyLimit - emailsSentToday,
+        remainingCapacityToday - emailsSentToday,
         recipients.length - recipientIndex
       )
 
