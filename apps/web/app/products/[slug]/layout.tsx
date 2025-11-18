@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { filterProductFields } from '@/lib/api/field-filtering'
+import type { FieldPermission } from '@/lib/api/field-filtering'
 
 // Create admin Supabase client for public metadata generation
 const supabaseAdmin = createSupabaseClient(
@@ -43,9 +45,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     // Parse product data
-    const productData = typeof product.product_data === 'string'
+    let rawProductData = typeof product.product_data === 'string'
       ? JSON.parse(product.product_data)
       : product.product_data || {}
+
+    // SECURITY: Filter product data to only include PUBLIC fields
+    // SEO metadata should only expose fields marked as 'public' access level
+    const permissions: FieldPermission = rawProductData?.field_permissions || {}
+    const productData = filterProductFields(
+      rawProductData,
+      permissions,
+      'public', // SEO is anonymous - only show public fields
+      false // Don't include locked field metadata for SEO
+    )
 
     // Get organization info
     // Use admin client because this is public metadata generation (anonymous access)
@@ -55,6 +67,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       .eq('id', product.org_id)
       .single()
 
+    // Extract public fields for SEO metadata
+    // NOTE: These fields will be null if they're not marked as 'public' access level
+    // This is correct behavior - SEO should only see what anonymous users can see
     const productName = product.product_name || 'Product'
     const manufacturer = productData.manufacturer_name || organization?.name || ''
     const category = productData.category || ''
@@ -64,6 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const casNumber = productData.cas_number || ''
     
     // Build comprehensive description for SEO/AEO (optimized for answer engines)
+    // Only includes fields that are publicly accessible (respects access control)
     const descriptionParts = [
       productName,
       category && `(${category})`,
