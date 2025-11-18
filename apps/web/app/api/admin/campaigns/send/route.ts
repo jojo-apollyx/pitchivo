@@ -167,11 +167,11 @@ export async function POST(request: NextRequest) {
     console.log('[campaigns/send] Placeholders replaced')
 
     // Create scheduled_emails record first (for tracking)
+    // Let the database generate the UUID automatically (DEFAULT gen_random_uuid())
     console.log('[campaigns/send] Creating scheduled_emails record')
-    const scheduledEmailId = `scheduled_${campaignId}_${Date.now()}_${Math.random().toString(36).substring(7)}`
     
     const scheduledEmailData = {
-      scheduled_email_id: scheduledEmailId,
+      // Don't provide scheduled_email_id - let database generate UUID
       campaign_id: campaignId,
       lead_id: leadId || null,
       recipient_email: to,
@@ -187,9 +187,12 @@ export async function POST(request: NextRequest) {
     }
     console.log('[campaigns/send] Scheduled email data:', JSON.stringify({ ...scheduledEmailData, content: '[truncated]' }))
     
-    const { error: insertError } = await supabaseAdmin
+    // Insert and get the generated UUID back
+    const { data: insertedData, error: insertError } = await supabaseAdmin
       .from('scheduled_emails')
       .insert(scheduledEmailData)
+      .select('scheduled_email_id')
+      .single()
 
     if (insertError) {
       console.error('[campaigns/send] Error creating scheduled email record:', insertError)
@@ -199,7 +202,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    console.log('[campaigns/send] Scheduled email record created:', scheduledEmailId)
+    
+    const scheduledEmailId = insertedData.scheduled_email_id
+    console.log('[campaigns/send] Scheduled email record created with ID:', scheduledEmailId)
 
     // Send email via Brevo/Sendinblue with campaign tracking tag
     console.log('[campaigns/send] Preparing to send email via Brevo')
