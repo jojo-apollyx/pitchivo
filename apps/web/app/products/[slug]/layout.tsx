@@ -60,7 +60,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     )
 
     // Get organization info
-    // Use admin client because this is public metadata generation (anonymous access)
+    // SECURITY: Use admin client for public metadata generation (anonymous access)
+    // Only selecting public-safe fields for SEO
+    // See lib/api/organization-filtering.ts for full list of safe fields
     const { data: organization } = await supabaseAdmin
       .from('organizations')
       .select('name, domain')

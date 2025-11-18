@@ -421,9 +421,58 @@ BEGIN
 END $$;
 ```
 
+## Organization Field Filtering
+
+When querying organizations with admin client in public contexts (SEO, public APIs), **only select public-safe fields**:
+
+### Public-Safe Organization Fields
+
+```typescript
+// See lib/api/organization-filtering.ts for helper functions
+
+// Basic public fields
+'id, name, domain, logo_url, pitchivo_domain'
+
+// Include branding (for themed product pages)
+'id, name, domain, logo_url, primary_color, secondary_color, accent_color'
+```
+
+### NEVER Expose These Organization Fields Publicly
+
+```typescript
+// ❌ SENSITIVE - Do not expose
+'settings',               // Internal JSON settings
+'onboarding_completed_at',// Internal state
+'company_size',           // Potentially sensitive
+'use_cases',              // Internal
+'is_test',                // Internal flag
+'created_at',             // Internal timestamp
+'updated_at',             // Internal timestamp
+```
+
+### Example: Safe Organization Query
+
+```typescript
+// ✅ CORRECT: Only selecting public-safe fields
+const { data: organization } = await supabaseAdmin
+  .from('organizations')
+  .select('name, domain, primary_color, secondary_color, accent_color')
+  .eq('id', orgId)
+  .single()
+
+// ❌ WRONG: Selecting all fields (exposes sensitive data!)
+const { data: organization } = await supabaseAdmin
+  .from('organizations')
+  .select('*')  // Contains settings, onboarding_completed_at, etc.
+  .eq('id', orgId)
+  .single()
+```
+
 ## Summary
 
 **The Golden Rule**: If a table allows public INSERT but restricted SELECT, **always use admin client** in your API routes.
 
-This is not a workaround - it's the correct pattern for public data collection in Supabase.
+**The Second Rule**: When using admin client for public queries, **explicitly select only public-safe fields**. Never use `select('*')` in public contexts.
+
+This is not a workaround - it's the correct pattern for public data collection and exposure in Supabase.
 

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { getPublicOrgFields } from '@/lib/api/organization-filtering'
 
 // Create admin Supabase client for public organization queries
 const supabaseAdmin = createSupabaseClient(
@@ -38,7 +39,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Use admin client because this is a public SEO endpoint (anonymous access)
+    // SECURITY: Use admin client for public endpoint (anonymous access)
+    // Only selecting public-safe fields: id, name, domain
+    // See lib/api/organization-filtering.ts for full list of safe fields
     const { data: organization, error } = await supabaseAdmin
       .from('organizations')
       .select('id, name, domain')

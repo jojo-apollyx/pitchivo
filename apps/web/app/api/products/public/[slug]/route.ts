@@ -97,7 +97,9 @@ export async function GET(
     }
 
     // Get organization info for metadata
-    // Use admin client because this is a public endpoint (anonymous access)
+    // SECURITY: Use admin client for public endpoint (anonymous access)
+    // Only selecting public-safe branding fields for product display
+    // See lib/api/organization-filtering.ts for full list of safe fields
     const { data: organization } = await supabaseAdmin
       .from('organizations')
       .select('name, domain, primary_color, secondary_color, accent_color')
