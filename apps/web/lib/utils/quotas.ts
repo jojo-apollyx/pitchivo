@@ -18,6 +18,13 @@ export interface QuotaStatus {
   canAddQRLinks: boolean
 }
 
+interface QuotaUsageData {
+  emails_sent?: number
+  email_quota?: number
+  qr_links_count?: number
+  qr_links_quota?: number
+}
+
 /**
  * Get current quota status for an organization
  */
@@ -42,11 +49,12 @@ export async function getQuotaStatus(orgId: string): Promise<QuotaStatus> {
       .eq('org_id', orgId)
       .single()
 
-    const emailsUsed = data?.emails_sent || 0
-    const emailsQuota = data?.email_quota || 30
+    const quotaData = (data as QuotaUsageData) || {}
+    const emailsUsed = quotaData.emails_sent || 0
+    const emailsQuota = quotaData.email_quota || 30
     const emailsRemaining = Math.max(0, emailsQuota - emailsUsed)
-    const qrLinksUsed = data?.qr_links_count || 0
-    const qrLinksQuota = data?.qr_links_quota || 3
+    const qrLinksUsed = quotaData.qr_links_count || 0
+    const qrLinksQuota = quotaData.qr_links_quota || 3
 
     const isEmailUnlimited = isUnlimited(emailsQuota)
     const isQRLinksUnlimited = isUnlimited(qrLinksQuota)
