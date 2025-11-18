@@ -60,26 +60,29 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
       setLoading(true)
       
       // Load organization details
+      // Use maybeSingle() to handle case where organization doesn't exist yet
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .select('*')
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       if (orgError) throw orgError
 
       setOrganization(orgData)
 
-      // Load organization members
-      const { data: membersData, error: membersError } = await supabase
-        .from('user_profiles')
-        .select('id, email, full_name, org_role, is_pitchivo_admin, created_at')
-        .eq('organization_id', id)
-        .order('created_at', { ascending: false })
+      // Load organization members only if organization exists
+      if (orgData) {
+        const { data: membersData, error: membersError } = await supabase
+          .from('user_profiles')
+          .select('id, email, full_name, org_role, is_pitchivo_admin, created_at')
+          .eq('organization_id', id)
+          .order('created_at', { ascending: false })
 
-      if (membersError) throw membersError
+        if (membersError) throw membersError
 
-      setMembers(membersData || [])
+        setMembers(membersData || [])
+      }
     } catch (error) {
       console.error('Error loading organization details:', error)
       toast.error('Failed to load organization details')
@@ -99,9 +102,12 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
   if (!organization) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
-        <div className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Organization Not Found</h2>
-          <p className="text-muted-foreground mb-4">The organization you're looking for doesn't exist.</p>
+        <div className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20 max-w-md">
+          <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Organization Not Set Up Yet</h2>
+          <p className="text-muted-foreground mb-4">
+            This user hasn't completed their organization setup yet. They'll need to complete the onboarding process first.
+          </p>
           <Button
             onClick={() => router.push('/admin/users')}
             className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
