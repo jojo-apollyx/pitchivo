@@ -17,11 +17,35 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(request: NextRequest) {
+  console.log('[campaigns/send] Route handler called')
+  console.log('[campaigns/send] Request URL:', request.url)
+  console.log('[campaigns/send] Request method:', request.method)
+  
   try {
     // Verify admin access
+    console.log('[campaigns/send] Checking admin access')
     await requireAdmin()
+    console.log('[campaigns/send] Admin access verified')
 
-    const body = await request.json()
+    console.log('[campaigns/send] Parsing request body')
+    let body
+    try {
+      body = await request.json()
+      console.log('[campaigns/send] Request body parsed:', JSON.stringify({ 
+        campaignId: body.campaignId, 
+        to: body.to, 
+        hasSubject: !!body.subject, 
+        hasContent: !!body.content,
+        leadId: body.leadId 
+      }))
+    } catch (error) {
+      console.error('[campaigns/send] Error parsing request body:', error)
+      return NextResponse.json(
+        { error: 'Invalid request body', details: error instanceof Error ? error.message : 'Unknown error' },
+        { status: 400 }
+      )
+    }
+    
     const { 
       campaignId, 
       to, 
@@ -34,7 +58,9 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate input
+    console.log('[campaigns/send] Validating input')
     if (!campaignId || !to || !subject || !content) {
+      console.log('[campaigns/send] Missing required fields:', { campaignId: !!campaignId, to: !!to, subject: !!subject, content: !!content })
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -44,13 +70,16 @@ export async function POST(request: NextRequest) {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(to)) {
+      console.log('[campaigns/send] Invalid email format:', to)
       return NextResponse.json(
         { error: 'Invalid email address' },
         { status: 400 }
       )
     }
+    console.log('[campaigns/send] Input validation passed')
 
     // Fetch campaign details for placeholder replacement
+    console.log('[campaigns/send] Fetching campaign:', campaignId)
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
       .select(`
@@ -68,33 +97,49 @@ export async function POST(request: NextRequest) {
       .eq('campaign_id', campaignId)
       .single()
 
+    if (campaignError) {
+      console.error('[campaigns/send] Campaign fetch error:', campaignError)
+    }
+    
     if (campaignError || !campaign) {
-      console.error('Campaign fetch error:', campaignError)
+      console.log('[campaigns/send] Campaign not found. Error:', campaignError?.message, 'Campaign:', campaign)
       return NextResponse.json(
         { error: 'Campaign not found' },
         { status: 404 }
       )
     }
+    
+    console.log('[campaigns/send] Campaign found:', campaign.campaign_name, 'Org ID:', campaign.products?.org_id, 'Is test:', campaign.is_test)
 
     const orgId = campaign.products?.org_id
 
     // Check quota before sending (skip for test campaigns)
     if (orgId && !campaign.is_test) {
-      const quotaCheck = await checkEmailQuota(orgId, 1)
-      if (!quotaCheck.canSend) {
-        console.error('Quota exceeded for organization:', orgId)
-        return NextResponse.json(
-          { 
-            error: 'Email quota exceeded',
-            remaining: quotaCheck.remaining,
-            quota: quotaCheck.quota
-          },
-          { status: 429 }
-        )
+      console.log('[campaigns/send] Checking email quota for org:', orgId)
+      try {
+        const quotaCheck = await checkEmailQuota(orgId, 1)
+        console.log('[campaigns/send] Quota check result:', quotaCheck)
+        if (!quotaCheck.canSend) {
+          console.error('[campaigns/send] Quota exceeded for organization:', orgId, 'Remaining:', quotaCheck.remaining, 'Quota:', quotaCheck.quota)
+          return NextResponse.json(
+            { 
+              error: 'Email quota exceeded',
+              remaining: quotaCheck.remaining,
+              quota: quotaCheck.quota
+            },
+            { status: 429 }
+          )
+        }
+      } catch (quotaError) {
+        console.error('[campaigns/send] Error checking quota:', quotaError)
+        throw quotaError
       }
+    } else {
+      console.log('[campaigns/send] Skipping quota check (test campaign or no org ID)')
     }
 
     // Extract recipient company name from email
+    console.log('[campaigns/send] Processing placeholders')
     const buyerName = to.split('@')[1]?.split('.')[0] || 'Valued Partner'
 
     // Build placeholder values
@@ -108,6 +153,7 @@ export async function POST(request: NextRequest) {
       '{{org_name}}': orgName,
       '{{organization_name}}': orgName  // Support both placeholder formats
     }
+    console.log('[campaigns/send] Placeholders:', placeholders)
 
     // Replace placeholders in content and subject
     let processedContent = content
@@ -118,39 +164,47 @@ export async function POST(request: NextRequest) {
       processedContent = processedContent.replace(regex, value)
       processedSubject = processedSubject.replace(regex, value)
     })
+    console.log('[campaigns/send] Placeholders replaced')
 
     // Create scheduled_emails record first (for tracking)
+    console.log('[campaigns/send] Creating scheduled_emails record')
     const scheduledEmailId = `scheduled_${campaignId}_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    const scheduledEmailData = {
+      scheduled_email_id: scheduledEmailId,
+      campaign_id: campaignId,
+      lead_id: leadId || null,
+      recipient_email: to,
+      recipient_name: recipientName || to.split('@')[0],
+      recipient_title: recipientTitle || null,
+      recipient_company: recipientCompany || to.split('@')[1]?.split('.')[0] || null,
+      subject: processedSubject,
+      content: processedContent,
+      scheduled_time: new Date().toISOString(),
+      status: 'pending', // Will be updated to 'sent' after successful send
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+    console.log('[campaigns/send] Scheduled email data:', JSON.stringify({ ...scheduledEmailData, content: '[truncated]' }))
     
     const { error: insertError } = await supabaseAdmin
       .from('scheduled_emails')
-      .insert({
-        scheduled_email_id: scheduledEmailId,
-        campaign_id: campaignId,
-        lead_id: leadId || null,
-        recipient_email: to,
-        recipient_name: recipientName || to.split('@')[0],
-        recipient_title: recipientTitle || null,
-        recipient_company: recipientCompany || to.split('@')[1]?.split('.')[0] || null,
-        subject: processedSubject,
-        content: processedContent,
-        scheduled_time: new Date().toISOString(),
-        status: 'pending', // Will be updated to 'sent' after successful send
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(scheduledEmailData)
 
     if (insertError) {
-      console.error('Error creating scheduled email record:', insertError)
+      console.error('[campaigns/send] Error creating scheduled email record:', insertError)
+      console.error('[campaigns/send] Insert error details:', JSON.stringify(insertError))
       return NextResponse.json(
         { error: 'Failed to create email record', details: insertError.message },
         { status: 500 }
       )
     }
+    console.log('[campaigns/send] Scheduled email record created:', scheduledEmailId)
 
     // Send email via Brevo/Sendinblue with campaign tracking tag
+    console.log('[campaigns/send] Preparing to send email via Brevo')
     try {
-      const emailResult = await sendEmail({
+      const emailPayload = {
         to,
         subject: processedSubject,
         html: `
@@ -184,9 +238,13 @@ export async function POST(request: NextRequest) {
         text: processedContent,
         // Add campaign tag for webhook tracking - CRITICAL for Brevo webhooks to update campaign stats
         tags: [`campaign_${campaignId}`]
-      })
+      }
+      console.log('[campaigns/send] Calling sendEmail function')
+      const emailResult = await sendEmail(emailPayload)
+      console.log('[campaigns/send] Email sent successfully. Message ID:', emailResult?.messageId)
 
       // Update scheduled_emails record to 'sent' status
+      console.log('[campaigns/send] Updating scheduled_emails status to sent')
       const { error: updateError } = await supabaseAdmin
         .from('scheduled_emails')
         .update({
@@ -198,10 +256,13 @@ export async function POST(request: NextRequest) {
         .eq('scheduled_email_id', scheduledEmailId)
 
       if (updateError) {
-        console.error('Error updating scheduled email status:', updateError)
+        console.error('[campaigns/send] Error updating scheduled email status:', updateError)
+      } else {
+        console.log('[campaigns/send] Scheduled email status updated to sent')
       }
 
       // Increment campaign emails_sent counter
+      console.log('[campaigns/send] Incrementing campaign metric')
       const { error: metricError } = await supabaseAdmin.rpc('increment_campaign_metric', {
         p_campaign_id: campaignId,
         p_metric: 'emails_sent',
@@ -209,14 +270,24 @@ export async function POST(request: NextRequest) {
       })
 
       if (metricError) {
-        console.error('Error incrementing campaign metric:', metricError)
+        console.error('[campaigns/send] Error incrementing campaign metric:', metricError)
+      } else {
+        console.log('[campaigns/send] Campaign metric incremented')
       }
 
       // Increment email usage after successful send (skip for test campaigns)
       if (orgId && !campaign.is_test) {
-        await incrementEmailUsage(orgId, 1)
+        console.log('[campaigns/send] Incrementing email usage for org:', orgId)
+        try {
+          await incrementEmailUsage(orgId, 1)
+          console.log('[campaigns/send] Email usage incremented')
+        } catch (usageError) {
+          console.error('[campaigns/send] Error incrementing email usage:', usageError)
+          // Don't fail the request if usage increment fails
+        }
       }
 
+      console.log('[campaigns/send] Email send process completed successfully')
       return NextResponse.json({
         success: true,
         message: 'Email sent successfully',
@@ -226,17 +297,29 @@ export async function POST(request: NextRequest) {
         messageId: emailResult?.messageId
       })
     } catch (emailError: any) {
-      console.error('Error sending email:', emailError)
+      console.error('[campaigns/send] Error sending email:', emailError)
+      console.error('[campaigns/send] Email error stack:', emailError?.stack)
+      console.error('[campaigns/send] Email error details:', JSON.stringify({
+        message: emailError?.message,
+        name: emailError?.name,
+        code: emailError?.code
+      }))
       
       // Mark scheduled email as failed
-      await supabaseAdmin
-        .from('scheduled_emails')
-        .update({
-          status: 'failed',
-          error: emailError.message,
-          updated_at: new Date().toISOString()
-        })
-        .eq('scheduled_email_id', scheduledEmailId)
+      console.log('[campaigns/send] Marking scheduled email as failed')
+      try {
+        await supabaseAdmin
+          .from('scheduled_emails')
+          .update({
+            status: 'failed',
+            error: emailError.message,
+            updated_at: new Date().toISOString()
+          })
+          .eq('scheduled_email_id', scheduledEmailId)
+        console.log('[campaigns/send] Scheduled email marked as failed')
+      } catch (updateErr) {
+        console.error('[campaigns/send] Error updating scheduled email to failed status:', updateErr)
+      }
 
       return NextResponse.json(
         { error: 'Failed to send email', details: emailError.message },
@@ -244,17 +327,28 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error: any) {
-    console.error('Error in send campaign email API:', error)
+    console.error('[campaigns/send] Unexpected error in route handler:', error)
+    console.error('[campaigns/send] Error type:', error?.constructor?.name)
+    console.error('[campaigns/send] Error message:', error?.message)
+    console.error('[campaigns/send] Error stack:', error?.stack)
+    console.error('[campaigns/send] Full error:', JSON.stringify({
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      cause: error?.cause
+    }, null, 2))
     
     if (error.message === 'Unauthorized') {
+      console.log('[campaigns/send] Unauthorized error - returning 403')
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
       )
     }
 
+    console.log('[campaigns/send] Returning 500 error response')
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error?.message || 'Unknown error' },
       { status: 500 }
     )
   }

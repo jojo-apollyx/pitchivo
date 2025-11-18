@@ -110,27 +110,71 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return
   }
 
+  // Get existing subscription to check for custom quota overrides
+  const { data: existingSubscription } = await supabase
+    .from('subscriptions')
+    .select('custom_quota_override, email_quota, qr_links_per_product')
+    .eq('org_id', orgId)
+    .single()
+
   const tierConfig = PRICING_TIERS[tier]
+  const now = new Date()
+  const periodEnd = new Date(subscription.current_period_end * 1000)
   
+  // Check if subscription period has ended and should be downgraded to free
+  const shouldDowngradeToFree = 
+    subscription.cancel_at_period_end && 
+    periodEnd <= now &&
+    tier !== 'free'
+
+  // Determine final tier and quotas
+  let finalTier = tier
+  let emailQuota = tierConfig.features.emailQuota
+  let qrLinksPerProduct = tierConfig.features.qrLinksPerProduct
+
+  if (shouldDowngradeToFree) {
+    finalTier = 'free'
+    const freeConfig = PRICING_TIERS.free
+    emailQuota = freeConfig.features.emailQuota
+    qrLinksPerProduct = freeConfig.features.qrLinksPerProduct
+  }
+
+  // Build update object
+  const updateData: any = {
+    stripe_subscription_id: subscription.id,
+    stripe_customer_id: subscription.customer as string,
+    stripe_price_id: subscription.items.data[0].price.id,
+    tier: finalTier,
+    status: subscription.status === 'active' || subscription.status === 'trialing' ? 'active' : 'inactive',
+    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end: periodEnd.toISOString(),
+    cancel_at_period_end: subscription.cancel_at_period_end,
+    updated_at: now.toISOString()
+  }
+
+  // Only update quotas if:
+  // 1. No custom override exists, OR
+  // 2. Downgrading to free (always reset to free tier quotas)
+  if (!existingSubscription?.custom_quota_override || shouldDowngradeToFree) {
+    updateData.email_quota = emailQuota
+    updateData.qr_links_per_product = qrLinksPerProduct
+    
+    // Clear custom override flag if downgrading to free
+    if (shouldDowngradeToFree) {
+      updateData.custom_quota_override = false
+    }
+  }
+  // If custom override exists and not downgrading, preserve existing quotas
+
   const { error } = await supabase
     .from('subscriptions')
-    .update({
-      stripe_subscription_id: subscription.id,
-      stripe_customer_id: subscription.customer as string,
-      stripe_price_id: subscription.items.data[0].price.id,
-      tier,
-      status: subscription.status === 'active' || subscription.status === 'trialing' ? 'active' : 'inactive',
-      email_quota: tierConfig.features.emailQuota,
-      qr_links_per_product: tierConfig.features.qrLinksPerProduct,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      updated_at: new Date().toISOString()
-    })
+    .update(updateData)
     .eq('org_id', orgId)
 
   if (error) {
     console.error('Error updating subscription:', error)
+  } else if (shouldDowngradeToFree) {
+    console.log(`Subscription for org ${orgId} downgraded to free tier after period end`)
   }
 }
 
@@ -142,10 +186,20 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
     return
   }
 
+  // Get free tier quotas
+  const freeConfig = PRICING_TIERS.free
+
+  // When subscription is canceled, downgrade to free tier and reset quotas
   const { error } = await supabase
     .from('subscriptions')
     .update({
+      tier: 'free',
       status: 'canceled',
+      email_quota: freeConfig.features.emailQuota,
+      qr_links_per_product: freeConfig.features.qrLinksPerProduct,
+      custom_quota_override: false, // Clear any admin overrides
+      stripe_subscription_id: null, // Clear Stripe subscription ID
+      stripe_price_id: null, // Clear Stripe price ID
       canceled_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
@@ -153,6 +207,8 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
 
   if (error) {
     console.error('Error canceling subscription:', error)
+  } else {
+    console.log(`Subscription for org ${orgId} canceled and downgraded to free tier`)
   }
 }
 
