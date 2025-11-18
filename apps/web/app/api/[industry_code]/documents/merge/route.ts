@@ -62,6 +62,21 @@ export async function POST(
 
     console.log(`[${industrySchema.INDUSTRY_NAME}] Starting intelligent merge`)
 
+    // DEBUG: Log environment variables
+    const rawDeployment = process.env.AZURE_OPENAI_DEPLOYMENT
+    const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME
+    const endpoint = process.env.AZURE_OPENAI_ENDPOINT
+    
+    console.log('[Merge DEBUG] AZURE_OPENAI_DEPLOYMENT raw value:', JSON.stringify(rawDeployment))
+    console.log('[Merge DEBUG] AZURE_OPENAI_DEPLOYMENT length:', rawDeployment?.length)
+    console.log('[Merge DEBUG] AZURE_OPENAI_DEPLOYMENT char codes:', rawDeployment?.split('').map(c => c.charCodeAt(0)))
+    console.log('[Merge DEBUG] AZURE_OPENAI_RESOURCE_NAME:', resourceName)
+    console.log('[Merge DEBUG] AZURE_OPENAI_ENDPOINT:', endpoint)
+    
+    const deploymentName = rawDeployment || 'gpt-4o'
+    console.log('[Merge DEBUG] Using deployment name:', JSON.stringify(deploymentName))
+    console.log('[Merge DEBUG] Deployment name length:', deploymentName.length)
+
     // Initialize Azure OpenAI
     const azureOpenAI = createAzure({
       resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME!,
@@ -83,8 +98,10 @@ ${newFieldsStr}
 
 Now merge the data:`
 
+    console.log('[Merge DEBUG] About to call generateText with deployment:', JSON.stringify(deploymentName))
+
     const { text: mergedDataText } = await generateText({
-      model: azureOpenAI(process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o'),
+      model: azureOpenAI(deploymentName),
       messages: [
         {
           role: 'system',
