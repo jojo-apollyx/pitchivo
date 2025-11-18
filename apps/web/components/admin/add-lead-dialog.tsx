@@ -171,7 +171,7 @@ export function AddLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Add Leads to Campaign</DialogTitle>
           <DialogDescription>
@@ -271,18 +271,19 @@ export function AddLeadDialog({
 
             {/* Results Table */}
             <div className="flex-1 overflow-auto rounded-lg border border-border/30">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Industry</TableHead>
-                    <TableHead>Country</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[900px]">
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="min-w-[180px]">Company</TableHead>
+                      <TableHead className="min-w-[150px]">Contact</TableHead>
+                      <TableHead className="min-w-[150px]">Title</TableHead>
+                      <TableHead className="min-w-[200px]">Email</TableHead>
+                      <TableHead className="min-w-[150px]">Industry</TableHead>
+                      <TableHead className="min-w-[100px]">Country</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {filteredBuyers.length === 0 ? (
                     <TableRow>
@@ -369,6 +370,7 @@ export function AddLeadDialog({
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
