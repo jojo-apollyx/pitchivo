@@ -18,11 +18,11 @@ export async function POST(
     // Check if user is admin
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('org_role')
+      .select('is_pitchivo_admin')
       .eq('id', user.id)
       .single()
 
-    if (profile?.org_role !== 'admin') {
+    if (!profile?.is_pitchivo_admin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

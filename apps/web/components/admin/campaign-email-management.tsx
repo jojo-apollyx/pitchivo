@@ -326,44 +326,44 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     toast.success('Email cancelled successfully!')
   }
 
-  function handleSendNow(lead: LeadWithSchedule) {
-    if (lead.scheduledEmail) {
-      // Update existing scheduled email to sent
-      setScheduledEmails(scheduledEmails.map(e =>
-        e.scheduled_email_id === lead.scheduledEmail!.scheduled_email_id
-          ? { 
-              ...e, 
-              status: 'sent' as const, 
-              sent_at: new Date().toISOString(),
-              brevo_message_id: `msg_${Math.random().toString(36).substring(7)}`,
-              brevo_status: 'sent' as const,
-              updated_at: new Date().toISOString()
-            }
-          : e
-      ))
-    } else {
-      // Create new scheduled email and mark as sent immediately
-      const newScheduledEmail: ScheduledEmailWithBrevoStatus = {
-        scheduled_email_id: `scheduled_${campaignId}_${Date.now()}`,
-        campaign_id: campaignId,
-        lead_id: lead.lead_id,
-        recipient_email: lead.email,
-        recipient_name: lead.name,
-        recipient_title: lead.title,
-        recipient_company: lead.company,
-        subject: `Innovative Solutions for ${lead.company}`,
-        content: `Hi ${lead.name},\n\nI wanted to reach out to discuss how our products can benefit ${lead.company}...\n\nBest regards`,
-        scheduled_time: new Date().toISOString(),
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-        brevo_message_id: `msg_${Math.random().toString(36).substring(7)}`,
-        brevo_status: 'sent',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+  async function handleSendNow(lead: LeadWithSchedule) {
+    try {
+      // Generate email content
+      const subject = `Innovative Solutions for ${lead.company}`
+      const content = `Hi ${lead.name},\n\nI wanted to reach out to discuss how our products can benefit ${lead.company}...\n\nBest regards`
+      
+      // Send email via API
+      const response = await fetch('/api/admin/campaigns/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId,
+          to: lead.email,
+          subject,
+          content,
+          // Pass lead information for better tracking
+          leadId: lead.lead_id,
+          recipientName: lead.name,
+          recipientTitle: lead.title,
+          recipientCompany: lead.company
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send email')
       }
-      setScheduledEmails([...scheduledEmails, newScheduledEmail])
+
+      // Reload data from database to get the actual record
+      // This ensures we have the real database state with proper tracking
+      loadData()
+
+      toast.success(`Email sent successfully to ${lead.email}!`)
+    } catch (error: any) {
+      console.error('Error sending email:', error)
+      toast.error(error.message || 'Failed to send email')
     }
-    toast.success('Email sent successfully!')
   }
 
   if (loading) {

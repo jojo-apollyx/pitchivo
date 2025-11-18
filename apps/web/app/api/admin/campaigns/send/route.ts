@@ -22,7 +22,16 @@ export async function POST(request: NextRequest) {
     await requireAdmin()
 
     const body = await request.json()
-    const { campaignId, to, subject, content } = body
+    const { 
+      campaignId, 
+      to, 
+      subject, 
+      content,
+      leadId,
+      recipientName,
+      recipientTitle,
+      recipientCompany
+    } = body
 
     // Validate input
     if (!campaignId || !to || !subject || !content) {
@@ -110,9 +119,38 @@ export async function POST(request: NextRequest) {
       processedSubject = processedSubject.replace(regex, value)
     })
 
+    // Create scheduled_emails record first (for tracking)
+    const scheduledEmailId = `scheduled_${campaignId}_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    const { error: insertError } = await supabaseAdmin
+      .from('scheduled_emails')
+      .insert({
+        scheduled_email_id: scheduledEmailId,
+        campaign_id: campaignId,
+        lead_id: leadId || null,
+        recipient_email: to,
+        recipient_name: recipientName || to.split('@')[0],
+        recipient_title: recipientTitle || null,
+        recipient_company: recipientCompany || to.split('@')[1]?.split('.')[0] || null,
+        subject: processedSubject,
+        content: processedContent,
+        scheduled_time: new Date().toISOString(),
+        status: 'pending', // Will be updated to 'sent' after successful send
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+    if (insertError) {
+      console.error('Error creating scheduled email record:', insertError)
+      return NextResponse.json(
+        { error: 'Failed to create email record', details: insertError.message },
+        { status: 500 }
+      )
+    }
+
     // Send email via Brevo/Sendinblue with campaign tracking tag
     try {
-      await sendEmail({
+      const emailResult = await sendEmail({
         to,
         subject: processedSubject,
         html: `
@@ -144,9 +182,35 @@ export async function POST(request: NextRequest) {
           </html>
         `,
         text: processedContent,
-        // Add campaign tag for webhook tracking
+        // Add campaign tag for webhook tracking - CRITICAL for Brevo webhooks to update campaign stats
         tags: [`campaign_${campaignId}`]
       })
+
+      // Update scheduled_emails record to 'sent' status
+      const { error: updateError } = await supabaseAdmin
+        .from('scheduled_emails')
+        .update({
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          brevo_message_id: emailResult?.messageId || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('scheduled_email_id', scheduledEmailId)
+
+      if (updateError) {
+        console.error('Error updating scheduled email status:', updateError)
+      }
+
+      // Increment campaign emails_sent counter
+      const { error: metricError } = await supabaseAdmin.rpc('increment_campaign_metric', {
+        p_campaign_id: campaignId,
+        p_metric: 'emails_sent',
+        p_increment: 1
+      })
+
+      if (metricError) {
+        console.error('Error incrementing campaign metric:', metricError)
+      }
 
       // Increment email usage after successful send (skip for test campaigns)
       if (orgId && !campaign.is_test) {
@@ -157,10 +221,23 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Email sent successfully',
         campaignId,
-        to
+        to,
+        scheduledEmailId,
+        messageId: emailResult?.messageId
       })
     } catch (emailError: any) {
       console.error('Error sending email:', emailError)
+      
+      // Mark scheduled email as failed
+      await supabaseAdmin
+        .from('scheduled_emails')
+        .update({
+          status: 'failed',
+          error: emailError.message,
+          updated_at: new Date().toISOString()
+        })
+        .eq('scheduled_email_id', scheduledEmailId)
+
       return NextResponse.json(
         { error: 'Failed to send email', details: emailError.message },
         { status: 500 }

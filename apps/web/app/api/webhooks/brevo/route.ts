@@ -166,6 +166,10 @@ async function processBrevoEvent(event: any) {
     console.log(`📊 Updating campaign metrics...`)
     await updateCampaignMetrics(campaignId, ourEventType)
 
+    // Update scheduled_emails record with Brevo status
+    console.log(`📧 Updating scheduled email record...`)
+    await updateScheduledEmailStatus(campaignId, email, messageId, ourEventType)
+
     // Handle specific events
     console.log(`🔧 Handling special events...`)
     await handleSpecialEvents(campaignId, ourEventType, email, event)
@@ -272,6 +276,59 @@ async function updateCampaignMetrics(campaignId: string, eventType: string) {
       console.log('✅ emails_bounced incremented successfully')
       if (bounceData) console.log('RPC response:', bounceData)
     }
+  }
+}
+
+async function updateScheduledEmailStatus(campaignId: string, email: string, messageId: string | undefined, eventType: string) {
+  // Map event types to brevo_status values
+  const brevoStatusMapping: Record<string, string> = {
+    [EMAIL_EVENT_TYPES.SENT]: 'sent',
+    [EMAIL_EVENT_TYPES.DELIVERED]: 'delivered',
+    [EMAIL_EVENT_TYPES.OPENED]: 'opened',
+    [EMAIL_EVENT_TYPES.UNIQUE_OPENED]: 'opened',
+    [EMAIL_EVENT_TYPES.FIRST_OPENING]: 'opened',
+    [EMAIL_EVENT_TYPES.CLICKED]: 'clicked',
+    [EMAIL_EVENT_TYPES.HARD_BOUNCED]: 'hard_bounce',
+    [EMAIL_EVENT_TYPES.SOFT_BOUNCED]: 'soft_bounce',
+    [EMAIL_EVENT_TYPES.BLOCKED]: 'blocked',
+    [EMAIL_EVENT_TYPES.COMPLAINT]: 'spam',
+    [EMAIL_EVENT_TYPES.UNSUBSCRIBED]: 'unsubscribed',
+    [EMAIL_EVENT_TYPES.ERROR]: 'error',
+  }
+
+  const brevoStatus = brevoStatusMapping[eventType]
+  if (!brevoStatus) {
+    console.log(`ℹ️  No brevo_status mapping for event type: ${eventType}`)
+    return
+  }
+
+  // Try to find and update the scheduled email by message ID first, then by email + campaign
+  let query = supabaseAdmin
+    .from('scheduled_emails')
+    .update({
+      brevo_status: brevoStatus,
+      updated_at: new Date().toISOString()
+    })
+
+  if (messageId) {
+    query = query.eq('brevo_message_id', messageId)
+  } else {
+    // Fallback: find by campaign and recipient email
+    query = query
+      .eq('campaign_id', campaignId)
+      .eq('recipient_email', email)
+      .eq('status', 'sent') // Only update sent emails
+  }
+
+  const { data, error } = await query.select()
+
+  if (error) {
+    console.error(`❌ Failed to update scheduled email status:`, error)
+    console.error('Update error details:', JSON.stringify(error, null, 2))
+  } else if (data && data.length > 0) {
+    console.log(`✅ Updated ${data.length} scheduled email(s) with brevo_status: ${brevoStatus}`)
+  } else {
+    console.log(`ℹ️  No scheduled email found to update for campaign: ${campaignId}, email: ${email}`)
   }
 }
 

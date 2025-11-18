@@ -86,19 +86,20 @@ export async function POST(request: NextRequest) {
           </html>
         `,
         text: scheduledEmail.content,
-        tags: [`campaign_${scheduledEmail.campaign_id}`]
+        tags: [`campaign_${scheduledEmail.campaign_id}`] // CRITICAL: Campaign tag for webhook tracking
       })
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to send email')
       }
 
-      // Update scheduled email status
+      // Update scheduled email status with Brevo message ID
       const { error: updateError } = await supabaseAdmin
         .from('scheduled_emails')
         .update({
           status: 'sent',
           sent_at: new Date().toISOString(),
+          brevo_message_id: result.messageId || null,
           updated_at: new Date().toISOString()
         })
         .eq('scheduled_email_id', scheduledEmailId)
@@ -108,19 +109,13 @@ export async function POST(request: NextRequest) {
       }
 
       // Update campaign metrics
+      // Note: emails_delivered will be incremented by Brevo webhook when actually delivered
       const { error: sentMetricError } = await supabaseAdmin.rpc('increment_campaign_metric', {
         p_campaign_id: scheduledEmail.campaign_id,
         p_metric: 'emails_sent',
         p_increment: 1
       })
       if (sentMetricError) console.error('Error incrementing emails_sent metric:', sentMetricError)
-
-      const { error: deliveredMetricError } = await supabaseAdmin.rpc('increment_campaign_metric', {
-        p_campaign_id: scheduledEmail.campaign_id,
-        p_metric: 'emails_delivered',
-        p_increment: 1
-      })
-      if (deliveredMetricError) console.error('Error incrementing emails_delivered metric:', deliveredMetricError)
 
       // Log activity
       const { error: activityError } = await supabaseAdmin
@@ -131,10 +126,11 @@ export async function POST(request: NextRequest) {
           buyer_company: scheduledEmail.recipient_company,
           contact_email: scheduledEmail.recipient_email,
           metadata: {
-            event: 'delivered',
+            event: 'sent',
             name: scheduledEmail.recipient_name,
             company: scheduledEmail.recipient_company,
-            messageId: result.messageId
+            messageId: result.messageId,
+            scheduled_email_id: scheduledEmailId
           }
         })
       if (activityError) console.error('Error logging activity:', activityError)

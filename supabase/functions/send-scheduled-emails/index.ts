@@ -162,26 +162,22 @@ Deno.serve(async (req) => {
 
         const brevoResult = await brevoResponse.json()
 
-        // Update scheduled email status to sent
+        // Update scheduled email status to sent with Brevo message ID
         await supabase
           .from('scheduled_emails')
           .update({
             status: 'sent',
             sent_at: new Date().toISOString(),
+            brevo_message_id: brevoResult.messageId || null,
             updated_at: new Date().toISOString()
           })
           .eq('scheduled_email_id', email.scheduled_email_id)
 
-        // Increment campaign metrics
+        // Increment campaign emails_sent metric
+        // Note: emails_delivered will be incremented by Brevo webhook when actually delivered
         await supabase.rpc('increment_campaign_metric', {
           p_campaign_id: email.campaign_id,
           p_metric: 'emails_sent',
-          p_increment: 1
-        })
-
-        await supabase.rpc('increment_campaign_metric', {
-          p_campaign_id: email.campaign_id,
-          p_metric: 'emails_delivered',
           p_increment: 1
         })
 
@@ -194,10 +190,11 @@ Deno.serve(async (req) => {
             buyer_company: email.recipient_company,
             contact_email: email.recipient_email,
             metadata: {
-              event: 'delivered',
+              event: 'sent',
               name: email.recipient_name,
               company: email.recipient_company,
-              messageId: brevoResult.messageId
+              messageId: brevoResult.messageId,
+              scheduled_email_id: email.scheduled_email_id
             }
           })
 
