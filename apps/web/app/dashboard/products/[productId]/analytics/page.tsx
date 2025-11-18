@@ -360,12 +360,7 @@ export default function ProductAnalyticsPage() {
                   <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: themeColors.primary }} />
                 </div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">
-                  <span style={{
-                    background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}>
+                  <span className="bg-gradient-to-r from-primary to-accent-color bg-clip-text text-transparent">
                     Product Analytics
                   </span>
                 </h1>
@@ -857,13 +852,8 @@ export default function ProductAnalyticsPage() {
               </div>
               <Sparkles className="absolute -top-2 -right-2 h-8 w-8" style={{ color: themeColors.accent }} />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-foreground">
-              <span style={{
-                background: `linear-gradient(to right, ${themeColors.primary}, ${themeColors.secondary})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
+            <h3 className="text-lg sm:text-xl font-semibold mb-3">
+              <span className="bg-gradient-to-r from-primary to-accent-color bg-clip-text text-transparent">
                 No Analytics Data Yet
               </span>
             </h3>
