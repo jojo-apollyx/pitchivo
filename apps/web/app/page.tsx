@@ -22,6 +22,9 @@ import {
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { sendWaitlistConfirmationEmail, sendWaitlistAdminNotification } from "@/lib/emails";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -41,6 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 // Check email domain status in database
@@ -176,6 +180,23 @@ async function sendMagicLink(email: string) {
   }
 }
 
+// Waitlist form schema
+const waitlistSchema = z.object({
+  email: z.string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  fullName: z.string()
+    .min(1, "Full name is required")
+    .min(2, "Full name must be at least 2 characters"),
+  company: z.string()
+    .min(1, "Company is required")
+    .min(2, "Company name must be at least 2 characters"),
+  role: z.string().optional(),
+  note: z.string().optional(),
+});
+
+type WaitlistFormData = z.infer<typeof waitlistSchema>;
+
 // Add to waitlist
 async function addToWaitlist(data: {
   email: string;
@@ -258,15 +279,26 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [waitlistData, setWaitlistData] = useState({
-    fullName: "",
-    company: "",
-    role: "",
-    note: "",
-  });
-  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
   const pricingRef = useRef<HTMLElement>(null);
   const { theme, setTheme } = useTheme();
+
+  // Waitlist form
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    setValue,
+  } = useForm<WaitlistFormData>({
+    resolver: zodResolver(waitlistSchema),
+    defaultValues: {
+      email: "",
+      fullName: "",
+      company: "",
+      role: "",
+      note: "",
+    },
+  });
 
   // Handle auth callback on landing page (in case redirect didn't work)
   useEffect(() => {
@@ -367,7 +399,7 @@ export default function Home() {
                       </p>
                       <button
                         onClick={() => {
-                          setWaitlistData({ fullName: "", company: "", role: "", note: "" });
+                          reset({ email, fullName: "", company: "", role: "", note: "" });
                           setWaitlistOpen(true);
                         }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-accent text-white text-sm font-medium rounded-lg hover:shadow-lg transition-shadow"
@@ -392,31 +424,15 @@ export default function Home() {
     }
   };
 
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!waitlistData.fullName.trim() || !waitlistData.company.trim()) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    // Validate email format
-    if (!isValidEmail(email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    setIsSubmittingWaitlist(true);
-
+  const handleWaitlistSubmit = async (data: WaitlistFormData) => {
     try {
       // Check email domain status in database
-      const domainStatus = await checkEmailDomainStatus(email);
+      const domainStatus = await checkEmailDomainStatus(data.email);
       
       if (domainStatus === 'public') {
         toast.error("Company Email Required", {
           description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
         });
-        setIsSubmittingWaitlist(false);
         return;
       }
 
@@ -424,7 +440,6 @@ export default function Home() {
         toast.error("Domain Blocked", {
           description: "This email domain has been blocked and cannot be used to join the waitlist.",
         });
-        setIsSubmittingWaitlist(false);
         return;
       }
     } catch (error) {
@@ -433,25 +448,18 @@ export default function Home() {
     }
 
     const success = await addToWaitlist({
-      email,
-      fullName: waitlistData.fullName,
-      company: waitlistData.company,
-      role: waitlistData.role || undefined,
-      note: waitlistData.note || undefined,
+      email: data.email,
+      fullName: data.fullName,
+      company: data.company,
+      role: data.role || undefined,
+      note: data.note || undefined,
     });
 
     if (success) {
       setWaitlistOpen(false);
-      setWaitlistData({
-        fullName: "",
-        company: "",
-        role: "",
-        note: "",
-      });
+      reset();
       setEmail("");
     }
-
-    setIsSubmittingWaitlist(false);
   };
 
   return (
@@ -1327,70 +1335,73 @@ export default function Home() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleWaitlistSubmit}>
+          <form onSubmit={handleFormSubmit(handleWaitlistSubmit)}>
             <div className="space-y-4 py-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-2">
+                <Label htmlFor="email">
+                  Email <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register("email")}
+                  placeholder="you@company.com"
+                  className={cn("h-11 touch-manipulation", errors.email && "border-destructive")}
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fullName">
                   Full Name <span className="text-destructive">*</span>
-                </label>
+                </Label>
                 <Input
-                  value={waitlistData.fullName}
-                  onChange={(e) =>
-                    setWaitlistData((prev) => ({ ...prev, fullName: e.target.value }))
-                  }
+                  id="fullName"
+                  {...register("fullName")}
                   placeholder="John Doe"
-                  className="mt-1 h-11 touch-manipulation"
-                  required
+                  className={cn("h-11 touch-manipulation", errors.fullName && "border-destructive")}
                 />
+                {errors.fullName && (
+                  <p className="text-sm text-destructive">{errors.fullName.message}</p>
+                )}
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-2">
+                <Label htmlFor="company">
                   Company / Organization <span className="text-destructive">*</span>
-                </label>
+                </Label>
                 <Input
-                  value={waitlistData.company}
-                  onChange={(e) =>
-                    setWaitlistData((prev) => ({ ...prev, company: e.target.value }))
-                  }
+                  id="company"
+                  {...register("company")}
                   placeholder="Acme Inc."
-                  className="mt-1 h-11 touch-manipulation"
-                  required
+                  className={cn("h-11 touch-manipulation", errors.company && "border-destructive")}
                 />
+                {errors.company && (
+                  <p className="text-sm text-destructive">{errors.company.message}</p>
+                )}
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-foreground">Email</label>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role / Title</Label>
                 <Input
-                  value={email}
-                  disabled
-                  className="mt-1 h-11 bg-muted"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-foreground">Role / Title</label>
-                <Input
-                  value={waitlistData.role}
-                  onChange={(e) =>
-                    setWaitlistData((prev) => ({ ...prev, role: e.target.value }))
-                  }
+                  id="role"
+                  {...register("role")}
                   placeholder="Product Manager"
-                  className="mt-1 h-11 touch-manipulation"
+                  className="h-11 touch-manipulation"
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-foreground">
+              <div className="space-y-2">
+                <Label htmlFor="note">
                   Tell us why you want early access
-                </label>
+                </Label>
                 <textarea
-                  value={waitlistData.note}
-                  onChange={(e) =>
-                    setWaitlistData((prev) => ({ ...prev, note: e.target.value }))
-                  }
+                  id="note"
+                  {...register("note")}
                   placeholder="Optional message..."
-                  className="mt-1 flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   rows={3}
                 />
               </div>
@@ -1401,17 +1412,17 @@ export default function Home() {
                 type="button"
                 variant="outline"
                 onClick={() => setWaitlistOpen(false)}
-                disabled={isSubmittingWaitlist}
+                disabled={isSubmitting}
                 className="h-11"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmittingWaitlist}
+                disabled={isSubmitting}
                 className="h-11"
               >
-                {isSubmittingWaitlist ? "Submitting..." : "Submit"}
+                {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
             </DialogFooter>
           </form>
