@@ -318,13 +318,13 @@ export default function ReviewLaunchPage() {
             <div className="pb-6 border-b border-border/30">
               <h3 className="text-lg font-semibold mb-4">Audience Summary</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="bg-card/50 rounded-lg p-4">
                   <div className="text-xs text-muted-foreground mb-1">Total buyers</div>
                   <div className="text-xl font-bold text-primary">
                     {draft.buyerCount.toLocaleString()}
                   </div>
                 </div>
-                <div>
+                <div className="bg-card/50 rounded-lg p-4">
                   <div className="text-xs text-muted-foreground mb-1">Total contacts</div>
                   <div className="text-xl font-bold">
                     {draft.totalContacts.toLocaleString()}
