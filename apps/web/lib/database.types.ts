@@ -328,6 +328,7 @@ export interface Database {
           duration_days: number
           start_date: string | null
           sender_email: string
+          sender_subdomains: string[]
           sender_health: 'healthy' | 'warming_up' | 'caution' | 'poor'
           status: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled'
           emails_sent: number
@@ -353,6 +354,7 @@ export interface Database {
           duration_days: number
           start_date?: string | null
           sender_email: string
+          sender_subdomains?: string[]
           sender_health?: 'healthy' | 'warming_up' | 'caution' | 'poor'
           status?: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled'
           emails_sent?: number
@@ -378,6 +380,7 @@ export interface Database {
           duration_days?: number
           start_date?: string | null
           sender_email?: string
+          sender_subdomains?: string[]
           sender_health?: 'healthy' | 'warming_up' | 'caution' | 'poor'
           status?: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled'
           emails_sent?: number

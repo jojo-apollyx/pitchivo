@@ -19,6 +19,7 @@ export interface CampaignDraft {
   durationDays: number
   startDate?: Date
   senderEmail: string
+  senderSubdomains: string[]
   senderHealth: 'healthy' | 'warming_up' | 'caution' | 'poor'
   priorityLocations?: string[]
   
@@ -46,6 +47,7 @@ const DEFAULT_DRAFT: CampaignDraft = {
   emailCount: 500,
   durationDays: 4,
   senderEmail: 'news@{org}.pitchivo.com',
+  senderSubdomains: ['news', 'updates', 'info', 'alerts'], // All 4 subdomains selected by default
   senderHealth: 'healthy',
   isTest: false,
   currentStep: 1

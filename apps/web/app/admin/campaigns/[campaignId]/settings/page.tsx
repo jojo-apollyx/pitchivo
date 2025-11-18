@@ -14,6 +14,7 @@ import { EmailTemplateManager } from '@/components/admin/email-template-manager'
 import { BatchEmailScheduler } from '@/components/admin/batch-email-scheduler'
 import { CampaignEmailManagement } from '@/components/admin/campaign-email-management'
 import { TestEmailTracker } from '@/components/admin/test-email-tracker'
+import { CampaignSubdomainSettings } from '@/components/admin/campaign-subdomain-settings'
 
 interface Campaign {
   campaign_id: string
@@ -44,7 +45,7 @@ export default function CampaignSettingsPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [defaultTemplate, setDefaultTemplate] = useState<EmailTemplate | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'send' | 'quality' | 'templates' | 'schedule' | 'manage'>('manage')
+  const [activeTab, setActiveTab] = useState<'send' | 'quality' | 'templates' | 'schedule' | 'manage' | 'subdomains'>('manage')
   
   // Email form state
   const [emailTo, setEmailTo] = useState('')
@@ -276,6 +277,15 @@ export default function CampaignSettingsPage() {
                   <Mail className="h-4 w-4" />
                   Manage Leads & Emails
                 </Button>
+                <Button
+                  variant={activeTab === 'subdomains' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab('subdomains')}
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  Sender Subdomains
+                </Button>
               </div>
             </div>
 
@@ -432,6 +442,29 @@ export default function CampaignSettingsPage() {
                   </div>
 
                   <CampaignEmailManagement campaignId={campaignId} />
+                </div>
+              )}
+
+              {activeTab === 'subdomains' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 border border-primary/20 mb-4">
+                    <div className="flex items-start gap-3">
+                      <Send className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-foreground text-sm mb-1">
+                          Email Distribution Settings
+                        </h4>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>• Select which Pitchivo subdomains to use for sending</li>
+                          <li>• Emails are automatically distributed evenly across selected subdomains</li>
+                          <li>• Multiple subdomains improve deliverability and reduce spam flags</li>
+                          <li>• Changes apply to newly scheduled emails only</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <CampaignSubdomainSettings campaignId={campaignId} />
                 </div>
               )}
             </div>

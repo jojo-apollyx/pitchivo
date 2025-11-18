@@ -31,9 +31,17 @@ export default function ConfigureSendingPage() {
   const [reputationDialogOpen, setReputationDialogOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [isTest, setIsTest] = useState(draft.isTest || false)
+  const [senderSubdomains, setSenderSubdomains] = useState<string[]>(draft.senderSubdomains || ['news', 'updates', 'info', 'alerts'])
   const supabase = createClient()
 
   const availableCountries = ['USA', 'Canada', 'UK', 'Germany', 'Australia', 'Japan', 'France', 'Italy', 'Spain', 'Netherlands', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Belgium', 'Austria', 'Poland', 'Brazil', 'Mexico', 'India', 'China', 'South Korea', 'Singapore', 'New Zealand']
+  
+  const availableSubdomains = [
+    { value: 'news', label: 'news@', description: 'News and updates' },
+    { value: 'updates', label: 'updates@', description: 'Product updates' },
+    { value: 'info', label: 'info@', description: 'General information' },
+    { value: 'alerts', label: 'alerts@', description: 'Important alerts' }
+  ]
 
   useEffect(() => {
     loadOrgSlug()
@@ -106,6 +114,7 @@ export default function ConfigureSendingPage() {
       durationDays,
       startDate: startDate ? new Date(startDate) : undefined,
       senderEmail: finalSenderEmail,
+      senderSubdomains,
       senderHealth,
       priorityLocations: selectedLocations,
       isTest
@@ -433,6 +442,73 @@ export default function ConfigureSendingPage() {
                           </div>
                         </DialogContent>
                       </Dialog>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sender Subdomains */}
+                <div className="pb-6 border-b border-border/30">
+                  <Label className="text-base font-semibold mb-3 block">
+                    Email Sending Subdomains
+                  </Label>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      {availableSubdomains.map((subdomain) => {
+                        const isSelected = senderSubdomains.includes(subdomain.value)
+                        return (
+                          <button
+                            key={subdomain.value}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                // Don't allow deselecting if it's the only one selected
+                                if (senderSubdomains.length > 1) {
+                                  setSenderSubdomains(senderSubdomains.filter(s => s !== subdomain.value))
+                                }
+                              } else {
+                                setSenderSubdomains([...senderSubdomains, subdomain.value])
+                              }
+                            }}
+                            className={cn(
+                              "flex items-center gap-3 p-4 rounded-lg border-2 transition-all text-left",
+                              isSelected
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/50 hover:bg-accent/50"
+                            )}
+                          >
+                            <div className={cn(
+                              "flex items-center justify-center w-5 h-5 rounded border-2 transition-all",
+                              isSelected
+                                ? "border-primary bg-primary"
+                                : "border-border"
+                            )}>
+                              {isSelected && (
+                                <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-semibold text-sm">
+                                {subdomain.label}<span className="text-muted-foreground">{orgSlug}.pitchivo.com</span>
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {subdomain.description}
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-blue-900 dark:text-blue-100">
+                          <strong>Selected: {senderSubdomains.length} subdomain{senderSubdomains.length !== 1 ? 's' : ''}</strong>
+                          <p className="mt-1 text-blue-700 dark:text-blue-200">
+                            Emails will be distributed evenly across selected subdomains to improve deliverability and reduce the risk of being flagged as spam.
+                            {senderSubdomains.length === 1 && " Select multiple subdomains for better distribution."}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
