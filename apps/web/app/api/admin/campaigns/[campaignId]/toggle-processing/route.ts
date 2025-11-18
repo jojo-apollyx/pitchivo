@@ -3,10 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { campaignId: string } }
+  { params }: { params: Promise<{ campaignId: string }> }
 ) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Check if user is authenticated and is admin
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -26,7 +26,7 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { campaignId } = params
+    const { campaignId } = await params
     const body = await request.json()
     const { paused, reason } = body
 
