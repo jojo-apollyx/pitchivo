@@ -104,6 +104,16 @@ ALTER TABLE product_access_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE product_access_actions ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
+-- GRANT TABLE-LEVEL PERMISSIONS
+-- ============================================================================
+-- CRITICAL: Grant INSERT permission to anon and authenticated roles
+-- RLS policies only work AFTER table-level grants are in place
+GRANT INSERT ON product_access_logs TO anon;
+GRANT INSERT ON product_access_logs TO authenticated;
+GRANT INSERT ON product_access_actions TO anon;
+GRANT INSERT ON product_access_actions TO authenticated;
+
+-- ============================================================================
 -- RLS POLICIES - PRODUCT_ACCESS_LOGS
 -- ============================================================================
 
@@ -123,6 +133,7 @@ CREATE POLICY "Users can view access logs for their organization products"
 CREATE POLICY "Public can insert access logs"
   ON product_access_logs
   FOR INSERT
+  TO public
   WITH CHECK (true);
 
 -- ============================================================================
@@ -145,6 +156,7 @@ CREATE POLICY "Users can view actions for their organization products"
 CREATE POLICY "Public can insert access actions"
   ON product_access_actions
   FOR INSERT
+  TO public
   WITH CHECK (true);
 
 -- ============================================================================

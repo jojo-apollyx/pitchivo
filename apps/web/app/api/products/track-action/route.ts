@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
+// Create admin Supabase client for tracking inserts (public submissions need admin access)
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 /**
  * Track user actions on product pages
@@ -44,8 +57,8 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Get org_id from access log
-    const { data: accessLog, error: accessError } = await supabase
+    // Get org_id from access log (use admin client for consistent access)
+    const { data: accessLog, error: accessError } = await supabaseAdmin
       .from('product_access_logs')
       .select('org_id')
       .eq('access_id', access_id)
@@ -58,8 +71,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Insert action
-    const { data: action, error: insertError } = await supabase
+    // Insert action using admin client
+    // Use admin client because this is a public tracking endpoint (unauthenticated users)
+    const { data: action, error: insertError } = await supabaseAdmin
       .from('product_access_actions')
       .insert({
         access_id,

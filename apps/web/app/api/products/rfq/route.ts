@@ -99,8 +99,9 @@ export async function POST(request: NextRequest) {
     const accessId = accessLogs?.access_id
 
     // Track RFQ submission as an action
+    // Use admin client because this is a public tracking endpoint (unauthenticated users)
     if (accessId) {
-      await supabase
+      await supabaseAdmin
         .from('product_access_actions')
         .insert({
           access_id: accessId,

@@ -9,6 +9,14 @@ ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
+-- GRANT TABLE-LEVEL PERMISSIONS
+-- ============================================================================
+-- CRITICAL: Grant INSERT permission to anon role for public tables
+-- RLS policies only work AFTER table-level grants are in place
+GRANT INSERT ON waitlist TO anon;
+GRANT INSERT ON waitlist TO authenticated;
+
+-- ============================================================================
 -- EMAIL DOMAIN POLICY POLICIES
 -- ============================================================================
 -- Everyone can read domain policies (needed for validation)
@@ -42,6 +50,7 @@ CREATE POLICY "Pitchivo admins can manage email domain policies"
 CREATE POLICY "Anyone can join waitlist"
   ON waitlist
   FOR INSERT
+  TO public
   WITH CHECK (true);
 
 -- Users can read their own waitlist entry

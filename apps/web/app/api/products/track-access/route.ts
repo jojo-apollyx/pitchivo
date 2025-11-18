@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
+// Create admin Supabase client for tracking inserts (public submissions need admin access)
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 /**
  * Track product page access
@@ -53,7 +66,7 @@ export async function POST(request: NextRequest) {
     // Check if this is a unique visit (first visit from this visitor_id to this product)
     let is_unique_visit = true
     if (visitor_id) {
-      const { count } = await supabase
+      const { count } = await supabaseAdmin
         .from('product_access_logs')
         .select('*', { count: 'exact', head: true })
         .eq('product_id', product_id)
@@ -62,8 +75,9 @@ export async function POST(request: NextRequest) {
       is_unique_visit = (count || 0) === 0
     }
 
-    // Insert access log
-    const { data: accessLog, error: insertError } = await supabase
+    // Insert access log using admin client
+    // Use admin client because this is a public tracking endpoint (unauthenticated users)
+    const { data: accessLog, error: insertError } = await supabaseAdmin
       .from('product_access_logs')
       .insert({
         product_id,
