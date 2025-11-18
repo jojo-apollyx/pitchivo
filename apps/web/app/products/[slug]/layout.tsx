@@ -1,5 +1,18 @@
 import { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
+// Create admin Supabase client for public metadata generation
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -35,7 +48,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : product.product_data || {}
 
     // Get organization info
-    const { data: organization } = await supabase
+    // Use admin client because this is public metadata generation (anonymous access)
+    const { data: organization } = await supabaseAdmin
       .from('organizations')
       .select('name, domain')
       .eq('id', product.org_id)

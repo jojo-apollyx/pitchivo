@@ -2,6 +2,19 @@ import { withApiHandler } from '@/lib/impersonation'
 import { z } from 'zod'
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
+// Create admin Supabase client for public organization queries
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 // Schema for organization update
 const updateOrganizationSchema = z.object({
@@ -25,8 +38,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await createClient()
-    const { data: organization, error } = await supabase
+    // Use admin client because this is a public SEO endpoint (anonymous access)
+    const { data: organization, error } = await supabaseAdmin
       .from('organizations')
       .select('id, name, domain')
       .eq('id', orgId)

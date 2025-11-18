@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { determineAccessLevel } from '@/lib/api/access-tokens'
 import { filterProductObject } from '@/lib/api/field-filtering'
+
+// Create admin Supabase client for public organization queries
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 /**
  * Public API endpoint to get product data with access control
@@ -84,7 +97,8 @@ export async function GET(
     }
 
     // Get organization info for metadata
-    const { data: organization } = await supabase
+    // Use admin client because this is a public endpoint (anonymous access)
+    const { data: organization } = await supabaseAdmin
       .from('organizations')
       .select('name, domain, primary_color, secondary_color, accent_color')
       .eq('id', product.org_id)
