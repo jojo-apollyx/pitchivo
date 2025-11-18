@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { createRfqUpgradeToken } from '@/lib/api/access-tokens'
 import { sendRfqNotificationEmail } from '@/lib/emails'
 import { getOrganizationEmails } from '@/lib/emails/utils/organization'
+
+// Create admin Supabase client for tracking inserts (public submissions need admin access)
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 const rfqSchema = z.object({
   product_id: z.string().uuid(),
