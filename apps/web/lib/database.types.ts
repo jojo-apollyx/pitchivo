@@ -110,6 +110,7 @@ export interface Database {
           secondary_color: string
           accent_color: string
           pitchivo_domain: string | null
+          is_test: boolean
           created_at: string
           updated_at: string
         }
@@ -129,6 +130,7 @@ export interface Database {
           secondary_color?: string
           accent_color?: string
           pitchivo_domain?: string | null
+          is_test?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -148,6 +150,7 @@ export interface Database {
           secondary_color?: string
           accent_color?: string
           pitchivo_domain?: string | null
+          is_test?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -270,6 +273,7 @@ export interface Database {
           grade: string | null
           applications: string[] | null
           status: 'draft' | 'published'
+          is_test: boolean
           created_at: string
           updated_at: string
         }
@@ -288,6 +292,7 @@ export interface Database {
           grade?: string | null
           applications?: string[] | null
           status?: 'draft' | 'published'
+          is_test?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -306,7 +311,144 @@ export interface Database {
           grade?: string | null
           applications?: string[] | null
           status?: 'draft' | 'published'
+          is_test?: boolean
           created_at?: string
+          updated_at?: string
+        }
+      }
+      campaigns: {
+        Row: {
+          campaign_id: string
+          org_id: string
+          product_id: string
+          campaign_name: string
+          data_source_id: string
+          buyer_count: number
+          email_count: number
+          duration_days: number
+          start_date: string | null
+          sender_email: string
+          sender_health: 'healthy' | 'warming_up' | 'caution' | 'poor'
+          status: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled'
+          emails_sent: number
+          emails_delivered: number
+          emails_opened: number
+          emails_clicked: number
+          emails_bounced: number
+          rfqs_received: number
+          is_test: boolean
+          created_at: string
+          updated_at: string
+          launched_at: string | null
+          completed_at: string | null
+        }
+        Insert: {
+          campaign_id?: string
+          org_id: string
+          product_id: string
+          campaign_name: string
+          data_source_id?: string
+          buyer_count?: number
+          email_count: number
+          duration_days: number
+          start_date?: string | null
+          sender_email: string
+          sender_health?: 'healthy' | 'warming_up' | 'caution' | 'poor'
+          status?: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled'
+          emails_sent?: number
+          emails_delivered?: number
+          emails_opened?: number
+          emails_clicked?: number
+          emails_bounced?: number
+          rfqs_received?: number
+          is_test?: boolean
+          created_at?: string
+          updated_at?: string
+          launched_at?: string | null
+          completed_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          org_id?: string
+          product_id?: string
+          campaign_name?: string
+          data_source_id?: string
+          buyer_count?: number
+          email_count?: number
+          duration_days?: number
+          start_date?: string | null
+          sender_email?: string
+          sender_health?: 'healthy' | 'warming_up' | 'caution' | 'poor'
+          status?: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled'
+          emails_sent?: number
+          emails_delivered?: number
+          emails_opened?: number
+          emails_clicked?: number
+          emails_bounced?: number
+          rfqs_received?: number
+          is_test?: boolean
+          created_at?: string
+          updated_at?: string
+          launched_at?: string | null
+          completed_at?: string | null
+        }
+      }
+      product_rfqs: {
+        Row: {
+          rfq_id: string
+          product_id: string
+          org_id: string
+          name: string
+          email: string
+          company: string
+          phone: string | null
+          message: string
+          quantity: string | null
+          target_date: string | null
+          status: 'new' | 'in_progress' | 'responded' | 'won' | 'lost' | 'archived'
+          responded_at: string | null
+          responded_by: string | null
+          response_message: string | null
+          is_test: boolean
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          rfq_id?: string
+          product_id: string
+          org_id: string
+          name: string
+          email: string
+          company: string
+          phone?: string | null
+          message: string
+          quantity?: string | null
+          target_date?: string | null
+          status?: 'new' | 'in_progress' | 'responded' | 'won' | 'lost' | 'archived'
+          responded_at?: string | null
+          responded_by?: string | null
+          response_message?: string | null
+          is_test?: boolean
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          rfq_id?: string
+          product_id?: string
+          org_id?: string
+          name?: string
+          email?: string
+          company?: string
+          phone?: string | null
+          message?: string
+          quantity?: string | null
+          target_date?: string | null
+          status?: 'new' | 'in_progress' | 'responded' | 'won' | 'lost' | 'archived'
+          responded_at?: string | null
+          responded_by?: string | null
+          response_message?: string | null
+          is_test?: boolean
+          submitted_at?: string
           updated_at?: string
         }
       }
@@ -525,6 +667,8 @@ export type EmailDomainPolicy = Database['public']['Tables']['email_domain_polic
 export type Industry = Database['public']['Tables']['industries']['Row']
 export type ProductTemplate = Database['public']['Tables']['product_templates']['Row']
 export type Product = Database['public']['Tables']['products']['Row']
+export type Campaign = Database['public']['Tables']['campaigns']['Row']
+export type ProductRFQ = Database['public']['Tables']['product_rfqs']['Row']
 export type DocumentExtraction = Database['public']['Tables']['document_extractions']['Row']
 
 export type UserProfileWithOrg = Database['public']['Views']['user_profile_with_org']['Row']

@@ -22,6 +22,9 @@ export interface CampaignDraft {
   senderHealth: 'healthy' | 'warming_up' | 'caution' | 'poor'
   priorityLocations?: string[]
   
+  // Test data flag
+  isTest?: boolean
+  
   // Metadata
   currentStep: number
 }
@@ -44,6 +47,7 @@ const DEFAULT_DRAFT: CampaignDraft = {
   durationDays: 4,
   senderEmail: 'news@{org}.pitchivo.com',
   senderHealth: 'healthy',
+  isTest: false,
   currentStep: 1
 }
 

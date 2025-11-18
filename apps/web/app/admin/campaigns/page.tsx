@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { TestDataBadge } from '@/components/admin/test-data-toggle'
 
 interface Campaign {
   campaign_id: string
@@ -30,6 +31,7 @@ interface Campaign {
   launched_at: string | null
   created_at: string
   org_id: string
+  is_test: boolean
   organizations?: {
     name: string
     domain: string
@@ -243,7 +245,10 @@ export default function AdminCampaignsPage() {
                             <Mail className="h-6 w-6 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold mb-1">{campaign.campaign_name}</h3>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-lg font-semibold">{campaign.campaign_name}</h3>
+                              <TestDataBadge isTest={campaign.is_test} />
+                            </div>
                             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                               {campaign.organizations && (
                                 <span className="flex items-center gap-1">

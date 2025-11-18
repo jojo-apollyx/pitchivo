@@ -17,6 +17,7 @@ import { useCampaignStore } from '@/lib/stores/campaign-store'
 import { SENDER_ADDRESSES, getSenderHealthLabel, getSenderHealthGrade, calculateCampaignMetrics } from '@/lib/mock-data/buyers'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { TestDataToggle } from '@/components/admin/test-data-toggle'
 
 export default function ConfigureSendingPage() {
   const router = useRouter()
@@ -29,6 +30,7 @@ export default function ConfigureSendingPage() {
   const [selectedLocations, setSelectedLocations] = useState<string[]>((draft as any).priorityLocations || [])
   const [reputationDialogOpen, setReputationDialogOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [isTest, setIsTest] = useState(draft.isTest || false)
   const supabase = createClient()
 
   const availableCountries = ['USA', 'Canada', 'UK', 'Germany', 'Australia', 'Japan', 'France', 'Italy', 'Spain', 'Netherlands', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Belgium', 'Austria', 'Poland', 'Brazil', 'Mexico', 'India', 'China', 'South Korea', 'Singapore', 'New Zealand']
@@ -105,7 +107,8 @@ export default function ConfigureSendingPage() {
       startDate: startDate ? new Date(startDate) : undefined,
       senderEmail: finalSenderEmail,
       senderHealth,
-      priorityLocations: selectedLocations
+      priorityLocations: selectedLocations,
+      isTest
     })
     nextStep()
     router.push('/dashboard/campaigns/create/review')
@@ -432,6 +435,15 @@ export default function ConfigureSendingPage() {
                       </Dialog>
                     </div>
                   </div>
+                </div>
+
+                {/* Test Data Toggle */}
+                <div className="pt-6 border-t border-border/30">
+                  <TestDataToggle
+                    value={isTest}
+                    onChange={setIsTest}
+                    showWarning={true}
+                  />
                 </div>
               </div>
             </div>

@@ -129,6 +129,7 @@ export default function ReviewLaunchPage() {
           sender_email: draft.senderEmail,
           sender_health: draft.senderHealth,
           priority_locations: priorityLocations.length > 0 ? priorityLocations : null,
+          is_test: draft.isTest || false,
           status: 'scheduled',
           launched_at: new Date().toISOString()
         })
