@@ -63,7 +63,7 @@ export function LockedField({
 
       {/* Hover tooltip */}
       <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-        <div className="bg-popover text-popover-foreground px-4 py-3 rounded-lg shadow-lg border border-border max-w-xs">
+        <div className="bg-popover text-popover-foreground px-4 py-3 rounded-lg shadow-lg border border-border max-w-md">
           <div className="flex items-start gap-2">
             <span className="text-lg flex-shrink-0">{message.icon}</span>
             <div>
