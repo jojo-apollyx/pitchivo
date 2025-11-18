@@ -610,21 +610,19 @@ export function FoodSupplementForm({
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Net Weight */}
-            <div className="flex flex-col">
-              <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package</Label>
-              <Input
-                id="netWeight"
-                value={formData.net_weight || ''}
-                onChange={(e) => onChange({ net_weight: e.target.value })}
-                placeholder="e.g., 25kg per drum"
-                className={cn(errors.netWeight && 'border-destructive')}
-              />
-              {errors.netWeight && (
-                <p className="text-xs text-destructive mt-1">{errors.netWeight}</p>
-              )}
-            </div>
+          {/* Net Weight */}
+          <div className="flex flex-col">
+            <Label htmlFor="netWeight" className="mb-1 whitespace-nowrap">Net Weight per Package</Label>
+            <Input
+              id="netWeight"
+              value={formData.net_weight || ''}
+              onChange={(e) => onChange({ net_weight: e.target.value })}
+              placeholder="e.g., 25kg per drum"
+              className={cn(errors.netWeight && 'border-destructive')}
+            />
+            {errors.netWeight && (
+              <p className="text-xs text-destructive mt-1">{errors.netWeight}</p>
+            )}
           </div>
 
           {/* Payment Terms */}
