@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2, Download, BarChart3, RefreshCw } from 'lucide-react'
+import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2, Download, BarChart3, RefreshCw, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { EmailProcessorMonitor } from '@/components/admin/email-processor-monitor'
 
 interface Campaign {
   campaign_id: string
@@ -435,7 +437,7 @@ export default function CampaignsPage() {
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">Campaigns</h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-                {campaigns.length} {campaigns.length === 1 ? 'campaign' : 'campaigns'} created
+                Manage campaigns and email processor
               </p>
             </div>
             <Button onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
@@ -448,8 +450,21 @@ export default function CampaignsPage() {
 
       <section className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto">
-          <div className="divide-y divide-border/30">
-            {campaigns.map((campaign) => {
+          <Tabs defaultValue="campaigns" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="campaigns" className="gap-2">
+                <Mail className="h-4 w-4" />
+                Campaign Management
+              </TabsTrigger>
+              <TabsTrigger value="processor" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Email Processor
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="campaigns">
+              <div className="divide-y divide-border/30">
+                {campaigns.map((campaign) => {
               const canCancel = campaign.status === 'scheduled' || campaign.status === 'active'
               const canPause = campaign.status === 'active'
               const canResume = campaign.status === 'paused'
@@ -640,8 +655,16 @@ export default function CampaignsPage() {
                   </div>
                 </div>
               )
-            })}
-          </div>
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="processor">
+              <div className="rounded-xl border border-border/30 bg-card/60 p-6">
+                <EmailProcessorMonitor />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
 

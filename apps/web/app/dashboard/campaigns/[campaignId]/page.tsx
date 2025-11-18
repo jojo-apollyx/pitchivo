@@ -2,9 +2,22 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Mail, MousePointerClick, MessageSquare, ExternalLink, Activity, Building2, MapPin, CheckCircle2, XCircle, Calendar, MailCheck, MailX, BarChart3, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Mail, MousePointerClick, MessageSquare, ExternalLink, Activity, Building2, MapPin, CheckCircle2, XCircle, Calendar, MailCheck, MailX, BarChart3, Sparkles, ChevronDown, ChevronUp, MoreVertical, Trash2, UserX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Tooltip as TooltipComponent,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
@@ -21,47 +34,65 @@ const deliveryStatusVisuals = {
   sent: {
     label: 'Sent',
     badgeClass: 'bg-primary/10 text-primary border-transparent',
-    dotClass: 'bg-primary/80'
+    dotClass: 'bg-primary/80',
+    bgClass: 'bg-primary/5 hover:bg-primary/10',
+    description: 'Email has been sent successfully'
   },
   delivered: {
     label: 'Delivered',
     badgeClass: 'bg-primary/10 text-primary border-transparent',
-    dotClass: 'bg-primary/80'
+    dotClass: 'bg-primary/80',
+    bgClass: 'bg-primary/5 hover:bg-primary/10',
+    description: 'Email was delivered to recipient\'s inbox'
   },
   opened: {
     label: 'Opened',
     badgeClass: 'bg-accent/10 text-accent-dark border-transparent',
-    dotClass: 'bg-accent/80'
+    dotClass: 'bg-accent/80',
+    bgClass: 'bg-accent/5 hover:bg-accent/10',
+    description: 'Recipient opened the email'
   },
   clicked: {
     label: 'Clicked',
     badgeClass: 'bg-primary/15 text-primary-dark border-transparent',
-    dotClass: 'bg-primary-dark/80'
+    dotClass: 'bg-primary-dark/80',
+    bgClass: 'bg-blue-50/50 hover:bg-blue-50 dark:bg-blue-950/20 dark:hover:bg-blue-950/30',
+    description: 'Recipient clicked a link in the email'
   },
   rfq: {
     label: 'RFQ Submitted',
     badgeClass: 'bg-accent text-accent-foreground border-transparent',
-    dotClass: 'bg-accent'
+    dotClass: 'bg-accent',
+    bgClass: 'bg-green-50/50 hover:bg-green-50 dark:bg-green-950/20 dark:hover:bg-green-950/30',
+    description: 'Recipient submitted a request for quote'
   },
   bounced: {
     label: 'Bounced',
     badgeClass: 'bg-destructive/10 text-destructive border-transparent',
-    dotClass: 'bg-destructive/80'
+    dotClass: 'bg-destructive/80',
+    bgClass: 'bg-red-50/50 hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/30',
+    description: 'Email bounced - delivery failed'
   },
   spam: {
     label: 'Marked as Spam',
     badgeClass: 'bg-destructive/15 text-destructive border-transparent',
-    dotClass: 'bg-destructive'
+    dotClass: 'bg-destructive',
+    bgClass: 'bg-orange-50/50 hover:bg-orange-50 dark:bg-orange-950/20 dark:hover:bg-orange-950/30',
+    description: 'Recipient marked email as spam'
   },
   blocked: {
     label: 'Blocked',
     badgeClass: 'bg-muted text-muted-foreground border-transparent',
-    dotClass: 'bg-muted-foreground/80'
+    dotClass: 'bg-muted-foreground/80',
+    bgClass: 'bg-gray-50/50 hover:bg-gray-50 dark:bg-gray-900/20 dark:hover:bg-gray-900/30',
+    description: 'Email was blocked by recipient\'s server'
   },
   viewed: {
     label: 'Viewed Product',
     badgeClass: 'bg-primary/10 text-primary border-transparent',
-    dotClass: 'bg-primary/80'
+    dotClass: 'bg-primary/80',
+    bgClass: 'bg-purple-50/50 hover:bg-purple-50 dark:bg-purple-950/20 dark:hover:bg-purple-950/30',
+    description: 'Recipient viewed the product page'
   }
 } as const
 
@@ -1255,64 +1286,123 @@ export default function CampaignDetailPage() {
                       ) : (
                         deliveryStatuses.map((contact) => {
                           const isExpanded = expandedContacts.has(contact.email)
+                          const statusBgClass = contact.currentStatus 
+                            ? deliveryStatusVisuals[contact.currentStatus.key].bgClass 
+                            : 'bg-background/60 hover:bg-background/80'
+                          const statusDescription = contact.currentStatus 
+                            ? deliveryStatusVisuals[contact.currentStatus.key].description 
+                            : ''
 
                           return (
-                            <div 
-                              key={contact.email} 
-                              className="rounded-lg bg-background/60 overflow-hidden transition-all hover:bg-background/80"
-                            >
-                              {/* Header - Always visible */}
-                              <button
-                                onClick={() => {
-                                  const newExpanded = new Set(expandedContacts)
-                                  if (isExpanded) {
-                                    newExpanded.delete(contact.email)
-                                  } else {
-                                    newExpanded.add(contact.email)
-                                  }
-                                  setExpandedContacts(newExpanded)
-                                }}
-                                className="w-full p-3 sm:p-4 text-left transition-colors min-h-[44px]"
+                            <TooltipProvider key={contact.email}>
+                              <div 
+                                className={`rounded-lg overflow-hidden transition-all border border-border/20 ${statusBgClass}`}
                               >
-                                <div className="flex items-start justify-between gap-3 sm:gap-4">
-                                  <div className="flex-1 min-w-0 space-y-2">
-                                    {/* First line: Name - Most recent step */}
-                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                                      <p className="text-sm font-semibold truncate">
-                                        {contact.name || contact.email}
-                                      </p>
-                                      <span className="text-xs text-muted-foreground">-</span>
-                                      {contact.currentStatus && (
-                                        <Badge
-                                          variant="outline"
-                                          className={`text-xs font-medium ${contact.currentStatus.badgeClass}`}
-                                        >
-                                          {contact.currentStatus.label}
-                                        </Badge>
-                                      )}
+                                {/* Header - Always visible */}
+                                <div className="flex items-start gap-2 p-3 sm:p-4">
+                                  <button
+                                    onClick={() => {
+                                      const newExpanded = new Set(expandedContacts)
+                                      if (isExpanded) {
+                                        newExpanded.delete(contact.email)
+                                      } else {
+                                        newExpanded.add(contact.email)
+                                      }
+                                      setExpandedContacts(newExpanded)
+                                    }}
+                                    className="flex-1 text-left min-h-[44px]"
+                                  >
+                                    <div className="flex items-start justify-between gap-3 sm:gap-4">
+                                      <div className="flex-1 min-w-0 space-y-2">
+                                        {/* First line: Name with status tooltip */}
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                          <TooltipComponent>
+                                            <TooltipTrigger asChild>
+                                              <p className="text-sm font-semibold truncate cursor-help">
+                                                {contact.name || contact.email}
+                                              </p>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <div className="space-y-1">
+                                                <p className="font-medium">{contact.currentStatus?.label}</p>
+                                                <p className="text-xs text-muted-foreground">{statusDescription}</p>
+                                              </div>
+                                            </TooltipContent>
+                                          </TooltipComponent>
+                                          <span className="text-xs text-muted-foreground">•</span>
+                                          <span className="text-xs font-medium">
+                                            {contact.currentStatus?.label}
+                                          </span>
+                                        </div>
+                                        {/* Second line: Title Company */}
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                          {contact.title && (
+                                            <span className="text-xs text-muted-foreground">{contact.title}</span>
+                                          )}
+                                          {contact.company && (
+                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                              <Building2 className="h-3 w-3" />
+                                              {contact.company}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        {isExpanded ? (
+                                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                        )}
+                                      </div>
                                     </div>
-                                    {/* Second line: Title Company */}
-                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                                      {contact.title && (
-                                        <span className="text-xs text-muted-foreground">{contact.title}</span>
-                                      )}
-                                      {contact.company && (
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                          <Building2 className="h-3 w-3" />
-                                          {contact.company}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex-shrink-0">
-                                    {isExpanded ? (
-                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                    )}
-                                  </div>
+                                  </button>
+
+                                  {/* Actions dropdown */}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 flex-shrink-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          navigator.clipboard.writeText(contact.email)
+                                        }}
+                                      >
+                                        <Mail className="h-4 w-4 mr-2" />
+                                        Copy Email
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          // Future: Mark as unsubscribed
+                                        }}
+                                        className="text-orange-600 focus:text-orange-700"
+                                      >
+                                        <UserX className="h-4 w-4 mr-2" />
+                                        Mark Unsubscribed
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          // Future: Remove from campaign
+                                        }}
+                                        className="text-red-600 focus:text-red-700"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Remove from Campaign
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
-                              </button>
 
                               {/* Timeline - Expanded view */}
                               {isExpanded && contact.timeline.length > 0 && (
@@ -1354,7 +1444,8 @@ export default function CampaignDetailPage() {
                                   </div>
                                 </div>
                               )}
-                            </div>
+                              </div>
+                            </TooltipProvider>
                           )
                         })
                       )}
