@@ -15,30 +15,58 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
+    console.log('============================================')
+    console.log('🔔 BREVO WEBHOOK RECEIVED')
+    console.log('Timestamp:', new Date().toISOString())
+    console.log('Headers:', {
+      'content-type': request.headers.get('content-type'),
+      'user-agent': request.headers.get('user-agent'),
+      'authorization': request.headers.get('authorization') ? 'Bearer [PRESENT]' : '[MISSING]',
+    })
+    
     const body = await request.json()
     
-    console.log('Brevo webhook received:', JSON.stringify(body, null, 2))
+    console.log('📦 Raw payload:', JSON.stringify(body, null, 2))
 
     // Brevo can send single event or array of events
     // Brevo 2025 API sends events in this format:
     // Single: { event: "delivered", email: "...", ... }
     // Batch: [{ event: "...", ... }, { event: "...", ... }]
     const events = Array.isArray(body) ? body : [body]
+    console.log(`📊 Processing ${events.length} event(s)`)
 
     const results = []
-    for (const event of events) {
-      const result = await processBrevoEvent(event)
+    for (let i = 0; i < events.length; i++) {
+      console.log(`\n--- Processing Event ${i + 1}/${events.length} ---`)
+      const result = await processBrevoEvent(events[i])
       results.push(result)
+      console.log(`Result:`, result.success ? '✅ SUCCESS' : '❌ FAILED', result)
     }
+
+    const duration = Date.now() - startTime
+    console.log(`\n⏱️ Total processing time: ${duration}ms`)
+    console.log('✅ WEBHOOK PROCESSING COMPLETE')
+    console.log('============================================\n')
 
     return NextResponse.json({ 
       success: true, 
       processed: events.length,
-      results
+      results,
+      processingTimeMs: duration,
     })
   } catch (error: any) {
-    console.error('Error processing Brevo webhook:', error)
+    const duration = Date.now() - startTime
+    console.error('============================================')
+    console.error('❌ ERROR PROCESSING BREVO WEBHOOK')
+    console.error('Error type:', error.constructor.name)
+    console.error('Error message:', error.message)
+    console.error('Stack trace:', error.stack)
+    console.error(`⏱️ Failed after: ${duration}ms`)
+    console.error('============================================\n')
+    
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }
@@ -64,36 +92,50 @@ async function processBrevoEvent(event: any) {
       ...rest
     } = event
 
-    console.log(`Processing event: ${eventType} for ${email}`)
+    console.log(`📧 Event Type: ${eventType}`)
+    console.log(`👤 Recipient: ${email}`)
+    console.log(`📬 Message ID: ${messageId || 'N/A'}`)
+    console.log(`📅 Date: ${date || (ts ? new Date(ts * 1000).toISOString() : 'N/A')}`)
 
     // Map Brevo event to our event type
     // Brevo 2025 uses: delivered, request, opened, click, hard_bounce, soft_bounce, etc.
     const normalizedEvent = eventType?.toLowerCase().replace(/-/g, '_')
+    console.log(`🔄 Normalized event: ${normalizedEvent}`)
+    
     const ourEventType = BREVO_EVENT_MAP[normalizedEvent]
 
     if (!ourEventType) {
-      console.warn(`Unknown Brevo event type: ${eventType}`)
+      console.warn(`⚠️  Unknown Brevo event type: ${eventType}`)
+      console.warn('Available mappings:', Object.keys(BREVO_EVENT_MAP))
       return { success: false, error: 'Unknown event type', eventType }
     }
+    
+    console.log(`✅ Mapped to our event type: ${ourEventType}`)
 
     // Extract campaign ID from tags
     // Brevo sends tags as array or single tag
     const allTags = tags || (tag ? [tag] : [])
+    console.log(`🏷️  All tags:`, allTags)
+    
     const campaignTag = allTags.find((t: string) => 
       t?.startsWith('campaign_')
     )
     
     if (!campaignTag) {
-      console.warn('No campaign tag found in event', { tags, tag })
+      console.warn('⚠️  No campaign tag found in event')
+      console.warn('Tags received:', { tags, tag, allTags })
       return { success: false, error: 'No campaign tag' }
     }
 
     const campaignId = campaignTag.replace('campaign_', '')
+    console.log(`🎯 Campaign ID: ${campaignId}`)
 
     // Map our event type to activity type
     const activityType = mapEventToActivityType(ourEventType)
+    console.log(`📝 Activity type: ${activityType}`)
 
     // Create activity record
+    console.log(`💾 Inserting activity record into database...`)
     const { error: insertError } = await supabaseAdmin
       .from('campaign_activities')
       .insert({
@@ -114,27 +156,40 @@ async function processBrevoEvent(event: any) {
       })
 
     if (insertError) {
-      console.error('Error inserting activity:', insertError)
+      console.error('❌ Error inserting activity:', insertError)
+      console.error('Insert error details:', JSON.stringify(insertError, null, 2))
+    } else {
+      console.log('✅ Activity record created successfully')
     }
 
     // Update campaign metrics based on event type
+    console.log(`📊 Updating campaign metrics...`)
     await updateCampaignMetrics(campaignId, ourEventType)
 
     // Handle specific events
+    console.log(`🔧 Handling special events...`)
     await handleSpecialEvents(campaignId, ourEventType, email, event)
 
+    console.log(`✅ Event processed successfully`)
     return { 
       success: true, 
       campaignId, 
       eventType: ourEventType, 
-      email 
+      email,
+      activityType,
     }
 
   } catch (error) {
-    console.error('Error processing individual event:', error)
+    console.error('❌ Error processing individual event')
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    console.error('Error stack:', error instanceof Error ? error.stack : 'N/A')
+    console.error('Event data:', JSON.stringify(event, null, 2))
+    
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
     }
   }
 }
@@ -179,52 +234,105 @@ async function updateCampaignMetrics(campaignId: string, eventType: string) {
   }
 
   const metric = metricMapping[eventType]
-  if (!metric) return
+  if (!metric) {
+    console.log(`ℹ️  No metric mapping for event type: ${eventType}`)
+    return
+  }
 
-  await supabaseAdmin.rpc('increment_campaign_metric', {
+  console.log(`📈 Incrementing metric: ${metric}`)
+  
+  const { data, error } = await supabaseAdmin.rpc('increment_campaign_metric', {
     p_campaign_id: campaignId,
     p_metric: metric,
     p_increment: 1
-  }).catch(err => {
-    console.error(`Failed to increment metric ${metric}:`, err)
   })
+
+  if (error) {
+    console.error(`❌ Failed to increment metric ${metric}:`, error)
+    console.error('RPC error details:', JSON.stringify(error, null, 2))
+  } else {
+    console.log(`✅ Metric ${metric} incremented successfully`)
+    if (data) console.log('RPC response:', data)
+  }
 
   // Also update old emails_bounced metric for hard/soft bounces
   if (eventType === EMAIL_EVENT_TYPES.HARD_BOUNCED || eventType === EMAIL_EVENT_TYPES.SOFT_BOUNCED) {
-    await supabaseAdmin.rpc('increment_campaign_metric', {
+    console.log(`📈 Also incrementing emails_bounced (legacy metric)`)
+    
+    const { data: bounceData, error: bounceError } = await supabaseAdmin.rpc('increment_campaign_metric', {
       p_campaign_id: campaignId,
       p_metric: 'emails_bounced',
       p_increment: 1
-    }).catch(err => {
-      console.error('Failed to increment emails_bounced:', err)
     })
+
+    if (bounceError) {
+      console.error('❌ Failed to increment emails_bounced:', bounceError)
+      console.error('RPC error details:', JSON.stringify(bounceError, null, 2))
+    } else {
+      console.log('✅ emails_bounced incremented successfully')
+      if (bounceData) console.log('RPC response:', bounceData)
+    }
   }
 }
 
 async function handleSpecialEvents(campaignId: string, eventType: string, email: string, event: any) {
   // Handle unsubscribes - add to suppression list
   if (eventType === EMAIL_EVENT_TYPES.UNSUBSCRIBED) {
+    console.log(`🚫 UNSUBSCRIBE EVENT`)
+    console.log(`   Campaign: ${campaignId}`)
+    console.log(`   Email: ${email}`)
+    console.log(`   Reason: ${event.reason || 'Not specified'}`)
     // TODO: Add to suppression list or mark contact as unsubscribed
-    console.log(`Unsubscribe event for ${email}`)
   }
 
   // Handle spam complaints - serious issue
   if (eventType === EMAIL_EVENT_TYPES.COMPLAINT) {
-    console.warn(`SPAM COMPLAINT for campaign ${campaignId} from ${email}`)
+    console.warn(`⚠️  🚨 SPAM COMPLAINT 🚨`)
+    console.warn(`   Campaign: ${campaignId}`)
+    console.warn(`   Email: ${email}`)
+    console.warn(`   This is a CRITICAL issue that needs immediate attention!`)
+    console.warn(`   Event details:`, JSON.stringify(event, null, 2))
     // TODO: Alert admins, add to suppression list
   }
 
   // Handle hard bounces - invalid email
   if (eventType === EMAIL_EVENT_TYPES.HARD_BOUNCED || eventType === EMAIL_EVENT_TYPES.INVALID) {
-    console.log(`Hard bounce/invalid email: ${email}`)
+    console.log(`❌ HARD BOUNCE / INVALID EMAIL`)
+    console.log(`   Campaign: ${campaignId}`)
+    console.log(`   Email: ${email}`)
+    console.log(`   Reason: ${event.reason || 'Not specified'}`)
+    console.log(`   Code: ${event.code || 'N/A'}`)
     // TODO: Mark email as invalid in database
+  }
+
+  // Handle blocks
+  if (eventType === EMAIL_EVENT_TYPES.BLOCKED) {
+    console.warn(`🛑 EMAIL BLOCKED`)
+    console.warn(`   Campaign: ${campaignId}`)
+    console.warn(`   Email: ${email}`)
+    console.warn(`   Reason: ${event.reason || 'Not specified'}`)
+  }
+
+  // Handle deferrals (temporary issues)
+  if (eventType === EMAIL_EVENT_TYPES.DEFERRED) {
+    console.log(`⏸️  EMAIL DEFERRED (will retry)`)
+    console.log(`   Campaign: ${campaignId}`)
+    console.log(`   Email: ${email}`)
+    console.log(`   Reason: ${event.reason || 'Not specified'}`)
   }
 }
 
 // GET endpoint for webhook verification (if needed by Brevo)
 export async function GET(request: NextRequest) {
+  console.log('ℹ️  Brevo webhook verification/health check requested')
+  console.log('Timestamp:', new Date().toISOString())
+  console.log('Request URL:', request.url)
+  console.log('User-Agent:', request.headers.get('user-agent'))
+  
   return NextResponse.json({ 
     status: 'ok',
-    message: 'Brevo webhook endpoint is active'
+    message: 'Brevo webhook endpoint is active',
+    timestamp: new Date().toISOString(),
+    version: '2.0',
   })
 }

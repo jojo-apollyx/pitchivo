@@ -154,12 +154,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           'max-video-preview': -1,
         },
       },
+      verification: {
+        google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+      },
       other: {
-        // Additional meta tags for AEO
+        // Additional meta tags for AEO (Answer Engine Optimization)
         'product:name': productName,
         'product:category': category || '',
         'product:manufacturer': manufacturer || '',
         'product:country': originCountry || '',
+        'product:form': form || '',
+        'product:grade': grade || '',
+        'product:cas_number': casNumber || '',
+        // Enhanced meta tags for better SEO
+        'og:type': 'product',
+        'og:product:availability': 'in stock',
+        'og:product:condition': 'new',
+        // Additional tags for search engines
+        'application-name': 'Pitchivo',
+        'apple-mobile-web-app-title': 'Pitchivo',
+        'format-detection': 'telephone=no',
       },
     }
   } catch (error) {
