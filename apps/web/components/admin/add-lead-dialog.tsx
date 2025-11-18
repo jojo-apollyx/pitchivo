@@ -69,7 +69,7 @@ export function AddLeadDialog({
     ).slice(0, 50) // Limit to 50 results
   }, [buyers, searchTerm])
 
-  function handleManualAdd() {
+  async function handleManualAdd() {
     if (!newLead.email || !newLead.name || !newLead.company) {
       toast.error('Please fill in all required fields')
       return
@@ -82,21 +82,37 @@ export function AddLeadDialog({
       return
     }
     
-    const lead: Lead = {
-      lead_id: `lead_${campaignId}_${Date.now()}`,
-      campaign_id: campaignId,
-      email: newLead.email,
-      name: newLead.name,
-      title: newLead.title,
-      company: newLead.company,
-      status: 'active',
-      added_at: new Date().toISOString()
+    try {
+      // Persist lead to database
+      const response = await fetch('/api/admin/campaigns/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId,
+          leads: [{
+            email: newLead.email,
+            name: newLead.name,
+            title: newLead.title,
+            company: newLead.company,
+            status: 'active'
+          }]
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add lead')
+      }
+
+      onLeadsAdded(result.leads)
+      setNewLead({ email: '', name: '', title: '', company: '' })
+      onOpenChange(false)
+      toast.success('Lead added successfully!')
+    } catch (error: any) {
+      console.error('Error adding lead:', error)
+      toast.error(error.message || 'Failed to add lead')
     }
-    
-    onLeadsAdded([lead])
-    setNewLead({ email: '', name: '', title: '', company: '' })
-    onOpenChange(false)
-    toast.success('Lead added successfully!')
   }
 
   function toggleContactSelection(buyerCompany: string, contactEmail: string) {
@@ -131,13 +147,13 @@ export function AddLeadDialog({
     setSelectedContacts(newSelected)
   }
 
-  function handleBulkAdd() {
+  async function handleBulkAdd() {
     if (selectedContacts.size === 0) {
       toast.error('Please select at least one contact')
       return
     }
     
-    const leads: Lead[] = []
+    const leads: any[] = []
     
     selectedContacts.forEach(key => {
       const [companyName, email] = key.split('|')
@@ -146,26 +162,44 @@ export function AddLeadDialog({
       
       if (buyer && contact) {
         leads.push({
-          lead_id: `lead_${campaignId}_${Date.now()}_${leads.length}`,
-          campaign_id: campaignId,
           email: contact.email,
           name: contact.name,
           title: contact.title || contact.role,
           company: buyer.company,
           country: buyer.country,
           industry: buyer.industry,
-          status: 'active',
-          added_at: new Date().toISOString()
+          status: 'active'
         })
       }
     })
     
     if (leads.length > 0) {
-      onLeadsAdded(leads)
-      setSelectedContacts(new Set())
-      setSearchTerm('')
-      onOpenChange(false)
-      toast.success(`${leads.length} lead${leads.length !== 1 ? 's' : ''} added successfully!`)
+      try {
+        // Persist leads to database
+        const response = await fetch('/api/admin/campaigns/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaignId,
+            leads
+          })
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to add leads')
+        }
+
+        onLeadsAdded(result.leads)
+        setSelectedContacts(new Set())
+        setSearchTerm('')
+        onOpenChange(false)
+        toast.success(`${result.count} lead${result.count !== 1 ? 's' : ''} added successfully!`)
+      } catch (error: any) {
+        console.error('Error adding leads:', error)
+        toast.error(error.message || 'Failed to add leads')
+      }
     }
   }
 

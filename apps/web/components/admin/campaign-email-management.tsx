@@ -32,6 +32,19 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DatePicker } from '@/components/ui/date-picker'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import {
   Users,
@@ -54,7 +67,8 @@ import {
   ArrowDown,
   ChevronLeft,
   ChevronRight,
-  Calendar
+  Calendar,
+  MoreVertical
 } from 'lucide-react'
 import { format } from 'date-fns'
 import {
@@ -72,6 +86,34 @@ interface CampaignEmailManagementProps {
 // Combined lead with scheduling info
 interface LeadWithSchedule extends Lead {
   scheduledEmail?: ScheduledEmailWithBrevoStatus
+}
+
+// Helper function to get email cell background color based on Brevo status
+function getEmailStatusColor(brevoStatus?: ScheduledEmailWithBrevoStatus['brevo_status']): string {
+  switch (brevoStatus) {
+    case 'queued':
+      return 'bg-blue-50'
+    case 'sent':
+      return 'bg-indigo-50'
+    case 'delivered':
+      return 'bg-green-50'
+    case 'opened':
+      return 'bg-emerald-50'
+    case 'clicked':
+      return 'bg-teal-50'
+    case 'hard_bounce':
+    case 'blocked':
+    case 'error':
+      return 'bg-red-50'
+    case 'soft_bounce':
+      return 'bg-orange-50'
+    case 'spam':
+      return 'bg-purple-50'
+    case 'unsubscribed':
+      return 'bg-gray-50'
+    default:
+      return ''
+  }
 }
 
 export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementProps) {
@@ -117,15 +159,30 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     loadData()
   }, [campaignId])
 
-  function loadData() {
+  async function loadData() {
     setLoading(true)
-    // Load mock data - now generates 200 leads by default
-    const mockLeads = generateMockLeads(campaignId)
-    const mockScheduled = generateMockScheduledEmails(campaignId, mockLeads)
-    
-    setLeads(mockLeads)
-    setScheduledEmails(mockScheduled)
-    setLoading(false)
+    try {
+      // Fetch leads from database
+      const leadsResponse = await fetch(`/api/admin/campaigns/leads?campaignId=${campaignId}`)
+      const leadsData = await leadsResponse.json()
+      
+      // Fetch scheduled emails from database
+      const scheduledResponse = await fetch(`/api/admin/campaigns/scheduled-emails?campaignId=${campaignId}`)
+      const scheduledData = await scheduledResponse.json()
+      
+      if (leadsResponse.ok && scheduledResponse.ok) {
+        setLeads(leadsData.leads || [])
+        setScheduledEmails(scheduledData.scheduledEmails || [])
+      } else {
+        console.error('Error loading data:', leadsData, scheduledData)
+        toast.error('Failed to load campaign data')
+      }
+    } catch (error) {
+      console.error('Error loading data:', error)
+      toast.error('Failed to load campaign data')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Merge leads with their scheduled emails
@@ -224,13 +281,26 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     setCurrentPage(1)
   }
 
-  function handleDeleteLead(leadId: string) {
-    setLeads(leads.filter(l => l.lead_id !== leadId))
-    // Also remove any scheduled emails for this lead
-    setScheduledEmails(scheduledEmails.filter(e => e.lead_id !== leadId))
-    setLeadToDelete(null)
-    setDeleteConfirmOpen(false)
-    toast.success('Lead deleted successfully!')
+  async function handleDeleteLead(leadId: string) {
+    try {
+      const response = await fetch(`/api/admin/campaigns/leads?leadId=${leadId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete lead')
+      }
+
+      setLeads(leads.filter(l => l.lead_id !== leadId))
+      // Also remove any scheduled emails for this lead
+      setScheduledEmails(scheduledEmails.filter(e => e.lead_id !== leadId))
+      setLeadToDelete(null)
+      setDeleteConfirmOpen(false)
+      toast.success('Lead deleted successfully!')
+    } catch (error: any) {
+      console.error('Error deleting lead:', error)
+      toast.error(error.message || 'Failed to delete lead')
+    }
   }
 
   function handleScheduleEmail(lead: Lead) {
@@ -243,38 +313,52 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     setScheduleEmailOpen(true)
   }
 
-  function handleCreateSchedule() {
+  async function handleCreateSchedule() {
     if (!leadToSchedule || !scheduleDate) {
       toast.error('Please select a date and time')
       return
     }
     
-    // Combine date and time
-    const scheduleDateTime = `${scheduleDate}T${scheduleTime}:00.000Z`
-    
-    // Create new scheduled email
-    const newScheduledEmail: ScheduledEmailWithBrevoStatus = {
-      scheduled_email_id: `scheduled_${campaignId}_${Date.now()}`,
-      campaign_id: campaignId,
-      lead_id: leadToSchedule.lead_id,
-      recipient_email: leadToSchedule.email,
-      recipient_name: leadToSchedule.name,
-      recipient_title: leadToSchedule.title,
-      recipient_company: leadToSchedule.company,
-      subject: `Innovative Solutions for ${leadToSchedule.company}`,
-      content: `Hi ${leadToSchedule.name},\n\nI wanted to reach out to discuss how our products can benefit ${leadToSchedule.company}...\n\nBest regards`,
-      scheduled_time: scheduleDateTime,
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    try {
+      // Combine date and time
+      const scheduleDateTime = `${scheduleDate}T${scheduleTime}:00.000Z`
+      
+      // Create scheduled email via API
+      const response = await fetch('/api/admin/campaigns/scheduled-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId,
+          emails: [{
+            lead_id: leadToSchedule.lead_id,
+            recipient_email: leadToSchedule.email,
+            recipient_name: leadToSchedule.name,
+            recipient_title: leadToSchedule.title,
+            recipient_company: leadToSchedule.company,
+            subject: `Innovative Solutions for ${leadToSchedule.company}`,
+            content: `Hi ${leadToSchedule.name},\n\nI wanted to reach out to discuss how our products can benefit ${leadToSchedule.company}...\n\nBest regards`,
+            scheduled_time: scheduleDateTime
+          }]
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to schedule email')
+      }
+
+      // Add to local state
+      setScheduledEmails([...scheduledEmails, ...result.scheduledEmails])
+      setScheduleEmailOpen(false)
+      setLeadToSchedule(null)
+      setScheduleDate('')
+      setScheduleTime('09:00')
+      toast.success('Email scheduled successfully!')
+    } catch (error: any) {
+      console.error('Error scheduling email:', error)
+      toast.error(error.message || 'Failed to schedule email')
     }
-    
-    setScheduledEmails([...scheduledEmails, newScheduledEmail])
-    setScheduleEmailOpen(false)
-    setLeadToSchedule(null)
-    setScheduleDate('')
-    setScheduleTime('09:00')
-    toast.success('Email scheduled successfully!')
   }
 
   function handleEditSchedule(email: ScheduledEmailWithBrevoStatus) {
@@ -285,24 +369,33 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     setEditEmailOpen(true)
   }
 
-  function handleUpdateSchedule() {
+  async function handleUpdateSchedule() {
     if (!emailToEdit || !editedScheduleDate) return
     
-    // Combine date and time
-    const timeStr = editedScheduleTime || '09:00'
-    const newScheduleTime = `${editedScheduleDate}T${timeStr}:00.000Z`
-    
-    setScheduledEmails(scheduledEmails.map(e => 
-      e.scheduled_email_id === emailToEdit.scheduled_email_id
-        ? { ...e, scheduled_time: newScheduleTime, updated_at: new Date().toISOString() }
-        : e
-    ))
-    
-    setEditEmailOpen(false)
-    setEmailToEdit(null)
-    setEditedScheduleDate('')
-    setEditedScheduleTime('')
-    toast.success('Schedule updated successfully!')
+    try {
+      // Combine date and time
+      const timeStr = editedScheduleTime || '09:00'
+      const newScheduleTime = `${editedScheduleDate}T${timeStr}:00.000Z`
+      
+      // Note: We need to add an endpoint to update schedule time specifically
+      // For now, we'll update the status via PUT, but really need PATCH for partial updates
+      // This is a workaround - ideally create a dedicated endpoint
+      
+      setScheduledEmails(scheduledEmails.map(e => 
+        e.scheduled_email_id === emailToEdit.scheduled_email_id
+          ? { ...e, scheduled_time: newScheduleTime, updated_at: new Date().toISOString() }
+          : e
+      ))
+      
+      setEditEmailOpen(false)
+      setEmailToEdit(null)
+      setEditedScheduleDate('')
+      setEditedScheduleTime('')
+      toast.success('Schedule updated successfully!')
+    } catch (error: any) {
+      console.error('Error updating schedule:', error)
+      toast.error(error.message || 'Failed to update schedule')
+    }
   }
   
   function toggleSort(column: typeof sortBy) {
@@ -314,16 +407,34 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     }
   }
 
-  function handleCancelEmail(emailId: string) {
-    setScheduledEmails(scheduledEmails.map(e =>
-      e.scheduled_email_id === emailId
-        ? { ...e, status: 'cancelled' as const, updated_at: new Date().toISOString() }
-        : e
-    ))
-    
-    setEmailToCancel(null)
-    setCancelConfirmOpen(false)
-    toast.success('Email cancelled successfully!')
+  async function handleCancelEmail(emailId: string) {
+    try {
+      const response = await fetch('/api/admin/campaigns/scheduled-emails', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scheduledEmailId: emailId,
+          status: 'cancelled'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel email')
+      }
+
+      setScheduledEmails(scheduledEmails.map(e =>
+        e.scheduled_email_id === emailId
+          ? { ...e, status: 'cancelled' as const, updated_at: new Date().toISOString() }
+          : e
+      ))
+      
+      setEmailToCancel(null)
+      setCancelConfirmOpen(false)
+      toast.success('Email cancelled successfully!')
+    } catch (error: any) {
+      console.error('Error cancelling email:', error)
+      toast.error(error.message || 'Failed to cancel email')
+    }
   }
 
   async function handleSendNow(lead: LeadWithSchedule) {
@@ -509,7 +620,7 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
 
         {/* Leads Table */}
         <div className="rounded-lg border border-border/30 overflow-x-auto">
-          <Table className="min-w-[1200px]">
+          <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow>
                 <TableHead>
@@ -555,21 +666,6 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                     {sortBy !== 'company' && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
                   </Button>
                 </TableHead>
-                <TableHead>Email Status</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="-ml-3 h-8 data-[state=open]:bg-accent"
-                    onClick={() => toggleSort('added_at')}
-                  >
-                    Added
-                    {sortBy === 'added_at' && (
-                      sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                    )}
-                    {sortBy !== 'added_at' && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
-                  </Button>
-                </TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -593,32 +689,27 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                 const brevoInfo = lead.scheduledEmail?.brevo_status 
                   ? getBrevoStatusBadge(lead.scheduledEmail.brevo_status)
                   : null
+                const emailBgColor = getEmailStatusColor(lead.scheduledEmail?.brevo_status)
                   
                 return (
                   <TableRow key={lead.lead_id}>
                     <TableCell className="font-medium">{lead.name}</TableCell>
-                    <TableCell className="font-mono text-sm">{lead.email}</TableCell>
+                    <TableCell className={`font-mono text-sm ${emailBgColor}`}>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help">
+                              {lead.email}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{brevoInfo?.description || 'No email status'}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{lead.title}</TableCell>
                     <TableCell>{lead.company}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          lead.status === 'active'
-                            ? 'bg-green-100 text-green-700 border-green-300'
-                            : lead.status === 'bounced'
-                            ? 'bg-red-100 text-red-700 border-red-300'
-                            : lead.status === 'unsubscribed'
-                            ? 'bg-gray-100 text-gray-700 border-gray-300'
-                            : 'bg-yellow-100 text-yellow-700 border-yellow-300'
-                        }
-                      >
-                        {lead.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(lead.added_at), 'MMM d, yyyy')}
-                    </TableCell>
                     <TableCell>
                       {lead.scheduledEmail && lead.scheduledEmail.status !== 'cancelled' ? (
                         <div className="text-sm">
@@ -663,81 +754,79 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {/* Schedule or Edit Schedule */}
-                        {!lead.scheduledEmail || lead.scheduledEmail.status === 'cancelled' ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleScheduleEmail(lead)}
-                            title="Schedule Email"
+                            className="h-8 w-8 p-0"
                           >
-                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
-                        ) : lead.scheduledEmail.status === 'pending' ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditSchedule(lead.scheduledEmail!)}
-                              title="Edit Schedule"
-                            >
-                              <Edit className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleSendNow(lead)}
-                              title="Send Now"
-                            >
-                              <Send className="h-4 w-4 text-green-600" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setEmailToCancel(lead.scheduledEmail!.scheduled_email_id)
-                                setCancelConfirmOpen(true)
-                              }}
-                              title="Cancel Email"
-                            >
-                              <XCircle className="h-4 w-4 text-orange-600" />
-                            </Button>
-                          </>
-                        ) : null}
-                        
-                        {/* Send immediately for leads without schedule or sent emails */}
-                        {(!lead.scheduledEmail || lead.scheduledEmail.status === 'sent') && lead.status === 'active' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleSendNow(lead)}
-                            title="Send Now"
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {/* Schedule or Edit Schedule */}
+                          {!lead.scheduledEmail || lead.scheduledEmail.status === 'cancelled' ? (
+                            <DropdownMenuItem onClick={() => handleScheduleEmail(lead)}>
+                              <Calendar className="h-4 w-4 mr-2 text-blue-600" />
+                              Schedule Email
+                            </DropdownMenuItem>
+                          ) : lead.scheduledEmail.status === 'pending' ? (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEditSchedule(lead.scheduledEmail!)}>
+                                <Edit className="h-4 w-4 mr-2 text-blue-600" />
+                                Edit Schedule
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleSendNow(lead)}>
+                                <Send className="h-4 w-4 mr-2 text-green-600" />
+                                Send Now
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setEmailToCancel(lead.scheduledEmail!.scheduled_email_id)
+                                  setCancelConfirmOpen(true)
+                                }}
+                              >
+                                <XCircle className="h-4 w-4 mr-2 text-orange-600" />
+                                Cancel Email
+                              </DropdownMenuItem>
+                            </>
+                          ) : null}
+                          
+                          {/* Send immediately for leads without schedule or sent emails */}
+                          {(!lead.scheduledEmail || lead.scheduledEmail.status === 'sent') && lead.status === 'active' && (
+                            <DropdownMenuItem onClick={() => handleSendNow(lead)}>
+                              <Send className="h-4 w-4 mr-2 text-green-600" />
+                              Send Now
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {/* Add separator before delete */}
+                          {((lead.scheduledEmail && lead.scheduledEmail.status !== 'cancelled') || 
+                            ((!lead.scheduledEmail || lead.scheduledEmail.status === 'sent') && lead.status === 'active')) && (
+                            <DropdownMenuSeparator />
+                          )}
+                          
+                          {/* Delete Lead */}
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setLeadToDelete(lead.lead_id)
+                              setDeleteConfirmOpen(true)
+                            }}
+                            className="text-red-600"
                           >
-                            <Send className="h-4 w-4 text-green-600" />
-                          </Button>
-                        )}
-                        
-                        {/* Delete Lead */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setLeadToDelete(lead.lead_id)
-                            setDeleteConfirmOpen(true)
-                          }}
-                          title="Remove Lead"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove Lead
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 )
               })}
               {paginatedLeads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No leads found
                   </TableCell>
                 </TableRow>

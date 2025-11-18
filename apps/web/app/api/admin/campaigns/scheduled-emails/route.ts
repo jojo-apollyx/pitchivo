@@ -88,9 +88,11 @@ export async function POST(request: NextRequest) {
     // Prepare batch insert data
     const scheduledEmailsData = emails.map((email: any) => ({
       campaign_id: campaignId,
+      lead_id: email.lead_id || null,
       recipient_email: email.recipient_email,
       recipient_company: email.recipient_company || null,
       recipient_name: email.recipient_name || null,
+      recipient_title: email.recipient_title || null,
       template_id: email.template_id || null,
       subject: email.subject,
       content: email.content,
