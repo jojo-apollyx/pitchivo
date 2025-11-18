@@ -10,6 +10,7 @@ import {
   UserPlus,
   Shield,
   BarChart3,
+  TestTube2,
   ArrowLeft
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -49,6 +50,11 @@ const menuItems = [
     label: 'System Metrics',
     href: '/admin/metrics',
     icon: BarChart3,
+  },
+  {
+    label: 'Test Data',
+    href: '/admin/test-data',
+    icon: TestTube2,
   },
 ]
 
