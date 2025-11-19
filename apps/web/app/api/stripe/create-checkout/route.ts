@@ -10,7 +10,7 @@ import { PRICING_TIERS, PricingTier } from '@/lib/constants/pricing'
 // Initialize Stripe
 import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia'
+  apiVersion: '2024-06-20'
 })
 
 export async function POST(request: NextRequest) {
@@ -63,7 +63,14 @@ export async function POST(request: NextRequest) {
 
     const tierConfig = PRICING_TIERS[tier as PricingTier]
 
-    let customerId = subscription?.stripe_customer_id
+    if (!tierConfig.priceId) {
+      return NextResponse.json(
+        { error: 'Price ID not configured for this tier' },
+        { status: 400 }
+      )
+    }
+
+    let customerId: string | undefined = subscription?.stripe_customer_id || undefined
 
     // Create Stripe customer if doesn't exist
     if (!customerId) {
