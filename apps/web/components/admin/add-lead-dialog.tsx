@@ -13,25 +13,40 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Search, Plus, Users, Building2 } from 'lucide-react'
 import { generateMockBuyers, type Buyer, type BuyerContact } from '@/lib/mock-data/buyers'
 import type { Lead } from '@/lib/mock-data/leads'
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  createColumnHelper,
+  type ColumnDef,
+} from '@tanstack/react-table'
 
 interface AddLeadDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   campaignId: string
   onLeadsAdded: (leads: Lead[]) => void
+}
+
+// Type for flattened contact rows
+type ContactRow = {
+  id: string
+  company: string
+  companyWebsite: string
+  contactName: string
+  contactTitle: string
+  contactEmail: string
+  industry: string
+  country: string
+  isCompanyHeader: boolean
+  contactCount?: number
+  buyer: Buyer
+  contact?: BuyerContact
 }
 
 export function AddLeadDialog({
@@ -68,6 +83,50 @@ export function AddLeadDialog({
       )
     ).slice(0, 50) // Limit to 50 results
   }, [buyers, searchTerm])
+
+  // Flatten data for TanStack Table - create rows for both company headers and contacts
+  const tableData = useMemo(() => {
+    const rows: ContactRow[] = []
+    
+    filteredBuyers.forEach(buyer => {
+      const contacts = buyer.contactDetails || []
+      if (contacts.length === 0) return
+      
+      // Add company header row
+      rows.push({
+        id: `company-${buyer.company}`,
+        company: buyer.company,
+        companyWebsite: buyer.website || '',
+        contactName: '',
+        contactTitle: '',
+        contactEmail: '',
+        industry: buyer.industry,
+        country: buyer.country,
+        isCompanyHeader: true,
+        contactCount: contacts.length,
+        buyer
+      })
+      
+      // Add contact rows
+      contacts.forEach(contact => {
+        rows.push({
+          id: `${buyer.company}|${contact.email}`,
+          company: buyer.company,
+          companyWebsite: '',
+          contactName: contact.name,
+          contactTitle: contact.title || contact.role,
+          contactEmail: contact.email,
+          industry: '',
+          country: '',
+          isCompanyHeader: false,
+          buyer,
+          contact
+        })
+      })
+    })
+    
+    return rows
+  }, [filteredBuyers])
 
   async function handleManualAdd() {
     if (!newLead.email || !newLead.name || !newLead.company) {
@@ -115,14 +174,15 @@ export function AddLeadDialog({
     }
   }
 
-  function toggleContactSelection(buyerCompany: string, contactEmail: string) {
-    const key = `${buyerCompany}|${contactEmail}`
+  function toggleContactSelection(row: ContactRow) {
+    if (row.isCompanyHeader) return
+    
     const newSelected = new Set(selectedContacts)
     
-    if (newSelected.has(key)) {
-      newSelected.delete(key)
+    if (newSelected.has(row.id)) {
+      newSelected.delete(row.id)
     } else {
-      newSelected.add(key)
+      newSelected.add(row.id)
     }
     
     setSelectedContacts(newSelected)
@@ -146,6 +206,135 @@ export function AddLeadDialog({
     
     setSelectedContacts(newSelected)
   }
+
+  // Define columns for TanStack Table
+  const columns = useMemo<ColumnDef<ContactRow>[]>(() => [
+    {
+      id: 'select',
+      header: () => null,
+      cell: ({ row }) => {
+        const data = row.original
+        if (data.isCompanyHeader) {
+          const contacts = data.buyer.contactDetails || []
+          const allSelected = contacts.every(c => 
+            selectedContacts.has(`${data.company}|${c.email}`)
+          )
+          return (
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={() => toggleBuyerSelection(data.buyer)}
+              aria-label={`Select all contacts from ${data.company}`}
+            />
+          )
+        } else {
+          return (
+            <Checkbox
+              checked={selectedContacts.has(data.id)}
+              onCheckedChange={() => toggleContactSelection(data)}
+              aria-label={`Select ${data.contactName}`}
+            />
+          )
+        }
+      },
+      size: 50,
+    },
+    {
+      accessorKey: 'company',
+      header: 'Company',
+      cell: ({ row }) => {
+        const data = row.original
+        if (data.isCompanyHeader) {
+          return (
+            <div className="flex items-center gap-2 font-medium">
+              <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>{data.company}</span>
+              <Badge variant="outline" className="text-xs">
+                {data.contactCount} contact{data.contactCount !== 1 ? 's' : ''}
+              </Badge>
+            </div>
+          )
+        } else {
+          return (
+            <div className="text-muted-foreground text-sm pl-8">└</div>
+          )
+        }
+      },
+      size: 220,
+    },
+    {
+      accessorKey: 'contactName',
+      header: 'Contact Name',
+      cell: ({ row }) => {
+        const data = row.original
+        if (data.isCompanyHeader) {
+          return (
+            <div className="text-sm text-muted-foreground">
+              {data.companyWebsite && (
+                <a 
+                  href={data.companyWebsite} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-primary"
+                >
+                  {data.companyWebsite}
+                </a>
+              )}
+            </div>
+          )
+        } else {
+          return <span className="font-medium">{data.contactName}</span>
+        }
+      },
+      size: 180,
+    },
+    {
+      accessorKey: 'contactTitle',
+      header: 'Title',
+      cell: ({ row }) => {
+        const data = row.original
+        if (data.isCompanyHeader) return null
+        return <span className="text-sm">{data.contactTitle}</span>
+      },
+      size: 180,
+    },
+    {
+      accessorKey: 'contactEmail',
+      header: 'Email',
+      cell: ({ row }) => {
+        const data = row.original
+        if (data.isCompanyHeader) return null
+        return <span className="text-sm font-mono">{data.contactEmail}</span>
+      },
+      size: 220,
+    },
+    {
+      accessorKey: 'industry',
+      header: 'Industry',
+      cell: ({ row }) => {
+        const data = row.original
+        if (!data.isCompanyHeader) return null
+        return <span className="text-sm">{data.industry}</span>
+      },
+      size: 160,
+    },
+    {
+      accessorKey: 'country',
+      header: 'Country',
+      cell: ({ row }) => {
+        const data = row.original
+        if (!data.isCompanyHeader) return null
+        return <span className="text-sm">{data.country}</span>
+      },
+      size: 140,
+    },
+  ], [selectedContacts])
+
+  // Initialize TanStack Table
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  })
 
   async function handleBulkAdd() {
     if (selectedContacts.size === 0) {
@@ -303,107 +492,67 @@ export function AddLeadDialog({
               )}
             </div>
 
-            {/* Results Table */}
-            <div className="flex-1 overflow-auto rounded-lg border border-border/30">
-              <div className="overflow-x-auto">
-                <Table className="min-w-[900px]">
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow>
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead className="min-w-[180px]">Company</TableHead>
-                      <TableHead className="min-w-[150px]">Contact</TableHead>
-                      <TableHead className="min-w-[150px]">Title</TableHead>
-                      <TableHead className="min-w-[200px]">Email</TableHead>
-                      <TableHead className="min-w-[150px]">Industry</TableHead>
-                      <TableHead className="min-w-[100px]">Country</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                <TableBody>
-                  {filteredBuyers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        {searchTerm ? 'No matching companies found' : 'Enter a search term to find companies'}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredBuyers.map((buyer) => {
-                      const contacts = buyer.contactDetails || []
-                      const allSelected = contacts.length > 0 && contacts.every(c => 
-                        selectedContacts.has(`${buyer.company}|${c.email}`)
-                      )
-                      const someSelected = contacts.some(c => 
-                        selectedContacts.has(`${buyer.company}|${c.email}`)
-                      )
-
-                      return contacts.length > 0 ? (
-                        <>
-                          {/* Company Header Row */}
-                          <TableRow key={buyer.company} className="bg-muted/30">
-                            <TableCell>
-                              <Checkbox
-                                checked={allSelected}
-                                onCheckedChange={() => toggleBuyerSelection(buyer)}
-                                aria-label={`Select all contacts from ${buyer.company}`}
-                              />
-                            </TableCell>
-                            <TableCell colSpan={2} className="font-medium">
-                              <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                {buyer.company}
-                                <Badge variant="outline" className="text-xs">
-                                  {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell colSpan={2} className="text-sm text-muted-foreground">
-                              {buyer.website && (
-                                <a 
-                                  href={buyer.website} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="hover:text-primary"
+            {/* Results Table with TanStack Table */}
+            <div className="flex-1 flex flex-col rounded-lg border border-border/30 overflow-hidden">
+              <div className="overflow-auto flex-1">
+                <div className="min-w-max">
+                  <table className="w-full border-collapse">
+                    <thead className="bg-muted/30 sticky top-0 z-10">
+                      {table.getHeaderGroups().map(headerGroup => (
+                        <tr key={headerGroup.id}>
+                          {headerGroup.headers.map(header => (
+                            <th
+                              key={header.id}
+                              style={{ width: header.getSize() }}
+                              className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-b border-border"
+                            >
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext()
+                                  )}
+                            </th>
+                          ))}
+                        </tr>
+                      ))}
+                    </thead>
+                    <tbody>
+                      {tableData.length === 0 ? (
+                        <tr>
+                          <td colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                            {searchTerm ? 'No matching companies found' : 'Enter a search term to find companies'}
+                          </td>
+                        </tr>
+                      ) : (
+                        table.getRowModel().rows.map(row => {
+                          const isCompanyHeader = row.original.isCompanyHeader
+                          return (
+                            <tr
+                              key={row.id}
+                              className={
+                                isCompanyHeader 
+                                  ? 'bg-muted/30 border-b border-border' 
+                                  : 'hover:bg-accent/50 cursor-pointer border-b border-border/50'
+                              }
+                              onClick={() => !isCompanyHeader && toggleContactSelection(row.original)}
+                            >
+                              {row.getVisibleCells().map(cell => (
+                                <td
+                                  key={cell.id}
+                                  style={{ width: cell.column.getSize() }}
+                                  className="px-4 py-3 align-middle"
                                 >
-                                  {buyer.website}
-                                </a>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm">{buyer.industry}</TableCell>
-                            <TableCell className="text-sm">{buyer.country}</TableCell>
-                          </TableRow>
-                          
-                          {/* Contact Rows */}
-                          {contacts.map((contact) => {
-                            const contactKey = `${buyer.company}|${contact.email}`
-                            const isSelected = selectedContacts.has(contactKey)
-                            
-                            return (
-                              <TableRow 
-                                key={contactKey}
-                                className="hover:bg-accent/50 cursor-pointer"
-                                onClick={() => toggleContactSelection(buyer.company, contact.email)}
-                              >
-                                <TableCell>
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={() => toggleContactSelection(buyer.company, contact.email)}
-                                    aria-label={`Select ${contact.name}`}
-                                  />
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-sm pl-8">└</TableCell>
-                                <TableCell className="font-medium">{contact.name}</TableCell>
-                                <TableCell className="text-sm">{contact.title || contact.role}</TableCell>
-                                <TableCell className="text-sm font-mono">{contact.email}</TableCell>
-                                <TableCell></TableCell>
-                                <TableCell></TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </>
-                      ) : null
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </td>
+                              ))}
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
