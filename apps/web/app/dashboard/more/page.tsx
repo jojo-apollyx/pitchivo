@@ -9,6 +9,12 @@ import {
   ChevronRight,
   Shield
 } from 'lucide-react'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'More - Pitchivo',
+  description: 'Access additional features, settings, and admin tools.',
+}
 
 export default async function MorePage() {
   const user = await requireAuth()
@@ -56,16 +62,16 @@ export default async function MorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl animate-float pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
       <div className="relative">
         {/* Page Header */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section id="more-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">More</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">More</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Additional menu options
             </p>
@@ -73,16 +79,19 @@ export default async function MorePage() {
         </section>
 
         {/* Menu Items */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <section id="more-menu-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="max-w-4xl">
             <div className="bg-card/50 backdrop-blur-sm rounded-xl divide-y divide-border/30 overflow-hidden shadow-sm">
               {menuItems.map((item) => {
                 const Icon = item.icon
+                const linkId = item.href.split('/').pop() || 'link'
                 return (
                   <Link
                     key={item.href}
+                    id={`more-${linkId}-link`}
                     href={item.href}
                     className="flex items-center justify-between p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 touch-manipulation active:scale-[0.98] group"
+                    aria-label={`Go to ${item.label}`}
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
@@ -103,8 +112,10 @@ export default async function MorePage() {
                 <>
                   <div className="border-t border-border/30 my-2" />
                   <Link
+                    id="more-admin-panel-link"
                     href={adminMenuItem.href}
                     className="flex items-center justify-between p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 touch-manipulation active:scale-[0.98] group"
+                    aria-label="Go to Admin Panel"
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
@@ -125,7 +136,7 @@ export default async function MorePage() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   )
 }
 
