@@ -302,13 +302,35 @@ async function updateScheduledEmailStatus(campaignId: string, email: string, mes
     return
   }
 
+  // Build update object with timestamp fields based on event type
+  const now = new Date().toISOString()
+  const updateData: any = {
+    brevo_status: brevoStatus,
+    updated_at: now
+  }
+
+  // Add timestamp fields based on event type
+  if (eventType === EMAIL_EVENT_TYPES.DELIVERED) {
+    updateData.delivered_at = now
+  } else if (eventType === EMAIL_EVENT_TYPES.OPENED || 
+             eventType === EMAIL_EVENT_TYPES.UNIQUE_OPENED || 
+             eventType === EMAIL_EVENT_TYPES.FIRST_OPENING) {
+    updateData.opened_at = now
+  } else if (eventType === EMAIL_EVENT_TYPES.CLICKED) {
+    updateData.clicked_at = now
+  } else if (eventType === EMAIL_EVENT_TYPES.HARD_BOUNCED || 
+             eventType === EMAIL_EVENT_TYPES.SOFT_BOUNCED) {
+    updateData.bounced_at = now
+  } else if (eventType === EMAIL_EVENT_TYPES.COMPLAINT) {
+    updateData.spam_reported_at = now
+  } else if (eventType === EMAIL_EVENT_TYPES.UNSUBSCRIBED) {
+    updateData.unsubscribed_at = now
+  }
+
   // Try to find and update the scheduled email by message ID first, then by email + campaign
   let query = supabaseAdmin
     .from('scheduled_emails')
-    .update({
-      brevo_status: brevoStatus,
-      updated_at: new Date().toISOString()
-    })
+    .update(updateData)
 
   if (messageId) {
     query = query.eq('brevo_message_id', messageId)
@@ -327,6 +349,7 @@ async function updateScheduledEmailStatus(campaignId: string, email: string, mes
     console.error('Update error details:', JSON.stringify(error, null, 2))
   } else if (data && data.length > 0) {
     console.log(`✅ Updated ${data.length} scheduled email(s) with brevo_status: ${brevoStatus}`)
+    console.log(`   Timestamp fields updated:`, Object.keys(updateData).filter(k => k.endsWith('_at')))
   } else {
     console.log(`ℹ️  No scheduled email found to update for campaign: ${campaignId}, email: ${email}`)
   }

@@ -320,6 +320,19 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
     }
     
     try {
+      // Fetch default template for the campaign
+      const templateResponse = await fetch(`/api/admin/campaigns/templates?campaignId=${campaignId}`)
+      if (!templateResponse.ok) {
+        throw new Error('Failed to load email template')
+      }
+      
+      const templateData = await templateResponse.json()
+      const defaultTemplate = templateData.templates?.find((t: any) => t.is_default)
+      
+      if (!defaultTemplate) {
+        throw new Error('No default template found for this campaign. Please create a default template first.')
+      }
+      
       // Combine date and time
       const scheduleDateTime = `${scheduleDate}T${scheduleTime}:00.000Z`
       
@@ -335,8 +348,8 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
             recipient_name: leadToSchedule.name,
             recipient_title: leadToSchedule.title,
             recipient_company: leadToSchedule.company,
-            subject: `Innovative Solutions for ${leadToSchedule.company}`,
-            content: `Hi ${leadToSchedule.name},\n\nI wanted to reach out to discuss how our products can benefit ${leadToSchedule.company}...\n\nBest regards`,
+            subject: defaultTemplate.subject,
+            content: defaultTemplate.content,
             scheduled_time: scheduleDateTime
           }]
         })
@@ -439,9 +452,22 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
 
   async function handleSendNow(lead: LeadWithSchedule) {
     try {
-      // Generate email content
-      const subject = `Innovative Solutions for ${lead.company}`
-      const content = `Hi ${lead.name},\n\nI wanted to reach out to discuss how our products can benefit ${lead.company}...\n\nBest regards`
+      // Fetch default template for the campaign
+      const templateResponse = await fetch(`/api/admin/campaigns/templates?campaignId=${campaignId}`)
+      if (!templateResponse.ok) {
+        throw new Error('Failed to load email template')
+      }
+      
+      const templateData = await templateResponse.json()
+      const defaultTemplate = templateData.templates?.find((t: any) => t.is_default)
+      
+      if (!defaultTemplate) {
+        throw new Error('No default template found for this campaign. Please create a default template first.')
+      }
+      
+      // Use template content
+      const subject = defaultTemplate.subject
+      const content = defaultTemplate.content
       
       // Send email via API
       const response = await fetch('/api/admin/campaigns/send', {
