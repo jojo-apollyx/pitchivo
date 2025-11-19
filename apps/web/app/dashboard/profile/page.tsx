@@ -4,6 +4,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { User, Save, Upload } from 'lucide-react'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'My Profile - Pitchivo',
+  description: 'Manage your personal information and account preferences.',
+}
 
 export default async function ProfilePage() {
   const user = await requireAuth()
@@ -18,16 +24,16 @@ export default async function ProfilePage() {
     .slice(0, 2)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
       <div className="relative">
         {/* Page Header */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section id="profile-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">My Profile</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">My Profile</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Manage your personal information and preferences
             </p>
@@ -37,10 +43,10 @@ export default async function ProfilePage() {
         {/* Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
           {/* Profile Information */}
-          <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section id="profile-personal-info-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
             <div className="flex items-center gap-2 mb-2">
               <User className="h-4 w-4 text-primary" />
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground">Personal Information</h2>
+              <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Personal Information</h2>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mb-6 font-normal">
               Update your profile details
@@ -55,7 +61,13 @@ export default async function ProfilePage() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" className="gap-2" disabled>
+                  <Button 
+                    id="profile-change-avatar-button"
+                    variant="outline" 
+                    className="gap-2" 
+                    disabled
+                    aria-label="Change avatar photo"
+                  >
                     <Upload className="h-4 w-4" />
                     Change Avatar
                   </Button>
@@ -68,37 +80,45 @@ export default async function ProfilePage() {
               {/* Form Fields */}
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="full-name">Full Name</Label>
+                  <Label htmlFor="profile-full-name-input">Full Name</Label>
                   <Input 
-                    id="full-name" 
+                    id="profile-full-name-input" 
                     defaultValue={fullName} 
                     disabled
                     className="transition-all duration-300"
+                    aria-label="Full name"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="profile-email-input">Email</Label>
                   <Input 
-                    id="email" 
+                    id="profile-email-input" 
                     type="email"
                     defaultValue={user.email || ''} 
                     disabled
                     className="transition-all duration-300"
+                    aria-label="Email address"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="profile-role-input">Role</Label>
                   <Input 
-                    id="role" 
+                    id="profile-role-input" 
                     placeholder="e.g., Sales Manager" 
                     disabled
                     className="transition-all duration-300"
+                    aria-label="Your role"
                   />
                 </div>
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button className="gap-2" disabled>
+                <Button 
+                  id="profile-save-changes-button"
+                  className="gap-2" 
+                  disabled
+                  aria-label="Save profile changes"
+                >
                   <Save className="h-4 w-4" />
                   Save Changes
                 </Button>
@@ -107,9 +127,9 @@ export default async function ProfilePage() {
           </section>
 
           {/* Notification Preferences */}
-          <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section id="profile-notifications-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
             <div className="text-center w-full">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">Notification Preferences</h2>
+              <h2 className="text-lg sm:text-xl font-display font-semibold mb-2 text-foreground">Notification Preferences</h2>
               <p className="text-sm text-muted-foreground mb-4 font-normal">
                 Choose how you want to be notified
               </p>
@@ -120,9 +140,9 @@ export default async function ProfilePage() {
           </section>
 
           {/* Language & Region */}
-          <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section id="profile-language-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
             <div className="text-center w-full">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">Language & Region</h2>
+              <h2 className="text-lg sm:text-xl font-display font-semibold mb-2 text-foreground">Language & Region</h2>
               <p className="text-sm text-muted-foreground mb-4 font-normal">
                 Set your language and regional preferences
               </p>
@@ -133,7 +153,7 @@ export default async function ProfilePage() {
           </section>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 
