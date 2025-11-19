@@ -388,20 +388,20 @@ export default function CampaignsPage() {
 
   if (campaigns.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
         <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
         <div className="relative">
-          <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <section id="campaigns-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
             <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">Campaigns</h1>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Campaigns</h1>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                     Create and manage your email campaigns
                   </p>
                 </div>
-                <Button onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
+                <Button id="campaigns-new-campaign-button-empty" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
                   <Plus className="h-4 w-4" />
                   New Campaign
                 </Button>
@@ -409,38 +409,38 @@ export default function CampaignsPage() {
             </div>
           </section>
 
-          <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <section id="campaigns-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div className="max-w-2xl mx-auto text-center">
               <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
                 <Mail className="h-10 w-10 text-primary" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-semibold mb-2">No campaigns yet</h2>
+              <h2 className="text-xl sm:text-2xl font-display font-semibold mb-2">No campaigns yet</h2>
               <p className="text-sm sm:text-base text-muted-foreground mb-6">
                 Start your first email campaign to reach potential buyers
               </p>
-              <Button onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
+              <Button id="campaigns-create-campaign-button" aria-label="Create first campaign" onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
                 <Plus className="h-4 w-4" />
                 Create Campaign
               </Button>
             </div>
           </section>
         </div>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+    <main className="min-h-screen bg-background">
+      <section id="campaigns-header-with-campaigns-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">Campaigns</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Campaigns</h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                 Manage campaigns and email processor
               </p>
             </div>
-            <Button onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
+            <Button id="campaigns-new-campaign-button" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
               <Plus className="h-4 w-4" />
               New Campaign
             </Button>
@@ -448,7 +448,7 @@ export default function CampaignsPage() {
         </div>
       </section>
 
-      <section className="px-4 sm:px-6 lg:px-8 py-6">
+      <section id="campaigns-content-section" className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto">
           <Tabs defaultValue="campaigns" className="w-full">
             <TabsList className="mb-6">
@@ -759,6 +759,6 @@ export default function CampaignsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </main>
   )
 }

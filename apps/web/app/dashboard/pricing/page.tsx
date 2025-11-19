@@ -114,10 +114,10 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-7xl">
+    <main className="container mx-auto px-4 py-12 max-w-7xl">
       {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+      <div id="pricing-header-section" className="text-center mb-12">
+        <h1 className="text-4xl font-display font-bold text-gray-900 mb-4">
           Choose Your Plan
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -250,8 +250,8 @@ export default function PricingPage() {
       </div>
 
       {/* Feature Comparison Table */}
-      <div className="bg-white rounded-lg border p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <div id="pricing-feature-comparison-section" className="bg-white rounded-lg border p-6">
+        <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">
           Compare Features
         </h2>
 
@@ -282,8 +282,8 @@ export default function PricingPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="mt-12 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+      <div id="pricing-faq-section" className="mt-12 max-w-3xl mx-auto">
+        <h2 className="text-2xl font-display font-bold text-gray-900 mb-6 text-center">
           Frequently Asked Questions
         </h2>
         <div className="space-y-4">
@@ -307,7 +307,7 @@ export default function PricingPage() {
           </details>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 
