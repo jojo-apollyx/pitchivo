@@ -15,6 +15,12 @@ import {
   Clock
 } from 'lucide-react'
 import Link from 'next/link'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Dashboard - Pitchivo',
+  description: 'Track your B2B outreach performance, manage products, campaigns, and RFQs all in one place.',
+}
 
 export default async function DashboardPage() {
   const { profile, organization } = await getEffectiveUserAndProfile()
@@ -184,18 +190,18 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
       <div className="relative">
         {/* Welcome Section */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section id="dashboard-welcome-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">
                   Welcome back, {userName} 👋
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
@@ -205,13 +211,16 @@ export default async function DashboardPage() {
               
               {/* Quick Actions - Desktop */}
               <div className="hidden sm:flex items-center gap-3">
-                {quickActions.map((action) => {
+                {quickActions.map((action, index) => {
                   const Icon = action.icon
+                  const actionId = action.href.split('/').pop() || `action-${index}`
                   return (
                     <Link key={action.href} href={action.href}>
                       <Button 
+                        id={`dashboard-quick-action-${actionId}-button`}
                         variant={action.variant}
                         className="gap-2"
+                        aria-label={action.label}
                       >
                         <Icon className="h-4 w-4" />
                         {action.label}
@@ -224,11 +233,17 @@ export default async function DashboardPage() {
 
             {/* Quick Actions - Mobile */}
             <div className="grid grid-cols-3 gap-3 mt-6 sm:hidden">
-              {quickActions.map((action) => {
+              {quickActions.map((action, index) => {
                 const Icon = action.icon
+                const actionId = action.href.split('/').pop() || `action-${index}`
                 return (
                   <Link key={action.href} href={action.href}>
-                    <div className="bg-card/50 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center gap-2 h-full min-h-[120px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 touch-manipulation group">
+                    <div 
+                      id={`dashboard-mobile-action-${actionId}`}
+                      className="bg-card/50 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center gap-2 h-full min-h-[120px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 touch-manipulation group"
+                      role="button"
+                      aria-label={action.label}
+                    >
                       <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
                         <Icon className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
                       </div>
@@ -244,16 +259,18 @@ export default async function DashboardPage() {
         </section>
 
         {/* Metrics Overview */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-foreground">
+        <section id="dashboard-metrics-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+          <h2 className="text-lg sm:text-xl font-display font-semibold mb-4 sm:mb-6 text-foreground">
             Metrics Overview
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {metrics.map((metric) => {
+            {metrics.map((metric, index) => {
               const Icon = metric.icon
+              const metricId = metric.label.toLowerCase().replace(/\s+/g, '-')
               return (
                 <div
                   key={metric.label}
+                  id={`dashboard-metric-${metricId}-card`}
                   className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -281,8 +298,8 @@ export default async function DashboardPage() {
         </section>
 
         {/* Recent Activity */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-foreground">
+        <section id="dashboard-activity-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h2 className="text-lg sm:text-xl font-display font-semibold mb-4 sm:mb-6 text-foreground">
             Recent Activity
           </h2>
           <div className="max-w-4xl">
@@ -292,7 +309,9 @@ export default async function DashboardPage() {
                 return (
                   <div 
                     key={index}
+                    id={`dashboard-activity-item-${index + 1}`}
                     className="p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 cursor-pointer touch-manipulation active:scale-[0.98] group"
+                    role="article"
                   >
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary-light/20 ${
@@ -324,7 +343,7 @@ export default async function DashboardPage() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   )
 }
 
