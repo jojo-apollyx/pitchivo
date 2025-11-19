@@ -7,12 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { PRICING_TIERS, PricingTier } from '@/lib/constants/pricing'
 
-// Initialize Stripe (you'll need to install: npm install stripe)
-// Uncomment when Stripe is set up:
-// import Stripe from 'stripe'
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: '2024-11-20.acacia'
-// })
+// Initialize Stripe
+import Stripe from 'stripe'
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-06-20'
+})
 
 // Use service role for webhook (bypasses RLS)
 const supabase = createClient(
@@ -32,8 +31,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: When Stripe is configured, uncomment this:
-    /*
     let event: Stripe.Event
 
     try {
@@ -82,13 +79,6 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true })
-    */
-
-    // Temporary response when Stripe is not configured
-    return NextResponse.json({
-      error: 'Stripe webhooks not configured yet',
-      message: 'Would process Stripe webhook events'
-    }, { status: 501 })
 
   } catch (error) {
     console.error('Webhook error:', error)
@@ -99,8 +89,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// TODO: Uncomment when Stripe is configured
-/*
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const orgId = subscription.metadata.org_id
   const tier = subscription.metadata.tier as PricingTier
@@ -213,7 +201,16 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  const orgId = invoice.subscription_metadata?.org_id
+  // Get org_id from subscription metadata
+  const subscriptionId = typeof invoice.subscription === 'string' 
+    ? invoice.subscription 
+    : invoice.subscription?.id
+
+  if (!subscriptionId) return
+
+  // Fetch subscription to get metadata
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const orgId = subscription.metadata.org_id
 
   if (!orgId) return
 
@@ -231,7 +228,16 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const orgId = invoice.subscription_metadata?.org_id
+  // Get org_id from subscription metadata
+  const subscriptionId = typeof invoice.subscription === 'string' 
+    ? invoice.subscription 
+    : invoice.subscription?.id
+
+  if (!subscriptionId) return
+
+  // Fetch subscription to get metadata
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const orgId = subscription.metadata.org_id
 
   if (!orgId) return
 
@@ -247,5 +253,4 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     console.error('Error updating subscription after failed payment:', error)
   }
 }
-*/
 

@@ -11,10 +11,12 @@ import { createClient } from '@/lib/supabase/client'
 import { PRICING_TIERS, FEATURE_COMPARISON, formatPrice, PricingTier } from '@/lib/constants/pricing'
 import { useSubscription } from '@/lib/hooks/use-subscription'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Check, Sparkles, Zap, Building2, ArrowRight, Loader2 } from 'lucide-react'
+import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { formatQuota } from '@/lib/constants/pricing'
 
 export default function PricingPage() {
   const router = useRouter()
@@ -90,37 +92,27 @@ export default function PricingPage() {
     }
   }
 
-  const getTierIcon = (tier: PricingTier) => {
-    switch (tier) {
-      case 'free':
-        return <Sparkles className="h-5 w-5" />
-      case 'basic':
-        return <Zap className="h-5 w-5" />
-      case 'premium':
-        return <Sparkles className="h-5 w-5" />
-      case 'enterprise':
-        return <Building2 className="h-5 w-5" />
-    }
-  }
-
   const isCurrentTier = (tier: PricingTier) => tier === currentTier
 
   if (isLoadingOrg || isLoadingSub) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <main className="container mx-auto px-4 py-12 max-w-7xl">
+    <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
       {/* Header */}
       <div id="pricing-header-section" className="text-center mb-12">
-        <h1 className="text-4xl font-display font-bold text-gray-900 mb-4">
+        <Badge variant="premium" className="mb-4">
+          Pricing
+        </Badge>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4">
           Choose Your Plan
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Start with a free plan and upgrade as you grow. All plans include unlimited product listings.
         </p>
         {currentTier && (
@@ -133,98 +125,79 @@ export default function PricingPage() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12 max-w-6xl mx-auto">
         {Object.entries(PRICING_TIERS).map(([key, config]) => {
           const tierKey = key as PricingTier
           const isCurrent = isCurrentTier(tierKey)
           const isProcessing = processingTier === tierKey
 
+          // Build features list similar to landing page
+          const features = [
+            `${config.features.productListing} product listings`,
+            `${formatQuota(config.features.emailQuota)} emails/month`,
+            `${formatQuota(config.features.qrLinksPerProduct)} QR/custom links per product`,
+            config.features.browseable ? "Browseable directory" : "Private listings",
+          ]
+          
+          if (!config.features.aiExposed) {
+            features.push("Not exposed to AI")
+          }
+          if (config.features.apiAccess) {
+            features.push("Custom API access")
+          }
+          if (config.features.datasetIntegration) {
+            features.push("Dataset integration")
+          }
+          if (config.features.sla) {
+            features.push("SLA support")
+          }
+
           return (
             <Card 
-              key={tierKey} 
-              className={`relative ${config.popular ? 'border-blue-600 border-2 shadow-lg' : ''} ${isCurrent ? 'bg-blue-50' : ''}`}
+              key={tierKey}
+              variant={config.popular ? "premium" : "default"}
+              className={cn(
+                "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] flex flex-col relative",
+                config.popular && "border-primary/50 ring-2 ring-primary/20",
+                isCurrent && "ring-2 ring-primary/30"
+              )}
             >
               {config.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-blue-600">Most Popular</Badge>
+                  <Badge variant="default" className="shadow-lg">
+                    Most Popular
+                  </Badge>
                 </div>
               )}
 
-              <CardHeader className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={`p-2 rounded-lg ${config.popular ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
-                    {getTierIcon(tierKey)}
-                  </div>
-                  <CardTitle className="text-2xl">{config.name}</CardTitle>
+              <CardHeader className="pb-8">
+                <CardTitle className="text-xl mb-2">{config.name}</CardTitle>
+                <div className="flex items-baseline gap-1">
+                  {config.price === null ? (
+                    <span className="text-4xl font-bold text-foreground">Custom</span>
+                  ) : (
+                    <>
+                      <span className="text-4xl font-bold text-foreground">{formatPrice(config.price)}</span>
+                      <span className="text-muted-foreground">/mo</span>
+                    </>
+                  )}
                 </div>
-                <CardDescription className="min-h-[40px]">
+                <CardDescription className="mt-2">
                   {config.description}
                 </CardDescription>
               </CardHeader>
 
-              <CardContent>
-                {/* Price */}
-                <div className="mb-6">
-                  {config.price === null ? (
-                    <div className="text-3xl font-bold">Custom</div>
-                  ) : (
-                    <>
-                      <div className="text-4xl font-bold">
-                        {formatPrice(config.price)}
-                      </div>
-                      <div className="text-sm text-gray-500">per month</div>
-                    </>
-                  )}
-                </div>
-
-                {/* Features */}
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">{config.features.productListing} product listings</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">
-                      <strong>{config.features.emailQuota >= 999999 ? 'Unlimited' : config.features.emailQuota.toLocaleString()}</strong> emails per month
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm">
-                      <strong>{config.features.qrLinksPerProduct >= 999999 ? 'Unlimited' : config.features.qrLinksPerProduct}</strong> QR/custom links per product
-                    </span>
-                  </li>
-                  {config.features.apiAccess && (
-                    <li className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Custom API access</span>
+              <CardContent className="flex flex-col flex-1">
+                <ul className="space-y-3 flex-1 mb-6">
+                  {features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+                      <span className="text-sm text-foreground">{feature}</span>
                     </li>
-                  )}
-                  {config.features.datasetIntegration && (
-                    <li className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Dataset integration</span>
-                    </li>
-                  )}
-                  {config.features.sla && (
-                    <li className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">SLA support</span>
-                    </li>
-                  )}
-                  {!config.features.aiExposed && (
-                    <li className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">Not exposed to AI</span>
-                    </li>
-                  )}
+                  ))}
                 </ul>
-              </CardContent>
-
-              <CardFooter>
                 <Button
-                  className="w-full"
+                  className="w-full h-11 font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
                   variant={config.popular ? 'default' : 'outline'}
                   onClick={() => handleUpgrade(tierKey)}
                   disabled={isCurrent || isProcessing}
@@ -243,68 +216,87 @@ export default function PricingPage() {
                     </>
                   )}
                 </Button>
-              </CardFooter>
+              </CardContent>
             </Card>
           )
         })}
       </div>
 
       {/* Feature Comparison Table */}
-      <div id="pricing-feature-comparison-section" className="bg-white rounded-lg border p-6">
-        <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">
-          Compare Features
-        </h2>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Feature</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-900">Free</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-900">Basic</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-900">Premium</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-900">Enterprise</th>
-              </tr>
-            </thead>
-            <tbody>
-              {FEATURE_COMPARISON.map((feature, index) => (
-                <tr key={index} className="border-b last:border-0">
-                  <td className="py-3 px-4 text-sm text-gray-900">{feature.name}</td>
-                  <td className="py-3 px-4 text-sm text-center text-gray-600">{feature.free}</td>
-                  <td className="py-3 px-4 text-sm text-center text-gray-600">{feature.basic}</td>
-                  <td className="py-3 px-4 text-sm text-center text-gray-600">{feature.premium}</td>
-                  <td className="py-3 px-4 text-sm text-center text-gray-600">{feature.enterprise}</td>
+      <Card id="pricing-feature-comparison-section" className="mb-12">
+        <CardHeader>
+          <CardTitle className="text-2xl font-display font-bold text-foreground">Compare Features</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 font-semibold text-foreground">Feature</th>
+                  <th className="text-center py-3 px-4 font-semibold text-foreground">Free</th>
+                  <th className="text-center py-3 px-4 font-semibold text-foreground">Basic</th>
+                  <th className="text-center py-3 px-4 font-semibold text-foreground">Premium</th>
+                  <th className="text-center py-3 px-4 font-semibold text-foreground">Enterprise</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {FEATURE_COMPARISON.map((feature, index) => (
+                  <tr key={index} className="border-b border-border last:border-0">
+                    <td className="py-3 px-4 text-sm text-foreground">{feature.name}</td>
+                    <td className="py-3 px-4 text-sm text-center text-muted-foreground">{feature.free}</td>
+                    <td className="py-3 px-4 text-sm text-center text-muted-foreground">{feature.basic}</td>
+                    <td className="py-3 px-4 text-sm text-center text-muted-foreground">{feature.premium}</td>
+                    <td className="py-3 px-4 text-sm text-center text-muted-foreground">{feature.enterprise}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* FAQ Section */}
       <div id="pricing-faq-section" className="mt-12 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-display font-bold text-gray-900 mb-6 text-center">
+        <h2 className="text-2xl font-display font-bold text-foreground mb-6 text-center">
           Frequently Asked Questions
         </h2>
         <div className="space-y-4">
-          <details className="bg-white rounded-lg border p-4">
-            <summary className="font-semibold cursor-pointer">Can I change my plan later?</summary>
-            <p className="mt-2 text-sm text-gray-600">
-              Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately and billing is prorated.
-            </p>
-          </details>
-          <details className="bg-white rounded-lg border p-4">
-            <summary className="font-semibold cursor-pointer">What happens if I exceed my quota?</summary>
-            <p className="mt-2 text-sm text-gray-600">
-              You'll be notified when you're close to your quota limit. If you exceed it, you'll need to upgrade to continue sending emails or adding QR links.
-            </p>
-          </details>
-          <details className="bg-white rounded-lg border p-4">
-            <summary className="font-semibold cursor-pointer">Do you offer refunds?</summary>
-            <p className="mt-2 text-sm text-gray-600">
-              Yes, we offer a 30-day money-back guarantee. If you're not satisfied, contact us for a full refund.
-            </p>
-          </details>
+          <Card>
+            <CardContent className="p-4">
+              <details className="group">
+                <summary className="font-semibold cursor-pointer text-foreground list-none">
+                  <span className="group-open:hidden">Can I change my plan later?</span>
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately and billing is prorated.
+                </p>
+              </details>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <details className="group">
+                <summary className="font-semibold cursor-pointer text-foreground list-none">
+                  <span className="group-open:hidden">What happens if I exceed my quota?</span>
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  You'll be notified when you're close to your quota limit. If you exceed it, you'll need to upgrade to continue sending emails or adding QR links.
+                </p>
+              </details>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <details className="group">
+                <summary className="font-semibold cursor-pointer text-foreground list-none">
+                  <span className="group-open:hidden">Do you offer refunds?</span>
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Yes, we offer a 30-day money-back guarantee. If you're not satisfied, contact us for a full refund.
+                </p>
+              </details>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </main>

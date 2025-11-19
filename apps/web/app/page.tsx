@@ -1804,14 +1804,6 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Link href={plan.key === 'enterprise' ? "/contact" : "/dashboard/pricing"} className="w-full">
-                    <Button
-                      className="w-full h-11 font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
-                      variant={plan.popular ? "default" : "outline"}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </Link>
                 </CardContent>
               </Card>
             ))}

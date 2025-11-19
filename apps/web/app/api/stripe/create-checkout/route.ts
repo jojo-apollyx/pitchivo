@@ -70,6 +70,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate that priceId is actually a price ID (starts with 'price_'), not a product ID
+    if (!tierConfig.priceId.startsWith('price_')) {
+      return NextResponse.json(
+        { 
+          error: `Invalid Stripe Price ID format. Expected a price ID (starts with 'price_'), but got: ${tierConfig.priceId}. Please check your NEXT_PUBLIC_STRIPE_PRICE_${tier.toUpperCase()} environment variable.` 
+        },
+        { status: 400 }
+      )
+    }
+
     let customerId: string | undefined = subscription?.stripe_customer_id || undefined
 
     // Create Stripe customer if doesn't exist
