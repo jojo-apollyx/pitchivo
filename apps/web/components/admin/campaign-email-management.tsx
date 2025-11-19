@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { AddLeadDialog } from '@/components/admin/add-lead-dialog'
+import { EmailEventHistory } from '@/components/admin/email-event-history'
 import {
   Table,
   TableBody,
@@ -68,7 +69,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  MoreVertical
+  MoreVertical,
+  History
 } from 'lucide-react'
 import { format } from 'date-fns'
 import {
@@ -154,6 +156,10 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
   // Cancel confirmation
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [emailToCancel, setEmailToCancel] = useState<string | null>(null)
+  
+  // Event history dialog
+  const [eventHistoryOpen, setEventHistoryOpen] = useState(false)
+  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -819,6 +825,22 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                             </>
                           ) : null}
                           
+                          {/* View event history for sent emails */}
+                          {lead.scheduledEmail && lead.scheduledEmail.status === 'sent' && (
+                            <>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setSelectedEmailId(lead.scheduledEmail!.scheduled_email_id)
+                                  setEventHistoryOpen(true)
+                                }}
+                              >
+                                <History className="h-4 w-4 mr-2 text-purple-600" />
+                                View Event History
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          
                           {/* Send immediately for leads without schedule or sent emails */}
                           {(!lead.scheduledEmail || lead.scheduledEmail.status === 'sent') && lead.status === 'active' && (
                             <DropdownMenuItem onClick={() => handleSendNow(lead)}>
@@ -1065,6 +1087,15 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Email Event History Dialog */}
+      {selectedEmailId && (
+        <EmailEventHistory
+          scheduledEmailId={selectedEmailId}
+          open={eventHistoryOpen}
+          onOpenChange={setEventHistoryOpen}
+        />
+      )}
     </div>
   )
 }

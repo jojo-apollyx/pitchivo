@@ -41,6 +41,7 @@ interface BrevoEmailPayload {
     name?: string
     email: string
   }
+  tags?: string[]  // Campaign tracking tags
 }
 
 Deno.serve(async (req) => {
@@ -372,6 +373,11 @@ Deno.serve(async (req) => {
         email: emailData.replyTo.email,
         name: emailData.replyTo.name,
       }
+    }
+
+    // Add tags if provided (CRITICAL for webhook tracking)
+    if (emailData.tags && emailData.tags.length > 0) {
+      brevoPayload.tags = emailData.tags
     }
 
     // Send email via Brevo API

@@ -170,6 +170,10 @@ async function processBrevoEvent(event: any) {
     console.log(`📧 Updating scheduled email record...`)
     await updateScheduledEmailStatus(campaignId, email, messageId, ourEventType)
 
+    // Record event in email_events history table
+    console.log(`📝 Recording event in email_events history...`)
+    await recordEmailEvent(campaignId, email, messageId, ourEventType, event)
+
     // Handle specific events
     console.log(`🔧 Handling special events...`)
     await handleSpecialEvents(campaignId, ourEventType, email, event)
@@ -276,6 +280,84 @@ async function updateCampaignMetrics(campaignId: string, eventType: string) {
       console.log('✅ emails_bounced incremented successfully')
       if (bounceData) console.log('RPC response:', bounceData)
     }
+  }
+}
+
+async function recordEmailEvent(campaignId: string, email: string, messageId: string | undefined, eventType: string, eventData: any) {
+  try {
+    // First, find the scheduled_email_id
+    let query = supabaseAdmin
+      .from('scheduled_emails')
+      .select('scheduled_email_id')
+      .eq('campaign_id', campaignId)
+      .eq('recipient_email', email)
+      .eq('status', 'sent')
+
+    if (messageId) {
+      query = query.eq('brevo_message_id', messageId)
+    }
+
+    const { data: scheduledEmails, error: findError } = await query.limit(1)
+
+    if (findError) {
+      console.error(`❌ Error finding scheduled email for event recording:`, findError)
+      return
+    }
+
+    if (!scheduledEmails || scheduledEmails.length === 0) {
+      console.warn(`⚠️  No scheduled email found for event recording. Campaign: ${campaignId}, Email: ${email}`)
+      return
+    }
+
+    const scheduledEmailId = scheduledEmails[0].scheduled_email_id
+
+    // Extract metadata from event
+    const metadata: any = {
+      brevo_event_id: eventData.id,
+      subject: eventData.subject,
+      sending_ip: eventData.sending_ip,
+      ts: eventData.ts,
+      ts_epoch: eventData.ts_epoch,
+      ts_event: eventData.ts_event,
+    }
+
+    // Add optional fields if present
+    if (eventData.link) metadata.link = eventData.link
+    if (eventData.user_agent) metadata.user_agent = eventData.user_agent
+    if (eventData.device_used) metadata.device_used = eventData.device_used
+    if (eventData.reason) metadata.reason = eventData.reason
+    if (eventData.code) metadata.code = eventData.code
+    if (eventData.ip) metadata.ip = eventData.ip
+    if (eventData.tags) metadata.tags = eventData.tags
+    if (eventData.tag) metadata.tag = eventData.tag
+
+    // Determine event timestamp
+    const eventTimestamp = eventData.date || 
+                          (eventData.ts ? new Date(eventData.ts * 1000).toISOString() : null) ||
+                          (eventData.ts_event ? new Date(eventData.ts_event * 1000).toISOString() : null) ||
+                          new Date().toISOString()
+
+    // Insert event into email_events table
+    const { error: insertError } = await supabaseAdmin
+      .from('email_events')
+      .insert({
+        scheduled_email_id: scheduledEmailId,
+        campaign_id: campaignId,
+        event_type: eventType,
+        event_timestamp: eventTimestamp,
+        recipient_email: email,
+        brevo_message_id: messageId,
+        metadata
+      })
+
+    if (insertError) {
+      console.error(`❌ Error inserting email event:`, insertError)
+      console.error('Insert error details:', JSON.stringify(insertError, null, 2))
+    } else {
+      console.log(`✅ Email event recorded successfully: ${eventType} at ${eventTimestamp}`)
+    }
+  } catch (error) {
+    console.error(`❌ Exception in recordEmailEvent:`, error)
   }
 }
 
