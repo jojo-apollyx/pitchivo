@@ -21,6 +21,7 @@ import { useSubscription } from '@/lib/hooks/use-subscription'
 import { QuotaBar } from '@/components/ui/quota-bar'
 import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
 import { Badge } from '@/components/ui/badge'
+import { Slider } from '@/components/ui/slider'
 
 export default function ConfigureSendingPage() {
   const router = useRouter()
@@ -100,12 +101,12 @@ export default function ConfigureSendingPage() {
 
   const metrics = calculateCampaignMetrics(emailCount, durationDays)
   
-  // Use real subscription quota
-  const planQuota = quotaUsage?.emailsQuota || 30
+  // Use real subscription quota - be more generous with defaults to avoid blocking users
+  const planQuota = quotaUsage?.emailsQuota || 10000 // Default to high value while loading
   const usedQuota = quotaUsage?.emailsUsed || 0
-  const remainingQuota = quotaUsage?.emailsRemaining || 30
+  const remainingQuota = quotaUsage?.emailsRemaining || 10000 // Default to high value while loading
   const canSendCampaign = remainingQuota >= emailCount
-  const isQuotaSufficient = canSendCampaign || tier === 'enterprise' // Enterprise has unlimited
+  const isQuotaSufficient = isLoadingSub || canSendCampaign || tier === 'enterprise' // Don't block during loading
 
   function handleNext() {
     // Check quota before proceeding
@@ -186,7 +187,7 @@ export default function ConfigureSendingPage() {
                     <Label htmlFor="emailCount" className="text-base font-semibold mb-3 block">
                       Number of emails to send
                     </Label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Input
                         id="emailCount"
                         type="number"
@@ -204,24 +205,24 @@ export default function ConfigureSendingPage() {
                         }}
                         className="text-lg"
                       />
-                      <input
-                        type="range"
-                        min="50"
+                      <Slider
+                        min={50}
                         max={planQuota}
-                        value={emailCount}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value)
+                        step={10}
+                        value={[emailCount]}
+                        onValueChange={(values) => {
+                          const value = values[0]
                           setEmailCount(value)
                           const minDays = Math.max(Math.ceil(value / 250), 1)
                           if (durationDays < minDays) {
                             setDurationDays(minDays)
                           }
                         }}
-                        className="w-full accent-primary"
+                        className="w-full"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Remaining: <span className="font-semibold text-foreground">{remainingQuota}</span> emails
-                        {!canSendCampaign && (
+                        Remaining: <span className="font-semibold text-foreground">{remainingQuota.toLocaleString()}</span> emails
+                        {!canSendCampaign && !isLoadingSub && (
                           <span className="text-destructive ml-2">⚠️ Upgrade needed</span>
                         )}
                       </p>
@@ -264,7 +265,7 @@ export default function ConfigureSendingPage() {
                     <Label htmlFor="duration" className="text-base font-semibold mb-3 block">
                       Distribute over (days)
                     </Label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Input
                         id="duration"
                         type="number"
@@ -274,13 +275,13 @@ export default function ConfigureSendingPage() {
                         onChange={(e) => setDurationDays(parseInt(e.target.value) || 1)}
                         className="text-lg"
                       />
-                      <input
-                        type="range"
+                      <Slider
                         min={metrics.minDays}
-                        max="30"
-                        value={durationDays}
-                        onChange={(e) => setDurationDays(parseInt(e.target.value))}
-                        className="w-full accent-primary"
+                        max={30}
+                        step={1}
+                        value={[durationDays]}
+                        onValueChange={(values) => setDurationDays(values[0])}
+                        className="w-full"
                       />
                       <div className="text-xs text-muted-foreground">
                         {metrics.minDays > 1 && (
