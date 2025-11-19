@@ -88,6 +88,7 @@ interface CampaignEmailManagementProps {
 // Combined lead with scheduling info
 interface LeadWithSchedule extends Lead {
   scheduledEmail?: ScheduledEmailWithBrevoStatus
+  scheduledEmails?: ScheduledEmailWithBrevoStatus[] // Array of all scheduled emails for this lead
 }
 
 // Helper function to get email cell background color based on Brevo status
@@ -160,6 +161,10 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
   // Event history dialog
   const [eventHistoryOpen, setEventHistoryOpen] = useState(false)
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
+  
+  // View all sends dialog
+  const [viewAllSendsOpen, setViewAllSendsOpen] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<LeadWithSchedule | null>(null)
 
   useEffect(() => {
     loadData()
@@ -194,10 +199,18 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
   // Merge leads with their scheduled emails
   const leadsWithSchedule = useMemo(() => {
     return leads.map(lead => {
-      const scheduledEmail = scheduledEmails.find(e => e.lead_id === lead.lead_id)
+      // Get all scheduled emails for this lead, sorted by sequence number descending (most recent first)
+      const leadScheduledEmails = scheduledEmails
+        .filter(e => e.lead_id === lead.lead_id)
+        .sort((a, b) => (b.send_sequence_number || 0) - (a.send_sequence_number || 0))
+      
+      // For backward compatibility, use the most recent non-cancelled email as the primary scheduledEmail
+      const scheduledEmail = leadScheduledEmails.find(e => e.status !== 'cancelled') || leadScheduledEmails[0]
+      
       return {
         ...lead,
-        scheduledEmail
+        scheduledEmail,
+        scheduledEmails: leadScheduledEmails
       }
     })
   }, [leads, scheduledEmails])
@@ -458,7 +471,40 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
 
   async function handleSendNow(lead: LeadWithSchedule) {
     try {
-      // Fetch default template for the campaign
+      // Step 1: Cancel any pending scheduled emails for this lead
+      const pendingEmails = lead.scheduledEmails?.filter(e => e.status === 'pending') || []
+      if (pendingEmails.length > 0) {
+        console.log(`Cancelling ${pendingEmails.length} pending scheduled email(s) before sending now`)
+        
+        // Cancel each pending email
+        for (const pendingEmail of pendingEmails) {
+          const cancelResponse = await fetch('/api/admin/campaigns/scheduled-emails', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              scheduledEmailId: pendingEmail.scheduled_email_id,
+              status: 'cancelled'
+            })
+          })
+          
+          if (!cancelResponse.ok) {
+            console.error('Failed to cancel pending email:', pendingEmail.scheduled_email_id)
+          } else {
+            console.log('Cancelled pending email:', pendingEmail.scheduled_email_id)
+          }
+        }
+        
+        // Update local state to reflect cancellations
+        setScheduledEmails(scheduledEmails.map(e =>
+          pendingEmails.some(pe => pe.scheduled_email_id === e.scheduled_email_id)
+            ? { ...e, status: 'cancelled' as const, updated_at: new Date().toISOString() }
+            : e
+        ))
+        
+        toast.info(`Cancelled ${pendingEmails.length} pending scheduled email(s)`)
+      }
+      
+      // Step 2: Fetch default template for the campaign
       const templateResponse = await fetch(`/api/admin/campaigns/templates?campaignId=${campaignId}`)
       if (!templateResponse.ok) {
         throw new Error('Failed to load email template')
@@ -475,7 +521,7 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
       const subject = defaultTemplate.subject
       const content = defaultTemplate.content
       
-      // Send email via API
+      // Step 3: Send email via API
       const response = await fetch('/api/admin/campaigns/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -760,28 +806,63 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
                       <div className="flex flex-col gap-1">
                         {lead.scheduledEmail && lead.scheduledEmail.status !== 'cancelled' ? (
                           <>
-                            <Badge
-                              variant="outline"
-                              className={
-                                lead.scheduledEmail.status === 'pending'
-                                  ? 'bg-blue-100 text-blue-700 border-blue-300'
-                                  : lead.scheduledEmail.status === 'sent'
-                                  ? 'bg-green-100 text-green-700 border-green-300'
-                                  : lead.scheduledEmail.status === 'failed'
-                                  ? 'bg-red-100 text-red-700 border-red-300'
-                                  : 'bg-gray-100 text-gray-700 border-gray-300'
-                              }
-                            >
-                              {lead.scheduledEmail.status}
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  lead.scheduledEmail.status === 'pending'
+                                    ? 'bg-blue-100 text-blue-700 border-blue-300'
+                                    : lead.scheduledEmail.status === 'sent'
+                                    ? 'bg-green-100 text-green-700 border-green-300'
+                                    : lead.scheduledEmail.status === 'failed'
+                                    ? 'bg-red-100 text-red-700 border-red-300'
+                                    : 'bg-gray-100 text-gray-700 border-gray-300'
+                                }
+                              >
+                                {lead.scheduledEmail.status}
+                              </Badge>
+                              {lead.scheduledEmail.send_sequence_number && lead.scheduledEmail.send_sequence_number > 1 && (
+                                <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
+                                  Send #{lead.scheduledEmail.send_sequence_number}
+                                </Badge>
+                              )}
+                            </div>
                             {brevoInfo && (
                               <Badge variant="outline" className={brevoInfo.color} title={brevoInfo.description}>
                                 {brevoInfo.label}
                               </Badge>
                             )}
+                            {lead.scheduledEmails && lead.scheduledEmails.length > 1 && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setSelectedLead(lead)
+                                  setViewAllSendsOpen(true)
+                                }}
+                              >
+                                View all ({lead.scheduledEmails.length} sends)
+                              </Button>
+                            )}
                           </>
                         ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
+                          <>
+                            <span className="text-xs text-muted-foreground">-</span>
+                            {lead.scheduledEmails && lead.scheduledEmails.length > 0 && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setSelectedLead(lead)
+                                  setViewAllSendsOpen(true)
+                                }}
+                              >
+                                View history ({lead.scheduledEmails.length} sends)
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -1096,6 +1177,153 @@ export function CampaignEmailManagement({ campaignId }: CampaignEmailManagementP
           onOpenChange={setEventHistoryOpen}
         />
       )}
+
+      {/* View All Sends Dialog */}
+      <Dialog open={viewAllSendsOpen} onOpenChange={setViewAllSendsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>All Email Sends</DialogTitle>
+            <DialogDescription>
+              Complete history of all emails sent to {selectedLead?.name} ({selectedLead?.email})
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedLead && selectedLead.scheduledEmails && selectedLead.scheduledEmails.length > 0 ? (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                Total sends: {selectedLead.scheduledEmails.length}
+              </div>
+              
+              {/* Group sends by status for better organization */}
+              <div className="space-y-6">
+                {selectedLead.scheduledEmails.map((email, index) => {
+                  const brevoInfo = email.brevo_status ? getBrevoStatusBadge(email.brevo_status) : null
+                  const isActive = email.status !== 'cancelled'
+                  
+                  return (
+                    <div 
+                      key={email.scheduled_email_id}
+                      className={`border rounded-lg p-4 ${isActive ? 'bg-card' : 'bg-muted/30 opacity-75'}`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
+                            Send #{email.send_sequence_number || index + 1}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={
+                              email.status === 'pending'
+                                ? 'bg-blue-100 text-blue-700 border-blue-300'
+                                : email.status === 'sent'
+                                ? 'bg-green-100 text-green-700 border-green-300'
+                                : email.status === 'cancelled'
+                                ? 'bg-gray-100 text-gray-700 border-gray-300'
+                                : 'bg-red-100 text-red-700 border-red-300'
+                            }
+                          >
+                            {email.status}
+                          </Badge>
+                          {brevoInfo && (
+                            <Badge variant="outline" className={brevoInfo.color} title={brevoInfo.description}>
+                              {brevoInfo.label}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {email.status === 'sent' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedEmailId(email.scheduled_email_id)
+                              setEventHistoryOpen(true)
+                              setViewAllSendsOpen(false)
+                            }}
+                            className="gap-2"
+                          >
+                            <History className="h-4 w-4" />
+                            View Events
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Subject:</span>
+                          <div className="font-medium">{email.subject}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">
+                            {email.status === 'pending' ? 'Scheduled for:' : 
+                             email.status === 'sent' ? 'Sent at:' : 
+                             email.status === 'cancelled' ? 'Cancelled:' : 'Time:'}
+                          </span>
+                          <div className="font-medium">
+                            {email.sent_at 
+                              ? format(new Date(email.sent_at), 'MMM d, yyyy h:mm a')
+                              : format(new Date(email.scheduled_time), 'MMM d, yyyy h:mm a')
+                            }
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {email.brevo_message_id && (
+                        <div className="mt-3 text-xs text-muted-foreground font-mono">
+                          Message ID: {email.brevo_message_id}
+                        </div>
+                      )}
+                      
+                      {email.status === 'sent' && (
+                        <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                          {email.delivered_at && (
+                            <div className="text-center p-2 bg-green-50 rounded">
+                              <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-600" />
+                              <div className="text-green-700 font-medium">Delivered</div>
+                              <div className="text-muted-foreground">{format(new Date(email.delivered_at), 'MMM d, h:mm a')}</div>
+                            </div>
+                          )}
+                          {email.opened_at && (
+                            <div className="text-center p-2 bg-purple-50 rounded">
+                              <MailOpen className="h-4 w-4 mx-auto mb-1 text-purple-600" />
+                              <div className="text-purple-700 font-medium">Opened</div>
+                              <div className="text-muted-foreground">{format(new Date(email.opened_at), 'MMM d, h:mm a')}</div>
+                            </div>
+                          )}
+                          {email.clicked_at && (
+                            <div className="text-center p-2 bg-indigo-50 rounded">
+                              <MousePointerClick className="h-4 w-4 mx-auto mb-1 text-indigo-600" />
+                              <div className="text-indigo-700 font-medium">Clicked</div>
+                              <div className="text-muted-foreground">{format(new Date(email.clicked_at), 'MMM d, h:mm a')}</div>
+                            </div>
+                          )}
+                          {email.bounced_at && (
+                            <div className="text-center p-2 bg-red-50 rounded">
+                              <XCircle className="h-4 w-4 mx-auto mb-1 text-red-600" />
+                              <div className="text-red-700 font-medium">Bounced</div>
+                              <div className="text-muted-foreground">{format(new Date(email.bounced_at), 'MMM d, h:mm a')}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              
+              <div className="flex justify-end pt-4 border-t">
+                <Button variant="outline" onClick={() => setViewAllSendsOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No email history found for this lead.
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

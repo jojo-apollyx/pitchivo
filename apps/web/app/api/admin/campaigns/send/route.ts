@@ -170,6 +170,21 @@ export async function POST(request: NextRequest) {
     // Let the database generate the UUID automatically (DEFAULT gen_random_uuid())
     console.log('[campaigns/send] Creating scheduled_emails record')
     
+    // Get next send sequence number if leadId is provided
+    let sendSequenceNumber = 1
+    if (leadId) {
+      const { data: sequenceData } = await supabaseAdmin
+        .rpc('get_next_send_sequence', { 
+          p_lead_id: leadId, 
+          p_campaign_id: campaignId 
+        })
+      
+      if (sequenceData) {
+        sendSequenceNumber = sequenceData
+        console.log('[campaigns/send] Using send sequence number:', sendSequenceNumber)
+      }
+    }
+    
     const scheduledEmailData = {
       // Don't provide scheduled_email_id - let database generate UUID
       campaign_id: campaignId,
@@ -182,6 +197,7 @@ export async function POST(request: NextRequest) {
       content: processedContent,
       scheduled_time: new Date().toISOString(),
       status: 'pending', // Will be updated to 'sent' after successful send
+      send_sequence_number: sendSequenceNumber,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }

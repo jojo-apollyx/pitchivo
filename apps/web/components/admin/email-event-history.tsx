@@ -11,6 +11,7 @@ interface EmailEvent {
   event_id: string
   event_type: string
   event_timestamp: string
+  send_sequence_number?: number
   metadata: {
     device_used?: string
     user_agent?: string
@@ -33,6 +34,7 @@ interface ScheduledEmail {
   sent_at?: string
   brevo_message_id?: string
   brevo_status?: string
+  send_sequence_number?: number
 }
 
 interface EmailEventHistoryProps {
@@ -139,7 +141,9 @@ export function EmailEventHistory({ scheduledEmailId, open, onOpenChange }: Emai
         <DialogHeader>
           <DialogTitle>Email Event History</DialogTitle>
           <DialogDescription>
-            Timeline of all events for this email
+            {scheduledEmail?.send_sequence_number && scheduledEmail.send_sequence_number > 1 
+              ? `Timeline of all events for Send #${scheduledEmail.send_sequence_number}`
+              : 'Timeline of all events for this email'}
           </DialogDescription>
         </DialogHeader>
 
@@ -160,15 +164,27 @@ export function EmailEventHistory({ scheduledEmailId, open, onOpenChange }: Emai
                       {scheduledEmail.recipient_company}
                     </p>
                   </div>
-                  <Badge 
-                    variant={scheduledEmail.status === 'sent' ? 'default' : 'secondary'}
-                  >
-                    {scheduledEmail.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {scheduledEmail.send_sequence_number && scheduledEmail.send_sequence_number > 1 && (
+                      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
+                        Send #{scheduledEmail.send_sequence_number}
+                      </Badge>
+                    )}
+                    <Badge 
+                      variant={scheduledEmail.status === 'sent' ? 'default' : 'secondary'}
+                    >
+                      {scheduledEmail.status}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   <strong>Subject:</strong> {scheduledEmail.subject}
                 </div>
+                {scheduledEmail.sent_at && (
+                  <div className="text-sm text-muted-foreground">
+                    <strong>Sent at:</strong> {new Date(scheduledEmail.sent_at).toLocaleString()}
+                  </div>
+                )}
                 {scheduledEmail.brevo_message_id && (
                   <div className="text-xs text-muted-foreground font-mono">
                     Message ID: {scheduledEmail.brevo_message_id}

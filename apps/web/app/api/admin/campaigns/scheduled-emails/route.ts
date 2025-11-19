@@ -85,21 +85,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Prepare batch insert data
-    const scheduledEmailsData = emails.map((email: any) => ({
-      campaign_id: campaignId,
-      lead_id: email.lead_id || null,
-      recipient_email: email.recipient_email,
-      recipient_company: email.recipient_company || null,
-      recipient_name: email.recipient_name || null,
-      recipient_title: email.recipient_title || null,
-      template_id: email.template_id || null,
-      subject: email.subject,
-      content: email.content,
-      scheduled_time: email.scheduled_time,
-      status: 'pending',
-      metadata: email.metadata || {}
-    }))
+    // For each email with lead_id, get the next send sequence number
+    const scheduledEmailsData = []
+    for (const email of emails) {
+      let sendSequenceNumber = 1
+      if (email.lead_id) {
+        const { data: sequenceData } = await supabaseAdmin
+          .rpc('get_next_send_sequence', { 
+            p_lead_id: email.lead_id, 
+            p_campaign_id: campaignId 
+          })
+        
+        if (sequenceData) {
+          sendSequenceNumber = sequenceData
+        }
+      }
+      
+      scheduledEmailsData.push({
+        campaign_id: campaignId,
+        lead_id: email.lead_id || null,
+        recipient_email: email.recipient_email,
+        recipient_company: email.recipient_company || null,
+        recipient_name: email.recipient_name || null,
+        recipient_title: email.recipient_title || null,
+        template_id: email.template_id || null,
+        subject: email.subject,
+        content: email.content,
+        scheduled_time: email.scheduled_time,
+        status: 'pending',
+        send_sequence_number: sendSequenceNumber,
+        metadata: email.metadata || {}
+      })
+    }
 
     const { data, error } = await supabaseAdmin
       .from('scheduled_emails')

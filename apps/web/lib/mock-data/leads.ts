@@ -32,6 +32,7 @@ export interface ScheduledEmailWithBrevoStatus {
   content: string
   scheduled_time: string
   status: 'pending' | 'sent' | 'failed' | 'cancelled'
+  send_sequence_number?: number // Track multiple sends to same lead (1=first, 2=second, etc.)
   
   // Brevo tracking fields
   brevo_message_id?: string
@@ -177,6 +178,7 @@ export function generateMockScheduledEmails(campaignId: string, leads: Lead[]): 
       content: `Hi {{name}},\n\nI wanted to reach out to discuss how our products can benefit ${lead.company}...\n\nBest regards`,
       scheduled_time: scheduledTime.toISOString(),
       status,
+      send_sequence_number: 1, // Default to first send
       brevo_message_id: brevoMessageId,
       brevo_status: brevoStatus,
       delivered_at: deliveredAt,
