@@ -15,10 +15,10 @@ const supabaseAdmin = createClient(
 // GET: Fetch all events for a specific scheduled email
 export async function GET(
   request: NextRequest,
-  { params }: { params: { scheduledEmailId: string } }
+  { params }: { params: Promise<{ scheduledEmailId: string }> }
 ) {
   try {
-    const { scheduledEmailId } = params
+    const { scheduledEmailId } = await params
 
     if (!scheduledEmailId) {
       return NextResponse.json(
