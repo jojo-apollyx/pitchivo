@@ -2,11 +2,25 @@ import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Inter, Outfit } from 'next/font/google';
 import JsonLd from "./json-ld";
 import { GlobalThemeLoader } from "@/components/global-theme-loader";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { MotionProvider } from "@/components/providers/motion-provider";
 import "./../globals.css";
+
+// Configure Google Fonts
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -125,7 +139,7 @@ export default function RootLayout({
         <meta name="msapplication-TileImage" content="/web-app-manifest-192x192.png" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
-      <body>
+      <body className={`${inter.variable} ${outfit.variable} font-sans`}>
         <MotionProvider>
           <ThemeProvider
             attribute="class"

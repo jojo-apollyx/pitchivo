@@ -473,17 +473,18 @@ export default function Home() {
         <div className="bg-aurora" aria-hidden="true" />
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+      <nav id="main-navigation" className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
+              <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
             </div>
             <div className="flex items-center gap-4">
               <Button 
+                id="nav-pricing-button"
                 variant="ghost" 
                 size="sm" 
                 className="hidden sm:flex hover:bg-primary/10 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 font-medium"
@@ -492,10 +493,12 @@ export default function Home() {
                 Pricing
               </Button>
               <Button
+                id="nav-theme-toggle-button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="w-9 h-9 p-0 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20"
+                aria-label="Toggle theme"
               >
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -520,32 +523,34 @@ export default function Home() {
                 AI-Powered B2B Outreach Platform
               </Badge>
               
-              {/* Headline */}
-              <h1 id="hero-heading" className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-                <span className="text-foreground">Upload. Connect.</span>
+              {/* Headline - ONLY h1 on page */}
+              <h1 id="hero-main-heading" className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
+                <span className="text-foreground">AI-Powered Outreach</span>
                 <span className="block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-primary-dark via-primary to-primary-dark">
-                  Pitch Smarter.
+                  That Actually Converts
                 </span>
               </h1>
 
               {/* Description */}
               <p className="text-xl sm:text-2xl text-foreground/80 dark:text-foreground/90 leading-relaxed font-medium">
-                Turn your ingredient specs into AI-generated product pages and reach verified
-                buyers — instantly.
+                Transform ingredient specs into stunning product pages. Launch targeted campaigns to buyers with real purchase intent. Track engagement. Close deals faster.
               </p>
 
               {/* CTA Form */}
-              <form onSubmit={handleMagicLinkSubmit} className="mt-10">
+              <form id="hero-cta-form" onSubmit={handleMagicLinkSubmit} className="mt-10">
                 <div className="flex max-w-lg flex-col gap-3 sm:flex-row">
                   <Input
+                    id="hero-email-input"
                     type="email"
                     placeholder="Enter your company email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="!h-16 sm:!h-14 flex-1 text-base bg-background/95 backdrop-blur-sm border-border/50 shadow-sm px-4 py-3"
                     disabled={isLoading}
+                    aria-label="Company email address"
                   />
                   <Button
+                    id="hero-get-started-button"
                     type="submit"
                     size="lg"
                     className="h-12 sm:h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20 shadow-lg"
@@ -776,13 +781,13 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 sm:py-24 lg:py-32 bg-transparent relative" aria-labelledby="how-it-works-heading">
+      <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-32 bg-transparent relative" aria-labelledby="how-it-works-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge variant="premium" className="mb-4">
               How It Works
             </Badge>
-            <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Simple Process, Powerful Results
             </h2>
             <p className="text-lg text-muted-foreground">
@@ -860,6 +865,184 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Managed Email Campaign Service Section */}
+      <section id="managed-campaigns-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-background via-primary/5 to-background" aria-labelledby="managed-campaigns-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              Managed Campaign Service
+            </Badge>
+            <h2 id="managed-campaigns-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
+              Professional Email Outreach, Done For You
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Our team handles the heavy lifting so you can focus on closing deals
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+            {/* Automated Email Warmup */}
+            <div id="managed-campaign-warmup-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+              <div className="mb-6">
+                <div className="inline-flex p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                  <Zap className="w-7 h-7 text-green-600" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                Automated Email Warmup
+              </h3>
+              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                We automatically warm up your email domain to ensure maximum deliverability. No spam folders, no blacklists — just professional outreach that reaches inboxes.
+              </p>
+            </div>
+
+            {/* Professional Copywriting */}
+            <div id="managed-campaign-copy-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+              <div className="mb-6">
+                <div className="inline-flex p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                  <FileText className="w-7 h-7 text-purple-600" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                Curated Professional Copy
+              </h3>
+              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                Our expert writers craft compelling, personalized outreach messages that resonate with B2B buyers. Every email is optimized for engagement and conversions.
+              </p>
+            </div>
+
+            {/* Strategic Follow-ups */}
+            <div id="managed-campaign-followup-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+              <div className="mb-6">
+                <div className="inline-flex p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                  <Send className="w-7 h-7 text-blue-600" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                Smart Follow-Up Sequences
+              </h3>
+              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                Professionally timed follow-up emails crafted by our team. We handle the entire nurture sequence to keep prospects engaged without being pushy.
+              </p>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-12 text-center">
+            <Button 
+              id="managed-campaign-cta-button"
+              size="lg" 
+              className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+              onClick={() => {
+                const heroForm = document.getElementById('hero-email-input');
+                heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => (heroForm as HTMLInputElement)?.focus(), 500);
+              }}
+            >
+              Start Your Campaign
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Intent-Based Targeting Section */}
+      <section id="intent-targeting-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="intent-targeting-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
+            {/* Left Content */}
+            <div className="space-y-6">
+              <Badge variant="premium" className="mb-2">
+                Smart Targeting
+              </Badge>
+              <h2 id="intent-targeting-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight">
+                Reach Buyers With <span className="text-primary">Real Purchase Intent</span>
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                We don't spam entire industries with generic messages. Our AI analyzes buyer behavior, recent purchases, and market signals to identify companies actively seeking your products.
+              </p>
+              
+              <div className="space-y-4 pt-4">
+                <div id="intent-signal-verified" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20 hover:border-green-500/40 transition-colors">
+                  <CheckCircle2 className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-1">Verified Buyer Signals</h4>
+                    <p className="text-sm text-muted-foreground">
+                      We track RFQ submissions, product searches, and market activity to find buyers who are actually looking to purchase.
+                    </p>
+                  </div>
+                </div>
+
+                <div id="intent-signal-match" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+                  <CheckCircle2 className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-1">Perfect Product Match</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Our AI matches your products to buyers based on their specific needs, certifications required, and order volumes.
+                    </p>
+                  </div>
+                </div>
+
+                <div id="intent-signal-timing" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+                  <CheckCircle2 className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-1">Perfect Timing</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Reach buyers at the exact moment they're evaluating suppliers, not months before or after their purchasing window.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Visual */}
+            <div className="relative">
+              <div className="relative bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl p-6 overflow-hidden">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-foreground">Buyer Intent Score</h3>
+                  <Badge className="bg-green-500/10 text-green-700 border-green-500/20">
+                    High Intent
+                  </Badge>
+                </div>
+
+                {/* Intent Signals */}
+                <div className="space-y-3">
+                  {[
+                    { label: "Active Product Search", value: 95, color: "green" },
+                    { label: "Recent RFQ Submitted", value: 88, color: "blue" },
+                    { label: "Budget Allocated", value: 82, color: "purple" },
+                    { label: "Decision Timeline", value: 90, color: "orange" },
+                  ].map((signal, idx) => (
+                    <div key={idx} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-foreground/80">{signal.label}</span>
+                        <span className="font-bold text-foreground">{signal.value}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full bg-gradient-to-r from-${signal.color}-500 to-${signal.color}-600 rounded-full transition-all duration-1000`}
+                          style={{ width: `${signal.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                  <p className="text-sm text-muted-foreground">
+                    <strong className="text-primary">Recommendation:</strong> High-priority target. Buyer is actively evaluating suppliers for Q1 2025 orders.
+                  </p>
+                </div>
+              </div>
+
+              {/* Decorative elements */}
+              <div className="absolute -top-4 -right-4 w-32 h-32 bg-primary/20 rounded-full blur-3xl pointer-events-none -z-10" />
+              <div className="absolute -bottom-4 -left-4 w-40 h-40 bg-accent/20 rounded-full blur-3xl pointer-events-none -z-10" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Core Features Section */}
       <section id="features" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="features-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -867,7 +1050,7 @@ export default function Home() {
             <Badge variant="premium" className="mb-4">
               Core Features
             </Badge>
-            <h2 id="features-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            <h2 id="features-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Everything You Need to Scale
             </h2>
             <p className="text-lg text-muted-foreground">
@@ -961,6 +1144,424 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Case Study Demo Section */}
+      <section id="case-study-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-background via-accent/5 to-background" aria-labelledby="case-study-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              Real Results
+            </Badge>
+            <h2 id="case-study-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
+              See The Difference Pitchivo Makes
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Real companies, real campaigns, real results
+            </p>
+          </div>
+
+          {/* Before/After Comparison */}
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+              {/* BEFORE */}
+              <div id="case-study-before-card" className="relative">
+                <div className="absolute -top-4 left-4 z-10">
+                  <Badge className="bg-destructive text-destructive-foreground border-destructive/50 shadow-lg">
+                    ❌ Before Pitchivo
+                  </Badge>
+                </div>
+                <div className="bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-2 border-border/50 rounded-2xl p-8 h-full">
+                  <h3 className="text-2xl font-bold text-foreground/80 mb-6">Traditional Outreach</h3>
+                  
+                  <div className="space-y-6">
+                    {/* Metrics - Before */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                        <div className="text-3xl font-bold text-destructive mb-1">2-3%</div>
+                        <div className="text-sm text-muted-foreground">Email Open Rate</div>
+                      </div>
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                        <div className="text-3xl font-bold text-destructive mb-1">0.5%</div>
+                        <div className="text-sm text-muted-foreground">Response Rate</div>
+                      </div>
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                        <div className="text-3xl font-bold text-destructive mb-1">5-6</div>
+                        <div className="text-sm text-muted-foreground">RFQs/month</div>
+                      </div>
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                        <div className="text-3xl font-bold text-destructive mb-1">4-6 mo</div>
+                        <div className="text-sm text-muted-foreground">Sales Cycle</div>
+                      </div>
+                    </div>
+
+                    {/* Pain Points */}
+                    <div className="space-y-3 pt-4">
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Manual email list building from scratch</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Generic mass emails to broad industries</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>No tracking, no insights on engagement</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Time-consuming follow-ups and no automation</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Inconsistent branding and product presentation</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AFTER */}
+              <div id="case-study-after-card" className="relative">
+                <div className="absolute -top-4 left-4 z-10">
+                  <Badge className="bg-primary text-primary-foreground border-primary/50 shadow-lg">
+                    ✅ After Pitchivo
+                  </Badge>
+                </div>
+                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 backdrop-blur-sm border-2 border-primary/30 rounded-2xl p-8 h-full shadow-xl shadow-primary/10">
+                  <h3 className="text-2xl font-bold text-foreground mb-6">AI-Powered Results</h3>
+                  
+                  <div className="space-y-6">
+                    {/* Metrics - After */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-xl border border-green-500/30">
+                        <div className="flex items-baseline gap-1">
+                          <div className="text-3xl font-bold text-green-700">45-68%</div>
+                          <span className="text-green-600 text-sm font-semibold">↑ 20x</span>
+                        </div>
+                        <div className="text-sm text-foreground/80 font-medium">Email Open Rate</div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-xl border border-blue-500/30">
+                        <div className="flex items-baseline gap-1">
+                          <div className="text-3xl font-bold text-blue-700">12-18%</div>
+                          <span className="text-blue-600 text-sm font-semibold">↑ 30x</span>
+                        </div>
+                        <div className="text-sm text-foreground/80 font-medium">Response Rate</div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-xl border border-purple-500/30">
+                        <div className="flex items-baseline gap-1">
+                          <div className="text-3xl font-bold text-purple-700">50-80</div>
+                          <span className="text-purple-600 text-sm font-semibold">↑ 12x</span>
+                        </div>
+                        <div className="text-sm text-foreground/80 font-medium">RFQs/month</div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-xl border border-orange-500/30">
+                        <div className="flex items-baseline gap-1">
+                          <div className="text-3xl font-bold text-orange-700">6-8 wk</div>
+                          <span className="text-orange-600 text-sm font-semibold">↓ 75%</span>
+                        </div>
+                        <div className="text-sm text-foreground/80 font-medium">Sales Cycle</div>
+                      </div>
+                    </div>
+
+                    {/* Benefits */}
+                    <div className="space-y-3 pt-4">
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">AI-curated buyers with verified purchase intent</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Personalized campaigns to targeted decision-makers</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Real-time analytics on every interaction</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Automated follow-ups by our professional team</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Beautiful AI-generated product pages & storefronts</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="mt-12 text-center">
+              <p className="text-lg text-muted-foreground mb-6">
+                Join hundreds of suppliers who have transformed their outreach
+              </p>
+              <Button 
+                id="case-study-cta-button"
+                size="lg" 
+                className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+                onClick={() => {
+                  const heroForm = document.getElementById('hero-email-input');
+                  heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  setTimeout(() => (heroForm as HTMLInputElement)?.focus(), 500);
+                }}
+              >
+                Get These Results
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Auto BD & Reverse BD Section */}
+      <section id="auto-bd-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="auto-bd-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="premium" className="mb-4">
+              Bidirectional Outreach
+            </Badge>
+            <h2 id="auto-bd-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
+              Auto BD & Reverse Auto BD
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Connect sellers with buyers and buyers with sellers — automatically
+            </p>
+          </div>
+
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+              {/* Auto BD - Seller to Buyer */}
+              <div id="auto-bd-seller-card" className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300">
+                <div className="mb-6">
+                  <div className="inline-flex p-4 bg-gradient-to-br from-primary/30 to-primary/20 rounded-2xl shadow-lg">
+                    <Send className="w-8 h-8 text-primary" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">
+                  Auto BD: Sellers → Buyers
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  We actively reach out to verified buyers on behalf of sellers. Your products are pitched directly to companies with active purchasing needs, complete with professional messaging and follow-ups.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">AI matches your products to buyer requirements</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Professional outreach from our team</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Real-time notifications when buyers respond</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reverse BD - Buyer to Seller */}
+              <div id="reverse-bd-buyer-card" className="group relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 transition-all duration-300">
+                <div className="mb-6">
+                  <div className="inline-flex p-4 bg-gradient-to-br from-accent/30 to-accent/20 rounded-2xl shadow-lg">
+                    <Database className="w-8 h-8 text-accent" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">
+                  Reverse BD: Buyers → Sellers
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  We collect buyer intentions and route them to the right sellers. When buyers express interest or submit RFQs, we automatically match them with your products and notify you instantly.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Capture inbound buyer interest automatically</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Smart routing to matching product sellers</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Pre-qualified leads delivered to your inbox</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Flow Diagram */}
+            <div className="mt-12 p-8 bg-gradient-to-br from-muted/30 to-muted/10 backdrop-blur-sm rounded-2xl border border-border/50">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground font-bold text-xl mb-2">
+                    S
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Sellers</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-medium text-muted-foreground">Auto BD</span>
+                  <ArrowRight className="w-6 h-6 text-primary" />
+                </div>
+
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-accent text-white font-bold text-2xl mb-2">
+                    P
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Pitchivo</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="w-6 h-6 text-accent rotate-180 md:rotate-0" />
+                  <span className="text-sm font-medium text-muted-foreground">Reverse BD</span>
+                  <ArrowRight className="w-6 h-6 text-accent rotate-180 md:rotate-0" />
+                </div>
+
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent text-accent-foreground font-bold text-xl mb-2">
+                    B
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">Buyers</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Storefront Generation Section */}
+      <section id="storefront-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-background via-primary/5 to-background" aria-labelledby="storefront-heading">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              {/* Left Visual */}
+              <div className="relative order-2 lg:order-1">
+                <div className="relative bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
+                  {/* Browser Header */}
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
+                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                    <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></div>
+                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                    <span className="ml-2 text-xs text-muted-foreground">yourcompany.pitchivo.com</span>
+                  </div>
+
+                  {/* Storefront Preview */}
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 rounded-xl bg-gradient-accent"></div>
+                      <div>
+                        <div className="h-4 bg-foreground/80 rounded w-32 mb-2"></div>
+                        <div className="h-3 bg-muted rounded w-24"></div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20"></div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="h-3 bg-muted rounded w-full"></div>
+                      <div className="h-3 bg-muted rounded w-4/5"></div>
+                      <div className="h-3 bg-muted rounded w-3/5"></div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <div className="flex-1 h-9 bg-gradient-accent rounded-lg"></div>
+                      <div className="h-9 w-9 bg-muted rounded-lg"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating badges */}
+                <div className="absolute -top-6 -right-6 z-10">
+                  <Badge className="bg-green-500 text-white border-green-600 shadow-lg">
+                    SEO Optimized
+                  </Badge>
+                </div>
+                <div className="absolute -bottom-6 -left-6 z-10">
+                  <Badge className="bg-blue-500 text-white border-blue-600 shadow-lg">
+                    AEO Ready
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Right Content */}
+              <div className="space-y-6 order-1 lg:order-2">
+                <Badge variant="premium" className="mb-2">
+                  AI-Generated Storefronts
+                </Badge>
+                <h2 id="storefront-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight">
+                  Beautiful Websites That <span className="text-primary">Drive Traffic</span>
+                </h2>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  We automatically generate professional storefronts and product pages that rank on Google and answer AI assistants. Drive organic traffic without hiring developers or SEO experts.
+                </p>
+
+                <div className="space-y-4 pt-4">
+                  <div id="storefront-benefit-seo" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20">
+                    <CheckCircle2 className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">SEO-Friendly Architecture</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Optimized meta tags, structured data, and semantic HTML ensure your products rank high on search engines.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div id="storefront-benefit-aeo" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
+                    <CheckCircle2 className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">AEO-Ready Content</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Optimized for AI search engines (ChatGPT, Perplexity). Your products appear when buyers ask AI for recommendations.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div id="storefront-benefit-traffic" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20">
+                    <CheckCircle2 className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">Organic Traffic Growth</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Watch as qualified leads find you organically through search engines and AI assistants, reducing your outreach costs.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div id="storefront-benefit-analytics" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20">
+                    <CheckCircle2 className="w-6 h-6 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">Built-In Analytics</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Track page views, visitor behavior, and conversion rates. Understand which products generate the most interest.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  id="storefront-cta-button"
+                  size="lg" 
+                  className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+                  onClick={() => {
+                    const heroForm = document.getElementById('hero-email-input');
+                    heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => (heroForm as HTMLInputElement)?.focus(), 500);
+                  }}
+                >
+                  Create Your Storefront
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Enterprise Security Section */}
       <section className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="security-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -968,7 +1569,7 @@ export default function Home() {
             <Badge variant="premium" className="mb-4">
               Security & Compliance
             </Badge>
-            <h2 id="security-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            <h2 id="security-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Enterprise-Grade Security
             </h2>
             <p className="text-lg text-muted-foreground">
@@ -1031,7 +1632,7 @@ export default function Home() {
             <Badge variant="premium" className="mb-4">
               Testimonials
             </Badge>
-            <h2 id="testimonials-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            <h2 id="testimonials-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Trusted by Industry Leaders
             </h2>
             <p className="text-lg text-muted-foreground">
@@ -1107,7 +1708,7 @@ export default function Home() {
             <Badge variant="premium" className="mb-4">
               Pricing
             </Badge>
-            <h2 id="pricing-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            <h2 id="pricing-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Plans That Scale With You
             </h2>
             <p className="text-lg text-muted-foreground">
@@ -1194,7 +1795,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-gradient-to-b from-background to-background/50 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+      <footer id="main-footer" className="border-t border-border/50 bg-gradient-to-b from-background to-background/50 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             {/* Brand */}
@@ -1203,7 +1804,7 @@ export default function Home() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent">
                   <Sparkles className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
+                <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
               </div>
               <p className="text-base text-muted-foreground max-w-sm">
                 AI-powered B2B outreach platform for suppliers, exporters, and manufacturers who want results — not spreadsheets.
@@ -1216,6 +1817,7 @@ export default function Home() {
               <ul className="space-y-3">
                 <li>
                   <Button 
+                    id="footer-features-link"
                     variant="link" 
                     className="h-auto p-0 text-muted-foreground hover:text-foreground"
                     onClick={() => {
@@ -1227,12 +1829,18 @@ export default function Home() {
                   </Button>
                 </li>
                 <li>
-                  <Button variant="link" className="h-auto p-0 text-muted-foreground hover:text-foreground" onClick={scrollToPricing}>
+                  <Button 
+                    id="footer-pricing-link"
+                    variant="link" 
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground" 
+                    onClick={scrollToPricing}
+                  >
                     Pricing
                   </Button>
                 </li>
                 <li>
                   <Link 
+                    id="footer-faq-link"
                     href="/faq"
                     className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
@@ -1248,6 +1856,7 @@ export default function Home() {
               <ul className="space-y-3">
                 <li>
                   <Link 
+                    id="footer-privacy-link"
                     href="/privacy"
                     className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
@@ -1256,6 +1865,7 @@ export default function Home() {
                 </li>
                 <li>
                   <Link 
+                    id="footer-terms-link"
                     href="/terms"
                     className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
@@ -1264,6 +1874,7 @@ export default function Home() {
                 </li>
                 <li>
                   <Link 
+                    id="footer-contact-link"
                     href="/contact"
                     className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
@@ -1272,6 +1883,7 @@ export default function Home() {
                 </li>
                 <li>
                   <Link 
+                    id="footer-about-link"
                     href="/about"
                     className={cn(buttonVariants({ variant: "link" }), "h-auto p-0 text-muted-foreground hover:text-foreground")}
                   >
@@ -1317,18 +1929,19 @@ export default function Home() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleFormSubmit(handleWaitlistSubmit)}>
+          <form id="waitlist-form" onSubmit={handleFormSubmit(handleWaitlistSubmit)}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="email">
+                <Label htmlFor="waitlist-email-input">
                   Email <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="email"
+                  id="waitlist-email-input"
                   type="email"
                   {...register("email")}
                   placeholder="you@company.com"
                   className={cn("h-11 touch-manipulation", errors.email && "border-destructive")}
+                  aria-label="Email address"
                 />
                 {errors.email && (
                   <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -1336,14 +1949,15 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fullName">
+                <Label htmlFor="waitlist-fullname-input">
                   Full Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="fullName"
+                  id="waitlist-fullname-input"
                   {...register("fullName")}
                   placeholder="John Doe"
                   className={cn("h-11 touch-manipulation", errors.fullName && "border-destructive")}
+                  aria-label="Full name"
                 />
                 {errors.fullName && (
                   <p className="text-sm text-destructive">{errors.fullName.message}</p>
@@ -1351,14 +1965,15 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company">
+                <Label htmlFor="waitlist-company-input">
                   Company / Organization <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="company"
+                  id="waitlist-company-input"
                   {...register("company")}
                   placeholder="Acme Inc."
                   className={cn("h-11 touch-manipulation", errors.company && "border-destructive")}
+                  aria-label="Company name"
                 />
                 {errors.company && (
                   <p className="text-sm text-destructive">{errors.company.message}</p>
@@ -1366,31 +1981,34 @@ export default function Home() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role">Role / Title</Label>
+                <Label htmlFor="waitlist-role-input">Role / Title</Label>
                 <Input
-                  id="role"
+                  id="waitlist-role-input"
                   {...register("role")}
                   placeholder="Product Manager"
                   className="h-11 touch-manipulation"
+                  aria-label="Job role or title"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="note">
+                <Label htmlFor="waitlist-note-input">
                   Tell us why you want early access
                 </Label>
                 <textarea
-                  id="note"
+                  id="waitlist-note-input"
                   {...register("note")}
                   placeholder="Optional message..."
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   rows={3}
+                  aria-label="Additional notes"
                 />
               </div>
             </div>
 
             <DialogFooter className="gap-2">
               <Button
+                id="waitlist-cancel-button"
                 type="button"
                 variant="outline"
                 onClick={() => setWaitlistOpen(false)}
@@ -1400,6 +2018,7 @@ export default function Home() {
                 Cancel
               </Button>
               <Button
+                id="waitlist-submit-button"
                 type="submit"
                 disabled={isSubmitting}
                 className="h-11"
