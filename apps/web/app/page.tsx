@@ -533,7 +533,7 @@ export default function Home() {
 
               {/* Description */}
               <p className="text-xl sm:text-2xl text-foreground/80 dark:text-foreground/90 leading-relaxed font-medium">
-                Transform ingredient specs into stunning product pages. Launch targeted campaigns to buyers with real purchase intent. Track engagement. Close deals faster.
+                Transform product specifications into stunning pages. Launch targeted campaigns to buyers with real purchase intent. Track engagement. Close deals faster.
               </p>
 
               {/* CTA Form */}
@@ -801,7 +801,7 @@ export default function Home() {
                 step: "01",
                 icon: FileText,
                 title: "Upload Product Files",
-                description: "Upload PDFs or spec sheets. Our AI extracts ingredients, features, and certifications to generate SEO-optimized product pages.",
+                description: "Upload PDFs or spec sheets. Our AI extracts key specifications, features, and certifications to generate SEO-optimized product pages.",
               },
               {
                 step: "02",
@@ -1314,35 +1314,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Auto BD & Reverse BD Section */}
-      <section id="auto-bd-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="auto-bd-heading">
+      {/* Outbound & Inbound Sales Section */}
+      <section id="sales-automation-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="sales-automation-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge variant="premium" className="mb-4">
-              Bidirectional Outreach
+              Two-Way Sales Engine
             </Badge>
-            <h2 id="auto-bd-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              Auto BD & Reverse Auto BD
+            <h2 id="sales-automation-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
+              We Find Buyers For You & Route Buyers To You
             </h2>
             <p className="text-lg text-muted-foreground">
-              Connect sellers with buyers and buyers with sellers — automatically
+              Outbound campaigns to reach buyers + inbound lead routing when buyers find you
             </p>
           </div>
 
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-              {/* Auto BD - Seller to Buyer */}
-              <div id="auto-bd-seller-card" className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300">
+              {/* Outbound Sales Automation */}
+              <div id="outbound-sales-card" className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300">
                 <div className="mb-6">
                   <div className="inline-flex p-4 bg-gradient-to-br from-primary/30 to-primary/20 rounded-2xl shadow-lg">
                     <Send className="w-8 h-8 text-primary" />
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold text-foreground mb-4">
-                  Auto BD: Sellers → Buyers
+                  Outbound: We Find Buyers For You
                 </h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  We actively reach out to verified buyers on behalf of sellers. Your products are pitched directly to companies with active purchasing needs, complete with professional messaging and follow-ups.
+                  We proactively reach out to verified buyers on your behalf. Your products are pitched directly to companies with active purchasing needs, complete with professional messaging and strategic follow-ups.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -1351,7 +1351,7 @@ export default function Home() {
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-foreground">Professional outreach from our team</span>
+                    <span className="text-sm text-foreground">Professional outreach campaigns managed by our team</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
@@ -1360,18 +1360,18 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Reverse BD - Buyer to Seller */}
-              <div id="reverse-bd-buyer-card" className="group relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 transition-all duration-300">
+              {/* Inbound Lead Routing */}
+              <div id="inbound-routing-card" className="group relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 transition-all duration-300">
                 <div className="mb-6">
                   <div className="inline-flex p-4 bg-gradient-to-br from-accent/30 to-accent/20 rounded-2xl shadow-lg">
                     <Database className="w-8 h-8 text-accent" />
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold text-foreground mb-4">
-                  Reverse BD: Buyers → Sellers
+                  Inbound: We Route Buyers To You
                 </h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  We collect buyer intentions and route them to the right sellers. When buyers express interest or submit RFQs, we automatically match them with your products and notify you instantly.
+                  We capture buyer interest and intelligently route leads to the right sellers. When buyers search products or submit RFQs, we automatically match them with your offerings and notify you instantly.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -1380,7 +1380,7 @@ export default function Home() {
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-foreground">Smart routing to matching product sellers</span>
+                    <span className="text-sm text-foreground">Intelligent routing to matching sellers</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
@@ -1402,7 +1402,7 @@ export default function Home() {
 
                 <div className="flex items-center gap-2">
                   <ArrowRight className="w-6 h-6 text-primary" />
-                  <span className="text-sm font-medium text-muted-foreground">Auto BD</span>
+                  <span className="text-sm font-medium text-muted-foreground">Outbound</span>
                   <ArrowRight className="w-6 h-6 text-primary" />
                 </div>
 
@@ -1415,7 +1415,7 @@ export default function Home() {
 
                 <div className="flex items-center gap-2">
                   <ArrowRight className="w-6 h-6 text-accent rotate-180 md:rotate-0" />
-                  <span className="text-sm font-medium text-muted-foreground">Reverse BD</span>
+                  <span className="text-sm font-medium text-muted-foreground">Inbound</span>
                   <ArrowRight className="w-6 h-6 text-accent rotate-180 md:rotate-0" />
                 </div>
 
@@ -1438,7 +1438,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Left Visual */}
               <div className="relative order-2 lg:order-1">
-                <div className="relative bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="relative bg-gradient-to-br from-background/95 via-background/90 to-background/85 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
                   {/* Browser Header */}
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
                     <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
@@ -1447,31 +1447,56 @@ export default function Home() {
                     <span className="ml-2 text-xs text-muted-foreground">yourcompany.pitchivo.com</span>
                   </div>
 
-                  {/* Storefront Preview */}
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 rounded-xl bg-gradient-accent"></div>
+                  {/* Storefront Preview - Real Content */}
+                  <div className="p-6 space-y-4 bg-background/50">
+                    {/* Company Header */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-border/30">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-accent flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                        AC
+                      </div>
                       <div>
-                        <div className="h-4 bg-foreground/80 rounded w-32 mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-24"></div>
+                        <div className="text-sm font-bold text-foreground">Acme Chemicals Co.</div>
+                        <div className="text-xs text-muted-foreground">Premium B2B Supplier</div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="aspect-square rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20"></div>
-                      ))}
+                    {/* Featured Products */}
+                    <div>
+                      <div className="text-xs font-semibold text-foreground/80 mb-2">Featured Products</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { name: 'Titanium Dioxide', color: 'from-blue-500/30 to-blue-500/20' },
+                          { name: 'Citric Acid', color: 'from-green-500/30 to-green-500/20' },
+                          { name: 'Ascorbic Acid', color: 'from-purple-500/30 to-purple-500/20' }
+                        ].map((product, i) => (
+                          <div key={i} className={`aspect-square rounded-lg bg-gradient-to-br ${product.color} border border-border/30 flex items-center justify-center p-2`}>
+                            <span className="text-[8px] text-center font-medium text-foreground/70 leading-tight">{product.name}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="h-3 bg-muted rounded w-full"></div>
-                      <div className="h-3 bg-muted rounded w-4/5"></div>
-                      <div className="h-3 bg-muted rounded w-3/5"></div>
+                    {/* Product Description */}
+                    <div>
+                      <div className="text-xs font-semibold text-foreground/80 mb-1.5">About Our Products</div>
+                      <div className="space-y-1">
+                        <div className="text-[10px] text-muted-foreground leading-relaxed">
+                          High-quality chemicals and raw materials for food, pharmaceutical, and industrial applications.
+                        </div>
+                        <div className="text-[10px] text-muted-foreground leading-relaxed">
+                          ISO certified, competitive pricing, reliable delivery.
+                        </div>
+                      </div>
                     </div>
 
+                    {/* CTA Buttons */}
                     <div className="flex gap-2 pt-2">
-                      <div className="flex-1 h-9 bg-gradient-accent rounded-lg"></div>
-                      <div className="h-9 w-9 bg-muted rounded-lg"></div>
+                      <div className="flex-1 h-8 bg-gradient-accent rounded-lg flex items-center justify-center text-white text-[10px] font-semibold shadow-md">
+                        Request Quote
+                      </div>
+                      <div className="h-8 w-8 bg-muted/50 rounded-lg flex items-center justify-center border border-border/30">
+                        <Bell className="w-3 h-3 text-muted-foreground" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1807,7 +1832,7 @@ export default function Home() {
                 <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Pitchivo</span>
               </div>
               <p className="text-base text-muted-foreground max-w-sm">
-                AI-powered B2B outreach platform for suppliers, exporters, and manufacturers who want results — not spreadsheets.
+                AI-powered B2B outreach platform for chemical suppliers, manufacturers, and distributors who want results — not spreadsheets.
               </p>
             </div>
 
@@ -1925,7 +1950,7 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>Join the Waitlist</DialogTitle>
             <DialogDescription>
-              We're onboarding early suppliers in the food & supplement ingredient industry.
+              We're onboarding B2B suppliers across food, chemicals, pharmaceuticals, and industrial products.
             </DialogDescription>
           </DialogHeader>
 
