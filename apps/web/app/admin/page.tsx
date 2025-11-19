@@ -15,6 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Admin Dashboard - Pitchivo',
+  description: 'Admin dashboard for managing platform activity, merchants, campaigns, and system metrics.',
+}
 
 export default async function AdminDashboard() {
   const { user } = await requireAdmin()
@@ -68,16 +74,16 @@ export default async function AdminDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
       <div className="relative">
         {/* Page Header - Integral Section */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section id="admin-dashboard-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Admin Dashboard</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">Admin Dashboard</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Overview of platform activity and metrics
             </p>
@@ -85,13 +91,15 @@ export default async function AdminDashboard() {
         </section>
 
         {/* Summary Statistics - Integral Section */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+        <section id="admin-dashboard-summary-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {summaryCards.map((card) => {
               const Icon = card.icon
+              const cardId = card.title.toLowerCase().replace(/\s+/g, '-')
               return (
                 <div
                   key={card.title}
+                  id={`admin-summary-${cardId}-card`}
                   className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -110,14 +118,14 @@ export default async function AdminDashboard() {
         </section>
 
         {/* Recent Activity - Integral Section */}
-        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <section id="admin-dashboard-activity-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="max-w-4xl">
             <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
               <div className="flex items-center gap-2 mb-6">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
                   <Activity className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-semibold text-foreground">Recent Activity</h2>
+                <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Recent Activity</h2>
               </div>
               <div>
                 <h3 className="text-xs sm:text-sm font-semibold mb-3 text-muted-foreground">Recent Organizations</h3>
@@ -127,6 +135,7 @@ export default async function AdminDashboard() {
                       recentOrganizations.map((org) => (
                         <div
                           key={org.id}
+                          id={`admin-org-${org.id}`}
                           className="py-4 hover:bg-primary/5 transition-all duration-300 group"
                         >
                           <div className="flex items-center justify-between">
@@ -149,6 +158,6 @@ export default async function AdminDashboard() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   )
 }
