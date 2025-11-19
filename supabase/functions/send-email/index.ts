@@ -95,6 +95,15 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const emailData: EmailRequest = await req.json()
+    
+    // Log received data including tags
+    console.log('📧 [send-email] Received email request:', {
+      to: emailData.to,
+      subject: emailData.subject,
+      hasTags: !!(emailData.tags && emailData.tags.length > 0),
+      tags: emailData.tags || [],
+      timestamp: new Date().toISOString()
+    })
 
     // Validate required fields
     if (!emailData.to || !emailData.subject) {
@@ -378,7 +387,22 @@ Deno.serve(async (req) => {
     // Add tags if provided (CRITICAL for webhook tracking)
     if (emailData.tags && emailData.tags.length > 0) {
       brevoPayload.tags = emailData.tags
+      console.log("🏷️  Tags included in email:", emailData.tags)
+    } else {
+      console.warn("⚠️  No tags provided in email request - webhook tracking may fail")
     }
+
+    // Log the complete payload being sent to Brevo (excluding sensitive content)
+    console.log('📤 [send-email] Brevo API payload:', {
+      sender: brevoPayload.sender,
+      to: brevoPayload.to,
+      subject: brevoPayload.subject,
+      hasHtmlContent: !!brevoPayload.htmlContent,
+      hasTextContent: !!brevoPayload.textContent,
+      templateId: brevoPayload.templateId,
+      tags: brevoPayload.tags || [],
+      replyTo: brevoPayload.replyTo
+    })
 
     // Send email via Brevo API
     const brevoResponse = await fetch(BREVO_API_URL, {
@@ -393,10 +417,11 @@ Deno.serve(async (req) => {
 
     if (!brevoResponse.ok) {
       const errorText = await brevoResponse.text()
-      console.error("Brevo API error:", {
+      console.error("❌ Brevo API error:", {
         status: brevoResponse.status,
         statusText: brevoResponse.statusText,
         error: errorText,
+        payloadTags: brevoPayload.tags,
       })
       return new Response(
         JSON.stringify({
@@ -412,6 +437,11 @@ Deno.serve(async (req) => {
     }
 
     const brevoResult = await brevoResponse.json()
+    console.log('✅ Brevo API response:', {
+      messageId: brevoResult.messageId,
+      success: true,
+      tagsSent: brevoPayload.tags || []
+    })
 
     return new Response(
       JSON.stringify({

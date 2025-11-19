@@ -244,6 +244,7 @@ export async function POST(request: NextRequest) {
         // Add campaign tag for webhook tracking - CRITICAL for Brevo webhooks to update campaign stats
         tags: [`campaign_${campaignId}`]
       }
+      console.log('[campaigns/send] Email payload tags:', emailPayload.tags)
       console.log('[campaigns/send] Calling sendEmail function')
       const emailResult = await sendEmail(emailPayload)
       console.log('[campaigns/send] Email sent successfully. Message ID:', emailResult?.messageId)

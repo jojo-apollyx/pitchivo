@@ -75,6 +75,13 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   }
 
   try {
+    // Log tags if present for debugging
+    if (options.tags && options.tags.length > 0) {
+      console.log('📧 [sendEmail] Tags being sent to edge function:', options.tags)
+    } else {
+      console.warn('⚠️  [sendEmail] No tags provided in email options')
+    }
+    
     const response = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
       method: "POST",
       headers: {
