@@ -273,7 +273,7 @@ export function ScheduledEmailsViewer({ campaignId }: ScheduledEmailsViewerProps
 
                             {email.sent_at && (
                               <div className="text-xs text-muted-foreground">
-                                Sent at {format(new Date(email.sent_at), 'h:mm a on MMM d, yyyy')}
+                                Sent at {format(new Date(email.sent_at), "h:mm a 'on' MMM d, yyyy")}
                               </div>
                             )}
                           </div>
