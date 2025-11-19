@@ -22,6 +22,7 @@ import { QuotaBar } from '@/components/ui/quota-bar'
 import { UpgradePrompt } from '@/components/ui/upgrade-prompt'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
+import { PRICING_TIERS, CAMPAIGN_MIN_EMAILS } from '@/lib/constants/pricing'
 
 export default function ConfigureSendingPage() {
   const router = useRouter()
@@ -101,10 +102,11 @@ export default function ConfigureSendingPage() {
 
   const metrics = calculateCampaignMetrics(emailCount, durationDays)
   
-  // Use real subscription quota - be more generous with defaults to avoid blocking users
-  const planQuota = quotaUsage?.emailsQuota || 10000 // Default to high value while loading
+  // Use real subscription quota - default to free tier values while loading
+  const defaultQuota = PRICING_TIERS.free.features.emailQuota
+  const planQuota = quotaUsage?.emailsQuota || defaultQuota
   const usedQuota = quotaUsage?.emailsUsed || 0
-  const remainingQuota = quotaUsage?.emailsRemaining || 10000 // Default to high value while loading
+  const remainingQuota = quotaUsage?.emailsRemaining || defaultQuota
   const canSendCampaign = remainingQuota >= emailCount
   const isQuotaSufficient = isLoadingSub || canSendCampaign || tier === 'enterprise' // Don't block during loading
 
@@ -139,7 +141,7 @@ export default function ConfigureSendingPage() {
     router.push('/dashboard/campaigns/create/buyers')
   }
 
-  const isValid = emailCount >= 50 && emailCount <= planQuota && durationDays >= metrics.minDays && isQuotaSufficient
+  const isValid = emailCount >= CAMPAIGN_MIN_EMAILS && emailCount <= planQuota && durationDays >= metrics.minDays && isQuotaSufficient
 
   return (
     <div className="min-h-screen bg-background">
@@ -191,7 +193,7 @@ export default function ConfigureSendingPage() {
                       <Input
                         id="emailCount"
                         type="number"
-                        min="50"
+                        min={CAMPAIGN_MIN_EMAILS}
                         max={planQuota}
                         value={emailCount}
                         onChange={(e) => {
@@ -206,9 +208,9 @@ export default function ConfigureSendingPage() {
                         className="text-lg"
                       />
                       <Slider
-                        min={50}
+                        min={CAMPAIGN_MIN_EMAILS}
                         max={planQuota}
-                        step={10}
+                        step={CAMPAIGN_MIN_EMAILS}
                         value={[emailCount]}
                         onValueChange={(values) => {
                           const value = values[0]

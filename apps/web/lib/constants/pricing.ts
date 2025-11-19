@@ -1,4 +1,15 @@
-// Pricing tier configuration
+// ============================================================================
+// PRICING & QUOTA CONFIGURATION - SINGLE SOURCE OF TRUTH
+// ============================================================================
+// 
+// ⚠️ IMPORTANT: This is the centralized configuration for all tier quotas.
+// When adjusting quotas, update them here and they will automatically apply
+// across the entire application.
+//
+// Note: Database migration also has default values. After changing values here,
+// you may need to update existing subscriptions in the database or run a migration.
+// See: supabase/migrations/20240101000051_create_subscriptions.sql
+// ============================================================================
 
 export const PRICING_TIERS = {
   free: {
@@ -93,6 +104,7 @@ export const STRIPE_PRODUCTS = {
 }
 
 // Feature comparison for pricing page
+// Note: Keep these in sync with PRICING_TIERS above
 export const FEATURE_COMPARISON = [
   {
     name: 'Product Listings',
@@ -103,15 +115,15 @@ export const FEATURE_COMPARISON = [
   },
   {
     name: 'Email Quota (monthly)',
-    free: '30',
-    basic: '400',
-    premium: '2,000',
+    free: String(PRICING_TIERS.free.features.emailQuota),
+    basic: String(PRICING_TIERS.basic.features.emailQuota),
+    premium: '2,000', // Formatted for display
     enterprise: 'Unlimited'
   },
   {
     name: 'QR / Custom Links per Product',
-    free: '3',
-    basic: '10',
+    free: String(PRICING_TIERS.free.features.qrLinksPerProduct),
+    basic: String(PRICING_TIERS.basic.features.qrLinksPerProduct),
     premium: 'Unlimited',
     enterprise: 'Unlimited'
   },
@@ -181,4 +193,20 @@ export function isUnlimited(value: number): boolean {
 export function formatQuota(value: number): string {
   return isUnlimited(value) ? 'Unlimited' : value.toLocaleString()
 }
+
+// Helper function to get email quota for a tier
+export function getEmailQuota(tier: PricingTier | string): number {
+  const tierKey = tier as PricingTier
+  return PRICING_TIERS[tierKey]?.features.emailQuota || PRICING_TIERS.free.features.emailQuota
+}
+
+// Helper function to get QR links quota for a tier
+export function getQRLinksQuota(tier: PricingTier | string): number {
+  const tierKey = tier as PricingTier
+  return PRICING_TIERS[tierKey]?.features.qrLinksPerProduct || PRICING_TIERS.free.features.qrLinksPerProduct
+}
+
+// Minimum campaign size (for validation)
+export const CAMPAIGN_MIN_EMAILS = 5
+export const CAMPAIGN_MIN_EMAILS_RECOMMENDED = 50 // Recommended minimum for better results
 

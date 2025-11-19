@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client'
-import { getTierConfig, isUnlimited } from '@/lib/constants/pricing'
+import { getTierConfig, isUnlimited, PRICING_TIERS } from '@/lib/constants/pricing'
 
 export interface QuotaStatus {
   emailsUsed: number
@@ -51,10 +51,10 @@ export async function getQuotaStatus(orgId: string): Promise<QuotaStatus> {
 
     const quotaData = (data as QuotaUsageData) || {}
     const emailsUsed = quotaData.emails_sent || 0
-    const emailsQuota = quotaData.email_quota || 30
+    const emailsQuota = quotaData.email_quota || PRICING_TIERS.free.features.emailQuota
     const emailsRemaining = Math.max(0, emailsQuota - emailsUsed)
     const qrLinksUsed = quotaData.qr_links_count || 0
-    const qrLinksQuota = quotaData.qr_links_quota || 3
+    const qrLinksQuota = quotaData.qr_links_quota || PRICING_TIERS.free.features.qrLinksPerProduct
 
     const isEmailUnlimited = isUnlimited(emailsQuota)
     const isQRLinksUnlimited = isUnlimited(qrLinksQuota)
@@ -73,13 +73,15 @@ export async function getQuotaStatus(orgId: string): Promise<QuotaStatus> {
   } catch (error) {
     console.error('Error in getQuotaStatus:', error)
     // Return default free tier quotas on error
+    const freeEmailQuota = PRICING_TIERS.free.features.emailQuota
+    const freeQRLinksQuota = PRICING_TIERS.free.features.qrLinksPerProduct
     return {
       emailsUsed: 0,
-      emailsQuota: 30,
-      emailsRemaining: 30,
+      emailsQuota: freeEmailQuota,
+      emailsRemaining: freeEmailQuota,
       qrLinksUsed: 0,
-      qrLinksQuota: 3,
-      qrLinksRemaining: 3,
+      qrLinksQuota: freeQRLinksQuota,
+      qrLinksRemaining: freeQRLinksQuota,
       tier: 'free',
       canSendEmails: true,
       canAddQRLinks: true
@@ -150,11 +152,12 @@ export async function checkQRLinksQuota(productId: string): Promise<{
     }
   } catch (error) {
     console.error('Error checking QR links quota:', error)
+    const freeQRLinksQuota = PRICING_TIERS.free.features.qrLinksPerProduct
     return {
       canAdd: true,
       used: 0,
-      quota: 3,
-      remaining: 3,
+      quota: freeQRLinksQuota,
+      remaining: freeQRLinksQuota,
       tier: 'free'
     }
   }
