@@ -7,12 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { PRICING_TIERS, PricingTier } from '@/lib/constants/pricing'
 
-// Initialize Stripe (you'll need to install: npm install stripe)
-// Uncomment when Stripe is set up:
-// import Stripe from 'stripe'
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: '2024-11-20.acacia'
-// })
+// Initialize Stripe
+import Stripe from 'stripe'
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-11-20.acacia'
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,8 +63,6 @@ export async function POST(request: NextRequest) {
 
     const tierConfig = PRICING_TIERS[tier as PricingTier]
 
-    // TODO: When Stripe is configured, uncomment this:
-    /*
     let customerId = subscription?.stripe_customer_id
 
     // Create Stripe customer if doesn't exist
@@ -112,15 +109,6 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ url: session.url })
-    */
-
-    // Temporary response when Stripe is not configured
-    return NextResponse.json({
-      error: 'Stripe checkout not configured yet',
-      message: `Would create checkout for ${tierConfig.name} plan at ${tierConfig.price}/month`,
-      tier,
-      price: tierConfig.price
-    }, { status: 501 })
 
   } catch (error) {
     console.error('Error creating checkout session:', error)

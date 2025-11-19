@@ -6,12 +6,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Initialize Stripe (you'll need to install: npm install stripe)
-// Uncomment when Stripe is set up:
-// import Stripe from 'stripe'
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: '2024-11-20.acacia'
-// })
+// Initialize Stripe
+import Stripe from 'stripe'
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-11-20.acacia'
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,8 +45,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: When Stripe is configured, uncomment this:
-    /*
     // Create portal session
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
@@ -55,13 +52,6 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ url: session.url })
-    */
-
-    // Temporary response when Stripe is not configured
-    return NextResponse.json({
-      error: 'Stripe portal not configured yet',
-      message: 'Would open Stripe billing portal for customer management'
-    }, { status: 501 })
 
   } catch (error) {
     console.error('Error creating portal session:', error)
