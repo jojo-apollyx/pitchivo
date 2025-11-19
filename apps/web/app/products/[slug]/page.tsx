@@ -253,18 +253,18 @@ export default function PublicProductPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Loading product...</p>
         </div>
-      </div>
+      </main>
     )
   }
 
   if (!formData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent/10 relative overflow-hidden">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent/10 relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="pointer-events-none absolute -right-12 top-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 left-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
@@ -280,7 +280,7 @@ export default function PublicProductPage() {
               </div>
 
               {/* Title */}
-              <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-3 text-foreground">
+              <h2 className="text-2xl sm:text-3xl font-display font-semibold text-center mb-3 text-foreground">
                 Product Not Available
               </h2>
 
@@ -347,7 +347,7 @@ export default function PublicProductPage() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -364,7 +364,7 @@ export default function PublicProductPage() {
         />
       )}
 
-      <div className="min-h-screen bg-background">
+      <main className="min-h-screen bg-background">
         {isMerchant && (
           <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
             <p className="text-xs text-primary font-medium">
@@ -407,7 +407,7 @@ export default function PublicProductPage() {
           }}
         />
       )}
-      </div>
+      </main>
     </>
   )
 }
