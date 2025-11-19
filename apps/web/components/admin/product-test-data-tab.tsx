@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Search, Trash2, Loader2, AlertTriangle, Package, Eye } from 'lucide-react'
+import { Search, Trash2, Loader2, AlertTriangle, Package, Eye, ChevronDown, ChevronUp, Database } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Product {
@@ -48,6 +48,11 @@ interface DeletePreview {
     tracking: number
     documents: number
   }
+  tables?: Record<string, {
+    count: number
+    sampleIds: string[]
+    description: string
+  }>
   totalRecords: number
 }
 
@@ -57,6 +62,7 @@ export function ProductTestDataTab() {
   const [testDataFilter, setTestDataFilter] = useState<string>('all')
   const [deletePreview, setDeletePreview] = useState<DeletePreview | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [expandedTable, setExpandedTable] = useState<string | null>(null)
 
   const queryClient = useQueryClient()
   const supabase = createClient()
@@ -146,9 +152,11 @@ export function ProductTestDataTab() {
       setDeletePreview({
         product,
         relatedData: data.relatedData,
+        tables: data.tables,
         totalRecords: data.totalRecords,
       })
       setShowDeleteDialog(true)
+      setExpandedTable(null) // Reset expanded state
     } catch (error) {
       toast.error('Failed to load preview', {
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -337,29 +345,80 @@ export function ProductTestDataTab() {
 
                 {deletePreview && (
                   <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                    <div className="flex items-center gap-2 font-medium">
-                      <Eye className="w-4 h-4" />
-                      Related Data Preview
+                    <div className="flex items-center gap-2 font-medium text-base">
+                      <Database className="w-5 h-5" />
+                      Comprehensive Data Preview
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      All related records across all database tables
+                    </p>
 
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex justify-between p-2 bg-background rounded">
-                        <span>Campaigns:</span>
-                        <Badge variant="outline">{deletePreview.relatedData.campaigns}</Badge>
+                    {/* Show detailed tables if available */}
+                    {deletePreview.tables && Object.keys(deletePreview.tables).length > 0 ? (
+                      <div className="space-y-2">
+                        {Object.entries(deletePreview.tables).map(([tableName, tableData]) => (
+                          <div key={tableName} className="border rounded-lg overflow-hidden bg-background">
+                            <button
+                              onClick={() => setExpandedTable(expandedTable === tableName ? null : tableName)}
+                              className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 flex-1 text-left">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {tableData.count}
+                                </Badge>
+                                <div>
+                                  <div className="font-medium text-sm">{tableName}</div>
+                                  <div className="text-xs text-muted-foreground">{tableData.description}</div>
+                                </div>
+                              </div>
+                              {expandedTable === tableName ? (
+                                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </button>
+                            
+                            {expandedTable === tableName && tableData.sampleIds.length > 0 && (
+                              <div className="px-3 pb-3 pt-1 border-t bg-muted/30">
+                                <div className="text-xs text-muted-foreground mb-2">Sample records:</div>
+                                <ul className="space-y-1">
+                                  {tableData.sampleIds.map((id, idx) => (
+                                    <li key={idx} className="text-xs font-mono bg-background px-2 py-1 rounded">
+                                      {id}
+                                    </li>
+                                  ))}
+                                </ul>
+                                {tableData.count > 5 && (
+                                  <div className="text-xs text-muted-foreground mt-2">
+                                    ...and {tableData.count - 5} more
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded">
-                        <span>RFQs:</span>
-                        <Badge variant="outline">{deletePreview.relatedData.rfqs}</Badge>
+                    ) : (
+                      // Fallback to old format
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex justify-between p-2 bg-background rounded">
+                          <span>Campaigns:</span>
+                          <Badge variant="outline">{deletePreview.relatedData.campaigns}</Badge>
+                        </div>
+                        <div className="flex justify-between p-2 bg-background rounded">
+                          <span>RFQs:</span>
+                          <Badge variant="outline">{deletePreview.relatedData.rfqs}</Badge>
+                        </div>
+                        <div className="flex justify-between p-2 bg-background rounded">
+                          <span>Tracking Records:</span>
+                          <Badge variant="outline">{deletePreview.relatedData.tracking}</Badge>
+                        </div>
+                        <div className="flex justify-between p-2 bg-background rounded">
+                          <span>Documents:</span>
+                          <Badge variant="outline">{deletePreview.relatedData.documents}</Badge>
+                        </div>
                       </div>
-                      <div className="flex justify-between p-2 bg-background rounded">
-                        <span>Tracking Records:</span>
-                        <Badge variant="outline">{deletePreview.relatedData.tracking}</Badge>
-                      </div>
-                      <div className="flex justify-between p-2 bg-background rounded">
-                        <span>Documents:</span>
-                        <Badge variant="outline">{deletePreview.relatedData.documents}</Badge>
-                      </div>
-                    </div>
+                    )}
 
                     <div className="pt-3 border-t">
                       <div className="flex justify-between items-center">
@@ -376,11 +435,11 @@ export function ProductTestDataTab() {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     <strong>Warning:</strong> This action is permanent and cannot be undone. All
-                    related campaigns, RFQs, tracking data, and documents will be permanently
+                    related data including campaigns, leads, scheduled emails, email events,
+                    campaign activities, RFQs, tracking data, and documents will be permanently
                     deleted.
                   </AlertDescription>
-                </Alert>
-              </div>
+                </Alert>              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

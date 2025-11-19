@@ -41,62 +41,158 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'product') {
-      // Preview product deletion
-      const relatedData = {
-        campaigns: 0,
-        rfqs: 0,
-        tracking: 0,
-        documents: 0,
-      }
-
-      // Count campaigns
-      const { count: campaignsCount } = await supabase
-        .from('campaigns')
-        .select('*', { count: 'exact', head: true })
-        .eq('product_id', id)
-      relatedData.campaigns = campaignsCount || 0
-
-      // Count RFQs
-      const { count: rfqsCount } = await supabase
-        .from('product_rfqs')
-        .select('*', { count: 'exact', head: true })
-        .eq('product_id', id)
-      relatedData.rfqs = rfqsCount || 0
-
-      // Count tracking records (product_view_tracking)
-      const { count: trackingCount } = await supabase
-        .from('product_view_tracking')
-        .select('*', { count: 'exact', head: true })
-        .eq('product_id', id)
-      relatedData.tracking = trackingCount || 0
-
-      // Count document extractions
+      // Preview product deletion with comprehensive related data check
+      const tables: Record<string, { count: number; sampleIds: string[]; description: string }> = {}
+      
+      // Get product info first
       const { data: product } = await supabase
         .from('products')
         .select('org_id')
         .eq('product_id', id)
         .single()
 
-      if (product) {
-        const { count: docsCount } = await supabase
-          .from('document_extractions')
-          .select('*', { count: 'exact', head: true })
-          .eq('organization_id', product.org_id)
-        relatedData.documents = docsCount || 0
+      // 1. Campaigns
+      const { data: campaigns, count: campaignsCount } = await supabase
+        .from('campaigns')
+        .select('campaign_id', { count: 'exact' })
+        .eq('product_id', id)
+        .limit(5)
+      
+      if (campaignsCount && campaignsCount > 0) {
+        tables['campaigns'] = {
+          count: campaignsCount,
+          sampleIds: campaigns?.map(c => c.campaign_id) || [],
+          description: 'Marketing campaigns for this product'
+        }
       }
 
-      const totalRecords =
-        1 + // product itself
-        relatedData.campaigns +
-        relatedData.rfqs +
-        relatedData.tracking +
-        relatedData.documents
+      // Get campaign IDs for related data
+      const campaignIds = campaigns?.map(c => c.campaign_id) || []
+
+      // 2. Campaign Leads (for each campaign)
+      if (campaignIds.length > 0) {
+        const { data: leads, count: leadsCount } = await supabase
+          .from('campaign_leads')
+          .select('lead_id, email', { count: 'exact' })
+          .in('campaign_id', campaignIds)
+          .limit(5)
+        
+        if (leadsCount && leadsCount > 0) {
+          tables['campaign_leads'] = {
+            count: leadsCount,
+            sampleIds: leads?.map(l => `${l.email} (${l.lead_id.substring(0, 8)}...)`) || [],
+            description: 'Lead contacts added to campaigns'
+          }
+        }
+
+        // 3. Scheduled Emails
+        const { data: scheduled, count: scheduledCount } = await supabase
+          .from('scheduled_emails')
+          .select('scheduled_email_id, recipient_email, status', { count: 'exact' })
+          .in('campaign_id', campaignIds)
+          .limit(5)
+        
+        if (scheduledCount && scheduledCount > 0) {
+          tables['scheduled_emails'] = {
+            count: scheduledCount,
+            sampleIds: scheduled?.map(s => `${s.recipient_email} (${s.status})`) || [],
+            description: 'Scheduled and sent emails for campaigns'
+          }
+        }
+
+        // 4. Email Events
+        const { data: events, count: eventsCount } = await supabase
+          .from('email_events')
+          .select('event_id, event_type', { count: 'exact' })
+          .in('campaign_id', campaignIds)
+          .limit(5)
+        
+        if (eventsCount && eventsCount > 0) {
+          tables['email_events'] = {
+            count: eventsCount,
+            sampleIds: events?.map(e => `${e.event_type} (${e.event_id.substring(0, 8)}...)`) || [],
+            description: 'Email tracking events (opens, clicks, bounces, etc.)'
+          }
+        }
+
+        // 5. Campaign Activities
+        const { data: activities, count: activitiesCount } = await supabase
+          .from('campaign_activities')
+          .select('activity_id, activity_type', { count: 'exact' })
+          .in('campaign_id', campaignIds)
+          .limit(5)
+        
+        if (activitiesCount && activitiesCount > 0) {
+          tables['campaign_activities'] = {
+            count: activitiesCount,
+            sampleIds: activities?.map(a => `${a.activity_type} (${a.activity_id.substring(0, 8)}...)`) || [],
+            description: 'Campaign activity logs and analytics'
+          }
+        }
+      }
+
+      // 6. Product RFQs
+      const { data: rfqs, count: rfqsCount } = await supabase
+        .from('product_rfqs')
+        .select('rfq_id, buyer_email', { count: 'exact' })
+        .eq('product_id', id)
+        .limit(5)
+      
+      if (rfqsCount && rfqsCount > 0) {
+        tables['product_rfqs'] = {
+          count: rfqsCount,
+          sampleIds: rfqs?.map(r => `${r.buyer_email} (${r.rfq_id.substring(0, 8)}...)`) || [],
+          description: 'Request for quotes from potential buyers'
+        }
+      }
+
+      // 7. Product View Tracking
+      const { data: tracking, count: trackingCount } = await supabase
+        .from('product_view_tracking')
+        .select('tracking_id', { count: 'exact' })
+        .eq('product_id', id)
+        .limit(5)
+      
+      if (trackingCount && trackingCount > 0) {
+        tables['product_view_tracking'] = {
+          count: trackingCount,
+          sampleIds: tracking?.map(t => t.tracking_id.substring(0, 12) + '...') || [],
+          description: 'Product page view analytics and tracking'
+        }
+      }
+
+      // 8. Document Extractions (from organization)
+      if (product) {
+        const { data: docs, count: docsCount } = await supabase
+          .from('document_extractions')
+          .select('extraction_id, document_type', { count: 'exact' })
+          .eq('organization_id', product.org_id)
+          .limit(5)
+        
+        if (docsCount && docsCount > 0) {
+          tables['document_extractions'] = {
+            count: docsCount,
+            sampleIds: docs?.map(d => `${d.document_type} (${d.extraction_id.substring(0, 8)}...)`) || [],
+            description: 'Uploaded documents and extracted data'
+          }
+        }
+      }
+
+      // Calculate total records
+      const totalRecords = 1 + Object.values(tables).reduce((sum, table) => sum + table.count, 0)
 
       return NextResponse.json({
         success: true,
         type: 'product',
-        relatedData,
+        tables,
         totalRecords,
+        // Legacy format for backward compatibility
+        relatedData: {
+          campaigns: tables['campaigns']?.count || 0,
+          rfqs: tables['product_rfqs']?.count || 0,
+          tracking: tables['product_view_tracking']?.count || 0,
+          documents: tables['document_extractions']?.count || 0,
+        },
       })
     } else if (type === 'organization') {
       // Preview organization deletion
