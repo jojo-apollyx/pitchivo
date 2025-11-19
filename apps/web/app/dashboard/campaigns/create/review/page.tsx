@@ -159,6 +159,47 @@ export default function ReviewLaunchPage() {
 
       if (error) throw error
 
+      // Add sample buyers as campaign leads
+      if (data && (draft as any).sampleBuyers && (draft as any).sampleBuyers.length > 0) {
+        try {
+          const sampleBuyers = (draft as any).sampleBuyers
+          const leads: any[] = []
+          
+          // Flatten sample buyers into individual contact leads
+          sampleBuyers.forEach((buyer: any) => {
+            // Add all contacts from each buyer
+            if (buyer.contactDetails && buyer.contactDetails.length > 0) {
+              buyer.contactDetails.forEach((contact: any) => {
+                leads.push({
+                  email: contact.email,
+                  name: contact.name,
+                  title: contact.title || contact.role,
+                  company: buyer.company,
+                  country: buyer.country,
+                  industry: buyer.industry,
+                  status: 'active'
+                })
+              })
+            }
+          })
+          
+          // Insert leads if we have any
+          if (leads.length > 0) {
+            await fetch('/api/admin/campaigns/leads', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                campaignId: data.campaign_id,
+                leads
+              })
+            })
+          }
+        } catch (leadError) {
+          console.error('Error adding campaign leads:', leadError)
+          // Don't fail the campaign launch if leads fail to add
+        }
+      }
+
       // Reset draft
       resetDraft()
 

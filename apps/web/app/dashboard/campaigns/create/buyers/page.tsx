@@ -19,8 +19,14 @@ export default function MatchedBuyersPage() {
     const buyers = generateMockBuyers(2450)
     setAllBuyers(buyers)
 
-    // Save sample buyers for later steps
-    const topBuyers = buyers.slice(0, 10).map(b => ({ company: b.company, contacts: b.contacts }))
+    // Save sample buyers with actual contact details for later steps
+    const topBuyers = buyers.slice(0, 10).map(b => ({ 
+      company: b.company, 
+      country: b.country,
+      industry: b.industry,
+      website: b.website,
+      contactDetails: b.contactDetails || []
+    }))
     setDraft({
       sampleBuyers: topBuyers,
       buyerCount: 2450,
