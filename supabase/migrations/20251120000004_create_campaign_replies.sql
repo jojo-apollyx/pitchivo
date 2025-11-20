@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS campaign_replies (
   reply_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID REFERENCES campaigns(campaign_id) ON DELETE CASCADE,
-  lead_id UUID REFERENCES leads(lead_id) ON DELETE SET NULL,
+  lead_id UUID REFERENCES campaign_leads(lead_id) ON DELETE SET NULL,
   lead_email TEXT NOT NULL,
   reply_subject TEXT,
   reply_text TEXT NOT NULL,
@@ -55,7 +55,7 @@ CREATE POLICY "Admins can view all campaign replies"
     EXISTS (
       SELECT 1 FROM user_profiles
       WHERE user_profiles.id = auth.uid()
-      AND user_profiles.is_admin = true
+      AND user_profiles.is_pitchivo_admin = true
     )
   );
 
@@ -78,7 +78,7 @@ CREATE POLICY "Admins can update campaign replies"
     EXISTS (
       SELECT 1 FROM user_profiles
       WHERE user_profiles.id = auth.uid()
-      AND user_profiles.is_admin = true
+      AND user_profiles.is_pitchivo_admin = true
     )
   );
 

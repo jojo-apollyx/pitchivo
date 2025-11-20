@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS smartlead_email_events (
   event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID REFERENCES campaigns(campaign_id) ON DELETE CASCADE,
-  lead_id UUID REFERENCES leads(lead_id) ON DELETE SET NULL,
+  lead_id UUID REFERENCES campaign_leads(lead_id) ON DELETE SET NULL,
   smartlead_campaign_id TEXT NOT NULL,
   smartlead_lead_id TEXT,
   lead_email TEXT NOT NULL,
@@ -52,7 +52,7 @@ CREATE POLICY "Admins can view all smartlead email events"
     EXISTS (
       SELECT 1 FROM user_profiles
       WHERE user_profiles.id = auth.uid()
-      AND user_profiles.is_admin = true
+      AND user_profiles.is_pitchivo_admin = true
     )
   );
 

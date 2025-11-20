@@ -174,10 +174,10 @@ async function processSmartleadEvent(event: any) {
 
     // Find lead in our database (if exists)
     const { data: lead } = await supabaseAdmin
-      .from('leads')
+      .from('campaign_leads')
       .select('lead_id')
       .eq('campaign_id', campaignId)
-      .eq('email', lead_email)
+      .eq('email', leadEmail)
       .single();
 
     const leadId = lead?.lead_id;
@@ -311,21 +311,18 @@ async function updateLeadStatus(leadId: string, eventType: string) {
       updated_at: new Date().toISOString()
     };
 
-    // Update last activity based on event type
+    // Update last_contacted for any activity, and status based on event type
     switch (eventType) {
       case 'sent':
-        updates.last_email_sent_at = new Date().toISOString();
-        break;
       case 'opened':
-        updates.last_opened_at = new Date().toISOString();
-        break;
       case 'clicked':
-        updates.last_clicked_at = new Date().toISOString();
+        updates.last_contacted = new Date().toISOString();
         break;
       case 'replied':
       case 'threaded_reply':
-        updates.last_replied_at = new Date().toISOString();
-        updates.status = 'replied';
+        updates.last_contacted = new Date().toISOString();
+        // Note: 'replied' is not a valid status in campaign_leads, keeping as 'active'
+        // Status values are: 'active', 'unsubscribed', 'bounced', 'invalid'
         break;
       case 'bounced':
         updates.status = 'bounced';
@@ -336,7 +333,7 @@ async function updateLeadStatus(leadId: string, eventType: string) {
     }
 
     const { error } = await supabaseAdmin
-      .from('leads')
+      .from('campaign_leads')
       .update(updates)
       .eq('lead_id', leadId);
 
@@ -388,10 +385,10 @@ async function handleUnsubscribe(campaignId: string, leadId: string | undefined,
     // Update lead status
     if (leadId) {
       await supabaseAdmin
-        .from('leads')
+        .from('campaign_leads')
         .update({ 
           status: 'unsubscribed',
-          unsubscribed_at: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
         .eq('lead_id', leadId);
     }
