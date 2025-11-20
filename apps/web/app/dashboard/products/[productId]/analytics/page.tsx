@@ -324,7 +324,7 @@ export default function ProductAnalyticsPage() {
           </div>
           <p className="text-sm text-muted-foreground font-normal">Loading premium analytics...</p>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -875,6 +875,6 @@ export default function ProductAnalyticsPage() {
           </div>
         </section>
       )}
-    </div>
+    </main>
   )
 }

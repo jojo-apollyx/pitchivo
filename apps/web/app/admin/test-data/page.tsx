@@ -19,7 +19,7 @@ export default function TestDataManagementPage() {
         <p className="text-muted-foreground">
           Manage test data across products, organizations, and bulk operations. Mark items as test data and preview related records before deletion.
         </p>
-      </main>
+      </div>
 
       {/* Info Alert */}
       <Alert className="mb-6">
@@ -93,6 +93,6 @@ export default function TestDataManagementPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </main>
+    </div>
   )
 }

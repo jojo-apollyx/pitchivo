@@ -59,30 +59,27 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
     try {
       setLoading(true)
       
-      // Load organization details
-      // Use maybeSingle() to handle case where organization doesn't exist yet
+      // Load organization detailsgit s
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .select('*')
         .eq('id', id)
-        .maybeSingle()
+        .single()
 
       if (orgError) throw orgError
 
       setOrganization(orgData)
 
-      // Load organization members only if organization exists
-      if (orgData) {
-        const { data: membersData, error: membersError } = await supabase
-          .from('user_profiles')
-          .select('id, email, full_name, org_role, is_pitchivo_admin, created_at')
-          .eq('organization_id', id)
-          .order('created_at', { ascending: false })
+      // Load organization members
+      const { data: membersData, error: membersError } = await supabase
+        .from('user_profiles')
+        .select('id, email, full_name, org_role, is_pitchivo_admin, created_at')
+        .eq('organization_id', id)
+        .order('created_at', { ascending: false })
 
-        if (membersError) throw membersError
+      if (membersError) throw membersError
 
-        setMembers(membersData || [])
-      }
+      setMembers(membersData || [])
     } catch (error) {
       console.error('Error loading organization details:', error)
       toast.error('Failed to load organization details')
@@ -95,19 +92,16 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
     return (
       <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
-      </div>
+      </main>
     )
   }
 
   if (!organization) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
-        <div className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20 max-w-md">
-          <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <h2 className="text-xl font-display font-semibold text-foreground mb-2">Organization Not Set Up Yet</h2>
-          <p className="text-muted-foreground mb-4">
-            This user hasn't completed their organization setup yet. They'll need to complete the onboarding process first.
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+        <div className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <h2 className="text-xl font-semibold text-foreground mb-2">Organization Not Found</h2>
+          <p className="text-muted-foreground mb-4">The organization you're looking for doesn't exist.</p>
           <Button
             onClick={() => router.push('/admin/users')}
             className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
@@ -121,7 +115,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
@@ -141,7 +135,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
                 Back
               </Button>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold">{organization.name}</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">{organization.name}</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-2">
               Organization details and members
             </p>
@@ -157,7 +151,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
                   <Building2 className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-display font-semibold">Basic Information</h2>
+                <h2 className="text-lg sm:text-xl font-semibold">Basic Information</h2>
               </div>
               <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -229,7 +223,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
 
             {/* Theme Colors */}
             <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
-              <h2 className="text-lg sm:text-xl font-display font-semibold mb-4">Theme Colors</h2>
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Theme Colors</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Primary Color</label>
@@ -270,7 +264,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-display font-semibold">Organization Members</h2>
+                <h2 className="text-lg sm:text-xl font-semibold">Organization Members</h2>
               </div>
               <div className="overflow-x-auto">
                 <div className="divide-y divide-border/30">

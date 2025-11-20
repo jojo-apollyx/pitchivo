@@ -326,7 +326,7 @@ export default function ChooseProductPage() {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   )
 }
 

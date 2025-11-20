@@ -322,7 +322,7 @@ export default function AdminWaitlistPage() {
             <p className="text-sm sm:text-base text-muted-foreground mt-2">
               Manage waitlist entries and send invitations
             </p>
-          </main>
+          </div>
         </motion.section>
 
         {/* Search and Filters - Integral Section */}
@@ -376,10 +376,10 @@ export default function AdminWaitlistPage() {
                   >
                     Rejected
                   </Button>
-                </main>
-              </main>
-            </main>
-          </main>
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.section>
 
         {/* Waitlist Table - Integral Section */}
@@ -399,10 +399,10 @@ export default function AdminWaitlistPage() {
                 loading={isLoading}
                 emptyMessage="No waitlist entries found"
               />
-            </main>
-          </main>
+            </div>
+          </div>
         </motion.section>
-      </main>
+      </div>
 
       {/* Invite Confirmation Dialog */}
       <Dialog

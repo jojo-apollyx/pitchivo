@@ -574,7 +574,7 @@ export default function ReviewLaunchPage() {
         onClose={() => setShowUpgradePrompt(false)}
         showComparison
       />
-    </div>
+    </main>
   )
 }
 

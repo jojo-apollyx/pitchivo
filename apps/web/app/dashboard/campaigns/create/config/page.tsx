@@ -615,7 +615,7 @@ export default function ConfigureSendingPage() {
         onClose={() => setShowUpgradePrompt(false)}
         showComparison
       />
-    </div>
+    </main>
   )
 }
 

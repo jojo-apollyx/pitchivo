@@ -291,7 +291,7 @@ export default function PreviewPublishPageNew() {
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Loading product...</p>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -304,7 +304,7 @@ export default function PreviewPublishPageNew() {
             Back to Products
           </Button>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -658,7 +658,7 @@ export default function PreviewPublishPageNew() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 

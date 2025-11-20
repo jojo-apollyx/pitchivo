@@ -79,7 +79,7 @@ export default function AdminCampaignAnalyticsPage() {
     return (
       <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
         <p className="text-muted-foreground">Loading campaign analytics...</p>
-      </div>
+      </main>
     )
   }
 
@@ -92,7 +92,7 @@ export default function AdminCampaignAnalyticsPage() {
             Back to Campaign Management
           </Button>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -290,7 +290,7 @@ export default function AdminCampaignAnalyticsPage() {
         </div>
       </section>
       </div>
-    </div>
+    </main>
   )
 }
 

@@ -856,7 +856,7 @@ export default function CampaignDetailPage() {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading campaign details...</p>
-      </div>
+      </main>
     )
   }
 
@@ -869,7 +869,7 @@ export default function CampaignDetailPage() {
             Back to Campaigns
           </Button>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -1455,7 +1455,7 @@ export default function CampaignDetailPage() {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   )
 }
 
