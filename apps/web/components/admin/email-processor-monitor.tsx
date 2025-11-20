@@ -83,9 +83,9 @@ export function EmailProcessorMonitor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold mb-1">Email Processor Monitor</h3>
+          <h3 className="text-lg font-semibold mb-1">Internal Email Queue Monitor</h3>
           <p className="text-sm text-muted-foreground">
-            Monitor scheduled email processing status
+            Monitor internal email queue status (non-campaign emails)
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export function EmailProcessorMonitor() {
           <div>
             <h4 className="text-sm font-semibold mb-1">Last Processor Run</h4>
             <p className="text-xs text-muted-foreground">
-              Automatic cron job runs hourly
+              Automatic cron job runs hourly (internal emails only, not campaigns)
             </p>
           </div>
           <div className="flex items-center gap-2">

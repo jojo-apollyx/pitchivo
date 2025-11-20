@@ -6,7 +6,6 @@ import { ArrowLeft, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { EmailEventStats } from '@/components/email/email-event-stats'
-import { ScheduledEmailsViewer } from '@/components/admin/scheduled-emails-viewer'
 
 interface Campaign {
   campaign_id: string
@@ -147,10 +146,13 @@ export default function CampaignTrackingPage() {
             <EmailEventStats campaignId={campaignId} isAdmin={true} />
           </div>
 
-          {/* Scheduled Emails - Shows each email with status */}
+          {/* Note: Campaign emails are managed by Smartlead */}
           <div className="bg-card/50 rounded-xl p-6 border border-border/30">
-            <h2 className="text-lg font-semibold mb-4">Email Schedule & Status</h2>
-            <ScheduledEmailsViewer campaignId={campaignId} />
+            <h2 className="text-lg font-semibold mb-4">Campaign Email Management</h2>
+            <p className="text-sm text-muted-foreground">
+              Campaign emails are managed entirely through Smartlead. Email analytics above show data synced from Smartlead webhooks.
+              To view individual email status and manage leads, visit the campaign details page.
+            </p>
           </div>
         </div>
       </section>

@@ -258,9 +258,9 @@ export default function AdminCampaignsPage() {
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-primary" />
                 <div className="text-left">
-                  <h2 className="text-lg font-semibold">Email Processor Monitor</h2>
+                  <h2 className="text-lg font-semibold">Internal Email Queue Monitor</h2>
                   <p className="text-xs text-muted-foreground">
-                    Monitor scheduled email processing and trigger manual runs
+                    Monitor internal email queue (non-campaign emails - campaigns use Smartlead)
                   </p>
                 </div>
               </div>
