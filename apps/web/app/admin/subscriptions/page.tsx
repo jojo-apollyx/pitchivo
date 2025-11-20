@@ -156,7 +156,7 @@ export default function AdminSubscriptionsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
+      </main>
     )
   }
 
@@ -170,7 +170,7 @@ export default function AdminSubscriptionsPage() {
         <p className="text-gray-600">
           View and manage organization subscriptions and quotas
         </p>
-      </div>
+      </main>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -182,7 +182,7 @@ export default function AdminSubscriptionsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold">{stats.total}</main>
             <p className="text-xs text-muted-foreground mt-1">
               {stats.active} active
             </p>
@@ -197,7 +197,7 @@ export default function AdminSubscriptionsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(stats.mrr)}</div>
+            <div className="text-2xl font-bold">{formatPrice(stats.mrr)}</main>
             <p className="text-xs text-muted-foreground mt-1">
               MRR from paid plans
             </p>
@@ -212,7 +212,7 @@ export default function AdminSubscriptionsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.byTier.premium}</div>
+            <div className="text-2xl font-bold">{stats.byTier.premium}</main>
             <p className="text-xs text-muted-foreground mt-1">
               Premium subscriptions
             </p>
@@ -227,13 +227,13 @@ export default function AdminSubscriptionsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.byTier.free}</div>
+            <div className="text-2xl font-bold">{stats.byTier.free}</main>
             <p className="text-xs text-muted-foreground mt-1">
               Free subscriptions
             </p>
           </CardContent>
         </Card>
-      </div>
+      </main>
 
       {/* Filters */}
       <Card className="mb-6">
@@ -268,7 +268,7 @@ export default function AdminSubscriptionsPage() {
                 <SelectItem value="canceled">Canceled</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </main>
         </CardContent>
       </Card>
 
@@ -289,7 +289,7 @@ export default function AdminSubscriptionsPage() {
                     <p className="text-sm text-gray-500">
                       @{subscription.organization?.slug || subscription.org_id}
                     </p>
-                  </div>
+                  </main>
                   <div className="flex items-center gap-2">
                     <Badge className={getTierBadgeColor(subscription.tier)}>
                       {subscription.tier.toUpperCase()}
@@ -302,43 +302,43 @@ export default function AdminSubscriptionsPage() {
                         Custom Quota
                       </Badge>
                     )}
-                  </div>
-                </div>
+                  </main>
+                </main>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">Email Quota:</span>
                     <span className="ml-2 font-medium">{subscription.email_quota.toLocaleString()}/month</span>
-                  </div>
+                  </main>
                   <div>
                     <span className="text-gray-500">QR Links:</span>
                     <span className="ml-2 font-medium">
                       {subscription.qr_links_per_product >= 999999 ? 'Unlimited' : subscription.qr_links_per_product}
                     </span>
-                  </div>
+                  </main>
                   {subscription.stripe_customer_id && (
                     <div>
                       <span className="text-gray-500">Stripe ID:</span>
                       <span className="ml-2 font-mono text-xs">{subscription.stripe_customer_id.substring(0, 12)}...</span>
-                    </div>
+                    </main>
                   )}
                   <div>
                     <span className="text-gray-500">Created:</span>
                     <span className="ml-2">{new Date(subscription.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
+                  </main>
+                </main>
+              </main>
             ))}
 
             {filteredSubscriptions.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 No subscriptions found matching your filters
-              </div>
+              </main>
             )}
-          </div>
+          </main>
         </CardContent>
       </Card>
-    </div>
+    </main>
   )
 }
 

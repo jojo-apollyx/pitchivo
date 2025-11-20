@@ -276,14 +276,14 @@ export default function AdminRFQsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
         <p className="text-muted-foreground">Loading RFQs...</p>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
@@ -294,11 +294,11 @@ export default function AdminRFQsPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">RFQ Management</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">RFQ Management</h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                 Admin view - {stats.total} total RFQs across all organizations
               </p>
-            </div>
+            </main>
             <div className="flex items-center gap-2">
               <Button onClick={loadRfqs} variant="outline" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
@@ -308,9 +308,9 @@ export default function AdminRFQsPage() {
                 <Download className="h-4 w-4" />
                 Export
               </Button>
-            </div>
-          </div>
-        </div>
+            </main>
+          </main>
+        </main>
       </section>
 
       {/* Stats Overview */}
@@ -322,71 +322,71 @@ export default function AdminRFQsPage() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <MessageSquare className="h-4 w-4" />
                 <span>Total</span>
-              </div>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <div className="text-xs text-muted-foreground mt-1">All RFQs</div>
-            </div>
+              </main>
+              <div className="text-2xl font-bold">{stats.total}</main>
+              <div className="text-xs text-muted-foreground mt-1">All RFQs</main>
+            </main>
 
             {/* New */}
             <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
               <div className="flex items-center gap-2 text-sm text-blue-700 mb-2">
                 <AlertCircle className="h-4 w-4" />
                 <span>New</span>
-              </div>
-              <div className="text-2xl font-bold text-blue-900">{stats.new}</div>
-              <div className="text-xs text-blue-600 mt-1">Needs attention</div>
-            </div>
+              </main>
+              <div className="text-2xl font-bold text-blue-900">{stats.new}</main>
+              <div className="text-xs text-blue-600 mt-1">Needs attention</main>
+            </main>
 
             {/* In Progress */}
             <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
               <div className="flex items-center gap-2 text-sm text-yellow-700 mb-2">
                 <Clock className="h-4 w-4" />
                 <span>In Progress</span>
-              </div>
-              <div className="text-2xl font-bold text-yellow-900">{stats.in_progress}</div>
-              <div className="text-xs text-yellow-600 mt-1">Being worked</div>
-            </div>
+              </main>
+              <div className="text-2xl font-bold text-yellow-900">{stats.in_progress}</main>
+              <div className="text-xs text-yellow-600 mt-1">Being worked</main>
+            </main>
 
             {/* Responded */}
             <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
               <div className="flex items-center gap-2 text-sm text-purple-700 mb-2">
                 <Mail className="h-4 w-4" />
                 <span>Responded</span>
-              </div>
-              <div className="text-2xl font-bold text-purple-900">{stats.responded}</div>
-              <div className="text-xs text-purple-600 mt-1">Awaiting reply</div>
-            </div>
+              </main>
+              <div className="text-2xl font-bold text-purple-900">{stats.responded}</main>
+              <div className="text-xs text-purple-600 mt-1">Awaiting reply</main>
+            </main>
 
             {/* Won */}
             <div className="bg-green-50 rounded-xl p-4 border border-green-200">
               <div className="flex items-center gap-2 text-sm text-green-700 mb-2">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Won</span>
-              </div>
-              <div className="text-2xl font-bold text-green-900">{stats.won}</div>
-              <div className="text-xs text-green-600 mt-1">Converted</div>
-            </div>
+              </main>
+              <div className="text-2xl font-bold text-green-900">{stats.won}</main>
+              <div className="text-xs text-green-600 mt-1">Converted</main>
+            </main>
 
             {/* Lost */}
             <div className="bg-red-50 rounded-xl p-4 border border-red-200">
               <div className="flex items-center gap-2 text-sm text-red-700 mb-2">
                 <AlertCircle className="h-4 w-4" />
                 <span>Lost</span>
-              </div>
-              <div className="text-2xl font-bold text-red-900">{stats.lost}</div>
-              <div className="text-xs text-red-600 mt-1">Not converted</div>
-            </div>
+              </main>
+              <div className="text-2xl font-bold text-red-900">{stats.lost}</main>
+              <div className="text-xs text-red-600 mt-1">Not converted</main>
+            </main>
 
             {/* Conversion Rate */}
             <div className="bg-gradient-to-br from-accent/10 to-primary/10 rounded-xl p-4 border border-accent/30">
               <div className="flex items-center gap-2 text-sm text-accent-dark mb-2">
                 <TrendingUp className="h-4 w-4" />
                 <span>Win Rate</span>
-              </div>
-              <div className="text-2xl font-bold text-accent-dark">{stats.conversion_rate}%</div>
-              <div className="text-xs text-muted-foreground mt-1">Conversion</div>
-            </div>
-          </div>
+              </main>
+              <div className="text-2xl font-bold text-accent-dark">{stats.conversion_rate}%</main>
+              <div className="text-xs text-muted-foreground mt-1">Conversion</main>
+            </main>
+          </main>
 
           {/* Search and Filters */}
           <div className="bg-card/50 rounded-xl p-4 border border-border/30 mb-6">
@@ -401,7 +401,7 @@ export default function AdminRFQsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
-              </div>
+              </main>
 
               {/* Status Filter */}
               <div className="w-full sm:w-48">
@@ -419,16 +419,16 @@ export default function AdminRFQsPage() {
                     <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
+              </main>
+            </main>
 
             {/* Results count */}
             <div className="mt-3 text-xs text-muted-foreground">
               Showing {filteredRfqs.length} of {rfqs.length} RFQs
               {searchQuery && ` matching "${searchQuery}"`}
               {statusFilter !== 'all' && ` with status "${statusFilter}"`}
-            </div>
-          </div>
+            </main>
+          </main>
 
           {/* RFQ Table */}
           {filteredRfqs.length === 0 ? (
@@ -452,7 +452,7 @@ export default function AdminRFQsPage() {
                   Clear Filters
                 </Button>
               )}
-            </div>
+            </main>
           ) : (
             <div className="bg-card/50 rounded-xl border border-border/30 overflow-hidden">
               <div className="overflow-x-auto">
@@ -491,12 +491,12 @@ export default function AdminRFQsPage() {
                         {/* Contact */}
                         <td className="p-4">
                           <div className="min-w-[150px]">
-                            <div className="font-semibold text-sm">{rfq.name}</div>
+                            <div className="font-semibold text-sm">{rfq.name}</main>
                             <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                               <Mail className="h-3 w-3" />
                               {rfq.email}
-                            </div>
-                          </div>
+                            </main>
+                          </main>
                         </td>
 
                         {/* Company */}
@@ -505,8 +505,8 @@ export default function AdminRFQsPage() {
                             <div className="flex items-center gap-1.5 text-sm">
                               <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                               {rfq.company}
-                            </div>
-                          </div>
+                            </main>
+                          </main>
                         </td>
 
                         {/* Product */}
@@ -514,13 +514,13 @@ export default function AdminRFQsPage() {
                           <div className="min-w-[150px]">
                             <div className="text-sm font-medium">
                               {rfq.products?.product_name || 'Unknown Product'}
-                            </div>
+                            </main>
                             {rfq.products?.industry_code && (
                               <div className="text-xs text-muted-foreground mt-0.5">
                                 {rfq.products.industry_code}
-                              </div>
+                              </main>
                             )}
-                          </div>
+                          </main>
                         </td>
 
                         {/* Organization */}
@@ -528,11 +528,11 @@ export default function AdminRFQsPage() {
                           <div className="min-w-[120px]">
                             <div className="text-sm">
                               {rfq.organizations?.name || 'Unknown Org'}
-                            </div>
+                            </main>
                             <div className="text-xs text-muted-foreground mt-0.5">
                               {rfq.organizations?.domain}
-                            </div>
-                          </div>
+                            </main>
+                          </main>
                         </td>
 
                         {/* Status */}
@@ -552,11 +552,11 @@ export default function AdminRFQsPage() {
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <Calendar className="h-3 w-3" />
                               {format(new Date(rfq.submitted_at), 'MMM d, yyyy')}
-                            </div>
+                            </main>
                             <div className="text-xs text-muted-foreground/70 mt-0.5">
                               {format(new Date(rfq.submitted_at), 'h:mm a')}
-                            </div>
-                          </div>
+                            </main>
+                          </main>
                         </td>
 
                         {/* Actions */}
@@ -571,16 +571,16 @@ export default function AdminRFQsPage() {
                               <Eye className="h-3 w-3" />
                               View
                             </Button>
-                          </div>
+                          </main>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
+              </main>
+            </main>
           )}
-        </div>
+        </main>
       </section>
 
       {/* RFQ Detail Modal */}
@@ -609,14 +609,14 @@ export default function AdminRFQsPage() {
                     {getStatusIcon(selectedRfq.status)}
                     {selectedRfq.status.replace('_', ' ')}
                   </Badge>
-                </div>
+                </main>
                 <div>
                   <Label className="text-xs text-muted-foreground">Submitted</Label>
                   <div className="mt-2 text-sm">
                     {format(new Date(selectedRfq.submitted_at), 'MMM d, yyyy h:mm a')}
-                  </div>
-                </div>
-              </div>
+                  </main>
+                </main>
+              </main>
 
               {/* Contact Information */}
               <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
@@ -627,28 +627,28 @@ export default function AdminRFQsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground">Name</Label>
-                    <div className="mt-1 text-sm font-medium">{selectedRfq.name}</div>
-                  </div>
+                    <div className="mt-1 text-sm font-medium">{selectedRfq.name}</main>
+                  </main>
                   <div>
                     <Label className="text-xs text-muted-foreground">Company</Label>
-                    <div className="mt-1 text-sm font-medium">{selectedRfq.company}</div>
-                  </div>
+                    <div className="mt-1 text-sm font-medium">{selectedRfq.company}</main>
+                  </main>
                   <div>
                     <Label className="text-xs text-muted-foreground">Email</Label>
                     <div className="mt-1 text-sm flex items-center gap-1">
                       <Mail className="h-3 w-3 text-muted-foreground" />
                       {selectedRfq.email}
-                    </div>
-                  </div>
+                    </main>
+                  </main>
                   <div>
                     <Label className="text-xs text-muted-foreground">Phone</Label>
                     <div className="mt-1 text-sm flex items-center gap-1">
                       <Phone className="h-3 w-3 text-muted-foreground" />
                       {selectedRfq.phone || 'Not provided'}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    </main>
+                  </main>
+                </main>
+              </main>
 
               {/* Product & Organization */}
               <div className="space-y-3 p-4 bg-primary/5 rounded-lg">
@@ -661,24 +661,24 @@ export default function AdminRFQsPage() {
                     <Label className="text-xs text-muted-foreground">Product</Label>
                     <div className="mt-1 text-sm font-medium">
                       {selectedRfq.products?.product_name || 'Unknown'}
-                    </div>
+                    </main>
                     {selectedRfq.products?.industry_code && (
                       <div className="text-xs text-muted-foreground mt-0.5">
                         {selectedRfq.products.industry_code}
-                      </div>
+                      </main>
                     )}
-                  </div>
+                  </main>
                   <div>
                     <Label className="text-xs text-muted-foreground">Organization</Label>
                     <div className="mt-1 text-sm font-medium">
                       {selectedRfq.organizations?.name || 'Unknown'}
-                    </div>
+                    </main>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {selectedRfq.organizations?.domain}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    </main>
+                  </main>
+                </main>
+              </main>
 
               {/* RFQ Details */}
               <div className="space-y-3">
@@ -688,21 +688,21 @@ export default function AdminRFQsPage() {
                 </Label>
                 <div className="p-4 bg-muted/30 rounded-lg text-sm whitespace-pre-wrap">
                   {selectedRfq.message}
-                </div>
-              </div>
+                </main>
+              </main>
 
               {selectedRfq.quantity && (
                 <div>
                   <Label className="text-xs text-muted-foreground">Quantity</Label>
-                  <div className="mt-1 text-sm">{selectedRfq.quantity}</div>
-                </div>
+                  <div className="mt-1 text-sm">{selectedRfq.quantity}</main>
+                </main>
               )}
 
               {selectedRfq.target_date && (
                 <div>
                   <Label className="text-xs text-muted-foreground">Target Date</Label>
-                  <div className="mt-1 text-sm">{selectedRfq.target_date}</div>
-                </div>
+                  <div className="mt-1 text-sm">{selectedRfq.target_date}</main>
+                </main>
               )}
 
               {/* Response Information */}
@@ -713,17 +713,17 @@ export default function AdminRFQsPage() {
                     <Label className="text-xs text-muted-foreground">Responded At</Label>
                     <div className="mt-1 text-sm">
                       {format(new Date(selectedRfq.responded_at), 'MMM d, yyyy h:mm a')}
-                    </div>
-                  </div>
+                    </main>
+                  </main>
                   {selectedRfq.response_message && (
                     <div>
                       <Label className="text-xs text-muted-foreground">Response Message</Label>
                       <div className="mt-1 text-sm p-3 bg-background rounded border">
                         {selectedRfq.response_message}
-                      </div>
-                    </div>
+                      </main>
+                    </main>
                   )}
-                </div>
+                </main>
               )}
 
               {/* Admin Actions */}
@@ -745,7 +745,7 @@ export default function AdminRFQsPage() {
                       <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </main>
 
                 {(newStatus === 'responded' || newStatus === 'won') && (
                   <div>
@@ -757,7 +757,7 @@ export default function AdminRFQsPage() {
                       placeholder="Add any notes about your response..."
                       className="mt-2 min-h-[100px]"
                     />
-                  </div>
+                  </main>
                 )}
 
                 <div className="flex gap-2">
@@ -774,13 +774,13 @@ export default function AdminRFQsPage() {
                   >
                     Cancel
                   </Button>
-                </div>
-              </div>
-            </div>
+                </main>
+              </main>
+            </main>
           )}
         </DialogContent>
       </Dialog>
-      </div>
-    </div>
+      </main>
+    </main>
   )
 }

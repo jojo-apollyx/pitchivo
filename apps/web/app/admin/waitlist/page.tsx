@@ -318,11 +318,11 @@ export default function AdminWaitlistPage() {
           className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50"
         >
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Waitlist Management</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold">Waitlist Management</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-2">
               Manage waitlist entries and send invitations
             </p>
-          </div>
+          </main>
         </motion.section>
 
         {/* Search and Filters - Integral Section */}
@@ -376,10 +376,10 @@ export default function AdminWaitlistPage() {
                   >
                     Rejected
                   </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+                </main>
+              </main>
+            </main>
+          </main>
         </motion.section>
 
         {/* Waitlist Table - Integral Section */}
@@ -399,10 +399,10 @@ export default function AdminWaitlistPage() {
                 loading={isLoading}
                 emptyMessage="No waitlist entries found"
               />
-            </div>
-          </div>
+            </main>
+          </main>
         </motion.section>
-      </div>
+      </main>
 
       {/* Invite Confirmation Dialog */}
       <Dialog
