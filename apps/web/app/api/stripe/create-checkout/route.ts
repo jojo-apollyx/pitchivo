@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get or create subscription record
+    // Get existing subscription record
     let { data: subscription } = await supabase
       .from('subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, stripe_subscription_id, tier')
       .eq('org_id', orgId)
       .single()
 
@@ -100,7 +100,57 @@ export async function POST(request: NextRequest) {
         .eq('org_id', orgId)
     }
 
-    // Create checkout session
+    // If there's an existing Stripe subscription, update it instead of creating a new one
+    // This ensures proper proration and prevents multiple subscriptions
+    if (subscription?.stripe_subscription_id) {
+      try {
+        // Retrieve the existing subscription
+        const existingStripeSubscription = await stripe.subscriptions.retrieve(
+          subscription.stripe_subscription_id
+        )
+
+        // Check if it's the same tier (no change needed)
+        const currentTier = existingStripeSubscription.metadata.tier
+        if (currentTier === tier) {
+          return NextResponse.json(
+            { error: 'Already subscribed to this tier' },
+            { status: 400 }
+          )
+        }
+
+        // Update the subscription to the new price
+        // Stripe will automatically handle proration
+        const updatedSubscription = await stripe.subscriptions.update(
+          subscription.stripe_subscription_id,
+          {
+            items: [{
+              id: existingStripeSubscription.items.data[0].id,
+              price: tierConfig.priceId,
+            }],
+            metadata: {
+              org_id: orgId,
+              tier
+            },
+            proration_behavior: 'always_invoice', // Always prorate on changes
+          }
+        )
+
+        // Return success - the webhook will handle the database update
+        return NextResponse.json({ 
+          success: true,
+          message: 'Subscription updated successfully',
+          subscription_id: updatedSubscription.id
+        })
+      } catch (error: any) {
+        console.error('Error updating subscription:', error)
+        return NextResponse.json(
+          { error: `Failed to update subscription: ${error.message}` },
+          { status: 500 }
+        )
+      }
+    }
+
+    // No existing subscription - create a new checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',

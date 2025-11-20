@@ -53,8 +53,35 @@ export default function PricingPage() {
   }, [router])
 
   const handleUpgrade = async (tier: PricingTier) => {
-    if (tier === 'free') {
+    // If selecting free tier and already on free, show error
+    if (tier === 'free' && currentTier === 'free') {
       toast.error('You are already on the free plan')
+      return
+    }
+
+    // If selecting free tier from a paid plan, cancel the subscription
+    if (tier === 'free' && currentTier !== 'free') {
+      setProcessingTier(tier)
+      try {
+        const response = await fetch('/api/stripe/cancel-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orgId })
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to cancel subscription')
+        }
+
+        toast.success('Subscription will be canceled at the end of the billing period')
+        window.location.reload()
+      } catch (error) {
+        console.error('Error canceling subscription:', error)
+        toast.error('Failed to cancel subscription. Please try again.')
+        setProcessingTier(null)
+      }
       return
     }
 
@@ -79,11 +106,20 @@ export default function PricingPage() {
 
       const data = await response.json()
 
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process subscription change')
+      }
+
       if (data.url) {
-        // Redirect to Stripe checkout
+        // New subscription - redirect to Stripe checkout
         window.location.href = data.url
+      } else if (data.success) {
+        // Existing subscription updated - show success and refresh
+        toast.success('Subscription updated successfully!')
+        // Refresh the page to show updated subscription
+        window.location.reload()
       } else {
-        throw new Error(data.error || 'Failed to create checkout session')
+        throw new Error(data.error || 'Unexpected response format')
       }
     } catch (error) {
       console.error('Error upgrading:', error)
