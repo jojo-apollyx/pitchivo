@@ -57,12 +57,14 @@ export default function MatchedBuyersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       {/* Top Bar */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+      <section id="campaign-buyers-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <Button
+              id="campaign-buyers-back-button"
+              aria-label="Go back to product selection"
               variant="ghost"
               size="sm"
               onClick={handleBack}
@@ -72,7 +74,7 @@ export default function MatchedBuyersPage() {
               Back
             </Button>
             <div className="flex-1 flex items-center justify-between">
-              <h1 className="text-base sm:text-lg font-semibold">Campaign Setup</h1>
+              <h1 className="text-base sm:text-lg font-display font-semibold">Campaign Setup</h1>
               <p className="text-xs sm:text-sm text-muted-foreground">Step 2 of 4</p>
             </div>
           </div>
@@ -86,7 +88,7 @@ export default function MatchedBuyersPage() {
             {/* Left Section - Buyer List */}
             <div className="lg:col-span-2">
               <div className="mb-4">
-                <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+                <h2 className="text-xl sm:text-2xl font-display font-semibold mb-2">
                   Matched Buyers from Pitchivo Database
                 </h2>
                 <p className="text-sm sm:text-base text-muted-foreground">
@@ -250,6 +252,8 @@ export default function MatchedBuyersPage() {
                   {/* Next Button */}
                   <div className="mt-6 pt-6 border-t border-border/30">
                     <Button
+                      id="campaign-buyers-next-button-desktop"
+                      aria-label="Continue to configure sending"
                       onClick={handleNext}
                       className="w-full gap-2 min-h-[44px]"
                     >
@@ -277,6 +281,8 @@ export default function MatchedBuyersPage() {
 
             {/* Next Button */}
             <Button
+              id="campaign-buyers-next-button-mobile"
+              aria-label="Continue to configure sending"
               onClick={handleNext}
               className="gap-2 min-h-[44px]"
             >
@@ -285,7 +291,7 @@ export default function MatchedBuyersPage() {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   )
 }
 
