@@ -195,16 +195,16 @@ export default async function DashboardPage() {
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
-      <div className="relative max-w-7xl mx-auto">
+      <div className="relative">
         {/* Welcome Section */}
-        <section id="dashboard-welcome-section" className="sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-border/40 supports-[backdrop-filter]:bg-background/60">
+        <section id="dashboard-welcome-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold tracking-tight text-foreground bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">
                   Welcome back, {userName} 👋
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1 font-medium">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
                   {organizationName}
                 </p>
               </div>
@@ -219,10 +219,7 @@ export default async function DashboardPage() {
                       <Button 
                         id={`dashboard-quick-action-${actionId}-button`}
                         variant={action.variant}
-                        className={cn(
-                          "gap-2 shadow-sm transition-all hover:scale-105",
-                          action.variant === 'default' && "bg-gradient-accent hover:shadow-lg hover:shadow-primary/25"
-                        )}
+                        className="gap-2"
                         aria-label={action.label}
                       >
                         <Icon className="h-4 w-4" />
@@ -243,17 +240,14 @@ export default async function DashboardPage() {
                   <Link key={action.href} href={action.href}>
                     <div 
                       id={`dashboard-mobile-action-${actionId}`}
-                      className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 flex flex-col items-center justify-center gap-2 h-full min-h-[110px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 touch-manipulation group border border-border/30"
+                      className="bg-card/50 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center justify-center gap-2 h-full min-h-[120px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 touch-manipulation group"
                       role="button"
                       aria-label={action.label}
                     >
-                      <div className={cn(
-                        "h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 shadow-inner",
-                        action.variant === 'default' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                      )}>
-                        <Icon className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                        <Icon className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
                       </div>
-                      <p className="text-xs text-center font-semibold leading-tight group-hover:text-primary transition-colors duration-300">
+                      <p className="text-xs text-center font-medium leading-tight group-hover:text-primary transition-colors duration-300">
                         {action.label}
                       </p>
                     </div>
@@ -265,12 +259,11 @@ export default async function DashboardPage() {
         </section>
 
         {/* Metrics Overview */}
-        <section id="dashboard-metrics-section" className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30">
-          <h2 className="text-lg sm:text-xl font-display font-semibold mb-4 sm:mb-6 text-foreground flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
+        <section id="dashboard-metrics-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+          <h2 className="text-lg sm:text-xl font-display font-semibold mb-4 sm:mb-6 text-foreground">
             Metrics Overview
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {metrics.map((metric, index) => {
               const Icon = metric.icon
               const metricId = metric.label.toLowerCase().replace(/\s+/g, '-')
@@ -278,31 +271,26 @@ export default async function DashboardPage() {
                 <div
                   key={metric.label}
                   id={`dashboard-metric-${metricId}-card`}
-                  className="relative bg-gradient-to-br from-card/60 to-card/30 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-white/10 dark:border-white/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/5 group overflow-hidden"
+                  className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground/80 transition-colors">
-                        {metric.label}
-                      </p>
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/10">
-                        <Icon className="h-5 w-5 text-primary transition-transform duration-300" />
-                      </div>
-                    </div>
-                    <div className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">{metric.value}</div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        metric.changeType === 'positive' 
-                          ? 'bg-green-500/10 text-green-600' 
-                          : metric.changeType === 'negative'
-                          ? 'bg-red-500/10 text-red-600'
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {metric.changeType === 'positive' ? '↑' : metric.changeType === 'negative' ? '↓' : '•'} {metric.change}
-                      </span>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                      {metric.label}
+                    </p>
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                     </div>
                   </div>
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground">{metric.value}</div>
+                  <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 font-normal ${
+                    metric.changeType === 'positive' 
+                      ? 'text-primary' 
+                      : metric.changeType === 'negative'
+                      ? 'text-destructive'
+                      : 'text-muted-foreground'
+                  }`}>
+                    {metric.change}
+                  </p>
                 </div>
               )
             })}
@@ -310,49 +298,47 @@ export default async function DashboardPage() {
         </section>
 
         {/* Recent Activity */}
-        <section id="dashboard-activity-section" className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <h2 className="text-lg sm:text-xl font-display font-semibold mb-4 sm:mb-6 text-foreground flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" />
+        <section id="dashboard-activity-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h2 className="text-lg sm:text-xl font-display font-semibold mb-4 sm:mb-6 text-foreground">
             Recent Activity
           </h2>
           <div className="max-w-4xl">
-            <div className="bg-card/30 backdrop-blur-sm rounded-3xl border border-border/30 overflow-hidden">
-              <div className="divide-y divide-border/30">
-                {recentActivities.map((activity, index) => {
-                  const Icon = activity.icon
-                  return (
-                    <div 
-                      key={index}
-                      id={`dashboard-activity-item-${index + 1}`}
-                      className="p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 cursor-pointer touch-manipulation group"
-                      role="article"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/10 ${
-                          activity.type === 'success' 
-                            ? 'bg-gradient-to-br from-primary/20 to-primary/10 text-primary' 
-                            : 'bg-gradient-to-br from-muted to-muted/50 text-muted-foreground'
-                        }`}>
-                          <Icon className="h-6 w-6" />
-                        </div>
-                        <div className="flex-1 min-w-0 pt-1">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="font-bold text-base text-foreground group-hover:text-primary transition-colors duration-300">
-                              {activity.title}
-                            </p>
-                            <span className="text-xs text-muted-foreground font-medium bg-background/50 px-2 py-1 rounded-full">
-                              {activity.time}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {activity.description}
-                          </p>
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl divide-y divide-border/30 overflow-hidden shadow-sm">
+              {recentActivities.map((activity, index) => {
+                const Icon = activity.icon
+                return (
+                  <div 
+                    key={index}
+                    id={`dashboard-activity-item-${index + 1}`}
+                    className="p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 cursor-pointer touch-manipulation active:scale-[0.98] group"
+                    role="article"
+                  >
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary-light/20 ${
+                        activity.type === 'success' 
+                          ? 'bg-primary/10 text-primary group-hover:bg-primary/20' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary transition-colors duration-300 text-foreground">
+                          {activity.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-0.5 font-normal">
+                          {activity.description}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground font-normal">
+                            {activity.time}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </section>

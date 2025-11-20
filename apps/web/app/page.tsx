@@ -781,17 +781,16 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-32 relative" aria-labelledby="how-it-works-heading">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
+      <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-32 bg-transparent relative" aria-labelledby="how-it-works-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               How It Works
             </Badge>
-            <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Simple Process, Powerful Results
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               From upload to buyer engagement — all in five easy steps
             </p>
           </div>
@@ -836,28 +835,29 @@ export default function Home() {
                   index < 2 ? "lg:col-span-1" : index === 2 ? "lg:col-span-1" : "lg:col-span-1"
                 )}
               >
-                <div 
-                  className="h-full p-8 rounded-3xl bg-gradient-to-br from-card/50 to-card/10 backdrop-blur-xl border border-white/10 dark:border-white/5 hover:border-primary/20 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 group"
+                <Card 
+                  variant="premium" 
+                  className="h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="inline-flex p-3.5 bg-gradient-accent rounded-2xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-500">
-                        <step.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <span className="text-4xl font-display font-bold text-foreground/10 select-none group-hover:text-primary/10 transition-colors duration-500">
+                  <CardHeader>
+                    <div className="flex items-start gap-4 mb-4">
+                      <span className="text-5xl font-bold text-primary/20 select-none">
                         {step.step}
                       </span>
+                      <div className="inline-flex p-3 bg-gradient-accent rounded-xl shadow-premium group-hover:shadow-premium-lg transition-shadow duration-300">
+                        <step.icon className="w-6 h-6 text-white" />
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold mb-3 text-foreground group-hover:text-primary transition-colors duration-300">{step.title}</h3>
-                    <p className="text-base text-muted-foreground leading-relaxed">
+                    <CardTitle className="text-xl">{step.title}</CardTitle>
+                    <CardDescription className="text-base leading-relaxed">
                       {step.description}
-                    </p>
-                  </div>
-                </div>
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
 
                 {/* Connector Arrow */}
                 {index < 2 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-6 w-12 h-0.5 bg-gradient-to-r from-primary/30 to-transparent" />
+                  <div className="hidden lg:block absolute top-1/2 -right-6 w-12 h-0.5 bg-gradient-to-r from-primary/50 to-transparent" />
                 )}
               </div>
             ))}
@@ -866,83 +866,73 @@ export default function Home() {
       </section>
 
       {/* Managed Email Campaign Service Section */}
-      <section id="managed-campaigns-section" className="py-20 sm:py-24 lg:py-32 relative overflow-hidden" aria-labelledby="managed-campaigns-heading">
-        <div className="absolute inset-0 -z-10 bg-gradient-mesh opacity-30" />
+      <section id="managed-campaigns-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-background via-primary/5 to-background" aria-labelledby="managed-campaigns-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               Managed Campaign Service
             </Badge>
-            <h2 id="managed-campaigns-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="managed-campaigns-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Professional Email Outreach, Done For You
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               Our team handles the heavy lifting so you can focus on closing deals
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
             {/* Automated Email Warmup */}
-            <div id="managed-campaign-warmup-card" className="group relative overflow-hidden rounded-3xl bg-card/30 backdrop-blur-xl border border-white/10 dark:border-white/5 p-8 hover:bg-card/50 hover:border-primary/20 hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10">
-                <div className="mb-6">
-                  <div className="inline-flex p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-500">
-                    <Zap className="w-8 h-8 text-green-500" />
-                  </div>
+            <div id="managed-campaign-warmup-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+              <div className="mb-6">
+                <div className="inline-flex p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                  <Zap className="w-7 h-7 text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-green-500 transition-colors duration-300">
-                  Automated Email Warmup
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  We automatically warm up your email domain to ensure maximum deliverability. No spam folders, no blacklists — just professional outreach that reaches inboxes.
-                </p>
               </div>
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                Automated Email Warmup
+              </h3>
+              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                We automatically warm up your email domain to ensure maximum deliverability. No spam folders, no blacklists — just professional outreach that reaches inboxes.
+              </p>
             </div>
 
             {/* Professional Copywriting */}
-            <div id="managed-campaign-copy-card" className="group relative overflow-hidden rounded-3xl bg-card/30 backdrop-blur-xl border border-white/10 dark:border-white/5 p-8 hover:bg-card/50 hover:border-primary/20 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10">
-                <div className="mb-6">
-                  <div className="inline-flex p-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-500">
-                    <FileText className="w-8 h-8 text-purple-500" />
-                  </div>
+            <div id="managed-campaign-copy-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+              <div className="mb-6">
+                <div className="inline-flex p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                  <FileText className="w-7 h-7 text-purple-600" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-purple-500 transition-colors duration-300">
-                  Curated Professional Copy
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  Our expert writers craft compelling, personalized outreach messages that resonate with B2B buyers. Every email is optimized for engagement and conversions.
-                </p>
               </div>
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                Curated Professional Copy
+              </h3>
+              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                Our expert writers craft compelling, personalized outreach messages that resonate with B2B buyers. Every email is optimized for engagement and conversions.
+              </p>
             </div>
 
             {/* Strategic Follow-ups */}
-            <div id="managed-campaign-followup-card" className="group relative overflow-hidden rounded-3xl bg-card/30 backdrop-blur-xl border border-white/10 dark:border-white/5 p-8 hover:bg-card/50 hover:border-primary/20 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10">
-                <div className="mb-6">
-                  <div className="inline-flex p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-500">
-                    <Send className="w-8 h-8 text-blue-500" />
-                  </div>
+            <div id="managed-campaign-followup-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+              <div className="mb-6">
+                <div className="inline-flex p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                  <Send className="w-7 h-7 text-blue-600" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-blue-500 transition-colors duration-300">
-                  Smart Follow-Up Sequences
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  Professionally timed follow-up emails crafted by our team. We handle the entire nurture sequence to keep prospects engaged without being pushy.
-                </p>
               </div>
+              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                Smart Follow-Up Sequences
+              </h3>
+              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                Professionally timed follow-up emails crafted by our team. We handle the entire nurture sequence to keep prospects engaged without being pushy.
+              </p>
             </div>
           </div>
 
           {/* CTA */}
-          <div className="mt-16 text-center">
+          <div className="mt-12 text-center">
             <Button 
               id="managed-campaign-cta-button"
               size="lg" 
-              className="h-14 px-10 text-lg font-semibold rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary-dark"
+              className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
               onClick={() => {
                 const heroForm = document.getElementById('hero-email-input');
                 heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1054,19 +1044,16 @@ export default function Home() {
       </section>
 
       {/* Core Features Section */}
-      <section id="features" className="py-20 sm:py-24 lg:py-32 bg-background relative overflow-hidden" aria-labelledby="features-heading">
-        {/* Decorative background */}
-        <div className="absolute inset-0 -z-10 opacity-30 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(#333_1px,transparent_1px)]" />
-        
+      <section id="features" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="features-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               Core Features
             </Badge>
-            <h2 id="features-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="features-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Everything You Need to Scale
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               Powerful tools to automate your B2B outreach and close more deals
             </p>
           </div>
@@ -1130,13 +1117,13 @@ export default function Home() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="group relative overflow-hidden rounded-3xl bg-card/50 backdrop-blur-xl border border-white/10 dark:border-white/5 p-8 hover:bg-card/80 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/10"
+                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-sm hover:border-primary/30 hover:from-primary/10 hover:via-card/80 hover:to-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98]"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10">
+                {/* Content */}
+                <div className="relative p-8">
                   {/* Icon */}
                   <div className="mb-6">
-                    <div className="inline-flex p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-500 group-hover:bg-primary/20">
+                    <div className="inline-flex p-4 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
                       <feature.icon className="w-7 h-7 text-primary" />
                     </div>
                   </div>
@@ -1147,7 +1134,7 @@ export default function Home() {
                   </h3>
                   
                   {/* Description */}
-                  <p className="text-muted-foreground leading-relaxed text-sm group-hover:text-foreground/80 transition-colors duration-300">
+                  <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
                     {feature.description}
                   </p>
                 </div>
@@ -1158,19 +1145,16 @@ export default function Home() {
       </section>
 
       {/* Case Study Demo Section */}
-      <section id="case-study-section" className="py-20 sm:py-24 lg:py-32 bg-background relative overflow-hidden" aria-labelledby="case-study-heading">
-        {/* Decorative background */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10" />
-        
+      <section id="case-study-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-background via-accent/5 to-background" aria-labelledby="case-study-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               Real Results
             </Badge>
-            <h2 id="case-study-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="case-study-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               See The Difference Pitchivo Makes
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               Real companies, real campaigns, real results
             </p>
           </div>
@@ -1179,31 +1163,31 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
               {/* BEFORE */}
-              <div id="case-study-before-card" className="relative group">
+              <div id="case-study-before-card" className="relative">
                 <div className="absolute -top-4 left-4 z-10">
                   <Badge className="bg-destructive text-destructive-foreground border-destructive/50 shadow-lg">
                     ❌ Before Pitchivo
                   </Badge>
                 </div>
-                <div className="bg-card/30 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-8 h-full transition-all duration-500 hover:bg-card/40">
+                <div className="bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-2 border-border/50 rounded-2xl p-8 h-full">
                   <h3 className="text-2xl font-bold text-foreground/80 mb-6">Traditional Outreach</h3>
                   
                   <div className="space-y-6">
                     {/* Metrics - Before */}
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-background/40 rounded-2xl border border-border/30 backdrop-blur-sm">
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
                         <div className="text-3xl font-bold text-destructive mb-1">2-3%</div>
                         <div className="text-sm text-muted-foreground">Email Open Rate</div>
                       </div>
-                      <div className="p-4 bg-background/40 rounded-2xl border border-border/30 backdrop-blur-sm">
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
                         <div className="text-3xl font-bold text-destructive mb-1">0.5%</div>
                         <div className="text-sm text-muted-foreground">Response Rate</div>
                       </div>
-                      <div className="p-4 bg-background/40 rounded-2xl border border-border/30 backdrop-blur-sm">
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
                         <div className="text-3xl font-bold text-destructive mb-1">5-6</div>
                         <div className="text-sm text-muted-foreground">RFQs/month</div>
                       </div>
-                      <div className="p-4 bg-background/40 rounded-2xl border border-border/30 backdrop-blur-sm">
+                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
                         <div className="text-3xl font-bold text-destructive mb-1">4-6 mo</div>
                         <div className="text-sm text-muted-foreground">Sales Cycle</div>
                       </div>
@@ -1211,60 +1195,68 @@ export default function Home() {
 
                     {/* Pain Points */}
                     <div className="space-y-3 pt-4">
-                      {[
-                        "Manual email list building from scratch",
-                        "Generic mass emails to broad industries",
-                        "No tracking, no insights on engagement",
-                        "Time-consuming follow-ups and no automation",
-                        "Inconsistent branding and product presentation"
-                      ].map((point, i) => (
-                        <div key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
-                          <span className="text-destructive font-bold">✗</span>
-                          <span>{point}</span>
-                        </div>
-                      ))}
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Manual email list building from scratch</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Generic mass emails to broad industries</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>No tracking, no insights on engagement</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Time-consuming follow-ups and no automation</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                        <span className="text-destructive">✗</span>
+                        <span>Inconsistent branding and product presentation</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* AFTER */}
-              <div id="case-study-after-card" className="relative group">
+              <div id="case-study-after-card" className="relative">
                 <div className="absolute -top-4 left-4 z-10">
-                  <Badge className="bg-primary text-primary-foreground border-primary/50 shadow-lg shadow-primary/20">
+                  <Badge className="bg-primary text-primary-foreground border-primary/50 shadow-lg">
                     ✅ After Pitchivo
                   </Badge>
                 </div>
-                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 backdrop-blur-xl border border-primary/20 rounded-3xl p-8 h-full shadow-2xl shadow-primary/5 transition-all duration-500 hover:shadow-primary/10 hover:scale-[1.01]">
+                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 backdrop-blur-sm border-2 border-primary/30 rounded-2xl p-8 h-full shadow-xl shadow-primary/10">
                   <h3 className="text-2xl font-bold text-foreground mb-6">AI-Powered Results</h3>
                   
                   <div className="space-y-6">
                     {/* Metrics - After */}
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-2xl border border-green-500/30 shadow-sm">
+                      <div className="p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-xl border border-green-500/30">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-green-600 dark:text-green-400">45-68%</div>
+                          <div className="text-3xl font-bold text-green-700">45-68%</div>
                           <span className="text-green-600 text-sm font-semibold">↑ 20x</span>
                         </div>
                         <div className="text-sm text-foreground/80 font-medium">Email Open Rate</div>
                       </div>
-                      <div className="p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl border border-blue-500/30 shadow-sm">
+                      <div className="p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-xl border border-blue-500/30">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">12-18%</div>
+                          <div className="text-3xl font-bold text-blue-700">12-18%</div>
                           <span className="text-blue-600 text-sm font-semibold">↑ 30x</span>
                         </div>
                         <div className="text-sm text-foreground/80 font-medium">Response Rate</div>
                       </div>
-                      <div className="p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-2xl border border-purple-500/30 shadow-sm">
+                      <div className="p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-xl border border-purple-500/30">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">50-80</div>
+                          <div className="text-3xl font-bold text-purple-700">50-80</div>
                           <span className="text-purple-600 text-sm font-semibold">↑ 12x</span>
                         </div>
                         <div className="text-sm text-foreground/80 font-medium">RFQs/month</div>
                       </div>
-                      <div className="p-4 bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-2xl border border-orange-500/30 shadow-sm">
+                      <div className="p-4 bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-xl border border-orange-500/30">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">6-8 wk</div>
+                          <div className="text-3xl font-bold text-orange-700">6-8 wk</div>
                           <span className="text-orange-600 text-sm font-semibold">↓ 75%</span>
                         </div>
                         <div className="text-sm text-foreground/80 font-medium">Sales Cycle</div>
@@ -1273,20 +1265,26 @@ export default function Home() {
 
                     {/* Benefits */}
                     <div className="space-y-3 pt-4">
-                      {[
-                        "AI-curated buyers with verified purchase intent",
-                        "Personalized campaigns to targeted decision-makers",
-                        "Real-time analytics on every interaction",
-                        "Automated follow-ups by our professional team",
-                        "Beautiful AI-generated product pages & storefronts"
-                      ].map((benefit, i) => (
-                        <div key={i} className="flex items-start gap-3 text-sm text-foreground">
-                          <div className="rounded-full bg-primary/20 p-0.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                          </div>
-                          <span className="font-medium">{benefit}</span>
-                        </div>
-                      ))}
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">AI-curated buyers with verified purchase intent</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Personalized campaigns to targeted decision-makers</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Real-time analytics on every interaction</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Automated follow-ups by our professional team</span>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm text-foreground">
+                        <span className="text-primary">✓</span>
+                        <span className="font-medium">Beautiful AI-generated product pages & storefronts</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1294,14 +1292,14 @@ export default function Home() {
             </div>
 
             {/* CTA */}
-            <div className="mt-16 text-center">
-              <p className="text-lg text-muted-foreground mb-8 font-medium">
+            <div className="mt-12 text-center">
+              <p className="text-lg text-muted-foreground mb-6">
                 Join hundreds of suppliers who have transformed their outreach
               </p>
               <Button 
                 id="case-study-cta-button"
                 size="lg" 
-                className="h-14 px-10 text-lg font-semibold rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary-dark"
+                className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
                 onClick={() => {
                   const heroForm = document.getElementById('hero-email-input');
                   heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1317,17 +1315,16 @@ export default function Home() {
       </section>
 
       {/* Outbound & Inbound Sales Section */}
-      <section id="sales-automation-section" className="py-20 sm:py-24 lg:py-32 bg-background relative" aria-labelledby="sales-automation-heading">
-        <div className="absolute inset-0 -z-10 bg-gradient-mesh opacity-20" />
+      <section id="sales-automation-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="sales-automation-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               Two-Way Sales Engine
             </Badge>
-            <h2 id="sales-automation-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="sales-automation-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               We Find Buyers For You & Route Buyers To You
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               Outbound campaigns to reach buyers + inbound lead routing when buyers find you
             </p>
           </div>
@@ -1335,122 +1332,98 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
               {/* Outbound Sales Automation */}
-              <div id="outbound-sales-card" className="group relative overflow-hidden rounded-3xl border border-white/10 dark:border-white/5 bg-card/30 backdrop-blur-xl p-8 hover:bg-card/50 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10">
-                  <div className="mb-6">
-                    <div className="inline-flex p-4 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-500">
-                      <Send className="w-8 h-8 text-primary" />
-                    </div>
+              <div id="outbound-sales-card" className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300">
+                <div className="mb-6">
+                  <div className="inline-flex p-4 bg-gradient-to-br from-primary/30 to-primary/20 rounded-2xl shadow-lg">
+                    <Send className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold text-foreground mb-4">
-                    Outbound: We Find Buyers For You
-                  </h3>
-                  <p className="text-muted-foreground mb-8 leading-relaxed">
-                    We proactively reach out to verified buyers on your behalf. Your products are pitched directly to companies with active purchasing needs, complete with professional messaging and strategic follow-ups.
-                  </p>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10 group-hover:bg-primary/10 transition-colors duration-300">
-                      <div className="rounded-full bg-primary/20 p-1">
-                        <CheckCircle2 className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">AI matches your products to buyer requirements</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10 group-hover:bg-primary/10 transition-colors duration-300">
-                      <div className="rounded-full bg-primary/20 p-1">
-                        <CheckCircle2 className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">Professional outreach campaigns managed by our team</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10 group-hover:bg-primary/10 transition-colors duration-300">
-                      <div className="rounded-full bg-primary/20 p-1">
-                        <CheckCircle2 className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">Real-time notifications when buyers respond</span>
-                    </div>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">
+                  Outbound: We Find Buyers For You
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  We proactively reach out to verified buyers on your behalf. Your products are pitched directly to companies with active purchasing needs, complete with professional messaging and strategic follow-ups.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">AI matches your products to buyer requirements</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Professional outreach campaigns managed by our team</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Real-time notifications when buyers respond</span>
                   </div>
                 </div>
               </div>
 
               {/* Inbound Lead Routing */}
-              <div id="inbound-routing-card" className="group relative overflow-hidden rounded-3xl border border-white/10 dark:border-white/5 bg-card/30 backdrop-blur-xl p-8 hover:bg-card/50 hover:border-accent/20 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10">
-                  <div className="mb-6">
-                    <div className="inline-flex p-4 bg-gradient-to-br from-accent/20 to-accent/10 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-500">
-                      <Database className="w-8 h-8 text-accent" />
-                    </div>
+              <div id="inbound-routing-card" className="group relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 transition-all duration-300">
+                <div className="mb-6">
+                  <div className="inline-flex p-4 bg-gradient-to-br from-accent/30 to-accent/20 rounded-2xl shadow-lg">
+                    <Database className="w-8 h-8 text-accent" />
                   </div>
-                  <h3 className="text-2xl font-bold text-foreground mb-4">
-                    Inbound: We Route Buyers To You
-                  </h3>
-                  <p className="text-muted-foreground mb-8 leading-relaxed">
-                    We capture buyer interest and intelligently route leads to the right sellers. When buyers search products or submit RFQs, we automatically match them with your offerings and notify you instantly.
-                  </p>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/5 border border-accent/10 group-hover:bg-accent/10 transition-colors duration-300">
-                      <div className="rounded-full bg-accent/20 p-1">
-                        <CheckCircle2 className="w-4 h-4 text-accent" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">Capture inbound buyer interest automatically</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/5 border border-accent/10 group-hover:bg-accent/10 transition-colors duration-300">
-                      <div className="rounded-full bg-accent/20 p-1">
-                        <CheckCircle2 className="w-4 h-4 text-accent" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">Intelligent routing to matching sellers</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/5 border border-accent/10 group-hover:bg-accent/10 transition-colors duration-300">
-                      <div className="rounded-full bg-accent/20 p-1">
-                        <CheckCircle2 className="w-4 h-4 text-accent" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">Pre-qualified leads delivered to your inbox</span>
-                    </div>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">
+                  Inbound: We Route Buyers To You
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  We capture buyer interest and intelligently route leads to the right sellers. When buyers search products or submit RFQs, we automatically match them with your offerings and notify you instantly.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Capture inbound buyer interest automatically</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Intelligent routing to matching sellers</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-foreground">Pre-qualified leads delivered to your inbox</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Visual Flow Diagram */}
-            <div className="mt-12 p-10 bg-gradient-to-br from-card/30 to-card/10 backdrop-blur-xl rounded-3xl border border-white/10 dark:border-white/5 shadow-2xl shadow-primary/5">
-              <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
-                <div className="text-center group">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary text-primary-foreground font-bold text-2xl mb-4 shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform duration-300">
+            <div className="mt-12 p-8 bg-gradient-to-br from-muted/30 to-muted/10 backdrop-blur-sm rounded-2xl border border-border/50">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground font-bold text-xl mb-2">
                     S
                   </div>
-                  <p className="text-base font-bold text-foreground">Sellers</p>
+                  <p className="text-sm font-semibold text-foreground">Sellers</p>
                 </div>
 
-                <div className="flex flex-col items-center gap-2 text-primary animate-pulse">
-                  <div className="flex items-center gap-1">
-                    <ArrowRight className="w-6 h-6" />
-                    <ArrowRight className="w-6 h-6 -ml-3 opacity-70" />
-                    <ArrowRight className="w-6 h-6 -ml-3 opacity-40" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Outbound</span>
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-medium text-muted-foreground">Outbound</span>
+                  <ArrowRight className="w-6 h-6 text-primary" />
                 </div>
 
-                <div className="text-center group">
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-accent text-white font-bold text-3xl mb-4 shadow-xl shadow-primary/30 group-hover:scale-110 transition-transform duration-300 ring-4 ring-background">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-accent text-white font-bold text-2xl mb-2">
                     P
                   </div>
-                  <p className="text-lg font-bold text-foreground">Pitchivo</p>
+                  <p className="text-sm font-semibold text-foreground">Pitchivo</p>
                 </div>
 
-                <div className="flex flex-col items-center gap-2 text-accent animate-pulse delay-75">
-                  <div className="flex items-center gap-1">
-                    <ArrowRight className="w-6 h-6 rotate-180 md:rotate-0" />
-                    <ArrowRight className="w-6 h-6 -ml-3 opacity-70 rotate-180 md:rotate-0" />
-                    <ArrowRight className="w-6 h-6 -ml-3 opacity-40 rotate-180 md:rotate-0" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Inbound</span>
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="w-6 h-6 text-accent rotate-180 md:rotate-0" />
+                  <span className="text-sm font-medium text-muted-foreground">Inbound</span>
+                  <ArrowRight className="w-6 h-6 text-accent rotate-180 md:rotate-0" />
                 </div>
 
-                <div className="text-center group">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent text-accent-foreground font-bold text-2xl mb-4 shadow-lg shadow-accent/30 group-hover:scale-110 transition-transform duration-300">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent text-accent-foreground font-bold text-xl mb-2">
                     B
                   </div>
-                  <p className="text-base font-bold text-foreground">Buyers</p>
+                  <p className="text-sm font-semibold text-foreground">Buyers</p>
                 </div>
               </div>
             </div>
@@ -1615,17 +1588,16 @@ export default function Home() {
       </section>
 
       {/* Enterprise Security Section */}
-      <section className="py-20 sm:py-24 lg:py-32 bg-background relative overflow-hidden" aria-labelledby="security-heading">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-background via-primary/5 to-background" />
+      <section className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="security-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               Security & Compliance
             </Badge>
-            <h2 id="security-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="security-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Enterprise-Grade Security
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               Your data security and privacy are our top priorities
             </p>
           </div>
@@ -1654,23 +1626,24 @@ export default function Home() {
                   description: "Certified",
                 },
               ].map((item, index) => (
-                <div
+                <Card
                   key={index}
-                  className="text-center p-8 rounded-3xl bg-card/30 backdrop-blur-xl border border-white/10 dark:border-white/5 hover:bg-card/50 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-1 group"
+                  variant="premium"
+                  className="text-center p-6 hover-lift group"
                 >
-                  <div className="text-4xl mb-4 group-hover:scale-125 transition-transform duration-500">
+                  <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
                     {item.icon}
                   </div>
                   <h3 className="font-bold text-foreground mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground">{item.description}</p>
-                </div>
+                </Card>
               ))}
             </div>
             
             <div className="mt-12 text-center">
-              <p className="text-sm text-muted-foreground max-w-2xl mx-auto bg-card/50 backdrop-blur-sm py-3 px-6 rounded-full inline-block border border-white/10">
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
                 We use industry-standard encryption and security practices to protect your data. 
-                All communications are encrypted.
+                All communications are encrypted, and we're fully compliant with international data protection regulations.
               </p>
             </div>
           </div>
@@ -1678,17 +1651,16 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 sm:py-24 lg:py-32 bg-background relative" aria-labelledby="testimonials-heading">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(var(--primary),0.05),transparent)]" />
+      <section className="py-20 sm:py-24 lg:py-32 bg-background" aria-labelledby="testimonials-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               Testimonials
             </Badge>
-            <h2 id="testimonials-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="testimonials-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Trusted by Industry Leaders
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               See what our customers say about Pitchivo
             </p>
           </div>
@@ -1717,10 +1689,12 @@ export default function Home() {
                 rating: 5,
               },
             ].map((testimonial, index) => (
-                <div
+                <Card
                   key={index}
-                  className="rounded-3xl bg-card/30 backdrop-blur-xl border border-white/10 dark:border-white/5 hover:bg-card/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/10 p-8 flex flex-col"
+                  variant="premium"
+                  className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98]"
                 >
+                <CardContent className="p-6">
                   {/* Rating */}
                   <div className="flex items-center gap-1 mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
@@ -1729,40 +1703,40 @@ export default function Home() {
                   </div>
                   
                   {/* Content */}
-                  <p className="text-base text-foreground/80 mb-8 leading-relaxed italic flex-1">
+                  <p className="text-sm text-foreground/80 mb-6 leading-relaxed">
                     &ldquo;{testimonial.content}&rdquo;
                   </p>
                   
                   {/* Author */}
-                  <div className="flex items-center gap-4 pt-6 border-t border-border/30">
-                    <div className="w-12 h-12 rounded-full bg-gradient-accent flex items-center justify-center text-white font-bold text-lg shadow-md">
+                  <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                    <div className="w-10 h-10 rounded-full bg-gradient-accent flex items-center justify-center text-white font-semibold">
                       {testimonial.name.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-bold text-base text-foreground">{testimonial.name}</p>
-                      <p className="text-xs text-muted-foreground font-medium">
+                      <p className="font-semibold text-sm text-foreground">{testimonial.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         {testimonial.role}, {testimonial.company}
                       </p>
                     </div>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section ref={pricingRef} className="py-20 sm:py-24 lg:py-32 bg-background relative overflow-hidden" aria-labelledby="pricing-heading">
-        <div className="absolute inset-0 -z-10 bg-gradient-mesh opacity-20" />
+      <section ref={pricingRef} className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-background to-background" aria-labelledby="pricing-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge variant="premium" className="mb-4 shadow-lg shadow-primary/20 border-primary/20 backdrop-blur-md">
+            <Badge variant="premium" className="mb-4">
               Pricing
             </Badge>
-            <h2 id="pricing-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <h2 id="pricing-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
               Plans That Scale With You
             </h2>
-            <p className="text-lg text-muted-foreground font-medium">
+            <p className="text-lg text-muted-foreground">
               Try free. Upgrade anytime. Cancel anytime.
             </p>
           </div>
@@ -1799,43 +1773,39 @@ export default function Home() {
                 cta: tierConfig.cta
               }
             }).map((plan, index) => (
-                <div
+                <Card
                   key={index}
+                  variant={plan.popular ? "premium" : "default"}
                   className={cn(
-                    "rounded-3xl bg-card/30 backdrop-blur-xl border border-white/10 dark:border-white/5 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/10 flex flex-col relative p-8 group",
-                    plan.popular && "bg-gradient-to-b from-primary/10 to-card/30 border-primary/30 shadow-xl shadow-primary/5"
+                    "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] flex flex-col relative",
+                    plan.popular && "border-primary/50 ring-2 ring-primary/20"
                   )}
                 >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <Badge variant="default" className="shadow-lg shadow-primary/25 bg-gradient-accent text-white px-4 py-1 border-none">
+                    <Badge variant="default" className="shadow-lg">
                       Most Popular
                     </Badge>
                   </div>
                 )}
-                <div className="pb-8 border-b border-border/30 mb-8">
-                  <h3 className={cn("text-xl font-bold mb-2", plan.popular ? "text-primary" : "text-foreground")}>{plan.name}</h3>
+                <CardHeader className="pb-8">
+                  <CardTitle className="text-xl mb-2">{plan.name}</CardTitle>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-foreground tracking-tight">{plan.price}</span>
-                    {plan.period && <span className="text-muted-foreground font-medium">{plan.period}</span>}
+                    <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                    {plan.period && <span className="text-muted-foreground">{plan.period}</span>}
                   </div>
-                </div>
-                <div className="flex flex-col flex-1">
-                  <ul className="space-y-4 flex-1 mb-8">
+                </CardHeader>
+                <CardContent className="flex flex-col flex-1">
+                  <ul className="space-y-3 flex-1 mb-6">
                     {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start gap-3 text-sm">
-                        <div className={cn("rounded-full p-0.5 mt-0.5 shrink-0", plan.popular ? "bg-primary/20" : "bg-muted")}>
-                          <CheckCircle2 className={cn("h-3.5 w-3.5", plan.popular ? "text-primary" : "text-muted-foreground")} />
-                        </div>
-                        <span className="text-foreground/80">{feature}</span>
+                      <li key={featureIndex} className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+                        <span className="text-sm text-foreground">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <div className={cn("mt-auto", plan.popular && "[&>button]:bg-gradient-accent [&>button]:text-white [&>button]:shadow-lg [&>button:hover]:shadow-primary/25")}>
-                    {plan.cta}
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
