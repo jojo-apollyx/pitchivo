@@ -138,7 +138,7 @@ In Smartlead dashboard:
 ```bash
 # Add to .env.local and production
 SMARTLEAD_API_KEY=your_smartlead_api_key
-SMARTLEAD_WEBHOOK_SECRET=your_webhook_secret
+# Note: No webhook secret needed - Smartlead doesn't provide signatures
 
 # Keep existing Brevo
 BREVO_API_KEY=your_brevo_api_key
@@ -245,10 +245,10 @@ ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMPTZ;
 ✅ **Rich analytics**: Device, location, user agent data from Smartlead  
 ✅ **Sentiment analysis**: AI-powered reply classification  
 
-## Questions to Answer
+## Questions Answered
 
-1. **Smartlead API Authentication**: What method does Smartlead use?
-2. **Smartlead Webhook Secret**: Does Smartlead provide webhook signatures?
+1. ✅ **Smartlead API Authentication**: API key as query parameter `?api_key=yourApiKey`
+2. ✅ **Smartlead Webhook Secret**: NO - Smartlead doesn't provide webhook signatures (see SMARTLEAD_WEBHOOK_SECURITY.md)
 3. **Lead Sync**: Should we sync leads bidirectionally or push-only?
 4. **Reply Responses**: How should admins respond to replies? (Via Smartlead UI or API?)
 5. **Sentiment Analysis**: Should we use AI service or manual tagging?

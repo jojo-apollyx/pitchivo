@@ -263,7 +263,9 @@ supabase db push
 ```bash
 # Add to .env.local and production
 SMARTLEAD_API_KEY=your_smartlead_api_key
-SMARTLEAD_WEBHOOK_SECRET=your_webhook_secret (if provided)
+
+# Note: SMARTLEAD_WEBHOOK_SECRET is NOT needed
+# Smartlead does not provide webhook signatures
 
 # Keep existing Brevo vars
 BREVO_API_KEY=your_brevo_api_key

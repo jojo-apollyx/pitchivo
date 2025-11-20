@@ -71,15 +71,12 @@ export async function POST(request: NextRequest) {
     console.log('🚀 SMARTLEAD WEBHOOK RECEIVED');
     console.log('Timestamp:', new Date().toISOString());
     
-    // Verify webhook signature (if Smartlead provides one)
-    const signature = request.headers.get('x-smartlead-signature');
-    const webhookSecret = process.env.SMARTLEAD_WEBHOOK_SECRET;
-    
-    if (webhookSecret && signature) {
-      // TODO: Implement signature verification based on Smartlead docs
-      // const isValid = verifySignature(body, signature, webhookSecret)
-      // if (!isValid) return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
+    // Note: Smartlead does not provide webhook signatures or secrets
+    // Security recommendations:
+    // 1. Use HTTPS
+    // 2. Implement IP whitelist if Smartlead provides their IPs
+    // 3. Monitor for suspicious activity
+    // 4. Implement rate limiting
     
     const body = await request.json();
     console.log('📦 Raw payload:', JSON.stringify(body, null, 2));

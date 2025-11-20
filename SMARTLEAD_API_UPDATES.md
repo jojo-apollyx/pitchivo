@@ -247,10 +247,21 @@ status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'STOPPED'
 ## Important Notes
 
 ### Webhook Security
-- Currently no webhook signature verification implemented
-- Smartlead documentation doesn't mention webhook signatures
-- Consider adding IP whitelist or custom secret header
-- Monitor webhook endpoint for abuse
+
+**Important**: Smartlead does NOT provide webhook signatures or secrets.
+
+**Security Recommendations**:
+1. ✅ **Use HTTPS** - Encrypts webhook data in transit
+2. ✅ **Monitor logs** - Watch for suspicious patterns
+3. ✅ **Rate limiting** - Prevent abuse of webhook endpoint
+4. ⚠️ **IP whitelist** - Contact Smartlead for their webhook IPs
+5. ✅ **Idempotency** - Handle duplicate events gracefully
+6. ✅ **Validate payload** - Check required fields exist
+
+**Why no signatures?**
+- Smartlead's architecture doesn't include webhook signing
+- This is common for many webhook providers
+- Focus on other security measures instead
 
 ### Payload Variations
 - Actual payload structure may vary slightly
