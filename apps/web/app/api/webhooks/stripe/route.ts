@@ -20,11 +20,24 @@ const supabase = createClient(
 )
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
+    console.log('============================================')
+    console.log('🔔 STRIPE WEBHOOK RECEIVED')
+    console.log('Timestamp:', new Date().toISOString())
+    
     const body = await request.text()
     const signature = request.headers.get('stripe-signature')
 
+    console.log('Headers:', {
+      'stripe-signature': signature ? 'Present' : 'Missing',
+      'content-type': request.headers.get('content-type'),
+      'user-agent': request.headers.get('user-agent'),
+    })
+
     if (!signature) {
+      console.error('❌ Missing stripe-signature header')
       return NextResponse.json(
         { error: 'Missing stripe-signature header' },
         { status: 400 }
@@ -39,8 +52,11 @@ export async function POST(request: NextRequest) {
         signature,
         process.env.STRIPE_WEBHOOK_SECRET!
       )
+      console.log('✅ Webhook signature verified')
+      console.log(`📦 Event Type: ${event.type}`)
+      console.log(`🆔 Event ID: ${event.id}`)
     } catch (err) {
-      console.error('Webhook signature verification failed:', err)
+      console.error('❌ Webhook signature verification failed:', err)
       return NextResponse.json(
         { error: 'Invalid signature' },
         { status: 400 }
@@ -48,40 +64,69 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle different event types
+    console.log(`🔄 Processing event: ${event.type}`)
+    
     switch (event.type) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
+        console.log(`📋 Subscription ID: ${subscription.id}`)
+        console.log(`👤 Customer ID: ${subscription.customer}`)
+        console.log(`📊 Status: ${subscription.status}`)
+        console.log(`🏷️  Metadata:`, subscription.metadata)
         await handleSubscriptionUpdate(subscription)
         break
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
+        console.log(`📋 Subscription ID: ${subscription.id}`)
+        console.log(`👤 Customer ID: ${subscription.customer}`)
+        console.log(`🏷️  Metadata:`, subscription.metadata)
         await handleSubscriptionCanceled(subscription)
         break
       }
 
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice
+        console.log(`🧾 Invoice ID: ${invoice.id}`)
+        console.log(`👤 Customer ID: ${invoice.customer}`)
+        console.log(`💰 Amount: ${invoice.amount_paid / 100} ${invoice.currency}`)
         await handleInvoicePaid(invoice)
         break
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
+        console.log(`🧾 Invoice ID: ${invoice.id}`)
+        console.log(`👤 Customer ID: ${invoice.customer}`)
+        console.log(`⚠️  Payment failed for invoice`)
         await handlePaymentFailed(invoice)
         break
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        console.log(`ℹ️  Unhandled event type: ${event.type}`)
     }
+
+    const duration = Date.now() - startTime
+    console.log(`⏱️  Processing time: ${duration}ms`)
+    console.log('✅ WEBHOOK PROCESSING COMPLETE')
+    console.log('============================================\n')
 
     return NextResponse.json({ received: true })
 
   } catch (error) {
-    console.error('Webhook error:', error)
+    const duration = Date.now() - startTime
+    console.error('============================================')
+    console.error('❌ ERROR PROCESSING STRIPE WEBHOOK')
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    if (error instanceof Error) {
+      console.error('Stack trace:', error.stack)
+    }
+    console.error(`⏱️  Failed after: ${duration}ms`)
+    console.error('============================================\n')
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }
@@ -90,11 +135,16 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  console.log('📝 Handling subscription update...')
   const orgId = subscription.metadata.org_id
   const tier = subscription.metadata.tier as PricingTier
 
+  console.log(`   Org ID: ${orgId || 'MISSING'}`)
+  console.log(`   Tier: ${tier || 'MISSING'}`)
+
   if (!orgId || !tier) {
-    console.error('Missing org_id or tier in subscription metadata')
+    console.error('❌ Missing org_id or tier in subscription metadata')
+    console.error('   Available metadata:', subscription.metadata)
     return
   }
 
@@ -154,23 +204,37 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
   // If custom override exists and not downgrading, preserve existing quotas
 
+  console.log('💾 Updating subscription in database...')
+  console.log('   Update data:', JSON.stringify(updateData, null, 2))
+  
   const { error } = await supabase
     .from('subscriptions')
     .update(updateData)
     .eq('org_id', orgId)
 
   if (error) {
-    console.error('Error updating subscription:', error)
-  } else if (shouldDowngradeToFree) {
-    console.log(`Subscription for org ${orgId} downgraded to free tier after period end`)
+    console.error('❌ Error updating subscription:', error)
+    console.error('   Error details:', JSON.stringify(error, null, 2))
+  } else {
+    if (shouldDowngradeToFree) {
+      console.log(`✅ Subscription for org ${orgId} downgraded to free tier after period end`)
+    } else {
+      console.log(`✅ Subscription updated successfully for org ${orgId}`)
+      console.log(`   New tier: ${finalTier}`)
+      console.log(`   New status: ${updateData.status}`)
+    }
   }
 }
 
 async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
+  console.log('📝 Handling subscription cancellation...')
   const orgId = subscription.metadata.org_id
 
+  console.log(`   Org ID: ${orgId || 'MISSING'}`)
+
   if (!orgId) {
-    console.error('Missing org_id in subscription metadata')
+    console.error('❌ Missing org_id in subscription metadata')
+    console.error('   Available metadata:', subscription.metadata)
     return
   }
 
@@ -178,42 +242,61 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
   const freeConfig = PRICING_TIERS.free
 
   // When subscription is canceled, downgrade to free tier and reset quotas
+  const cancelData = {
+    tier: 'free',
+    status: 'canceled',
+    email_quota: freeConfig.features.emailQuota,
+    qr_links_per_product: freeConfig.features.qrLinksPerProduct,
+    custom_quota_override: false, // Clear any admin overrides
+    stripe_subscription_id: null, // Clear Stripe subscription ID
+    stripe_price_id: null, // Clear Stripe price ID
+    canceled_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+  
+  console.log('💾 Canceling subscription in database...')
+  console.log('   Cancel data:', JSON.stringify(cancelData, null, 2))
+  
   const { error } = await supabase
     .from('subscriptions')
-    .update({
-      tier: 'free',
-      status: 'canceled',
-      email_quota: freeConfig.features.emailQuota,
-      qr_links_per_product: freeConfig.features.qrLinksPerProduct,
-      custom_quota_override: false, // Clear any admin overrides
-      stripe_subscription_id: null, // Clear Stripe subscription ID
-      stripe_price_id: null, // Clear Stripe price ID
-      canceled_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .update(cancelData)
     .eq('org_id', orgId)
 
   if (error) {
-    console.error('Error canceling subscription:', error)
+    console.error('❌ Error canceling subscription:', error)
+    console.error('   Error details:', JSON.stringify(error, null, 2))
   } else {
-    console.log(`Subscription for org ${orgId} canceled and downgraded to free tier`)
+    console.log(`✅ Subscription for org ${orgId} canceled and downgraded to free tier`)
   }
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  console.log('📝 Handling invoice paid...')
   // Get org_id from subscription metadata
   const subscriptionId = typeof invoice.subscription === 'string' 
     ? invoice.subscription 
     : invoice.subscription?.id
 
-  if (!subscriptionId) return
+  if (!subscriptionId) {
+    console.warn('⚠️  No subscription ID found in invoice')
+    return
+  }
+
+  console.log(`   Subscription ID: ${subscriptionId}`)
 
   // Fetch subscription to get metadata
   const subscription = await stripe.subscriptions.retrieve(subscriptionId)
   const orgId = subscription.metadata.org_id
 
-  if (!orgId) return
+  console.log(`   Org ID: ${orgId || 'MISSING'}`)
 
+  if (!orgId) {
+    console.error('❌ No org_id found in subscription metadata')
+    return
+  }
+
+  console.log('💾 Updating subscription status to active...')
+  
   const { error } = await supabase
     .from('subscriptions')
     .update({
@@ -223,24 +306,40 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     .eq('org_id', orgId)
 
   if (error) {
-    console.error('Error updating subscription after payment:', error)
+    console.error('❌ Error updating subscription after payment:', error)
+    console.error('   Error details:', JSON.stringify(error, null, 2))
+  } else {
+    console.log(`✅ Subscription status updated to active for org ${orgId}`)
   }
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  console.log('📝 Handling payment failed...')
   // Get org_id from subscription metadata
   const subscriptionId = typeof invoice.subscription === 'string' 
     ? invoice.subscription 
     : invoice.subscription?.id
 
-  if (!subscriptionId) return
+  if (!subscriptionId) {
+    console.warn('⚠️  No subscription ID found in invoice')
+    return
+  }
+
+  console.log(`   Subscription ID: ${subscriptionId}`)
 
   // Fetch subscription to get metadata
   const subscription = await stripe.subscriptions.retrieve(subscriptionId)
   const orgId = subscription.metadata.org_id
 
-  if (!orgId) return
+  console.log(`   Org ID: ${orgId || 'MISSING'}`)
 
+  if (!orgId) {
+    console.error('❌ No org_id found in subscription metadata')
+    return
+  }
+
+  console.log('💾 Updating subscription status to past_due...')
+  
   const { error } = await supabase
     .from('subscriptions')
     .update({
@@ -250,7 +349,10 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     .eq('org_id', orgId)
 
   if (error) {
-    console.error('Error updating subscription after failed payment:', error)
+    console.error('❌ Error updating subscription after failed payment:', error)
+    console.error('   Error details:', JSON.stringify(error, null, 2))
+  } else {
+    console.log(`✅ Subscription status updated to past_due for org ${orgId}`)
   }
 }
 
