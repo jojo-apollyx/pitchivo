@@ -148,7 +148,7 @@ export default function CampaignSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
         <p className="text-muted-foreground">Loading campaign...</p>
       </div>
     )
@@ -156,7 +156,7 @@ export default function CampaignSettingsPage() {
 
   if (!campaign) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Campaign not found</p>
           <Button onClick={() => router.push('/admin/campaigns')}>
@@ -168,7 +168,7 @@ export default function CampaignSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
@@ -189,7 +189,7 @@ export default function CampaignSettingsPage() {
                 Back
               </Button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold">
+                <h1 className="text-xl sm:text-2xl font-display font-semibold">
                   {campaign.campaign_name}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">

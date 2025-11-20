@@ -219,7 +219,7 @@ export default function ReviewLaunchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       {/* Top Bar */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -245,7 +245,7 @@ export default function ReviewLaunchPage() {
       <section className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="max-w-3xl mx-auto">
           <div className="mb-6">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+            <h2 className="text-xl sm:text-2xl font-display font-semibold mb-2">
               Review Your Campaign
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground">

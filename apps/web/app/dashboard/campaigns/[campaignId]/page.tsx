@@ -854,7 +854,7 @@ export default function CampaignDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading campaign details...</p>
       </div>
     )
@@ -862,7 +862,7 @@ export default function CampaignDetailPage() {
 
   if (!campaign) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Campaign not found</p>
           <Button onClick={() => router.push('/dashboard/campaigns')}>
@@ -992,7 +992,7 @@ export default function CampaignDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       {/* Header */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
@@ -1007,7 +1007,7 @@ export default function CampaignDetailPage() {
               <span className="hidden sm:inline">Back</span>
             </Button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold truncate">{campaign.campaign_name}</h1>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-display font-semibold truncate">{campaign.campaign_name}</h1>
             </div>
           </div>
         </div>

@@ -87,7 +87,7 @@ export default function ChooseProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       {/* Top Bar */}
       <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -114,7 +114,7 @@ export default function ChooseProductPage() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Select a Product to Promote</h2>
+            <h2 className="text-xl sm:text-2xl font-display font-semibold mb-2">Select a Product to Promote</h2>
             <p className="text-sm sm:text-base text-muted-foreground">
               Pick one of your uploaded products below
             </p>

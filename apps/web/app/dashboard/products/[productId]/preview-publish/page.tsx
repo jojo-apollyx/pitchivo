@@ -286,7 +286,7 @@ export default function PreviewPublishPageNew() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Loading product...</p>
@@ -297,7 +297,7 @@ export default function PreviewPublishPageNew() {
 
   if (!formData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-destructive mb-4">Product not found</p>
           <Button variant="outline" onClick={() => router.push('/dashboard/products')}>
@@ -352,7 +352,7 @@ export default function PreviewPublishPageNew() {
   })
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <main className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -366,7 +366,7 @@ export default function PreviewPublishPageNew() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold">
+                <h1 className="text-xl sm:text-2xl font-display font-semibold">
                   {formData.product_name || 'Product'}
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground">

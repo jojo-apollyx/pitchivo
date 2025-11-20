@@ -77,7 +77,7 @@ export default function AdminCampaignAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
         <p className="text-muted-foreground">Loading campaign analytics...</p>
       </div>
     )
@@ -85,7 +85,7 @@ export default function AdminCampaignAnalyticsPage() {
 
   if (!campaign) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Campaign not found</p>
           <Button onClick={() => router.push('/admin/campaigns')}>
@@ -126,7 +126,7 @@ export default function AdminCampaignAnalyticsPage() {
     : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
@@ -147,7 +147,7 @@ export default function AdminCampaignAnalyticsPage() {
               <span className="sm:hidden">Back</span>
             </Button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold truncate">{campaign.campaign_name}</h1>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-display font-semibold truncate">{campaign.campaign_name}</h1>
               <p className="text-xs text-muted-foreground">
                 Admin Analytics View
               </p>
