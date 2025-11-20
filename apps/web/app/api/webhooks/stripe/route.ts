@@ -154,7 +154,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   // Use maybeSingle() because subscription might not exist yet (first time subscription)
   const { data: existingSubscription, error: fetchError } = await supabase
     .from('subscriptions')
-    .select('tier, custom_quota_override, email_quota, qr_links_per_product, status')
+    .select('tier, custom_quota_override, email_quota, qr_links_per_product, status, cancel_at_period_end')
     .eq('org_id', orgId)
     .maybeSingle()
 
@@ -248,17 +248,42 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     throw new Error('Subscription missing required period dates - cannot track billing period')
   }
   
+  // Detect cancellation state
+  // When user cancels, Stripe sets:
+  // - cancel_at_period_end: true
+  // - canceled_at: timestamp (when cancellation was requested)
+  // - status: still "active" until period ends
+  const isScheduledToCancel = subscriptionToUse.cancel_at_period_end === true && subscriptionToUse.canceled_at !== null
+  const isActuallyCanceled = subscriptionToUse.status === 'canceled' || subscriptionToUse.status === 'unpaid'
+  const periodEnded = periodEnd <= now
+
+  // Check if subscription was reactivated (cancel_at_period_end changed from true to false)
+  const wasScheduledToCancel = existingSubscription && 
+    (existingSubscription as any).cancel_at_period_end === true
+  const isReactivated = wasScheduledToCancel && !subscriptionToUse.cancel_at_period_end
+
+  console.log(`   Cancellation state:`, {
+    scheduled_to_cancel: isScheduledToCancel,
+    actually_canceled: isActuallyCanceled,
+    cancel_at_period_end: subscriptionToUse.cancel_at_period_end,
+    canceled_at: subscriptionToUse.canceled_at,
+    period_ended: periodEnded,
+    was_scheduled_to_cancel: wasScheduledToCancel,
+    is_reactivated: isReactivated
+  })
+
   // Determine subscription status
   // Handle different Stripe subscription statuses
   let subscriptionStatus: 'active' | 'inactive' | 'past_due' | 'canceled' | 'trialing'
   
-  if (subscriptionToUse.status === 'canceled' || subscriptionToUse.status === 'unpaid') {
+  if (isActuallyCanceled) {
     subscriptionStatus = 'canceled'
   } else if (subscriptionToUse.status === 'past_due') {
     subscriptionStatus = 'past_due'
   } else if (subscriptionToUse.status === 'trialing') {
     subscriptionStatus = 'trialing'
   } else if (subscriptionToUse.status === 'active') {
+    // Keep as active even if scheduled to cancel (until period ends)
     subscriptionStatus = 'active'
   } else {
     subscriptionStatus = 'inactive'
@@ -266,13 +291,10 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   // Check if subscription should be downgraded to free
   // This happens when:
-  // 1. Subscription is canceled and period has ended, OR
-  // 2. Subscription is set to cancel at period end and period has ended
-  const isCanceled = subscriptionToUse.status === 'canceled'
-  const periodEnded = periodEnd <= now
+  // 1. Subscription is actually canceled (status = 'canceled'), OR
+  // 2. Subscription is scheduled to cancel and period has ended
   const shouldDowngradeToFree = 
-    (isCanceled || subscriptionToUse.cancel_at_period_end) && 
-    periodEnded &&
+    (isActuallyCanceled || (isScheduledToCancel && periodEnded)) && 
     tier !== 'free'
 
   // Determine final tier and quotas
@@ -326,6 +348,20 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     updated_at: now.toISOString()
   }
 
+  // Set canceled_at timestamp if subscription is scheduled to cancel or actually canceled
+  if (isScheduledToCancel || isActuallyCanceled) {
+    if (subscriptionToUse.canceled_at) {
+      updateData.canceled_at = new Date(subscriptionToUse.canceled_at * 1000).toISOString()
+    } else {
+      // Fallback to current time if canceled_at is not set
+      updateData.canceled_at = now.toISOString()
+    }
+  } else if (isReactivated) {
+    // Clear canceled_at if subscription was reactivated
+    updateData.canceled_at = null
+    console.log(`   Subscription reactivated - clearing canceled_at`)
+  }
+
   // Update quotas based on strategy
   if (shouldUpdateQuotas) {
     updateData.email_quota = emailQuota
@@ -365,7 +401,20 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
       console.log(`   Status: ${subscriptionStatus}`)
     } else if (shouldDowngradeToFree) {
       console.log(`✅ Subscription for org ${orgId} downgraded to free tier`)
-      console.log(`   Reason: Period ended or subscription canceled`)
+      if (isScheduledToCancel && periodEnded) {
+        console.log(`   Reason: Scheduled cancellation - period ended`)
+      } else if (isActuallyCanceled) {
+        console.log(`   Reason: Subscription canceled`)
+      }
+    } else if (isReactivated) {
+      console.log(`✅ Subscription reactivated for org ${orgId}`)
+      console.log(`   Cancellation has been undone`)
+      console.log(`   Tier: ${finalTier}`)
+      console.log(`   Status: ${subscriptionStatus}`)
+    } else if (isScheduledToCancel && !periodEnded) {
+      console.log(`✅ Subscription scheduled to cancel for org ${orgId}`)
+      console.log(`   Will cancel at period end: ${periodEnd.toISOString()}`)
+      console.log(`   Current tier maintained until period ends`)
     } else if (isUpgrade) {
       console.log(`✅ Subscription upgraded for org ${orgId}`)
       console.log(`   ${oldTier} → ${finalTier}`)
