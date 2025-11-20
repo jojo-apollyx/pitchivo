@@ -463,7 +463,7 @@ export default function CampaignsPage() {
             </TabsList>
 
             <TabsContent value="campaigns">
-              <div className="divide-y divide-border/30">
+              <div className="bg-gradient-to-br from-card/80 to-card/50 backdrop-blur-sm rounded-xl overflow-hidden shadow-sm divide-y divide-border/30">
                 {campaigns.map((campaign) => {
               const canCancel = campaign.status === 'scheduled' || campaign.status === 'active'
               const canPause = campaign.status === 'active'

@@ -67,111 +67,111 @@ html body [data-sonner-toast] * {
 
 @layer base {
   :root {
-    /* Premium Light Theme - Mint Blue Palette */
+    /* Premium Light Theme - Emerald Spark Palette */
     --background: 0 0% 100%;           /* white */
-    --foreground: 0 0% 5%;             /* gray-950 */
+    --foreground: 161 94% 10%;         /* very dark green-gray */
     
     --card: 0 0% 100%;                 /* white */
-    --card-foreground: 0 0% 5%;        /* gray-950 */
+    --card-foreground: 161 94% 10%;    /* very dark green-gray */
     
     --popover: 0 0% 100%;              /* white */
-    --popover-foreground: 0 0% 5%;     /* gray-950 */
+    --popover-foreground: 161 94% 10%; /* very dark green-gray */
     
-    /* Primary: Mint Green #ADEBB3 (default) */
-    --primary: 126 61% 80%;              /* #ADEBB3 - default mint green */
-    --primary-foreground: 0 0% 5%;       /* gray-950 - dark text on light primary */
+    /* Primary: Emerald Green #10B981 */
+    --primary: 160 84% 39%;              
+    --primary-foreground: 0 0% 100%;       /* white text on primary */
     
     /* Primary Variants */
-    --primary-light: 126 61% 90%;        /* lighter mint green */
-    --primary-dark: 126 61% 70%;        /* darker mint green */
-    --primary-darker: 126 61% 60%;       /* darkest mint green */
+    --primary-light: 160 84% 49%;        /* lighter emerald */
+    --primary-dark: 161 94% 30%;        /* darker emerald (#059669) */
+    --primary-darker: 161 94% 20%;       /* darkest emerald */
     
-    /* Accent Colors - for selected states, highlights */
-    --accent-color: 126 61% 80%;         /* #ADEBB3 - use primary as accent */
-    --accent-color-foreground: 0 0% 5%;  /* gray-950 - dark text on accent */
+    /* Accent Colors - Coral Red #F87171 */
+    --accent-color: 0 91% 71%;         
+    --accent-color-foreground: 0 0% 100%; 
     
     /* Additional Accent Variants */
     --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
     --accent-pink: 343 100% 88%;        /* #ffc0d1 - pink */
-    --accent-mint-light: 162 60% 78%;   /* #a6e9d7 - light mint */
+    --accent-mint-light: 160 84% 95%;   /* light mint tint */
     
-    --secondary: 0 0% 96%;             /* gray-100 */
-    --secondary-foreground: 0 0% 9%;   /* gray-900 */
+    --secondary: 160 20% 96%;           /* mint-tinted gray */
+    --secondary-foreground: 161 94% 30%; /* dark emerald */
     
-    --muted: 0 0% 96%;                 /* gray-100 */
-    --muted-foreground: 0 0% 45%;      /* gray-500 */
+    --muted: 160 10% 96%;               /* neutral mint gray */
+    --muted-foreground: 160 5% 45%;     /* neutral gray */
     
-    --accent: 0 0% 96%;                /* gray-100 */
-    --accent-foreground: 0 0% 9%;      /* gray-900 */
+    --accent: 0 91% 96%;                /* very light coral tint */
+    --accent-foreground: 0 91% 40%;     /* dark coral */
     
     --destructive: 0 84% 60%;          /* red-500 */
     --destructive-foreground: 0 0% 100%; /* white */
     
-    --border: 0 0% 90%;                /* gray-200 */
-    --input: 0 0% 90%;                 /* gray-200 */
-    --ring: 126 61% 80%;                /* primary mint green */
+    --border: 160 10% 90%;             /* gray-200 with hint of green */
+    --input: 160 10% 90%;              /* gray-200 with hint of green */
+    --ring: 160 84% 39%;               /* primary emerald */
     
     --radius: 0.75rem;                 /* 12px - premium rounded */
     
     /* Chart Colors */
-    --chart-1: 126 61% 80%;             /* primary mint green */
-    --chart-2: 126 61% 90%;             /* primary light */
-    --chart-3: 126 61% 70%;             /* primary dark */
-    --chart-4: 126 61% 60%;             /* primary darker */
-    --chart-5: 35 100% 74%;             /* accent yellow */
+    --chart-1: 160 84% 39%;             /* emerald */
+    --chart-2: 161 94% 30%;             /* dark emerald */
+    --chart-3: 0 91% 71%;               /* coral */
+    --chart-4: 35 100% 50%;             /* amber/orange */
+    --chart-5: 210 100% 50%;            /* blue */
   }
   
   .dark {
-    /* Premium Dark Theme - Mint Blue Palette */
-    --background: 0 0% 0%;             /* black */
+    /* Premium Dark Theme - Emerald Spark Palette */
+    --background: 161 40% 4%;          /* very dark green-black */
     --foreground: 0 0% 100%;           /* white */
     
-    --card: 0 0% 7%;                   /* gray-950 */
+    --card: 161 40% 6%;                /* dark green-gray */
     --card-foreground: 0 0% 100%;      /* white */
     
-    --popover: 0 0% 7%;                /* gray-950 */
+    --popover: 161 40% 6%;             /* dark green-gray */
     --popover-foreground: 0 0% 100%;   /* white */
     
-    /* Primary: Mint Green #ADEBB3 (default) */
-    --primary: 126 61% 80%;            /* #ADEBB3 - default mint green */
-    --primary-foreground: 0 0% 5%;     /* gray-950 - dark text on light primary */
+    /* Primary: Emerald Green #10B981 */
+    --primary: 160 84% 39%;            
+    --primary-foreground: 0 0% 100%;   
     
     /* Primary Variants */
-    --primary-light: 126 61% 90%;      /* lighter mint green */
-    --primary-dark: 126 61% 70%;       /* darker mint green */
-    --primary-darker: 126 61% 60%;     /* darkest mint green */
+    --primary-light: 160 84% 49%;      
+    --primary-dark: 161 94% 30%;       
+    --primary-darker: 161 94% 20%;     
     
-    /* Accent Colors - for selected states, highlights */
-    --accent-color: 126 61% 80%;       /* #ADEBB3 - use primary as accent */
-    --accent-color-foreground: 0 0% 5%; /* gray-950 - dark text on accent */
+    /* Accent Colors */
+    --accent-color: 0 91% 71%;       
+    --accent-color-foreground: 0 0% 100%; 
     
     /* Additional Accent Variants */
-    --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
-    --accent-pink: 343 100% 88%;        /* #ffc0d1 - pink */
-    --accent-mint-light: 162 60% 78%;   /* #a6e9d7 - light mint */
+    --accent-beige: 20 25% 67%;         
+    --accent-pink: 343 100% 88%;        
+    --accent-mint-light: 160 84% 15%;   /* dark mint tint */
     
-    --secondary: 0 0% 15%;             /* gray-900 */
+    --secondary: 161 30% 10%;          /* dark mint-gray */
     --secondary-foreground: 0 0% 100%; /* white */
     
-    --muted: 0 0% 15%;                 /* gray-900 */
-    --muted-foreground: 0 0% 64%;      /* gray-400 */
+    --muted: 161 30% 10%;              /* dark mint-gray */
+    --muted-foreground: 160 10% 60%;   /* gray-400 */
     
-    --accent: 0 0% 15%;                /* gray-900 */
+    --accent: 161 30% 10%;             /* dark mint-gray */
     --accent-foreground: 0 0% 100%;    /* white */
     
     --destructive: 0 84% 60%;          /* red-500 */
     --destructive-foreground: 0 0% 100%; /* white */
     
-    --border: 0 0% 15%;                /* gray-800 */
-    --input: 0 0% 15%;                 /* gray-800 */
-    --ring: 126 61% 80%;                /* primary mint green */
+    --border: 161 30% 15%;             /* dark border */
+    --input: 161 30% 15%;              /* dark input bg */
+    --ring: 160 84% 39%;               /* primary emerald */
     
     /* Chart Colors */
-    --chart-1: 126 61% 80%;             /* primary mint green */
-    --chart-2: 126 61% 90%;             /* primary light */
-    --chart-3: 126 61% 70%;             /* primary dark */
-    --chart-4: 126 61% 60%;             /* primary darker */
-    --chart-5: 35 100% 74%;             /* accent yellow */
+    --chart-1: 160 84% 39%;             
+    --chart-2: 161 94% 30%;             
+    --chart-3: 0 91% 71%;               
+    --chart-4: 35 100% 50%;             
+    --chart-5: 210 100% 50%;            
   }
 }
 
@@ -567,4 +567,3 @@ html body [data-sonner-toast] * {
     transition-duration: 0.01ms !important;
   }
 }
-
