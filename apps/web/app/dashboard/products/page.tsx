@@ -166,7 +166,7 @@ export default function ProductsPage() {
       </section>
 
       {/* Filters */}
-      <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30 bg-background/50 backdrop-blur-sm">
+      <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30 bg-background/50">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
             {/* Search */}
@@ -176,7 +176,7 @@ export default function ProductsPage() {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 bg-card/50 border-border/50 focus:bg-card transition-all duration-300"
+                className="pl-10 pr-10"
               />
               {searchQuery && (
                 <button
@@ -258,7 +258,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="max-w-7xl mx-auto">
-            <div className="bg-gradient-to-br from-card/80 to-card/50 backdrop-blur-sm rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border/30 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-muted/30 border-b border-border/30">
