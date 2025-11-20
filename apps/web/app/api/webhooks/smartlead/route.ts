@@ -24,16 +24,18 @@ const supabaseAdmin = createClient(
 
 /**
  * Smartlead Webhook Event Types
- * Reference: https://help.outboundsync.com/articles/643692-smartlead-webhook-guide
+ * Reference: https://helpcenter.smartlead.ai/en/articles/125-full-api-documentation
  * 
- * Smartlead sends these event types:
+ * Official Smartlead webhook event types (from API documentation):
  * - EMAIL_SENT: When an email is sent
+ * - EMAIL_OPEN: When a lead opens an email (note: EMAIL_OPEN, not EMAIL_OPENED)
+ * - EMAIL_LINK_CLICK: When a lead clicks a link in an email (note: EMAIL_LINK_CLICK, not LINK_CLICKED)
  * - EMAIL_REPLY: When a lead replies to an email
- * - EMAIL_OPENED: When a lead opens an email
- * - LINK_CLICKED: When a lead clicks a link in an email
- * - EMAIL_BOUNCE: When an email bounces
  * - LEAD_UNSUBSCRIBED: When a lead unsubscribes
  * - LEAD_CATEGORY_UPDATED: When lead category/status changes
+ * 
+ * Additional event types that may be sent (not in official docs but referenced elsewhere):
+ * - EMAIL_BOUNCE: When an email bounces
  * - THREADED_REPLIES: For threaded conversation replies
  * - CAMPAIGN_STATUS_CHANGE: When campaign status changes
  * - UNTRACKED_REPLIES: Replies that aren't tracked
@@ -41,26 +43,30 @@ const supabaseAdmin = createClient(
  */
 const SMARTLEAD_EVENT_TYPES = {
   EMAIL_SENT: 'sent',
-  EMAIL_OPENED: 'opened',
-  LINK_CLICKED: 'clicked',
-  EMAIL_BOUNCE: 'bounced',
+  EMAIL_OPEN: 'opened', // Official: EMAIL_OPEN (not EMAIL_OPENED)
+  EMAIL_LINK_CLICK: 'clicked', // Official: EMAIL_LINK_CLICK (not LINK_CLICKED)
+  EMAIL_BOUNCE: 'bounced', // Not in official docs but may be sent
   EMAIL_REPLY: 'replied',
   LEAD_UNSUBSCRIBED: 'unsubscribed',
   LEAD_CATEGORY_UPDATED: 'category_updated',
-  THREADED_REPLIES: 'threaded_reply',
-  CAMPAIGN_STATUS_CHANGE: 'status_change',
-  UNTRACKED_REPLIES: 'untracked_reply',
-  MANUAL_STEP_REACHED: 'manual_step',
+  THREADED_REPLIES: 'threaded_reply', // Not in official docs
+  CAMPAIGN_STATUS_CHANGE: 'status_change', // Not in official docs
+  UNTRACKED_REPLIES: 'untracked_reply', // Not in official docs
+  MANUAL_STEP_REACHED: 'manual_step', // Not in official docs
 } as const;
 
 // Map Smartlead events to our internal event types
+// Based on official documentation: https://helpcenter.smartlead.ai/en/articles/125-full-api-documentation
 const EVENT_TYPE_MAPPING: Record<string, string> = {
   'EMAIL_SENT': 'sent',
-  'EMAIL_OPENED': 'opened',
-  'LINK_CLICKED': 'clicked',
-  'EMAIL_BOUNCE': 'bounced',
+  'EMAIL_OPEN': 'opened', // Official event type
+  'EMAIL_OPENED': 'opened', // Handle both for backwards compatibility
+  'EMAIL_LINK_CLICK': 'clicked', // Official event type
+  'LINK_CLICKED': 'clicked', // Handle both for backwards compatibility
+  'EMAIL_BOUNCE': 'bounced', // May be sent but not in official docs
   'EMAIL_REPLY': 'replied',
   'LEAD_UNSUBSCRIBED': 'unsubscribed',
+  'LEAD_CATEGORY_UPDATED': 'category_updated',
 };
 
 export async function POST(request: NextRequest) {

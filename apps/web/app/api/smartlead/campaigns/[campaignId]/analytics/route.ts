@@ -63,14 +63,25 @@ export async function GET(
     }
 
     // Get analytics from Smartlead
+    console.log(`[Smartlead Analytics API] Getting analytics for campaign:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+    });
+
     const smartlead = createSmartleadClient();
     const result = await smartlead.getCampaignAnalytics(campaign.smartlead_campaign_id);
 
     if (!result.success || !result.data) {
+      console.error('[Smartlead Analytics API] Failed to get analytics:', {
+        error: result.error,
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to get campaign analytics from Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
@@ -82,7 +93,11 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error getting Smartlead campaign analytics:', error);
+    console.error('[Smartlead Analytics API] Unexpected error getting analytics:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',

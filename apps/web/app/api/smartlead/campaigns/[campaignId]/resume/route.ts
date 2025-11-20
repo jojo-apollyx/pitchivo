@@ -63,14 +63,25 @@ export async function POST(
     }
 
     // Resume campaign in Smartlead
+    console.log(`[Smartlead Resume API] Resuming campaign:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+    });
+
     const smartlead = createSmartleadClient();
     const result = await smartlead.resumeCampaign(campaign.smartlead_campaign_id);
 
     if (!result.success) {
+      console.error('[Smartlead Resume API] Failed to resume campaign:', {
+        error: result.error,
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to resume campaign in Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
@@ -95,7 +106,11 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error resuming Smartlead campaign:', error);
+    console.error('[Smartlead Resume API] Unexpected error resuming campaign:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',

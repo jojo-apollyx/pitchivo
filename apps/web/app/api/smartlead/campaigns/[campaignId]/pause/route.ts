@@ -63,14 +63,25 @@ export async function POST(
     }
 
     // Pause campaign in Smartlead
+    console.log(`[Smartlead Pause API] Pausing campaign:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+    });
+
     const smartlead = createSmartleadClient();
     const result = await smartlead.pauseCampaign(campaign.smartlead_campaign_id);
 
     if (!result.success) {
+      console.error('[Smartlead Pause API] Failed to pause campaign:', {
+        error: result.error,
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to pause campaign in Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
@@ -95,7 +106,11 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error pausing Smartlead campaign:', error);
+    console.error('[Smartlead Pause API] Unexpected error pausing campaign:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',

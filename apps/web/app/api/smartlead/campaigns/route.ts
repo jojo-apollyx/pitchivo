@@ -39,26 +39,36 @@ export async function POST(request: NextRequest) {
     const smartlead = createSmartleadClient();
 
     // Create campaign in Smartlead
+    console.log(`[Smartlead Campaign API] Creating campaign:`, {
+      campaign_id,
+      campaign_name,
+    });
+
     const result = await smartlead.createCampaign({
       name: campaign_name,
-      settings: {
-        track_settings: {
-          open_tracking: true,
-          click_tracking: true,
-        },
-      },
+      // client_id is optional - can be set later if needed
     });
 
     if (!result.success || !result.data) {
-      console.error('Failed to create Smartlead campaign:', result.error);
+      console.error('[Smartlead Campaign API] Failed to create campaign:', {
+        error: result.error,
+        campaign_id,
+        campaign_name,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to create campaign in Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
     }
+
+    console.log('[Smartlead Campaign API] Campaign created successfully:', {
+      campaign_id,
+      smartlead_campaign_id: result.data.id,
+    });
 
     // Update campaign in database with Smartlead ID
     const { error: updateError } = await supabase
@@ -86,7 +96,11 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error creating Smartlead campaign:', error);
+    console.error('[Smartlead Campaign API] Unexpected error creating campaign:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -161,18 +175,34 @@ export async function GET(request: NextRequest) {
     }
 
     // Get campaign details from Smartlead
+    console.log(`[Smartlead Campaign API] Getting campaign:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+    });
+
     const smartlead = createSmartleadClient();
     const result = await smartlead.getCampaign(campaign.smartlead_campaign_id);
 
     if (!result.success || !result.data) {
+      console.error('[Smartlead Campaign API] Failed to get campaign:', {
+        error: result.error,
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to get campaign from Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
     }
+
+    console.log('[Smartlead Campaign API] Campaign retrieved successfully:', {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+    });
 
     return NextResponse.json({
       success: true,
@@ -180,7 +210,11 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error getting Smartlead campaign:', error);
+    console.error('[Smartlead Campaign API] Unexpected error getting campaign:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',

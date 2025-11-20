@@ -67,15 +67,36 @@ export async function GET(
       );
     }
 
+    // Get pagination parameters from query string
+    const searchParams = request.nextUrl.searchParams;
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const limit = parseInt(searchParams.get('limit') || '100', 10);
+
     // Get leads from Smartlead
+    console.log(`[Smartlead Leads API] Getting leads for campaign:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+      offset,
+      limit,
+    });
+
     const smartlead = createSmartleadClient();
-    const result = await smartlead.listLeads(campaign.smartlead_campaign_id);
+    const result = await smartlead.listLeads(campaign.smartlead_campaign_id, {
+      offset,
+      limit,
+    });
 
     if (!result.success) {
+      console.error('[Smartlead Leads API] Failed to get leads:', {
+        error: result.error,
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to get leads from Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
@@ -87,7 +108,11 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error getting Smartlead campaign leads:', error);
+    console.error('[Smartlead Leads API] Unexpected error getting leads:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -165,6 +190,12 @@ export async function POST(
     }
 
     // Add leads to Smartlead
+    console.log(`[Smartlead Leads API] Adding leads to campaign:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+      leads_count: Array.isArray(leads) ? leads.length : 1,
+    });
+
     const smartlead = createSmartleadClient();
     const leadsArray = Array.isArray(leads) ? leads : [leads];
     
@@ -176,10 +207,17 @@ export async function POST(
     }
 
     if (!result.success) {
+      console.error('[Smartlead Leads API] Failed to add leads:', {
+        error: result.error,
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+        leads_count: leadsArray.length,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to add leads to Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
@@ -192,7 +230,11 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error adding leads to Smartlead campaign:', error);
+    console.error('[Smartlead Leads API] Unexpected error adding leads:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -270,14 +312,27 @@ export async function DELETE(
     }
 
     // Remove lead from Smartlead
+    console.log(`[Smartlead Leads API] Removing lead from campaign:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+      email,
+    });
+
     const smartlead = createSmartleadClient();
     const result = await smartlead.removeLead(campaign.smartlead_campaign_id, email);
 
     if (!result.success) {
+      console.error('[Smartlead Leads API] Failed to remove lead:', {
+        error: result.error,
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+        email,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to remove lead from Smartlead',
-          details: result.error?.message 
+          details: result.error?.message || result.error?.error || 'Unknown error',
+          status_code: result.error?.status_code,
         },
         { status: 500 }
       );
@@ -289,7 +344,11 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Error removing lead from Smartlead campaign:', error);
+    console.error('[Smartlead Leads API] Unexpected error removing lead:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',
