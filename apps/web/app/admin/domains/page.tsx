@@ -129,7 +129,7 @@ export default function AdminDomainsPage() {
   )
 
   return (
-    <motion.div
+    <motion.main
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -142,13 +142,14 @@ export default function AdminDomainsPage() {
       <div className="relative">
         {/* Page Header - Integral Section */}
         <motion.section
+          id="admin-domains-header-section"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
           className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50"
         >
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">Domain Control</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold">Domain Control</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-2">
               Manage blocked domains and email domain policies
             </p>
@@ -302,6 +303,6 @@ export default function AdminDomainsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </motion.main>
   )
 }

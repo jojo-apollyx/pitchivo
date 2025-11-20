@@ -192,7 +192,7 @@ export default function AdminUsersPage() {
   )
 
   return (
-    <motion.div
+    <motion.main
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -205,13 +205,14 @@ export default function AdminUsersPage() {
       <div className="relative">
         {/* Page Header - Integral Section */}
         <motion.section
+          id="admin-users-header-section"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
           className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50"
         >
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Users / Organizations</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">Users / Organizations</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
               Manage all users and their organizations
             </p>
@@ -363,6 +364,6 @@ export default function AdminUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </motion.main>
   )
 }
