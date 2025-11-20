@@ -76,12 +76,13 @@ export default function CampaignSettingsPage() {
         .from('campaigns')
         .select('*, organizations(name), products(product_name, product_id)')
         .eq('campaign_id', campaignId)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       setCampaign(data)
     } catch (error) {
       console.error('Error loading campaign:', error)
+      setCampaign(null)
     } finally {
       setLoading(false)
     }

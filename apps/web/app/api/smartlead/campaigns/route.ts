@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
       .from('campaigns')
       .select('smartlead_campaign_id, org_id')
       .eq('campaign_id', campaignId)
-      .single();
+      .maybeSingle();
 
     if (dbError || !campaign) {
       return NextResponse.json(

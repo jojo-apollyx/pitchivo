@@ -37,7 +37,7 @@ export function CampaignSubdomainSettings({ campaignId }: CampaignSubdomainSetti
         .from('campaigns')
         .select('sender_subdomains, sender_email, organizations(domain)')
         .eq('campaign_id', campaignId)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       

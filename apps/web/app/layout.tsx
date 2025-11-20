@@ -9,17 +9,22 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { MotionProvider } from "@/components/providers/motion-provider";
 import "./../globals.css";
 
-// Configure Google Fonts
+// Configure Google Fonts with fallbacks
+// next/font/google self-hosts fonts at build time, so no external requests are needed
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
+  fallback: ['system-ui', 'arial'],
+  adjustFontFallback: true,
 });
 
 const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-outfit',
   display: 'swap',
+  fallback: ['system-ui', 'arial'],
+  adjustFontFallback: true,
 });
 
 export const viewport: Viewport = {
@@ -122,8 +127,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <JsonLd />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         
         {/* Apple Touch Icon */}
         <link rel="apple-touch-icon" href="/web-app-manifest-192x192.png" />

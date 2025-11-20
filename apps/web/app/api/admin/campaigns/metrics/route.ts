@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       .from('campaigns')
       .select('*')
       .eq('campaign_id', campaignId)
-      .single()
+      .maybeSingle()
 
     if (fetchError || !campaign) {
       return NextResponse.json(

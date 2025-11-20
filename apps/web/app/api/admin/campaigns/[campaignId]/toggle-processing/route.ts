@@ -76,7 +76,7 @@ export async function POST(
       .from('campaigns')
       .select('admin_processing_paused, campaign_name')
       .eq('campaign_id', campaignId)
-      .single()
+      .maybeSingle()
 
     if (fetchError) {
       console.error('[toggle-processing] Error fetching campaign:', fetchError)

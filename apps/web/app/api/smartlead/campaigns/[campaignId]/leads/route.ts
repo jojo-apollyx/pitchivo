@@ -36,7 +36,7 @@ export async function GET(
       .from('campaigns')
       .select('smartlead_campaign_id, org_id')
       .eq('campaign_id', campaignId)
-      .single();
+      .maybeSingle();
 
     if (dbError || !campaign) {
       return NextResponse.json(
@@ -133,7 +133,7 @@ export async function POST(
       .from('campaigns')
       .select('smartlead_campaign_id, org_id')
       .eq('campaign_id', campaignId)
-      .single();
+      .maybeSingle();
 
     if (dbError || !campaign) {
       return NextResponse.json(
@@ -238,7 +238,7 @@ export async function DELETE(
       .from('campaigns')
       .select('smartlead_campaign_id, org_id')
       .eq('campaign_id', campaignId)
-      .single();
+      .maybeSingle();
 
     if (dbError || !campaign) {
       return NextResponse.json(

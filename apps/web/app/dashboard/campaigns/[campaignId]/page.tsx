@@ -181,13 +181,14 @@ export default function CampaignDetailPage() {
           )
         `)
         .eq('campaign_id', campaignId)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
 
-      setCampaign(data as Campaign)
+      setCampaign(data as Campaign | null)
     } catch (error) {
       console.error('Error loading campaign:', error)
+      setCampaign(null)
     } finally {
       setLoading(false)
     }

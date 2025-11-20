@@ -15,13 +15,14 @@ const supabaseAdmin = createClient(
 )
 
 // GET: Fetch scheduled emails for a campaign
+// Note: All campaign emails are handled by Smartlead
+// Campaign email history is available via smartlead_email_events table
 export async function GET(request: NextRequest) {
   try {
     await requireAdmin()
 
     const { searchParams } = new URL(request.url)
     const campaignId = searchParams.get('campaignId')
-    const status = searchParams.get('status') // pending, sent, failed, cancelled
 
     if (!campaignId) {
       return NextResponse.json(
@@ -30,27 +31,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let query = supabaseAdmin
-      .from('scheduled_emails')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('scheduled_time', { ascending: true })
-
-    if (status) {
-      query = query.eq('status', status)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Error fetching scheduled emails:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch scheduled emails' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ scheduledEmails: data || [] })
+    // All campaigns are handled by Smartlead
+    // Campaign emails are tracked via smartlead_email_events, not scheduled_emails
+    return NextResponse.json({ 
+      scheduledEmails: [],
+      message: 'Campaign emails are handled by Smartlead. Use smartlead_email_events for campaign email history.'
+    })
   } catch (error: any) {
     console.error('Error in GET scheduled emails:', error)
     return NextResponse.json(
@@ -61,81 +47,18 @@ export async function GET(request: NextRequest) {
 }
 
 // POST: Create scheduled emails in batch
+// Note: All campaigns are handled by Smartlead. Use Smartlead API to add leads to campaigns.
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin()
 
-    const body = await request.json()
-    const { campaignId, emails } = body
-
-    if (!campaignId || !emails || !Array.isArray(emails) || emails.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required fields or invalid email array' },
-        { status: 400 }
-      )
-    }
-
-    // Validate each email object
-    for (const email of emails) {
-      if (!email.recipient_email || !email.subject || !email.content || !email.scheduled_time) {
-        return NextResponse.json(
-          { error: 'Each email must have recipient_email, subject, content, and scheduled_time' },
-          { status: 400 }
-        )
-      }
-    }
-
-    // For each email with lead_id, get the next send sequence number
-    const scheduledEmailsData = []
-    for (const email of emails) {
-      let sendSequenceNumber = 1
-      if (email.lead_id) {
-        const { data: sequenceData } = await supabaseAdmin
-          .rpc('get_next_send_sequence', { 
-            p_lead_id: email.lead_id, 
-            p_campaign_id: campaignId 
-          })
-        
-        if (sequenceData) {
-          sendSequenceNumber = sequenceData
-        }
-      }
-      
-      scheduledEmailsData.push({
-        campaign_id: campaignId,
-        lead_id: email.lead_id || null,
-        recipient_email: email.recipient_email,
-        recipient_company: email.recipient_company || null,
-        recipient_name: email.recipient_name || null,
-        recipient_title: email.recipient_title || null,
-        template_id: email.template_id || null,
-        subject: email.subject,
-        content: email.content,
-        scheduled_time: email.scheduled_time,
-        status: 'pending',
-        send_sequence_number: sendSequenceNumber,
-        metadata: email.metadata || {}
-      })
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('scheduled_emails')
-      .insert(scheduledEmailsData)
-      .select()
-
-    if (error) {
-      console.error('Error creating scheduled emails:', error)
-      return NextResponse.json(
-        { error: 'Failed to create scheduled emails', details: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ 
-      success: true,
-      count: data.length,
-      scheduledEmails: data 
-    })
+    return NextResponse.json(
+      { 
+        error: 'Campaign emails are handled by Smartlead. Use /api/smartlead/campaigns/[campaignId]/leads to add leads to campaigns.',
+        message: 'All campaign emails are managed through Smartlead. Scheduled emails are not used for campaigns.'
+      },
+      { status: 400 }
+    )
   } catch (error: any) {
     console.error('Error in POST scheduled emails:', error)
     return NextResponse.json(
@@ -146,57 +69,18 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT: Update scheduled email status (e.g., cancel)
+// Note: All campaigns are handled by Smartlead. Use Smartlead API to manage campaign emails.
 export async function PUT(request: NextRequest) {
   try {
     await requireAdmin()
 
-    const body = await request.json()
-    const { scheduledEmailId, status, errorMessage } = body
-
-    if (!scheduledEmailId || !status) {
-      return NextResponse.json(
-        { error: 'Missing scheduledEmailId or status' },
-        { status: 400 }
-      )
-    }
-
-    const validStatuses = ['pending', 'sent', 'failed', 'cancelled']
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status. Must be one of: pending, sent, failed, cancelled' },
-        { status: 400 }
-      )
-    }
-
-    const updateData: any = {
-      status,
-      updated_at: new Date().toISOString()
-    }
-
-    if (status === 'sent') {
-      updateData.sent_at = new Date().toISOString()
-    }
-
-    if (errorMessage) {
-      updateData.error_message = errorMessage
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('scheduled_emails')
-      .update(updateData)
-      .eq('scheduled_email_id', scheduledEmailId)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating scheduled email:', error)
-      return NextResponse.json(
-        { error: 'Failed to update scheduled email' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ scheduledEmail: data })
+    return NextResponse.json(
+      { 
+        error: 'Campaign emails are handled by Smartlead. Use Smartlead API to manage campaign emails.',
+        message: 'All campaign emails are managed through Smartlead.'
+      },
+      { status: 400 }
+    )
   } catch (error: any) {
     console.error('Error in PUT scheduled email:', error)
     return NextResponse.json(
@@ -207,46 +91,18 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE: Delete scheduled emails (for cancellation before sending)
+// Note: All campaigns are handled by Smartlead. Use Smartlead API to manage campaign emails.
 export async function DELETE(request: NextRequest) {
   try {
     await requireAdmin()
 
-    const { searchParams } = new URL(request.url)
-    const scheduledEmailId = searchParams.get('scheduledEmailId')
-    const campaignId = searchParams.get('campaignId')
-    const deleteAll = searchParams.get('deleteAll') === 'true'
-
-    if (!scheduledEmailId && !campaignId) {
-      return NextResponse.json(
-        { error: 'Missing scheduledEmailId or campaignId parameter' },
-        { status: 400 }
-      )
-    }
-
-    let query = supabaseAdmin.from('scheduled_emails').delete()
-
-    if (scheduledEmailId) {
-      query = query.eq('scheduled_email_id', scheduledEmailId)
-    } else if (campaignId && deleteAll) {
-      query = query.eq('campaign_id', campaignId).eq('status', 'pending')
-    } else {
-      return NextResponse.json(
-        { error: 'Invalid delete operation' },
-        { status: 400 }
-      )
-    }
-
-    const { error } = await query
-
-    if (error) {
-      console.error('Error deleting scheduled emails:', error)
-      return NextResponse.json(
-        { error: 'Failed to delete scheduled emails' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json(
+      { 
+        error: 'Campaign emails are handled by Smartlead. Use Smartlead API to manage campaign emails.',
+        message: 'All campaign emails are managed through Smartlead.'
+      },
+      { status: 400 }
+    )
   } catch (error: any) {
     console.error('Error in DELETE scheduled emails:', error)
     return NextResponse.json(
