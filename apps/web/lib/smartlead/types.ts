@@ -1,11 +1,12 @@
 /**
  * Smartlead API Type Definitions
+ * Based on Smartlead API documentation: https://api.smartlead.ai
  */
 
 export interface SmartleadCampaign {
-  id: string;
+  id: string | number;
   name: string;
-  status: 'draft' | 'active' | 'paused' | 'completed';
+  status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'STOPPED';
   created_at: string;
   updated_at: string;
 }

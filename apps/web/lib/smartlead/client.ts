@@ -24,24 +24,29 @@ export class SmartleadClient {
   private apiKey: string;
   private baseUrl: string;
 
-  constructor(apiKey: string, baseUrl: string = 'https://api.smartlead.ai/api/v1') {
+  constructor(apiKey: string, baseUrl: string = 'https://server.smartlead.ai/api/v1') {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
   }
 
   /**
    * Make authenticated request to Smartlead API
+   * Authentication: API key as query parameter (not header)
+   * Reference: https://api.smartlead.ai/reference/authentication
    */
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<SmartleadApiResponse<T>> {
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      // Add API key as query parameter
+      const url = new URL(`${this.baseUrl}${endpoint}`);
+      url.searchParams.append('api_key', this.apiKey);
+
+      const response = await fetch(url.toString(), {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
           ...options.headers,
         },
       });

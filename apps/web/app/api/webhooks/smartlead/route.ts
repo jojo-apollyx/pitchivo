@@ -22,20 +22,46 @@ const supabaseAdmin = createClient(
   }
 );
 
-// Smartlead event type mapping
+/**
+ * Smartlead Webhook Event Types
+ * Reference: https://help.outboundsync.com/articles/643692-smartlead-webhook-guide
+ * 
+ * Smartlead sends these event types:
+ * - EMAIL_SENT: When an email is sent
+ * - EMAIL_REPLY: When a lead replies to an email
+ * - EMAIL_OPENED: When a lead opens an email
+ * - LINK_CLICKED: When a lead clicks a link in an email
+ * - EMAIL_BOUNCE: When an email bounces
+ * - LEAD_UNSUBSCRIBED: When a lead unsubscribes
+ * - LEAD_CATEGORY_UPDATED: When lead category/status changes
+ * - THREADED_REPLIES: For threaded conversation replies
+ * - CAMPAIGN_STATUS_CHANGE: When campaign status changes
+ * - UNTRACKED_REPLIES: Replies that aren't tracked
+ * - MANUAL_STEP_REACHED: When manual step is reached in sequence
+ */
 const SMARTLEAD_EVENT_TYPES = {
-  SENT: 'sent',
-  DELIVERED: 'delivered',
-  OPENED: 'opened',
-  CLICKED: 'clicked',
-  BOUNCED: 'bounced',
-  SOFT_BOUNCED: 'soft_bounced',
-  HARD_BOUNCED: 'hard_bounced',
-  REPLIED: 'replied',
-  UNSUBSCRIBED: 'unsubscribed',
-  SPAM_COMPLAINT: 'spam_complaint',
-  ERROR: 'error',
+  EMAIL_SENT: 'sent',
+  EMAIL_OPENED: 'opened',
+  LINK_CLICKED: 'clicked',
+  EMAIL_BOUNCE: 'bounced',
+  EMAIL_REPLY: 'replied',
+  LEAD_UNSUBSCRIBED: 'unsubscribed',
+  LEAD_CATEGORY_UPDATED: 'category_updated',
+  THREADED_REPLIES: 'threaded_reply',
+  CAMPAIGN_STATUS_CHANGE: 'status_change',
+  UNTRACKED_REPLIES: 'untracked_reply',
+  MANUAL_STEP_REACHED: 'manual_step',
 } as const;
+
+// Map Smartlead events to our internal event types
+const EVENT_TYPE_MAPPING: Record<string, string> = {
+  'EMAIL_SENT': 'sent',
+  'EMAIL_OPENED': 'opened',
+  'LINK_CLICKED': 'clicked',
+  'EMAIL_BOUNCE': 'bounced',
+  'EMAIL_REPLY': 'replied',
+  'LEAD_UNSUBSCRIBED': 'unsubscribed',
+};
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -100,36 +126,39 @@ export async function POST(request: NextRequest) {
 
 async function processSmartleadEvent(event: any) {
   try {
+    // Smartlead webhook payload structure (adjust based on actual payload)
     const {
-      event_type,
+      event: eventType, // or event_type - check actual payload
       campaign_id: smartleadCampaignId,
-      lead_email,
+      email: leadEmail, // or lead_email
       lead_id: smartleadLeadId,
-      email_account,
-      message_id,
+      email_account: emailAccount,
+      message_id: messageId,
       timestamp,
       link,
-      reply_text,
-      reply_subject,
-      bounce_reason,
-      bounce_type,
-      user_agent,
-      device,
-      location,
+      reply_body: replyText, // or reply_text
+      reply_subject: replySubject,
+      bounce_reason: bounceReason,
+      bounce_type: bounceType,
+      // Additional fields Smartlead may include
       ...rest
     } = event;
 
-    console.log(`📧 Event Type: ${event_type}`);
-    console.log(`👤 Lead Email: ${lead_email}`);
+    console.log(`📧 Event Type: ${eventType}`);
+    console.log(`👤 Lead Email: ${leadEmail}`);
     console.log(`🎯 Smartlead Campaign ID: ${smartleadCampaignId}`);
-    console.log(`📬 Message ID: ${message_id || 'N/A'}`);
+    console.log(`📬 Message ID: ${messageId || 'N/A'}`);
     console.log(`📅 Timestamp: ${timestamp}`);
 
     // Validate required fields
-    if (!event_type || !smartleadCampaignId || !lead_email) {
-      console.error('❌ Missing required fields:', { event_type, smartleadCampaignId, lead_email });
+    if (!eventType || !smartleadCampaignId || !leadEmail) {
+      console.error('❌ Missing required fields:', { eventType, smartleadCampaignId, leadEmail });
       return { success: false, error: 'Missing required fields' };
     }
+
+    // Map Smartlead event type to our internal type
+    const ourEventType = EVENT_TYPE_MAPPING[eventType] || eventType.toLowerCase().replace(/_/g, '_');
+    console.log(`🔄 Mapped event type: ${eventType} → ${ourEventType}`);
 
     // Find our campaign by smartlead_campaign_id
     const { data: campaign, error: campaignError } = await supabaseAdmin
@@ -159,19 +188,17 @@ async function processSmartleadEvent(event: any) {
     // Prepare metadata
     const metadata: any = {
       smartlead_lead_id: smartleadLeadId,
-      email_account,
-      message_id,
-      user_agent,
-      device,
-      location,
+      email_account: emailAccount,
+      message_id: messageId,
+      original_event_type: eventType, // Store original Smartlead event type
       ...rest
     };
 
     if (link) metadata.link = link;
-    if (reply_text) metadata.reply_text = reply_text;
-    if (reply_subject) metadata.reply_subject = reply_subject;
-    if (bounce_reason) metadata.bounce_reason = bounce_reason;
-    if (bounce_type) metadata.bounce_type = bounce_type;
+    if (replyText) metadata.reply_text = replyText;
+    if (replySubject) metadata.reply_subject = replySubject;
+    if (bounceReason) metadata.bounce_reason = bounceReason;
+    if (bounceType) metadata.bounce_type = bounceType;
 
     // Insert event into smartlead_email_events table
     console.log(`💾 Inserting Smartlead email event...`);
@@ -182,8 +209,8 @@ async function processSmartleadEvent(event: any) {
         lead_id: leadId,
         smartlead_campaign_id: smartleadCampaignId,
         smartlead_lead_id: smartleadLeadId,
-        lead_email,
-        event_type,
+        lead_email: leadEmail,
+        event_type: ourEventType,
         event_timestamp: timestamp || new Date().toISOString(),
         metadata
       });
@@ -197,23 +224,23 @@ async function processSmartleadEvent(event: any) {
 
     // Update campaign metrics
     console.log(`📊 Updating campaign metrics...`);
-    await updateCampaignMetricsFromSmartlead(campaignId, event_type);
+    await updateCampaignMetricsFromSmartlead(campaignId, ourEventType);
 
     // Update lead status if exists
     if (leadId) {
       console.log(`👤 Updating lead status...`);
-      await updateLeadStatus(leadId, event_type);
+      await updateLeadStatus(leadId, ourEventType);
     }
 
     // Handle special events
-    if (event_type === SMARTLEAD_EVENT_TYPES.REPLIED) {
+    if (eventType === 'EMAIL_REPLY' || ourEventType === 'replied') {
       console.log(`💬 REPLY RECEIVED - Creating reply record`);
-      await handleReply(campaignId, leadId, lead_email, reply_text, reply_subject, timestamp);
+      await handleReply(campaignId, leadId, leadEmail, replyText, replySubject, timestamp);
     }
 
-    if (event_type === SMARTLEAD_EVENT_TYPES.UNSUBSCRIBED) {
+    if (eventType === 'LEAD_UNSUBSCRIBED' || ourEventType === 'unsubscribed') {
       console.log(`🚫 UNSUBSCRIBE - Marking lead as unsubscribed`);
-      await handleUnsubscribe(campaignId, leadId, lead_email);
+      await handleUnsubscribe(campaignId, leadId, leadEmail);
     }
 
     console.log(`✅ Event processed successfully`);
@@ -221,8 +248,8 @@ async function processSmartleadEvent(event: any) {
       success: true, 
       campaignId,
       smartleadCampaignId,
-      eventType: event_type, 
-      leadEmail: lead_email,
+      eventType: ourEventType, 
+      leadEmail: leadEmail,
     };
 
   } catch (error) {
@@ -241,24 +268,23 @@ async function updateCampaignMetricsFromSmartlead(campaignId: string, eventType:
     let metricColumn: string | null = null;
 
     switch (eventType) {
-      case SMARTLEAD_EVENT_TYPES.SENT:
+      case 'sent':
         metricColumn = 'emails_sent';
         break;
-      case SMARTLEAD_EVENT_TYPES.DELIVERED:
+      case 'delivered':
         metricColumn = 'emails_delivered';
         break;
-      case SMARTLEAD_EVENT_TYPES.OPENED:
+      case 'opened':
         metricColumn = 'emails_opened';
         break;
-      case SMARTLEAD_EVENT_TYPES.CLICKED:
+      case 'clicked':
         metricColumn = 'emails_clicked';
         break;
-      case SMARTLEAD_EVENT_TYPES.BOUNCED:
-      case SMARTLEAD_EVENT_TYPES.HARD_BOUNCED:
-      case SMARTLEAD_EVENT_TYPES.SOFT_BOUNCED:
+      case 'bounced':
         metricColumn = 'emails_bounced';
         break;
-      case SMARTLEAD_EVENT_TYPES.REPLIED:
+      case 'replied':
+      case 'threaded_reply':
         metricColumn = 'replies_received';
         break;
     }
@@ -290,24 +316,24 @@ async function updateLeadStatus(leadId: string, eventType: string) {
 
     // Update last activity based on event type
     switch (eventType) {
-      case SMARTLEAD_EVENT_TYPES.SENT:
+      case 'sent':
         updates.last_email_sent_at = new Date().toISOString();
         break;
-      case SMARTLEAD_EVENT_TYPES.OPENED:
+      case 'opened':
         updates.last_opened_at = new Date().toISOString();
         break;
-      case SMARTLEAD_EVENT_TYPES.CLICKED:
+      case 'clicked':
         updates.last_clicked_at = new Date().toISOString();
         break;
-      case SMARTLEAD_EVENT_TYPES.REPLIED:
+      case 'replied':
+      case 'threaded_reply':
         updates.last_replied_at = new Date().toISOString();
         updates.status = 'replied';
         break;
-      case SMARTLEAD_EVENT_TYPES.BOUNCED:
-      case SMARTLEAD_EVENT_TYPES.HARD_BOUNCED:
+      case 'bounced':
         updates.status = 'bounced';
         break;
-      case SMARTLEAD_EVENT_TYPES.UNSUBSCRIBED:
+      case 'unsubscribed':
         updates.status = 'unsubscribed';
         break;
     }
