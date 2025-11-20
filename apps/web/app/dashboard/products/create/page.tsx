@@ -1420,13 +1420,15 @@ export default function CreateProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
+      <header id="product-create-header-section" className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
+                id="product-create-back-button"
+                aria-label="Back to products"
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push('/dashboard/products')}
@@ -1435,7 +1437,7 @@ export default function CreateProductPage() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Upload Product</h1>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">Upload Product</h1>
                 <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                   Food Supplement & Ingredients
                 </p>
@@ -1511,6 +1513,8 @@ export default function CreateProductPage() {
             </div>
             <div className="flex flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               <Button
+                id="product-create-save-draft-button"
+                aria-label="Save product as draft"
                 variant="outline"
                 onClick={handleSaveDraft}
                 disabled={isSaving || isPublishing}
@@ -1525,6 +1529,8 @@ export default function CreateProductPage() {
                 )}
               </Button>
               <Button
+                id="product-create-publish-button"
+                aria-label="Continue to preview and publish"
                 onClick={handlePublish}
                 disabled={!formData.product_name || isSaving || isPublishing}
                 className="flex-1 sm:flex-initial sm:w-auto h-11 flex-shrink-0">
@@ -1544,7 +1550,7 @@ export default function CreateProductPage() {
           </div>
         </div>
       </footer>
-    </div>
+    </main>
   )
 }
 

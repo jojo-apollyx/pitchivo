@@ -98,15 +98,15 @@ export default function ProductsPage() {
 
   if (allProducts.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
         <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
         <div className="relative">
-          <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <section id="products-empty-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
             <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">Products</h1>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Products</h1>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                     Manage your product pages and catalog
                   </p>
@@ -121,17 +121,17 @@ export default function ProductsPage() {
             </div>
           </section>
 
-          <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <section id="products-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div className="max-w-2xl mx-auto text-center">
               <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
                 <Package className="h-10 w-10 text-primary" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-semibold mb-2">No products yet</h2>
+              <h2 className="text-xl sm:text-2xl font-display font-semibold mb-2">No products yet</h2>
               <p className="text-sm sm:text-base text-muted-foreground mb-6">
                 Create your first product page to start showcasing to buyers
               </p>
               <Link href="/dashboard/products/create">
-                <Button className="gap-2 min-h-[44px]">
+                <Button id="products-create-first-product-button" aria-label="Create first product" className="gap-2 min-h-[44px]">
                   <Plus className="h-4 w-4" />
                   Create Product
                 </Button>
@@ -139,18 +139,18 @@ export default function ProductsPage() {
             </div>
           </section>
         </div>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       {/* Page Header */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+      <section id="products-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight">Products</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Products</h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                 {allProducts.length} {allProducts.length === 1 ? 'product' : 'products'} created
               </p>
@@ -625,6 +625,6 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   )
 }

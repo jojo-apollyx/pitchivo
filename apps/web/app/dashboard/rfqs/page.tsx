@@ -183,18 +183,18 @@ export default function RFQsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
 
       {/* Page Header */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+      <section id="rfqs-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">
                   Requests for Quotation
                 </h1>
                 {!isLoading && (
@@ -231,7 +231,7 @@ export default function RFQsPage() {
       <div className="relative max-w-7xl mx-auto">
         {/* Filters - Only show when there are RFQs */}
         {!isLoading && totalCount > 0 && (
-          <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
+          <section id="rfqs-filters-section" className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
               {/* Search */}
               <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
@@ -306,7 +306,7 @@ export default function RFQsPage() {
         )}
 
         {/* RFQs List */}
-        <section className="px-4 sm:px-6 lg:px-8 py-6">
+        <section id="rfqs-list-section" className="px-4 sm:px-6 lg:px-8 py-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-3">
@@ -648,6 +648,6 @@ export default function RFQsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   )
 }
