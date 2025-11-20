@@ -141,6 +141,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   console.log(`   Org ID: ${orgId || 'MISSING'}`)
   console.log(`   Tier: ${tier || 'MISSING'}`)
+  console.log(`   Status: ${subscription.status}`)
+  console.log(`   Cancel at period end: ${subscription.cancel_at_period_end}`)
 
   if (!orgId || !tier) {
     console.error('❌ Missing org_id or tier in subscription metadata')
@@ -148,17 +150,38 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return
   }
 
-  // Get existing subscription to check for custom quota overrides
+  // Get existing subscription to check for tier changes and custom quota overrides
   // Use maybeSingle() because subscription might not exist yet (first time subscription)
   const { data: existingSubscription, error: fetchError } = await supabase
     .from('subscriptions')
-    .select('custom_quota_override, email_quota, qr_links_per_product')
+    .select('tier, custom_quota_override, email_quota, qr_links_per_product, status')
     .eq('org_id', orgId)
     .maybeSingle()
 
   if (fetchError) {
     console.error('❌ Error fetching existing subscription:', fetchError)
     throw new Error(`Failed to fetch subscription: ${fetchError.message}`)
+  }
+
+  // Detect tier changes
+  const oldTier = existingSubscription?.tier as PricingTier | undefined
+  const isNewSubscription = !existingSubscription
+  const tierChanged = oldTier && oldTier !== tier
+  const isUpgrade = tierChanged && isTierUpgrade(oldTier, tier)
+  const isDowngrade = tierChanged && !isUpgrade && tier !== 'free'
+  const isDowngradeToFree = tierChanged && tier === 'free'
+
+  if (isNewSubscription) {
+    console.log(`📦 New subscription created for org ${orgId}`)
+  } else if (tierChanged) {
+    console.log(`🔄 Tier change detected: ${oldTier} → ${tier}`)
+    if (isUpgrade) {
+      console.log(`⬆️  UPGRADE: ${oldTier} → ${tier}`)
+    } else if (isDowngradeToFree) {
+      console.log(`⬇️  DOWNGRADE TO FREE: ${oldTier} → ${tier}`)
+    } else if (isDowngrade) {
+      console.log(`⬇️  DOWNGRADE: ${oldTier} → ${tier}`)
+    }
   }
 
   const tierConfig = PRICING_TIERS[tier]
@@ -225,10 +248,31 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     throw new Error('Subscription missing required period dates - cannot track billing period')
   }
   
-  // Check if subscription period has ended and should be downgraded to free
+  // Determine subscription status
+  // Handle different Stripe subscription statuses
+  let subscriptionStatus: 'active' | 'inactive' | 'past_due' | 'canceled' | 'trialing'
+  
+  if (subscriptionToUse.status === 'canceled' || subscriptionToUse.status === 'unpaid') {
+    subscriptionStatus = 'canceled'
+  } else if (subscriptionToUse.status === 'past_due') {
+    subscriptionStatus = 'past_due'
+  } else if (subscriptionToUse.status === 'trialing') {
+    subscriptionStatus = 'trialing'
+  } else if (subscriptionToUse.status === 'active') {
+    subscriptionStatus = 'active'
+  } else {
+    subscriptionStatus = 'inactive'
+  }
+
+  // Check if subscription should be downgraded to free
+  // This happens when:
+  // 1. Subscription is canceled and period has ended, OR
+  // 2. Subscription is set to cancel at period end and period has ended
+  const isCanceled = subscriptionToUse.status === 'canceled'
+  const periodEnded = periodEnd <= now
   const shouldDowngradeToFree = 
-    subscriptionToUse.cancel_at_period_end && 
-    periodEnd <= now &&
+    (isCanceled || subscriptionToUse.cancel_at_period_end) && 
+    periodEnded &&
     tier !== 'free'
 
   // Determine final tier and quotas
@@ -237,10 +281,12 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   let qrLinksPerProduct = tierConfig.features.qrLinksPerProduct
 
   if (shouldDowngradeToFree) {
+    console.log(`⬇️  Auto-downgrading to free tier (period ended or canceled)`)
     finalTier = 'free'
     const freeConfig = PRICING_TIERS.free
     emailQuota = freeConfig.features.emailQuota
     qrLinksPerProduct = freeConfig.features.qrLinksPerProduct
+    subscriptionStatus = 'canceled'
   }
 
   // Validate subscription has items
@@ -248,6 +294,20 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     console.error('❌ Subscription has no items:', subscription.id)
     throw new Error('Subscription missing items')
   }
+
+  // Determine quota update strategy
+  // Update quotas when:
+  // 1. New subscription (first time)
+  // 2. Tier changed (upgrade/downgrade) - always update quotas
+  // 3. Downgrading to free - always reset quotas
+  // 4. No custom override exists
+  // Preserve quotas when:
+  // - Custom override exists AND tier hasn't changed AND not downgrading to free
+  const shouldUpdateQuotas = 
+    isNewSubscription ||
+    tierChanged ||
+    shouldDowngradeToFree ||
+    !existingSubscription?.custom_quota_override
 
   // Build update/upsert object
   // Use subscriptionToUse which may have been fetched from Stripe API
@@ -259,26 +319,27 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
       : subscriptionToUse.customer?.id || null,
     stripe_price_id: subscriptionToUse.items.data[0].price.id,
     tier: finalTier,
-    status: subscriptionToUse.status === 'active' || subscriptionToUse.status === 'trialing' ? 'active' : 'inactive',
+    status: subscriptionStatus,
     current_period_start: periodStart.toISOString(), // Always set - validated above
     current_period_end: periodEnd.toISOString(), // Always set - validated above
     cancel_at_period_end: subscriptionToUse.cancel_at_period_end || false,
     updated_at: now.toISOString()
   }
 
-  // Only update quotas if:
-  // 1. No custom override exists, OR
-  // 2. Downgrading to free (always reset to free tier quotas)
-  if (!existingSubscription?.custom_quota_override || shouldDowngradeToFree) {
+  // Update quotas based on strategy
+  if (shouldUpdateQuotas) {
     updateData.email_quota = emailQuota
     updateData.qr_links_per_product = qrLinksPerProduct
     
-    // Clear custom override flag if downgrading to free
-    if (shouldDowngradeToFree) {
+    // Clear custom override flag if downgrading to free or tier changed
+    if (shouldDowngradeToFree || tierChanged) {
       updateData.custom_quota_override = false
+      console.log(`   Quotas updated: email=${emailQuota}, qr_links=${qrLinksPerProduct}`)
     }
+  } else {
+    // Preserve existing quotas when custom override exists
+    console.log(`   Preserving custom quota overrides (not updating quotas)`)
   }
-  // If custom override exists and not downgrading, preserve existing quotas
 
   console.log('💾 Upserting subscription in database...')
   console.log(`   Subscription exists: ${!!existingSubscription}`)
@@ -295,15 +356,44 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   if (error) {
     console.error('❌ Error updating subscription:', error)
     console.error('   Error details:', JSON.stringify(error, null, 2))
+    throw error
   } else {
-    if (shouldDowngradeToFree) {
-      console.log(`✅ Subscription for org ${orgId} downgraded to free tier after period end`)
+    // Log success with appropriate message based on what happened
+    if (isNewSubscription) {
+      console.log(`✅ New subscription created for org ${orgId}`)
+      console.log(`   Tier: ${finalTier}`)
+      console.log(`   Status: ${subscriptionStatus}`)
+    } else if (shouldDowngradeToFree) {
+      console.log(`✅ Subscription for org ${orgId} downgraded to free tier`)
+      console.log(`   Reason: Period ended or subscription canceled`)
+    } else if (isUpgrade) {
+      console.log(`✅ Subscription upgraded for org ${orgId}`)
+      console.log(`   ${oldTier} → ${finalTier}`)
+      console.log(`   Quotas updated: email=${emailQuota}, qr_links=${qrLinksPerProduct}`)
+    } else if (isDowngrade || isDowngradeToFree) {
+      console.log(`✅ Subscription downgraded for org ${orgId}`)
+      console.log(`   ${oldTier} → ${finalTier}`)
+      console.log(`   Quotas updated: email=${emailQuota}, qr_links=${qrLinksPerProduct}`)
     } else {
       console.log(`✅ Subscription updated successfully for org ${orgId}`)
-      console.log(`   New tier: ${finalTier}`)
-      console.log(`   New status: ${updateData.status}`)
+      console.log(`   Tier: ${finalTier} (unchanged)`)
+      console.log(`   Status: ${subscriptionStatus}`)
     }
   }
+}
+
+// Helper function to determine if tier change is an upgrade
+function isTierUpgrade(oldTier: PricingTier, newTier: PricingTier): boolean {
+  const tierOrder: PricingTier[] = ['free', 'basic', 'premium', 'enterprise']
+  const oldIndex = tierOrder.indexOf(oldTier)
+  const newIndex = tierOrder.indexOf(newTier)
+  
+  // Invalid tiers return -1, so handle that case
+  if (oldIndex === -1 || newIndex === -1) {
+    return false
+  }
+  
+  return newIndex > oldIndex
 }
 
 async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
@@ -311,6 +401,7 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
   const orgId = subscription.metadata.org_id
 
   console.log(`   Org ID: ${orgId || 'MISSING'}`)
+  console.log(`   Subscription ID: ${subscription.id}`)
 
   if (!orgId) {
     console.error('❌ Missing org_id in subscription metadata')
@@ -318,18 +409,30 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
     return
   }
 
+  // Get existing subscription to check current tier
+  const { data: existingSubscription } = await supabase
+    .from('subscriptions')
+    .select('tier')
+    .eq('org_id', orgId)
+    .maybeSingle()
+
+  const oldTier = existingSubscription?.tier as PricingTier | undefined
+  if (oldTier) {
+    console.log(`   Previous tier: ${oldTier}`)
+  }
+
   // Get free tier quotas
   const freeConfig = PRICING_TIERS.free
 
   // When subscription is canceled, downgrade to free tier and reset quotas
+  // Note: We keep stripe_subscription_id and stripe_price_id for reference
+  // but set status to canceled and tier to free
   const cancelData = {
     tier: 'free',
-    status: 'canceled',
+    status: 'canceled' as const,
     email_quota: freeConfig.features.emailQuota,
     qr_links_per_product: freeConfig.features.qrLinksPerProduct,
     custom_quota_override: false, // Clear any admin overrides
-    stripe_subscription_id: null, // Clear Stripe subscription ID
-    stripe_price_id: null, // Clear Stripe price ID
     canceled_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
@@ -345,8 +448,14 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
   if (error) {
     console.error('❌ Error canceling subscription:', error)
     console.error('   Error details:', JSON.stringify(error, null, 2))
+    throw error
   } else {
-    console.log(`✅ Subscription for org ${orgId} canceled and downgraded to free tier`)
+    if (oldTier && oldTier !== 'free') {
+      console.log(`✅ Subscription for org ${orgId} canceled and downgraded to free tier`)
+      console.log(`   ${oldTier} → free`)
+    } else {
+      console.log(`✅ Subscription for org ${orgId} canceled`)
+    }
   }
 }
 
@@ -435,4 +544,5 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     console.log(`✅ Subscription status updated to past_due for org ${orgId}`)
   }
 }
+
 
