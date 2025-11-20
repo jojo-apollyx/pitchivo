@@ -164,32 +164,70 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const tierConfig = PRICING_TIERS[tier]
   const now = new Date()
   
-  // Validate and convert period dates - Stripe timestamps are in seconds
-  if (!subscription.current_period_start || !subscription.current_period_end) {
-    console.error('❌ Missing period dates in subscription:', {
+  // Get period dates - Stripe timestamps are in seconds, convert to milliseconds for Date
+  // If missing from webhook payload, fetch full subscription from Stripe API
+  let periodStartTimestamp = subscription.current_period_start
+  let periodEndTimestamp = subscription.current_period_end
+  let subscriptionToUse = subscription
+
+  // If period dates are missing, fetch the full subscription from Stripe
+  if (!periodStartTimestamp || !periodEndTimestamp) {
+    console.warn('⚠️  Period dates missing from webhook payload, fetching from Stripe API...', {
+      subscription_id: subscription.id,
       current_period_start: subscription.current_period_start,
       current_period_end: subscription.current_period_end
     })
-    throw new Error('Subscription missing required period dates')
+    
+    try {
+      const fullSubscription = await stripe.subscriptions.retrieve(subscription.id)
+      periodStartTimestamp = fullSubscription.current_period_start
+      periodEndTimestamp = fullSubscription.current_period_end
+      subscriptionToUse = fullSubscription
+      
+      console.log('✅ Retrieved period dates from Stripe API:', {
+        current_period_start: periodStartTimestamp,
+        current_period_end: periodEndTimestamp
+      })
+    } catch (error) {
+      console.error('❌ Failed to fetch subscription from Stripe API:', error)
+      // Continue with what we have - will log warning below
+    }
   }
 
-  const periodStart = new Date(subscription.current_period_start * 1000)
-  const periodEnd = new Date(subscription.current_period_end * 1000)
+  // Convert to Date objects if timestamps exist
+  let periodStart: Date | null = null
+  let periodEnd: Date | null = null
 
-  // Validate dates are valid
-  if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
-    console.error('❌ Invalid period dates:', {
-      current_period_start: subscription.current_period_start,
-      current_period_end: subscription.current_period_end,
-      periodStart: periodStart,
-      periodEnd: periodEnd
+  if (periodStartTimestamp) {
+    periodStart = new Date(periodStartTimestamp * 1000)
+    if (isNaN(periodStart.getTime())) {
+      console.error('❌ Invalid period_start timestamp:', periodStartTimestamp)
+      periodStart = null
+    }
+  }
+
+  if (periodEndTimestamp) {
+    periodEnd = new Date(periodEndTimestamp * 1000)
+    if (isNaN(periodEnd.getTime())) {
+      console.error('❌ Invalid period_end timestamp:', periodEndTimestamp)
+      periodEnd = null
+    }
+  }
+
+  // Period dates are required for billing tracking - fail if still missing
+  if (!periodStart || !periodEnd) {
+    console.error('❌ Missing period dates after fetching from Stripe:', {
+      subscription_id: subscription.id,
+      current_period_start: periodStartTimestamp,
+      current_period_end: periodEndTimestamp,
+      status: subscription.status
     })
-    throw new Error('Invalid subscription period dates')
+    throw new Error('Subscription missing required period dates - cannot track billing period')
   }
   
   // Check if subscription period has ended and should be downgraded to free
   const shouldDowngradeToFree = 
-    subscription.cancel_at_period_end && 
+    subscriptionToUse.cancel_at_period_end && 
     periodEnd <= now &&
     tier !== 'free'
 
@@ -212,18 +250,19 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
 
   // Build update/upsert object
+  // Use subscriptionToUse which may have been fetched from Stripe API
   const updateData: any = {
     org_id: orgId, // Required for upsert
-    stripe_subscription_id: subscription.id,
-    stripe_customer_id: typeof subscription.customer === 'string' 
-      ? subscription.customer 
-      : subscription.customer?.id || null,
-    stripe_price_id: subscription.items.data[0].price.id,
+    stripe_subscription_id: subscriptionToUse.id,
+    stripe_customer_id: typeof subscriptionToUse.customer === 'string' 
+      ? subscriptionToUse.customer 
+      : subscriptionToUse.customer?.id || null,
+    stripe_price_id: subscriptionToUse.items.data[0].price.id,
     tier: finalTier,
-    status: subscription.status === 'active' || subscription.status === 'trialing' ? 'active' : 'inactive',
-    current_period_start: periodStart.toISOString(),
-    current_period_end: periodEnd.toISOString(),
-    cancel_at_period_end: subscription.cancel_at_period_end || false,
+    status: subscriptionToUse.status === 'active' || subscriptionToUse.status === 'trialing' ? 'active' : 'inactive',
+    current_period_start: periodStart.toISOString(), // Always set - validated above
+    current_period_end: periodEnd.toISOString(), // Always set - validated above
+    cancel_at_period_end: subscriptionToUse.cancel_at_period_end || false,
     updated_at: now.toISOString()
   }
 
