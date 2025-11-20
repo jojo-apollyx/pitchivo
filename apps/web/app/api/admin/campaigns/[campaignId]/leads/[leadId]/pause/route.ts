@@ -40,18 +40,11 @@ export async function POST(
     // Call Smartlead API to pause lead
     // API Reference: POST /campaigns/{campaign_id}/leads/{lead_id}/pause
     const smartlead = createSmartleadClient()
-    const response = await fetch(
-      `https://server.smartlead.ai/api/v1/campaigns/${campaign.smartlead_campaign_id}/leads/${leadId}/pause?api_key=${process.env.SMARTLEAD_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
+    const result = await smartlead.pauseLead(campaign.smartlead_campaign_id.toString(), leadId)
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('[Pause Lead API] Smartlead error:', error)
-      throw new Error('Failed to pause lead in Smartlead')
+    if (!result.success) {
+      console.error('[Pause Lead API] Smartlead error:', result.error)
+      throw new Error(result.error?.message || 'Failed to pause lead in Smartlead')
     }
 
     // Update local database

@@ -40,19 +40,16 @@ export async function POST(
 
     // Call Smartlead API to resume lead
     // API Reference: POST /campaigns/{campaign_id}/leads/{lead_id}/resume
-    const response = await fetch(
-      `https://server.smartlead.ai/api/v1/campaigns/${campaign.smartlead_campaign_id}/leads/${leadId}/resume?api_key=${process.env.SMARTLEAD_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume_lead_with_delay_days: resumeDelayDays })
-      }
+    const smartlead = createSmartleadClient()
+    const result = await smartlead.resumeLead(
+      campaign.smartlead_campaign_id.toString(),
+      leadId,
+      resumeDelayDays
     )
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('[Resume Lead API] Smartlead error:', error)
-      throw new Error('Failed to resume lead in Smartlead')
+    if (!result.success) {
+      console.error('[Resume Lead API] Smartlead error:', result.error)
+      throw new Error(result.error?.message || 'Failed to resume lead in Smartlead')
     }
 
     // Update local database

@@ -488,6 +488,292 @@ export class SmartleadClient {
   }
 
   /**
+   * Pause a lead in a campaign
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/leads/{lead_id}/pause
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param leadId Lead ID
+   */
+  async pauseLead(campaignId: string, leadId: string): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/leads/${leadId}/pause`, {
+      method: 'POST',
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Resume a paused lead in a campaign
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/leads/{lead_id}/resume
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param leadId Lead ID
+   * @param delayDays Optional delay in days before resuming (default: 0)
+   */
+  async resumeLead(campaignId: string, leadId: string, delayDays?: number): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/leads/${leadId}/resume`, {
+      method: 'POST',
+      body: JSON.stringify({ resume_lead_with_delay_days: delayDays || 0 }),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Unsubscribe a lead from a campaign
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/leads/{lead_id}/unsubscribe
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param leadId Lead ID
+   */
+  async unsubscribeLead(campaignId: string, leadId: string): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/leads/${leadId}/unsubscribe`, {
+      method: 'POST',
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Unsubscribe a lead globally from all campaigns
+   * 
+   * API Reference: POST /api/v1/leads/{lead_id}/unsubscribe
+   * 
+   * @param leadId Lead ID
+   */
+  async unsubscribeLeadGlobally(leadId: string): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/leads/${leadId}/unsubscribe`, {
+      method: 'POST',
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Update lead information
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/leads/{lead_id}
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param leadId Lead ID
+   * @param updates Lead fields to update
+   */
+  async updateLead(
+    campaignId: string,
+    leadId: string,
+    updates: {
+      first_name?: string;
+      last_name?: string;
+      company_name?: string;
+      phone_number?: string;
+      website?: string;
+      location?: string;
+      custom_fields?: Record<string, any>;
+      linkedin_profile?: string;
+      company_url?: string;
+    }
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/leads/${leadId}`, {
+      method: 'POST',
+      body: JSON.stringify(updates),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Get lead by email address
+   * 
+   * API Reference: GET /api/v1/leads/?email={email}
+   * 
+   * @param email Lead email address
+   */
+  async getLeadByEmail(email: string): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/leads/?email=${encodeURIComponent(email)}`);
+  }
+
+  /**
+   * Get all campaigns a lead is part of
+   * 
+   * API Reference: GET /api/v1/leads/{lead_id}/campaigns
+   * 
+   * @param leadId Lead ID
+   */
+  async getLeadCampaigns(leadId: string): Promise<SmartleadApiResponse<any[]>> {
+    return this.request<any[]>(`/leads/${leadId}/campaigns`);
+  }
+
+  /**
+   * Update lead category
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/leads/{lead_id}/category
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param leadId Lead ID
+   * @param categoryId Category ID
+   * @param pauseLead Whether to pause the lead
+   */
+  async updateLeadCategory(
+    campaignId: string,
+    leadId: string,
+    categoryId: number,
+    pauseLead: boolean = false
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/leads/${leadId}/category`, {
+      method: 'POST',
+      body: JSON.stringify({ category_id: categoryId, pause_lead: pauseLead }),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Add domains to global block list
+   * 
+   * API Reference: POST /api/v1/leads/add-domain-block-list
+   * 
+   * @param domains Array of domains or emails to block
+   * @param clientId Optional client ID
+   */
+  async addDomainToBlockList(domains: string[], clientId?: number): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/leads/add-domain-block-list`, {
+      method: 'POST',
+      body: JSON.stringify({ domain_block_list: domains, client_id: clientId || null }),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Export campaign leads to CSV
+   * 
+   * API Reference: GET /api/v1/campaigns/{campaign_id}/leads-export
+   * Returns CSV data as text
+   * 
+   * @param campaignId Smartlead campaign ID
+   */
+  async exportCampaignLeads(campaignId: string): Promise<SmartleadApiResponse<string>> {
+    // This endpoint returns CSV, not JSON
+    const url = new URL(`${this.baseUrl}/campaigns/${campaignId}/leads-export`);
+    url.searchParams.append('api_key', this.apiKey);
+
+    try {
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        return {
+          success: false,
+          error: {
+            error: 'Export Failed',
+            message: 'Failed to export campaign leads',
+            status_code: response.status,
+          },
+        };
+      }
+
+      const csvData = await response.text();
+      return {
+        success: true,
+        data: csvData,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          error: 'Network Error',
+          message: error instanceof Error ? error.message : 'Failed to export leads',
+          status_code: 500,
+        },
+      };
+    }
+  }
+
+  /**
+   * Get all lead categories
+   * 
+   * API Reference: GET /api/v1/leads/fetch-categories
+   * 
+   * Returns predefined categories:
+   * - Interested
+   * - Meeting Request
+   * - Not Interested
+   * - Do Not Contact
+   * - Information Request
+   * - Out Of Office
+   * - Wrong Person
+   */
+  async getAllCategories(): Promise<SmartleadApiResponse<Array<{ id: number; name: string }>>> {
+    return this.request<Array<{ id: number; name: string }>>(`/leads/fetch-categories`);
+  }
+
+  /**
+   * Get lead message history
+   * 
+   * API Reference: GET /api/v1/campaigns/{campaign_id}/leads/{lead_id}/message-history
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param leadId Lead ID
+   */
+  async getLeadMessageHistory(campaignId: string, leadId: string): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/campaigns/${campaignId}/leads/${leadId}/message-history`);
+  }
+
+  /**
+   * Reply to an email thread
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/reply-email-thread
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param replyData Reply data including email stats ID and body
+   */
+  async replyToEmailThread(
+    campaignId: string,
+    replyData: {
+      email_stats_id: string;
+      email_body: string;
+      reply_message_id: string;
+      reply_email_time: string;
+      reply_email_body: string;
+      cc?: string;
+      bcc?: string;
+      add_signature?: boolean;
+    }
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/reply-email-thread`, {
+      method: 'POST',
+      body: JSON.stringify(replyData),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
    * Get campaign analytics and metrics
    * 
    * API Reference: GET /api/v1/campaigns/{campaign_id}/analytics
@@ -549,6 +835,201 @@ export class SmartleadClient {
     const endpoint = `/campaigns/${campaignId}/statistics${queryString ? `?${queryString}` : ''}`;
     
     return this.request<any>(endpoint);
+  }
+
+  /**
+   * Get all email accounts
+   * 
+   * API Reference: GET /api/v1/email-accounts/?offset={offset}&limit={limit}
+   * 
+   * @param options Pagination options
+   */
+  async getAllEmailAccounts(options?: { offset?: number; limit?: number }): Promise<SmartleadApiResponse<any[]>> {
+    const offset = options?.offset ?? 0;
+    const limit = options?.limit ?? 100; // Max 100 per API docs
+    return this.request<any[]>(`/email-accounts/?offset=${offset}&limit=${limit}`);
+  }
+
+  /**
+   * Get email account by ID
+   * 
+   * API Reference: GET /api/v1/email-accounts/{account_id}
+   * 
+   * @param accountId Email account ID
+   */
+  async getEmailAccountById(accountId: number): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/email-accounts/${accountId}`);
+  }
+
+  /**
+   * Create or update email account
+   * 
+   * API Reference: POST /api/v1/email-accounts/save
+   * 
+   * @param accountData Email account data (set id to null to create new)
+   */
+  async saveEmailAccount(accountData: {
+    id?: number | null;
+    from_name: string;
+    from_email: string;
+    user_name: string;
+    password: string;
+    smtp_host: string;
+    smtp_port: number;
+    imap_host: string;
+    imap_port: number;
+    max_email_per_day: number;
+    warmup_enabled: boolean;
+    client_id?: number | null;
+  }): Promise<SmartleadApiResponse<{ ok: boolean; message: string; emailAccountId: number; warmupKey: string }>> {
+    return this.request<{ ok: boolean; message: string; emailAccountId: number; warmupKey: string }>(`/email-accounts/save`, {
+      method: 'POST',
+      body: JSON.stringify(accountData),
+    });
+  }
+
+  /**
+   * Update email account settings
+   * 
+   * API Reference: POST /api/v1/email-accounts/{email_account_id}
+   * 
+   * @param accountId Email account ID
+   * @param settings Settings to update
+   */
+  async updateEmailAccountSettings(
+    accountId: number,
+    settings: {
+      max_email_per_day?: number;
+      custom_tracking_url?: string;
+      bcc?: string;
+      signature?: string;
+      time_to_wait_in_mins?: number;
+    }
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/email-accounts/${accountId}`, {
+      method: 'POST',
+      body: JSON.stringify(settings),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Update warmup settings for email account
+   * 
+   * API Reference: POST /api/v1/email-accounts/{email_account_id}/warmup
+   * 
+   * @param accountId Email account ID
+   * @param warmupSettings Warmup configuration
+   */
+  async updateWarmupSettings(
+    accountId: number,
+    warmupSettings: {
+      warmup_enabled: boolean;
+      total_warmup_per_day?: number;
+      daily_rampup?: number;
+      reply_rate_percentage?: number;
+      warmup_key_id?: string;
+    }
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/email-accounts/${accountId}/warmup`, {
+      method: 'POST',
+      body: JSON.stringify(warmupSettings),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Get warmup stats for last 7 days
+   * 
+   * API Reference: GET /api/v1/email-accounts/{email_account_id}/warmup-stats
+   * 
+   * @param accountId Email account ID
+   */
+  async getWarmupStats(accountId: number): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/email-accounts/${accountId}/warmup-stats`);
+  }
+
+  /**
+   * Add email accounts to campaign
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/email-accounts
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param emailAccountIds Array of email account IDs to add
+   */
+  async addEmailAccountsToCampaign(
+    campaignId: string,
+    emailAccountIds: number[]
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/email-accounts`, {
+      method: 'POST',
+      body: JSON.stringify({ email_account_ids: emailAccountIds }),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Remove email accounts from campaign
+   * 
+   * API Reference: DELETE /api/v1/campaigns/{campaign_id}/email-accounts
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param emailAccountIds Array of email account IDs to remove
+   */
+  async removeEmailAccountsFromCampaign(
+    campaignId: string,
+    emailAccountIds: number[]
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/email-accounts`, {
+      method: 'DELETE',
+      body: JSON.stringify({ email_account_ids: emailAccountIds }),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Get campaign email accounts
+   * 
+   * API Reference: GET /api/v1/campaigns/{campaign_id}/email-accounts
+   * 
+   * @param campaignId Smartlead campaign ID
+   */
+  async getCampaignEmailAccounts(campaignId: string): Promise<SmartleadApiResponse<any[]>> {
+    return this.request<any[]>(`/campaigns/${campaignId}/email-accounts`);
+  }
+
+  /**
+   * Bulk reconnect failed email accounts
+   * 
+   * API Reference: POST /api/v1/email-accounts/reconnect-failed-email-accounts
+   * Note: Rate limited to 3 times per 24 hours
+   */
+  async bulkReconnectFailedAccounts(): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/email-accounts/reconnect-failed-email-accounts`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
   }
 
   /**

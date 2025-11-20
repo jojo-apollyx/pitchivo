@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createSmartleadClient } from '@/lib/smartlead'
 
 export async function POST(
   request: NextRequest,
@@ -38,18 +39,12 @@ export async function POST(
 
     // Call Smartlead API to unsubscribe lead
     // API Reference: POST /campaigns/{campaign_id}/leads/{lead_id}/unsubscribe
-    const response = await fetch(
-      `https://server.smartlead.ai/api/v1/campaigns/${campaign.smartlead_campaign_id}/leads/${leadId}/unsubscribe?api_key=${process.env.SMARTLEAD_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
+    const smartlead = createSmartleadClient()
+    const result = await smartlead.unsubscribeLead(campaign.smartlead_campaign_id.toString(), leadId)
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('[Unsubscribe Lead API] Smartlead error:', error)
-      throw new Error('Failed to unsubscribe lead in Smartlead')
+    if (!result.success) {
+      console.error('[Unsubscribe Lead API] Smartlead error:', result.error)
+      throw new Error(result.error?.message || 'Failed to unsubscribe lead in Smartlead')
     }
 
     // Update local database

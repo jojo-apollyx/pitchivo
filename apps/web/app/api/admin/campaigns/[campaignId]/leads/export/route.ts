@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createSmartleadClient } from '@/lib/smartlead'
 
 export async function GET(
   request: NextRequest,
@@ -34,15 +35,14 @@ export async function GET(
 
     if (campaign.smartlead_campaign_id) {
       // Export from Smartlead directly
-      const response = await fetch(
-        `https://server.smartlead.ai/api/v1/campaigns/${campaign.smartlead_campaign_id}/leads-export?api_key=${process.env.SMARTLEAD_API_KEY}`
-      )
+      const smartlead = createSmartleadClient()
+      const result = await smartlead.exportCampaignLeads(campaign.smartlead_campaign_id.toString())
 
-      if (!response.ok) {
-        throw new Error('Failed to export from Smartlead')
+      if (!result.success || !result.data) {
+        throw new Error(result.error?.message || 'Failed to export from Smartlead')
       }
 
-      const csvData = await response.text()
+      const csvData = result.data
       
       return new NextResponse(csvData, {
         headers: {
