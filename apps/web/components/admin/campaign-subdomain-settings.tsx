@@ -35,18 +35,18 @@ export function CampaignSubdomainSettings({ campaignId }: CampaignSubdomainSetti
     try {
       const { data, error } = await supabase
         .from('campaigns')
-        .select('sender_subdomains, sender_email, organizations(domain)')
+        .select('sender_subdomains, organizations(domain)')
         .eq('campaign_id', campaignId)
         .maybeSingle()
 
       if (error) throw error
       
       if (data) {
-        // Extract domain from sender_email if available
-        if (data.sender_email) {
-          const match = data.sender_email.match(/@(.+)/)
-          if (match) {
-            setOrgDomain(match[1])
+        // Use organization domain if available
+        if (data.organizations && typeof data.organizations === 'object' && 'domain' in data.organizations) {
+          const orgDomain = (data.organizations as { domain: string }).domain
+          if (orgDomain) {
+            setOrgDomain(orgDomain)
           }
         }
         
