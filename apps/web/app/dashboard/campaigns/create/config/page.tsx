@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,17 +23,34 @@ import { PRICING_TIERS, CAMPAIGN_MIN_EMAILS } from '@/lib/constants/pricing'
 export default function ConfigureSendingPage() {
   const router = useRouter()
   const { draft, setDraft, nextStep, prevStep } = useCampaignStore()
-  const [emailCount, setEmailCount] = useState(draft.emailCount)
-  const [durationDays, setDurationDays] = useState(draft.durationDays)
+  // Use consistent initial values to prevent hydration mismatch
+  const [emailCount, setEmailCount] = useState(() => draft.emailCount || CAMPAIGN_MIN_EMAILS)
+  const [durationDays, setDurationDays] = useState(() => draft.durationDays || 1)
   const [startDate, setStartDate] = useState('')
   const [orgId, setOrgId] = useState<string | null>(null)
-  const [selectedLocations, setSelectedLocations] = useState<string[]>((draft as any).priorityLocations || [])
+  // Ensure consistent initial value to prevent hydration mismatch
+  const [selectedLocations, setSelectedLocations] = useState<string[]>(() => {
+    // Use empty array during SSR to ensure consistency
+    if (typeof window === 'undefined') return []
+    return (draft as any).priorityLocations || []
+  })
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const supabase = createClient()
   
   // Get subscription and quota data
   const { tier, quotaUsage, isLoading: isLoadingSub } = useSubscription(orgId || undefined)
+
+  // Ensure component is mounted before rendering dynamic content
+  useEffect(() => {
+    setMounted(true)
+    // Sync selectedLocations from draft after mount
+    const draftLocations = (draft as any).priorityLocations || []
+    if (draftLocations.length > 0) {
+      setSelectedLocations(draftLocations)
+    }
+  }, [draft])
 
   const availableCountries = ['USA', 'Canada', 'UK', 'Germany', 'Australia', 'Japan', 'France', 'Italy', 'Spain', 'Netherlands', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Belgium', 'Austria', 'Poland', 'Brazil', 'Mexico', 'India', 'China', 'South Korea', 'Singapore', 'New Zealand']
 
@@ -70,7 +87,15 @@ export default function ConfigureSendingPage() {
     }
   }
 
-  const metrics = calculateCampaignMetrics(emailCount, durationDays)
+  // Calculate metrics - memoize to prevent hydration mismatch
+  // Use consistent initial values to ensure server and client render the same
+  const metrics = useMemo(() => {
+    // During SSR and initial client render, use draft values to ensure consistency
+    // After mount, use state values which may have been updated
+    const emailCountValue = mounted ? emailCount : (draft.emailCount || CAMPAIGN_MIN_EMAILS)
+    const durationDaysValue = mounted ? durationDays : (draft.durationDays || 1)
+    return calculateCampaignMetrics(emailCountValue, durationDaysValue)
+  }, [mounted, emailCount, durationDays, draft.emailCount, draft.durationDays])
   
   // Use real subscription quota - default to free tier values while loading
   const defaultQuota = PRICING_TIERS.free.features.emailQuota
@@ -171,9 +196,9 @@ export default function ConfigureSendingPage() {
                       />
                       <Slider
                         min={CAMPAIGN_MIN_EMAILS}
-                        max={planQuota}
+                        max={mounted ? planQuota : defaultQuota}
                         step={CAMPAIGN_MIN_EMAILS}
-                        value={[emailCount]}
+                        value={mounted ? [emailCount] : [draft.emailCount || CAMPAIGN_MIN_EMAILS]}
                         onValueChange={(values) => {
                           const value = values[0]
                           setEmailCount(value)
@@ -262,22 +287,26 @@ export default function ConfigureSendingPage() {
                       <Input
                         id="duration"
                         type="number"
-                        min={metrics.minDays}
-                        max="30"
+                        min={mounted ? metrics.minDays : 1}
+                        max={30}
                         value={durationDays}
-                        onChange={(e) => setDurationDays(parseInt(e.target.value) || 1)}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 1
+                          const minValue = mounted ? metrics.minDays : 1
+                          setDurationDays(Math.max(minValue, Math.min(value, 30)))
+                        }}
                         className="text-lg"
                       />
                       <Slider
-                        min={metrics.minDays}
+                        min={mounted ? metrics.minDays : 1}
                         max={30}
                         step={1}
-                        value={[durationDays]}
+                        value={mounted ? [durationDays] : [draft.durationDays || 1]}
                         onValueChange={(values) => setDurationDays(values[0])}
                         className="w-full"
                       />
                       <div className="text-xs text-muted-foreground">
-                        {metrics.minDays > 1 && (
+                        {mounted && metrics.minDays > 1 && (
                           <p>Min {metrics.minDays} days for {emailCount}+ emails</p>
                         )}
                         <p className="flex items-center gap-1 mt-1">
@@ -335,7 +364,7 @@ export default function ConfigureSendingPage() {
                       </Label>
                       <Multiselect
                         options={availableCountries}
-                        value={selectedLocations}
+                        value={mounted ? selectedLocations : []}
                         onChange={setSelectedLocations}
                         placeholder="Select locations (optional)..."
                         searchable={true}
