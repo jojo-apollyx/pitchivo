@@ -227,14 +227,121 @@ export class SmartleadClient {
   /**
    * Delete a campaign
    * 
-   * NOTE: This endpoint is NOT documented in Smartlead API docs.
-   * Following REST conventions, DELETE /campaigns/{id} may work but is not officially documented.
+   * API Reference: DELETE /api/v1/campaigns/{campaign_id}
+   * Response: { "ok": true }
    * 
    * @param campaignId Smartlead campaign ID
    */
   async deleteCampaign(campaignId: string): Promise<SmartleadApiResponse<void>> {
     return this.request<{ ok: boolean }>(`/campaigns/${campaignId}`, {
       method: 'DELETE',
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Update campaign schedule
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/schedule
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param schedule Schedule configuration
+   */
+  async updateCampaignSchedule(
+    campaignId: string,
+    schedule: {
+      timezone: string;
+      days_of_the_week: number[]; // 0-6 where 0=Sunday
+      start_hour: string; // "HH:MM"
+      end_hour: string; // "HH:MM"
+      min_time_btw_emails: number; // Minutes
+      max_new_leads_per_day: number;
+      schedule_start_time?: string; // ISO 8601
+    }
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/schedule`, {
+      method: 'POST',
+      body: JSON.stringify(schedule),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Update campaign settings
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/settings
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param settings Campaign settings
+   */
+  async updateCampaignSettings(
+    campaignId: string,
+    settings: {
+      track_settings?: string[]; // DONT_TRACK_EMAIL_OPEN, DONT_TRACK_LINK_CLICK, DONT_TRACK_REPLY_TO_AN_EMAIL
+      stop_lead_settings?: string; // REPLY_TO_AN_EMAIL, CLICK_ON_A_LINK, OPEN_AN_EMAIL
+      unsubscribe_text?: string;
+      send_as_plain_text?: boolean;
+      follow_up_percentage?: number; // 0-100
+      client_id?: number;
+      enable_ai_esp_matching?: boolean;
+    }
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/settings`, {
+      method: 'POST',
+      body: JSON.stringify(settings),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Get campaign sequences
+   * 
+   * API Reference: GET /api/v1/campaigns/{campaign_id}/sequences
+   * 
+   * @param campaignId Smartlead campaign ID
+   */
+  async getCampaignSequences(campaignId: string): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/campaigns/${campaignId}/sequences`);
+  }
+
+  /**
+   * Save campaign sequences
+   * 
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/sequences
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param sequences Array of sequence data
+   */
+  async saveCampaignSequences(
+    campaignId: string,
+    sequences: Array<{
+      id?: number; // Include when updating existing sequence
+      seq_number: number;
+      seq_delay_details: { delay_in_days: number };
+      subject?: string; // Empty for same-thread follow-ups
+      email_body: string;
+      seq_variants?: Array<{
+        subject: string;
+        email_body: string;
+        variant_label: string; // A, B, C, etc.
+      }>;
+    }>
+  ): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/sequences`, {
+      method: 'POST',
+      body: JSON.stringify({ sequences }),
     }).then(result => {
       if (result.success) {
         return { success: true } as SmartleadApiResponse<void>;
@@ -363,45 +470,85 @@ export class SmartleadClient {
   /**
    * Remove a lead from a campaign
    * 
-   * NOTE: This endpoint is NOT documented in Smartlead API docs.
-   * Lead removal may need to be done through the Smartlead dashboard or a different method.
+   * API Reference: DELETE /api/v1/campaigns/{campaign_id}/leads/{lead_id}
+   * According to the Smartlead API docs, we can delete a lead using lead_id
    * 
    * @param campaignId Smartlead campaign ID
-   * @param leadEmail Email of the lead to remove
+   * @param leadIdOrEmail Lead ID or email to remove
    */
-  async removeLead(campaignId: string, leadEmail: string): Promise<SmartleadApiResponse<void>> {
-    // This endpoint is not in the official documentation
-    // Returning error to indicate it's not supported
-    return {
-      success: false,
-      error: {
-        error: 'Endpoint Not Documented',
-        message: 'DELETE /campaigns/{id}/leads/{email} is not documented in Smartlead API. This endpoint may not exist.',
-        status_code: 404,
-      },
-    };
+  async removeLead(campaignId: string, leadIdOrEmail: string): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/leads/${leadIdOrEmail}`, {
+      method: 'DELETE',
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
   }
 
   /**
    * Get campaign analytics and metrics
    * 
-   * NOTE: This endpoint is NOT documented in Smartlead API docs.
-   * Analytics may need to be retrieved through webhooks or the Smartlead dashboard.
+   * API Reference: GET /api/v1/campaigns/{campaign_id}/analytics
+   * From the API docs: Returns campaign metrics including sent, opened, clicked, replied, bounced, etc.
    * 
    * @param campaignId Smartlead campaign ID
    * @returns Campaign analytics data
    */
-  async getCampaignAnalytics(campaignId: string): Promise<SmartleadApiResponse<CampaignAnalytics>> {
-    // This endpoint is not in the official documentation
-    // Returning error to indicate it's not supported
-    return {
-      success: false,
-      error: {
-        error: 'Endpoint Not Documented',
-        message: 'GET /campaigns/{id}/analytics is not documented in Smartlead API. Use webhooks to track campaign metrics.',
-        status_code: 404,
-      },
-    };
+  async getCampaignAnalytics(campaignId: string): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/campaigns/${campaignId}/analytics`);
+  }
+
+  /**
+   * Get campaign analytics by date range
+   * 
+   * API Reference: GET /api/v1/campaigns/{campaign_id}/analytics-by-date
+   * Query params: start_date, end_date (YYYY-MM-DD format)
+   * Maximum 30-day range
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param startDate Start date (YYYY-MM-DD)
+   * @param endDate End date (YYYY-MM-DD)
+   * @returns Campaign analytics data for date range
+   */
+  async getCampaignAnalyticsByDate(
+    campaignId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/campaigns/${campaignId}/analytics-by-date?start_date=${startDate}&end_date=${endDate}`);
+  }
+
+  /**
+   * Get campaign statistics with filters
+   * 
+   * API Reference: GET /api/v1/campaigns/{campaign_id}/statistics
+   * Query params: offset, limit, email_sequence_number, email_status
+   * 
+   * @param campaignId Smartlead campaign ID
+   * @param options Filter options
+   * @returns Detailed campaign statistics
+   */
+  async getCampaignStatistics(
+    campaignId: string,
+    options?: {
+      offset?: number;
+      limit?: number;
+      email_sequence_number?: number;
+      email_status?: 'opened' | 'clicked' | 'replied' | 'unsubscribed' | 'bounced';
+    }
+  ): Promise<SmartleadApiResponse<any>> {
+    const params = new URLSearchParams();
+    if (options?.offset !== undefined) params.append('offset', options.offset.toString());
+    if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+    if (options?.email_sequence_number !== undefined) params.append('email_sequence_number', options.email_sequence_number.toString());
+    if (options?.email_status) params.append('email_status', options.email_status);
+
+    const queryString = params.toString();
+    const endpoint = `/campaigns/${campaignId}/statistics${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<any>(endpoint);
   }
 
   /**

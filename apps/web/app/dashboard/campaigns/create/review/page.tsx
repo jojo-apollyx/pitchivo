@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
-import { getSenderHealthLabel, calculateCampaignMetrics } from '@/lib/mock-data/buyers'
+import { calculateCampaignMetrics } from '@/lib/mock-data/buyers'
 import { createClient } from '@/lib/supabase/client'
 import { useSubscription } from '@/lib/hooks/use-subscription'
 import { checkEmailQuota } from '@/lib/utils/quotas'
@@ -104,7 +104,6 @@ export default function ReviewLaunchPage() {
   }
 
   const metrics = calculateCampaignMetrics(draft.emailCount, draft.durationDays)
-  const senderHealthInfo = getSenderHealthLabel(draft.senderHealth)
   const productImages = productData?.product_images || []
   const firstImage = productImages.length > 0 ? productImages[0] : null
   const getImageUrl = () => {
@@ -135,39 +134,62 @@ export default function ReviewLaunchPage() {
       }
       const priorityLocations = (draft as any).priorityLocations || []
       
+      // Get current user for created_by field
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      
       // Create campaign in database
+      const displayName = `${draft.productName} Campaign`
       const { data, error } = await supabase
         .from('campaigns')
         .insert({
           org_id: orgId,
           product_id: draft.productId,
-          campaign_name: `${draft.productName} Campaign`,
+          campaign_name: displayName, // Keep for compatibility
+          display_name: displayName,
           data_source_id: draft.dataSourceId,
           buyer_count: draft.buyerCount,
           email_count: draft.emailCount,
           duration_days: draft.durationDays,
           start_date: draft.startDate?.toISOString() || new Date().toISOString(),
-          sender_email: draft.senderEmail,
-          sender_health: draft.senderHealth,
           priority_locations: priorityLocations.length > 0 ? priorityLocations : null,
           is_test: draft.isTest || false,
           status: 'scheduled',
-          launched_at: new Date().toISOString()
+          launched_at: new Date().toISOString(),
+          created_by: currentUser?.id
         })
         .select()
         .single()
 
       if (error) throw error
 
-      // Create campaign in Smartlead
+      // Create campaign in Smartlead with multi-tenant naming
       if (data) {
         try {
+          // Get user and org info for naming
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('full_name, first_name, email')
+            .eq('id', user.id)
+            .single()
+          
+          const { data: org } = await supabase
+            .from('organizations')
+            .select('name')
+            .eq('id', orgId)
+            .single()
+          
+          // Generate Smartlead campaign name with org/user context
+          const userName = profile?.full_name || profile?.first_name || profile?.email?.split('@')[0] || 'User'
+          const orgName = org?.name || 'Organization'
+          const displayName = `${draft.productName} Campaign`
+          const smartleadName = `[${orgName}] ${userName} - ${displayName}`
+          
           const smartleadResponse = await fetch('/api/smartlead/campaigns', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               campaign_id: data.campaign_id,
-              campaign_name: `${draft.productName} Campaign`
+              campaign_name: smartleadName
             })
           })
 
@@ -454,25 +476,6 @@ export default function ReviewLaunchPage() {
                       : 'Immediately'
                     }
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-4 bg-muted/30 rounded-lg p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Sender identity:</span>{' '}
-                    <span className="font-mono text-xs break-all">
-                      {draft.senderEmail || 'We\'ll choose the best sender address for you'}
-                    </span>
-                  </div>
-                  {draft.senderEmail && (
-                    <div>
-                      <span className="text-muted-foreground">Sender health:</span>{' '}
-                      <span className={`font-semibold ${senderHealthInfo.color}`}>
-                        {senderHealthInfo.icon} {senderHealthInfo.label}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

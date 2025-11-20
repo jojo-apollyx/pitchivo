@@ -1,0 +1,391 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { ArrowLeft, Activity, Users, BarChart3, List, Settings, Play, Pause, Square, Trash2, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+import { getDisplayName } from '@/lib/utils/campaign-naming'
+
+// Tab components
+import { OverviewTab } from './components/OverviewTab'
+import { LeadsTab } from './components/LeadsTab'
+import { AnalyticsTab } from './components/AnalyticsTab'
+import { SequencesTab } from './components/SequencesTab'
+import { SettingsTab } from './components/SettingsTab'
+
+interface Campaign {
+  campaign_id: string
+  display_name: string
+  smartlead_name: string
+  smartlead_campaign_id: string
+  status: string
+  email_count: number
+  duration_days: number
+  start_date: string
+  created_at: string
+  launched_at: string
+  
+  // Metrics
+  emails_sent: number
+  emails_opened: number
+  emails_clicked: number
+  emails_delivered: number
+  emails_bounced: number
+  replies_received: number
+  
+  // Relations
+  products?: {
+    product_name: string
+  }
+  organizations?: {
+    name: string
+    slug: string
+  }
+}
+
+export default function CampaignDetailPage() {
+  const router = useRouter()
+  const params = useParams()
+  const campaignId = params?.campaignId as string
+  const supabase = createClient()
+  
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  useEffect(() => {
+    if (campaignId) {
+      loadCampaign()
+    }
+  }, [campaignId])
+
+  async function loadCampaign() {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select(`
+          *,
+          products(product_name),
+          organizations(name, slug)
+        `)
+        .eq('campaign_id', campaignId)
+        .single()
+
+      if (error) throw error
+      setCampaign(data)
+    } catch (error) {
+      console.error('Error loading campaign:', error)
+      toast.error('Failed to load campaign')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleStatusChange(newStatus: 'active' | 'paused' | 'stopped') {
+    if (!campaign?.smartlead_campaign_id) {
+      toast.error('Campaign not synced with Smartlead')
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      // Map our status to Smartlead status
+      const smartleadStatus = {
+        active: 'START',
+        paused: 'PAUSED',
+        stopped: 'STOPPED'
+      }[newStatus]
+
+      // Call Smartlead API to update status
+      const response = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: smartleadStatus })
+      })
+
+      if (!response.ok) throw new Error('Failed to update campaign status')
+
+      // Update local database
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      toast.success(`Campaign ${newStatus}`)
+      await loadCampaign()
+    } catch (error) {
+      console.error('Error updating campaign status:', error)
+      toast.error('Failed to update campaign status')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      // Delete from Smartlead if campaign is synced
+      if (campaign?.smartlead_campaign_id) {
+        const response = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}`, {
+          method: 'DELETE'
+        })
+        
+        if (!response.ok) {
+          console.error('Failed to delete from Smartlead, continuing with local delete')
+        }
+      }
+
+      // Delete from local database
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      toast.success('Campaign deleted')
+      router.push('/admin/campaigns')
+    } catch (error) {
+      console.error('Error deleting campaign:', error)
+      toast.error('Failed to delete campaign')
+      setIsUpdating(false)
+    }
+  }
+
+  async function handleExport() {
+    if (!campaign?.smartlead_campaign_id) {
+      toast.error('Campaign not synced with Smartlead')
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/campaigns/${campaignId}/export`)
+      if (!response.ok) throw new Error('Failed to export campaign data')
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `campaign-${campaign.display_name || 'export'}-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success('Campaign data exported')
+    } catch (error) {
+      console.error('Error exporting campaign:', error)
+      toast.error('Failed to export campaign data')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading campaign...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!campaign) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Alert className="max-w-md">
+          <AlertDescription>
+            Campaign not found. It may have been deleted.
+          </AlertDescription>
+          <Button onClick={() => router.push('/admin/campaigns')} className="mt-4">
+            Back to Campaigns
+          </Button>
+        </Alert>
+      </div>
+    )
+  }
+
+  const displayName = campaign.display_name || getDisplayName(campaign.campaign_name || '')
+  const statusColors = {
+    draft: 'bg-gray-500',
+    scheduled: 'bg-blue-500',
+    active: 'bg-green-500',
+    paused: 'bg-yellow-500',
+    stopped: 'bg-orange-500',
+    completed: 'bg-purple-500',
+    deleted: 'bg-red-500'
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border/50 bg-card/50">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/admin/campaigns')}
+                className="mt-1"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold">{displayName}</h1>
+                  <Badge className={statusColors[campaign.status as keyof typeof statusColors] || 'bg-gray-500'}>
+                    {campaign.status}
+                  </Badge>
+                  {!campaign.smartlead_campaign_id && (
+                    <Badge variant="outline" className="text-amber-600">
+                      Not Synced
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>Product: {campaign.products?.product_name}</span>
+                  <span>•</span>
+                  <span>Created: {new Date(campaign.created_at).toLocaleDateString()}</span>
+                  {campaign.launched_at && (
+                    <>
+                      <span>•</span>
+                      <span>Launched: {new Date(campaign.launched_at).toLocaleDateString()}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              {campaign.status === 'active' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStatusChange('paused')}
+                  disabled={isUpdating}
+                >
+                  <Pause className="h-4 w-4 mr-2" />
+                  Pause
+                </Button>
+              )}
+              
+              {campaign.status === 'paused' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStatusChange('active')}
+                  disabled={isUpdating}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Resume
+                </Button>
+              )}
+              
+              {(campaign.status === 'active' || campaign.status === 'paused') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStatusChange('stopped')}
+                  disabled={isUpdating}
+                >
+                  <Square className="h-4 w-4 mr-2" />
+                  Stop
+                </Button>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={handleDelete}
+                disabled={isUpdating}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+            <TabsTrigger value="overview" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="leads" className="gap-2">
+              <Users className="h-4 w-4" />
+              Leads
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="sequences" className="gap-2">
+              <List className="h-4 w-4" />
+              Sequences
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <OverviewTab campaign={campaign} onRefresh={loadCampaign} />
+          </TabsContent>
+
+          <TabsContent value="leads" className="space-y-6">
+            <LeadsTab campaign={campaign} onRefresh={loadCampaign} />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <AnalyticsTab campaign={campaign} />
+          </TabsContent>
+
+          <TabsContent value="sequences" className="space-y-6">
+            <SequencesTab campaign={campaign} onRefresh={loadCampaign} />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-6">
+            <SettingsTab campaign={campaign} onRefresh={loadCampaign} />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
+

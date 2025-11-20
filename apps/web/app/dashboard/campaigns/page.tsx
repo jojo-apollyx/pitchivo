@@ -296,7 +296,36 @@ export default function CampaignsPage() {
 
     setCancellingCampaign(campaignToAction)
     try {
-      // Delete campaign (cascade will delete activities)
+      // Get campaign details first to check if it has a Smartlead campaign ID
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('smartlead_campaign_id')
+        .eq('campaign_id', campaignToAction)
+        .single()
+
+      // Delete campaign from Smartlead if it has a Smartlead ID
+      if (campaign?.smartlead_campaign_id) {
+        try {
+          const smartleadResponse = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}`, {
+            method: 'DELETE'
+          })
+          
+          if (!smartleadResponse.ok) {
+            console.error('Failed to delete campaign from Smartlead:', await smartleadResponse.text())
+            // Continue with local deletion even if Smartlead deletion fails
+            toast.error('Campaign deleted locally but Smartlead deletion failed', {
+              description: 'The campaign was removed from your dashboard but may still exist in Smartlead.'
+            })
+          } else {
+            console.log('Campaign deleted from Smartlead successfully')
+          }
+        } catch (smartleadError) {
+          console.error('Error deleting campaign from Smartlead:', smartleadError)
+          // Continue with local deletion even if Smartlead deletion fails
+        }
+      }
+
+      // Delete campaign from our database (cascade will delete activities)
       const { error } = await supabase
         .from('campaigns')
         .delete()
@@ -304,13 +333,15 @@ export default function CampaignsPage() {
 
       if (error) throw error
 
+      toast.success('Campaign deleted successfully')
+
       // Reload campaigns
       await loadCampaigns()
       setDeleteDialogOpen(false)
       setCampaignToAction(null)
     } catch (error) {
       console.error('Error deleting campaign:', error)
-      alert('Failed to delete campaign. Please try again.')
+      toast.error('Failed to delete campaign. Please try again.')
     } finally {
       setCancellingCampaign(null)
     }

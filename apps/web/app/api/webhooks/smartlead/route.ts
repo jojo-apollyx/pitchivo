@@ -36,13 +36,17 @@ const supabaseAdmin = createClient(
  * 
  * Additional event types that may be sent (not in official docs but referenced elsewhere):
  * - EMAIL_BOUNCE: When an email bounces
+ * - EMAIL_DELIVERED: When an email is delivered
  * - THREADED_REPLIES: For threaded conversation replies
  * - CAMPAIGN_STATUS_CHANGE: When campaign status changes
+ * - CAMPAIGN_DELETED: When a campaign is deleted
+ * - CAMPAIGN_UPDATED: When campaign settings are updated
  * - UNTRACKED_REPLIES: Replies that aren't tracked
  * - MANUAL_STEP_REACHED: When manual step is reached in sequence
  */
 const SMARTLEAD_EVENT_TYPES = {
   EMAIL_SENT: 'sent',
+  EMAIL_DELIVERED: 'delivered',
   EMAIL_OPEN: 'opened', // Official: EMAIL_OPEN (not EMAIL_OPENED)
   EMAIL_LINK_CLICK: 'clicked', // Official: EMAIL_LINK_CLICK (not LINK_CLICKED)
   EMAIL_BOUNCE: 'bounced', // Not in official docs but may be sent
@@ -51,6 +55,8 @@ const SMARTLEAD_EVENT_TYPES = {
   LEAD_CATEGORY_UPDATED: 'category_updated',
   THREADED_REPLIES: 'threaded_reply', // Not in official docs
   CAMPAIGN_STATUS_CHANGE: 'status_change', // Not in official docs
+  CAMPAIGN_DELETED: 'campaign_deleted', // Not in official docs
+  CAMPAIGN_UPDATED: 'campaign_updated', // Not in official docs
   UNTRACKED_REPLIES: 'untracked_reply', // Not in official docs
   MANUAL_STEP_REACHED: 'manual_step', // Not in official docs
 } as const;
@@ -143,20 +149,49 @@ async function processSmartleadEvent(event: any) {
       reply_subject: replySubject,
       bounce_reason: bounceReason,
       bounce_type: bounceType,
+      // Campaign-level event fields
+      campaign_status: newCampaignStatus,
+      campaign_name: campaignName,
+      campaign_data: campaignData,
       // Additional fields Smartlead may include
       ...rest
     } = event;
 
     console.log(`📧 Event Type: ${eventType}`);
-    console.log(`👤 Lead Email: ${leadEmail}`);
+    console.log(`👤 Lead Email: ${leadEmail || 'N/A'}`);
     console.log(`🎯 Smartlead Campaign ID: ${smartleadCampaignId}`);
     console.log(`📬 Message ID: ${messageId || 'N/A'}`);
     console.log(`📅 Timestamp: ${timestamp}`);
 
-    // Validate required fields
-    if (!eventType || !smartleadCampaignId || !leadEmail) {
-      console.error('❌ Missing required fields:', { eventType, smartleadCampaignId, leadEmail });
-      return { success: false, error: 'Missing required fields' };
+    // Check if this is a campaign-level event (no lead email required)
+    const isCampaignEvent = eventType && (
+      eventType.includes('CAMPAIGN') || 
+      eventType === 'CAMPAIGN_STATUS_CHANGE' || 
+      eventType === 'CAMPAIGN_DELETED' || 
+      eventType === 'CAMPAIGN_UPDATED'
+    );
+
+    // Validate required fields based on event type
+    if (!eventType || !smartleadCampaignId) {
+      console.error('❌ Missing required fields:', { eventType, smartleadCampaignId });
+      return { success: false, error: 'Missing required event type or campaign ID' };
+    }
+
+    // For lead-level events, require lead email
+    if (!isCampaignEvent && !leadEmail) {
+      console.error('❌ Missing lead email for lead-level event:', { eventType, smartleadCampaignId });
+      return { success: false, error: 'Missing lead email for lead-level event' };
+    }
+
+    // Handle campaign-level events
+    if (isCampaignEvent) {
+      return await handleCampaignEvent(eventType, smartleadCampaignId, {
+        status: newCampaignStatus,
+        name: campaignName,
+        data: campaignData,
+        timestamp,
+        ...rest
+      });
     }
 
     // Map Smartlead event type to our internal type
@@ -224,6 +259,26 @@ async function processSmartleadEvent(event: any) {
     }
 
     console.log(`✅ Email event recorded successfully`);
+
+    // Also insert into lead_events for detailed tracking
+    if (leadId) {
+      await supabaseAdmin
+        .from('lead_events')
+        .insert({
+          lead_id: leadId,
+          campaign_id: campaignId,
+          event_type: ourEventType,
+          event_timestamp: timestamp || new Date().toISOString(),
+          metadata
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('❌ Error inserting lead event:', error);
+          } else {
+            console.log('✅ Lead event recorded');
+          }
+        });
+    }
 
     // Update campaign metrics
     console.log(`📊 Updating campaign metrics...`);
@@ -318,17 +373,38 @@ async function updateLeadStatus(leadId: string, eventType: string) {
     };
 
     // Update last_contacted for any activity, and status based on event type
+    // Also increment event counters
     switch (eventType) {
       case 'sent':
+        updates.last_contacted = new Date().toISOString();
+        break;
+      case 'delivered':
+        updates.last_contacted = new Date().toISOString();
+        break;
       case 'opened':
+        updates.last_contacted = new Date().toISOString();
+        // Increment open_count using Postgres function
+        await supabaseAdmin.rpc('increment_lead_counter', {
+          lead_id_param: leadId,
+          counter_name: 'open_count'
+        });
+        break;
       case 'clicked':
         updates.last_contacted = new Date().toISOString();
+        // Increment click_count
+        await supabaseAdmin.rpc('increment_lead_counter', {
+          lead_id_param: leadId,
+          counter_name: 'click_count'
+        });
         break;
       case 'replied':
       case 'threaded_reply':
         updates.last_contacted = new Date().toISOString();
-        // Note: 'replied' is not a valid status in campaign_leads, keeping as 'active'
-        // Status values are: 'active', 'unsubscribed', 'bounced', 'invalid'
+        // Increment reply_count
+        await supabaseAdmin.rpc('increment_lead_counter', {
+          lead_id_param: leadId,
+          counter_name: 'reply_count'
+        });
         break;
       case 'bounced':
         updates.status = 'bounced';
@@ -384,6 +460,115 @@ async function handleReply(
   } catch (error) {
     console.error('❌ Error in handleReply:', error);
   }
+}
+
+/**
+ * Handle campaign-level events from Smartlead
+ * Used for bi-directional sync when campaigns are updated/deleted in Smartlead
+ */
+async function handleCampaignEvent(
+  eventType: string,
+  smartleadCampaignId: string,
+  eventData: {
+    status?: string;
+    name?: string;
+    data?: any;
+    timestamp?: string;
+    [key: string]: any;
+  }
+) {
+  try {
+    console.log(`🎯 Handling campaign event: ${eventType} for campaign ${smartleadCampaignId}`);
+
+    // Find our campaign by smartlead_campaign_id
+    const { data: campaign, error: campaignError } = await supabaseAdmin
+      .from('campaigns')
+      .select('campaign_id, campaign_name, status')
+      .eq('smartlead_campaign_id', smartleadCampaignId)
+      .single();
+
+    if (campaignError || !campaign) {
+      console.error('❌ Campaign not found for Smartlead ID:', smartleadCampaignId);
+      return { success: false, error: 'Campaign not found' };
+    }
+
+    const campaignId = campaign.campaign_id;
+    console.log(`✅ Found campaign: ${campaignId} (${campaign.campaign_name})`);
+
+    // Handle different campaign event types
+    switch (eventType) {
+      case 'CAMPAIGN_DELETED':
+        console.log(`🗑️ Campaign deleted in Smartlead, marking as deleted in our DB`);
+        // Soft delete or mark as deleted
+        await supabaseAdmin
+          .from('campaigns')
+          .update({
+            status: 'deleted',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('campaign_id', campaignId);
+        
+        console.log(`✅ Campaign marked as deleted in our database`);
+        break;
+
+      case 'CAMPAIGN_STATUS_CHANGE':
+        console.log(`📊 Campaign status changed to: ${eventData.status}`);
+        // Map Smartlead status to our status
+        const ourStatus = mapSmartleadStatus(eventData.status || '');
+        await supabaseAdmin
+          .from('campaigns')
+          .update({
+            status: ourStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('campaign_id', campaignId);
+        
+        console.log(`✅ Campaign status updated to: ${ourStatus}`);
+        break;
+
+      case 'CAMPAIGN_UPDATED':
+        console.log(`✏️ Campaign settings updated in Smartlead`);
+        const updates: any = {
+          updated_at: new Date().toISOString(),
+        };
+        
+        if (eventData.name && eventData.name !== campaign.campaign_name) {
+          updates.campaign_name = eventData.name;
+        }
+        
+        await supabaseAdmin
+          .from('campaigns')
+          .update(updates)
+          .eq('campaign_id', campaignId);
+        
+        console.log(`✅ Campaign updated in our database`);
+        break;
+
+      default:
+        console.log(`⚠️ Unknown campaign event type: ${eventType}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error handling campaign event:', error);
+    return { success: false, error: 'Failed to handle campaign event' };
+  }
+}
+
+/**
+ * Map Smartlead campaign status to our internal status
+ */
+function mapSmartleadStatus(smartleadStatus: string): string {
+  const statusMap: Record<string, string> = {
+    'DRAFTED': 'draft',
+    'ACTIVE': 'active',
+    'PAUSED': 'paused',
+    'STOPPED': 'stopped',
+    'COMPLETED': 'completed',
+    'START': 'active', // When campaign is started
+  };
+
+  return statusMap[smartleadStatus.toUpperCase()] || 'scheduled';
 }
 
 async function handleUnsubscribe(campaignId: string, leadId: string | undefined, leadEmail: string) {
