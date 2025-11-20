@@ -221,7 +221,7 @@ export default function CampaignDetailPage() {
     )
   }
 
-  const displayName = campaign.display_name || getDisplayName(campaign.campaign_name || '')
+  const displayName = campaign.display_name || getDisplayName(campaign.smartlead_name || '')
   const statusColors = {
     draft: 'bg-gray-500',
     scheduled: 'bg-blue-500',

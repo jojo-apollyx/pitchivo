@@ -2,20 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { 
   Clock, 
-  Send, 
   CheckCircle2, 
   XCircle, 
   RefreshCw, 
-  Zap, 
   AlertCircle,
   Mail,
-  Play,
   Loader2
 } from 'lucide-react'
 import { format } from 'date-fns'
@@ -35,8 +30,6 @@ interface EmailStats {
 export function EmailProcessorMonitor() {
   const [stats, setStats] = useState<EmailStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
-  const [batchSize, setBatchSize] = useState(100)
   const [autoRefresh, setAutoRefresh] = useState(true)
 
   useEffect(() => {
@@ -64,41 +57,6 @@ export function EmailProcessorMonitor() {
     }
   }
 
-  async function handleManualTrigger() {
-    if (batchSize < 1 || batchSize > 500) {
-      toast.error('Batch size must be between 1 and 500')
-      return
-    }
-
-    setProcessing(true)
-    try {
-      const response = await fetch('/api/admin/email-processor/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ limit: batchSize })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to trigger email processor')
-      }
-
-      const result = await response.json()
-      
-      toast.success(
-        `Email processor completed! ${result.sent} sent, ${result.failed} failed`,
-        { duration: 5000 }
-      )
-      
-      // Refresh stats after processing
-      setTimeout(loadStats, 1000)
-    } catch (error: any) {
-      console.error('Error triggering email processor:', error)
-      toast.error(error.message || 'Failed to trigger email processor')
-    } finally {
-      setProcessing(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -127,7 +85,7 @@ export function EmailProcessorMonitor() {
         <div>
           <h3 className="text-lg font-semibold mb-1">Email Processor Monitor</h3>
           <p className="text-sm text-muted-foreground">
-            Monitor scheduled email processing and trigger manual runs
+            Monitor scheduled email processing status
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -268,76 +226,6 @@ export function EmailProcessorMonitor() {
         )}
       </div>
 
-      {/* Manual Trigger Section */}
-      <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-6 border border-primary/20">
-        <div className="flex items-start gap-3 mb-4">
-          <Zap className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-          <div className="flex-1">
-            <h4 className="text-sm font-semibold mb-1">Manual Trigger</h4>
-            <p className="text-xs text-muted-foreground">
-              Run the email processor immediately without waiting for the hourly cron job.
-              Useful for testing or processing urgent emails.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="batchSize" className="text-sm font-medium mb-2 block">
-              Batch Size (number of emails to process)
-            </Label>
-            <div className="flex gap-3">
-              <Input
-                id="batchSize"
-                type="number"
-                min="1"
-                max="500"
-                value={batchSize}
-                onChange={(e) => setBatchSize(Math.min(500, Math.max(1, parseInt(e.target.value) || 100)))}
-                className="flex-1"
-                disabled={processing}
-              />
-              <Button
-                onClick={handleManualTrigger}
-                disabled={processing || (stats?.pending || 0) === 0}
-                className="gap-2 min-w-[140px]"
-              >
-                {processing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4" />
-                    Trigger Now
-                  </>
-                )}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground">
-                Default: 100 | Maximum: 500
-              </p>
-              {(stats?.pending || 0) === 0 && (
-                <p className="text-xs text-amber-600">
-                  No pending emails to process
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-blue-900 dark:text-blue-100">
-                <strong>Note:</strong> Manual triggers will process emails scheduled up to 10 minutes in the future.
-                This matches the behavior of the automatic cron job.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

@@ -169,7 +169,7 @@ export default function ReviewLaunchPage() {
           const { data: profile } = await supabase
             .from('user_profiles')
             .select('full_name, first_name, email')
-            .eq('id', user.id)
+            .eq('id', currentUser?.id || '')
             .single()
           
           const { data: org } = await supabase

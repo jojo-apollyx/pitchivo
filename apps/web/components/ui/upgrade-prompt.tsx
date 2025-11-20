@@ -55,10 +55,10 @@ export function UpgradePrompt({
             <h3 className="text-sm font-semibold text-gray-900 mb-1">
               Upgrade to unlock {feature}
             </h3>
-            <p className="text-sm text-gray-600 mb-3">
+            <div className="text-sm text-gray-600 mb-3">
               You're currently on the <Badge variant="outline">{currentConfig.name}</Badge> plan.
               Upgrade to <Badge variant="default" className="bg-blue-600">{recommendedConfig.name}</Badge> to access this feature.
-            </p>
+            </div>
             <div className="flex items-center gap-2">
               <Link href="/dashboard/pricing">
                 <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
