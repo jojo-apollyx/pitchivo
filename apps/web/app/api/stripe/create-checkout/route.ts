@@ -109,20 +109,32 @@ export async function POST(request: NextRequest) {
           subscription.stripe_subscription_id
         )
 
-        // Check if it's the same tier (no change needed)
-        const currentTier = existingStripeSubscription.metadata.tier
-        if (currentTier === tier) {
+        // Check if subscription is already canceled or unpaid
+        // In this case, we should create a new subscription instead of updating
+        if (existingStripeSubscription.status === 'canceled' || 
+            existingStripeSubscription.status === 'unpaid') {
+          console.log('   Subscription is canceled/unpaid, creating new subscription instead')
+          // Fall through to create new checkout session
+        } else if (existingStripeSubscription.status === 'past_due') {
+          // Subscription has past due payment - require payment first
           return NextResponse.json(
-            { error: 'Already subscribed to this tier' },
+            { error: 'Please pay your outstanding invoice before changing plans. You can manage your billing in the billing portal.' },
             { status: 400 }
           )
-        }
+        } else {
+          // Check if it's the same tier (no change needed)
+          const currentTier = existingStripeSubscription.metadata.tier
+          if (currentTier === tier) {
+            return NextResponse.json(
+              { error: 'Already subscribed to this tier' },
+              { status: 400 }
+            )
+          }
 
-        // Update the subscription to the new price
-        // Stripe will automatically handle proration
-        const updatedSubscription = await stripe.subscriptions.update(
-          subscription.stripe_subscription_id,
-          {
+          // Update the subscription to the new price
+          // If subscription was scheduled to cancel, clear the cancellation
+          // (user is changing plans, not canceling)
+          const updateParams: Stripe.SubscriptionUpdateParams = {
             items: [{
               id: existingStripeSubscription.items.data[0].id,
               price: tierConfig.priceId,
@@ -133,14 +145,26 @@ export async function POST(request: NextRequest) {
             },
             proration_behavior: 'always_invoice', // Always prorate on changes
           }
-        )
 
-        // Return success - the webhook will handle the database update
-        return NextResponse.json({ 
-          success: true,
-          message: 'Subscription updated successfully',
-          subscription_id: updatedSubscription.id
-        })
+          // If subscription was scheduled to cancel, clear the cancellation
+          // User is changing plans, so they want to continue with the new plan
+          if (existingStripeSubscription.cancel_at_period_end) {
+            updateParams.cancel_at_period_end = false
+            console.log('   Clearing scheduled cancellation - user is changing plans')
+          }
+
+          const updatedSubscription = await stripe.subscriptions.update(
+            subscription.stripe_subscription_id,
+            updateParams
+          )
+
+          // Return success - the webhook will handle the database update
+          return NextResponse.json({ 
+            success: true,
+            message: 'Subscription updated successfully',
+            subscription_id: updatedSubscription.id
+          })
+        }
       } catch (error: any) {
         console.error('Error updating subscription:', error)
         return NextResponse.json(

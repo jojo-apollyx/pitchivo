@@ -356,10 +356,15 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
       // Fallback to current time if canceled_at is not set
       updateData.canceled_at = now.toISOString()
     }
-  } else if (isReactivated) {
-    // Clear canceled_at if subscription was reactivated
+  } else if (isReactivated || (wasScheduledToCancel && !subscriptionToUse.cancel_at_period_end)) {
+    // Clear canceled_at if subscription was reactivated or cancellation was cleared
+    // This happens when user changes plans (not canceling, just changing tiers)
     updateData.canceled_at = null
-    console.log(`   Subscription reactivated - clearing canceled_at`)
+    if (tierChanged) {
+      console.log(`   Cancellation cleared - user changed plans from ${oldTier} to ${tier}`)
+    } else {
+      console.log(`   Subscription reactivated - clearing canceled_at`)
+    }
   }
 
   // Update quotas based on strategy
