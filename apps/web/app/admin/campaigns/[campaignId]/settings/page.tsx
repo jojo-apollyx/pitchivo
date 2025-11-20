@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { BREVO_SENDER_DOMAINS, DEFAULT_SENDER_DOMAIN, type BrevoSenderDomain } from '@/lib/constants/brevo-sender-domains'
 import { EmailQualityChecker } from '@/components/admin/email-quality-checker'
 import { EmailTemplateManager } from '@/components/admin/email-template-manager'
-import { BatchEmailScheduler } from '@/components/admin/batch-email-scheduler'
 import { CampaignEmailManagement } from '@/components/admin/campaign-email-management'
 import { TestEmailTracker } from '@/components/admin/test-email-tracker'
 import { CampaignSubdomainSettings } from '@/components/admin/campaign-subdomain-settings'
@@ -45,12 +46,13 @@ export default function CampaignSettingsPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [defaultTemplate, setDefaultTemplate] = useState<EmailTemplate | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'send' | 'quality' | 'templates' | 'schedule' | 'manage' | 'subdomains'>('manage')
+  const [activeTab, setActiveTab] = useState<'send' | 'quality' | 'templates' | 'manage' | 'subdomains'>('manage')
   
   // Email form state
   const [emailTo, setEmailTo] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
   const [emailContent, setEmailContent] = useState('')
+  const [senderDomain, setSenderDomain] = useState<BrevoSenderDomain>(DEFAULT_SENDER_DOMAIN)
   const [sending, setSending] = useState(false)
   
   const supabase = createClient()
@@ -116,7 +118,8 @@ export default function CampaignSettingsPage() {
           campaignId: campaign.campaign_id,
           to: emailTo,
           subject: emailSubject,
-          content: emailContent
+          content: emailContent,
+          senderDomain: senderDomain
         })
       })
 
@@ -260,15 +263,6 @@ export default function CampaignSettingsPage() {
                   Templates
                 </Button>
                 <Button
-                  variant={activeTab === 'schedule' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setActiveTab('schedule')}
-                  className="gap-2"
-                >
-                  <Zap className="h-4 w-4" />
-                  Batch Schedule
-                </Button>
-                <Button
                   variant={activeTab === 'manage' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setActiveTab('manage')}
@@ -301,6 +295,29 @@ export default function CampaignSettingsPage() {
                         Using: {defaultTemplate.template_name}
                       </Badge>
                     )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="senderDomain">Sender Domain</Label>
+                    <Select value={senderDomain} onValueChange={(value) => setSenderDomain(value as BrevoSenderDomain)}>
+                      <SelectTrigger id="senderDomain">
+                        <SelectValue placeholder="Select sender domain" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BREVO_SENDER_DOMAINS.map((domain) => (
+                          <SelectItem key={domain.value} value={domain.value}>
+                            <div className="flex items-center gap-2">
+                              <span>{domain.icon}</span>
+                              <span className="font-mono text-xs">{domain.label}</span>
+                              <span className="text-muted-foreground text-xs">- {domain.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select the sender email address for this campaign
+                    </p>
                   </div>
 
                   <div>
@@ -412,13 +429,6 @@ export default function CampaignSettingsPage() {
                     onSelectTemplate={handleLoadTemplate}
                   />
                 </div>
-              )}
-
-              {activeTab === 'schedule' && (
-                <BatchEmailScheduler
-                  campaignId={campaignId}
-                  onScheduleComplete={() => router.push(`/admin/campaigns/${campaignId}/tracking`)}
-                />
               )}
 
               {activeTab === 'manage' && (

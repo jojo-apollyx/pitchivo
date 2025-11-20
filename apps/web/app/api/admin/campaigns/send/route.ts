@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
 import { createClient } from '@supabase/supabase-js'
 import { checkEmailQuota, incrementEmailUsage } from '@/lib/utils/quotas'
+import { getSenderEmail, DEFAULT_SENDER_DOMAIN, type BrevoSenderDomain } from '@/lib/constants/brevo-sender-domains'
 
 // Create admin Supabase client (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -54,7 +55,8 @@ export async function POST(request: NextRequest) {
       leadId,
       recipientName,
       recipientTitle,
-      recipientCompany
+      recipientCompany,
+      senderDomain
     } = body
 
     // Validate input
@@ -224,9 +226,15 @@ export async function POST(request: NextRequest) {
 
     // Send email via Brevo/Sendinblue with campaign tracking tag
     console.log('[campaigns/send] Preparing to send email via Brevo')
+    
+    // Get sender email from selected domain (or use default)
+    const senderEmail = getSenderEmail((senderDomain as BrevoSenderDomain) || DEFAULT_SENDER_DOMAIN)
+    console.log('[campaigns/send] Using sender email:', senderEmail)
+    
     try {
       const emailPayload = {
         to,
+        from: senderEmail,
         subject: processedSubject,
         html: `
           <!DOCTYPE html>

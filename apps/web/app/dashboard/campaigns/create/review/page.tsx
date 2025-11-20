@@ -159,6 +159,38 @@ export default function ReviewLaunchPage() {
 
       if (error) throw error
 
+      // Create campaign in Smartlead
+      if (data) {
+        try {
+          const smartleadResponse = await fetch('/api/smartlead/campaigns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              campaign_id: data.campaign_id,
+              campaign_name: `${draft.productName} Campaign`
+            })
+          })
+
+          if (!smartleadResponse.ok) {
+            console.error('Failed to create campaign in Smartlead:', await smartleadResponse.text())
+            // Don't fail the campaign launch if Smartlead fails
+            toast.error('Campaign created but Smartlead integration failed', {
+              description: 'The campaign was created but could not be synced with Smartlead. You can manage it from the admin panel.'
+            })
+          } else {
+            const smartleadData = await smartleadResponse.json()
+            console.log('Campaign created in Smartlead:', smartleadData.smartlead_campaign_id)
+            toast.success('Campaign created and synced with Smartlead')
+          }
+        } catch (smartleadError) {
+          console.error('Error creating campaign in Smartlead:', smartleadError)
+          // Don't fail the campaign launch if Smartlead fails
+          toast.error('Campaign created but Smartlead integration failed', {
+            description: 'The campaign was created but could not be synced with Smartlead.'
+          })
+        }
+      }
+
       // Add sample buyers as campaign leads
       if (data && (draft as any).sampleBuyers && (draft as any).sampleBuyers.length > 0) {
         try {

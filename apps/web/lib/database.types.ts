@@ -338,6 +338,7 @@ export interface Database {
           emails_bounced: number
           rfqs_received: number
           is_test: boolean
+          smartlead_campaign_id: string | null
           admin_processing_paused: boolean
           admin_pause_reason: string | null
           admin_paused_at: string | null
@@ -368,6 +369,7 @@ export interface Database {
           emails_bounced?: number
           rfqs_received?: number
           is_test?: boolean
+          smartlead_campaign_id?: string | null
           admin_processing_paused?: boolean
           admin_pause_reason?: string | null
           admin_paused_at?: string | null
@@ -396,6 +398,7 @@ export interface Database {
           emails_opened?: number
           emails_clicked?: number
           emails_bounced?: number
+          smartlead_campaign_id?: string | null
           rfqs_received?: number
           is_test?: boolean
           admin_processing_paused?: boolean
