@@ -149,15 +149,43 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
 
   // Get existing subscription to check for custom quota overrides
-  const { data: existingSubscription } = await supabase
+  // Use maybeSingle() because subscription might not exist yet (first time subscription)
+  const { data: existingSubscription, error: fetchError } = await supabase
     .from('subscriptions')
     .select('custom_quota_override, email_quota, qr_links_per_product')
     .eq('org_id', orgId)
-    .single()
+    .maybeSingle()
+
+  if (fetchError) {
+    console.error('❌ Error fetching existing subscription:', fetchError)
+    throw new Error(`Failed to fetch subscription: ${fetchError.message}`)
+  }
 
   const tierConfig = PRICING_TIERS[tier]
   const now = new Date()
+  
+  // Validate and convert period dates - Stripe timestamps are in seconds
+  if (!subscription.current_period_start || !subscription.current_period_end) {
+    console.error('❌ Missing period dates in subscription:', {
+      current_period_start: subscription.current_period_start,
+      current_period_end: subscription.current_period_end
+    })
+    throw new Error('Subscription missing required period dates')
+  }
+
+  const periodStart = new Date(subscription.current_period_start * 1000)
   const periodEnd = new Date(subscription.current_period_end * 1000)
+
+  // Validate dates are valid
+  if (isNaN(periodStart.getTime()) || isNaN(periodEnd.getTime())) {
+    console.error('❌ Invalid period dates:', {
+      current_period_start: subscription.current_period_start,
+      current_period_end: subscription.current_period_end,
+      periodStart: periodStart,
+      periodEnd: periodEnd
+    })
+    throw new Error('Invalid subscription period dates')
+  }
   
   // Check if subscription period has ended and should be downgraded to free
   const shouldDowngradeToFree = 
@@ -177,16 +205,25 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     qrLinksPerProduct = freeConfig.features.qrLinksPerProduct
   }
 
-  // Build update object
+  // Validate subscription has items
+  if (!subscription.items?.data || subscription.items.data.length === 0) {
+    console.error('❌ Subscription has no items:', subscription.id)
+    throw new Error('Subscription missing items')
+  }
+
+  // Build update/upsert object
   const updateData: any = {
+    org_id: orgId, // Required for upsert
     stripe_subscription_id: subscription.id,
-    stripe_customer_id: subscription.customer as string,
+    stripe_customer_id: typeof subscription.customer === 'string' 
+      ? subscription.customer 
+      : subscription.customer?.id || null,
     stripe_price_id: subscription.items.data[0].price.id,
     tier: finalTier,
     status: subscription.status === 'active' || subscription.status === 'trialing' ? 'active' : 'inactive',
-    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_start: periodStart.toISOString(),
     current_period_end: periodEnd.toISOString(),
-    cancel_at_period_end: subscription.cancel_at_period_end,
+    cancel_at_period_end: subscription.cancel_at_period_end || false,
     updated_at: now.toISOString()
   }
 
@@ -204,13 +241,17 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
   // If custom override exists and not downgrading, preserve existing quotas
 
-  console.log('💾 Updating subscription in database...')
+  console.log('💾 Upserting subscription in database...')
+  console.log(`   Subscription exists: ${!!existingSubscription}`)
   console.log('   Update data:', JSON.stringify(updateData, null, 2))
   
+  // Use upsert to handle both create and update cases
+  // The unique constraint on org_id will ensure we update if exists, create if not
   const { error } = await supabase
     .from('subscriptions')
-    .update(updateData)
-    .eq('org_id', orgId)
+    .upsert(updateData, {
+      onConflict: 'org_id'
+    })
 
   if (error) {
     console.error('❌ Error updating subscription:', error)
