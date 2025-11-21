@@ -15,26 +15,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { FileText, Plus, Edit, Trash, Save, Star } from 'lucide-react'
+import { FileText, Plus, Edit, Trash, Save, Tag } from 'lucide-react'
 
 interface EmailTemplate {
   template_id: string
-  campaign_id: string
   template_name: string
   subject: string
   content: string
-  is_default: boolean
+  category: string
+  description: string | null
   created_at: string
   updated_at: string
 }
 
 interface EmailTemplateManagerProps {
-  campaignId: string
   onSelectTemplate?: (template: EmailTemplate) => void
 }
 
-export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemplateManagerProps) {
+export function EmailTemplateManager({ onSelectTemplate }: EmailTemplateManagerProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -46,16 +46,17 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
   const [templateName, setTemplateName] = useState('')
   const [subject, setSubject] = useState('')
   const [content, setContent] = useState('')
-  const [isDefault, setIsDefault] = useState(false)
+  const [category, setCategory] = useState('general')
+  const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadTemplates()
-  }, [campaignId])
+  }, [])
 
   async function loadTemplates() {
     try {
-      const response = await fetch(`/api/admin/campaigns/templates?campaignId=${campaignId}`)
+      const response = await fetch('/api/admin/templates')
       if (!response.ok) throw new Error('Failed to load templates')
       
       const data = await response.json()
@@ -75,10 +76,7 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
 
     setSaving(true)
     try {
-      const url = editingTemplate
-        ? '/api/admin/campaigns/templates'
-        : '/api/admin/campaigns/templates'
-      
+      const url = '/api/admin/templates'
       const method = editingTemplate ? 'PUT' : 'POST'
       
       const response = await fetch(url, {
@@ -91,13 +89,14 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
                 templateName,
                 subject,
                 content,
-                isDefault: editingTemplate.is_default // Preserve existing default status
+                category,
+                description
               }
             : {
-                campaignId,
                 templateName,
                 subject,
                 content,
+                category,
                 isDefault: false // New templates are not default by default
               }
         )
@@ -214,10 +213,10 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Email Templates
+            Transactional Email Templates
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Save and reuse email templates for this campaign
+            Pure templates for transactional emails (welcome, notifications, etc.) - sent via Brevo
           </p>
         </div>
         <Button
@@ -248,6 +247,26 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
           </div>
 
           <div>
+            <Label htmlFor="templateDescription">Description (Optional)</Label>
+            <Input
+              id="templateDescription"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of template purpose"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="templateCategory">Category</Label>
+            <Input
+              id="templateCategory"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g., outreach, follow-up, announcement"
+            />
+          </div>
+
+          <div>
             <Label htmlFor="templateSubject">Subject Line</Label>
             <Input
               id="templateSubject"
@@ -264,8 +283,11 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
               className="w-full min-h-[200px] rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Email content with placeholders..."
+              placeholder="Enter email content (plain text or HTML)..."
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Pure transactional email content - no campaign placeholders
+            </p>
           </div>
 
           <div className="flex gap-2">
@@ -294,13 +316,16 @@ export function EmailTemplateManager({ campaignId, onSelectTemplate }: EmailTemp
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <h4 className="font-semibold">{template.template_name}</h4>
-                    {template.is_default && (
-                      <Badge variant="outline" className="gap-1">
-                        <Star className="h-3 w-3 fill-current" />
-                        Default
+                    {template.category && (
+                      <Badge variant="outline" className="gap-1 bg-blue-100 text-blue-700 border-blue-300">
+                        <Tag className="h-3 w-3" />
+                        {template.category}
                       </Badge>
                     )}
                   </div>
+                  {template.description && (
+                    <p className="text-xs text-muted-foreground mb-2">{template.description}</p>
+                  )}
                   <p className="text-sm text-muted-foreground mb-2">
                     <strong>Subject:</strong> {template.subject}
                   </p>
