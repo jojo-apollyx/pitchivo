@@ -1,11 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Mail, TrendingUp, MousePointerClick, MessageSquare, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
+import { Mail, TrendingUp, MousePointerClick, MessageSquare, Clock, CheckCircle, XCircle, AlertTriangle, Activity } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SmartleadEventStats } from '@/components/smartlead/event-stats'
+import { SmartleadEventTimeline } from '@/components/smartlead/event-timeline'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 
 interface OverviewTabProps {
   campaign: any
@@ -251,61 +259,154 @@ export function OverviewTab({ campaign, onRefresh }: OverviewTabProps) {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>
-            Latest email events from this campaign
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentActivity.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No recent activity to display
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {recentActivity.slice(0, 10).map((activity, index) => (
-                <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
-                  <div className="mt-1">
-                    {activity.activity_type === 'email_sent' && <Mail className="h-4 w-4 text-blue-500" />}
-                    {activity.activity_type === 'email_opened' && <TrendingUp className="h-4 w-4 text-green-500" />}
-                    {activity.activity_type === 'email_clicked' && <MousePointerClick className="h-4 w-4 text-purple-500" />}
-                    {activity.activity_type === 'email_replied' && <MessageSquare className="h-4 w-4 text-amber-500" />}
-                    {activity.activity_type === 'email_bounced' && <XCircle className="h-4 w-4 text-red-500" />}
-                  </div>
-                  
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">
-                        {activity.metadata?.name || activity.contact_email || 'Unknown'}
-                      </p>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(activity.created_at).toLocaleString()}
-                      </span>
+      {/* Smartlead Email Events - Premium View */}
+      {campaign.smartlead_campaign_id && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Email Event Analytics</h3>
+            <Badge variant="secondary">Live Data</Badge>
+          </div>
+
+          {/* Event Stats */}
+          <SmartleadEventStats 
+            campaignId={campaign.campaign_id} 
+            isAdmin={true}
+            showChart={true}
+          />
+
+          {/* Event Timeline with Tabs */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Event Timeline</CardTitle>
+              <CardDescription>
+                Real-time email events from Smartlead webhooks
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="timeline" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="timeline">Timeline View</TabsTrigger>
+                  <TabsTrigger value="legacy">Legacy Activity</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="timeline" className="mt-6">
+                  <SmartleadEventTimeline 
+                    campaignId={campaign.campaign_id}
+                    isAdmin={true}
+                    limit={50}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="legacy" className="mt-6">
+                  {recentActivity.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No recent activity to display
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentActivity.slice(0, 10).map((activity, index) => (
+                        <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
+                          <div className="mt-1">
+                            {activity.activity_type === 'email_sent' && <Mail className="h-4 w-4 text-blue-500" />}
+                            {activity.activity_type === 'email_opened' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                            {activity.activity_type === 'email_clicked' && <MousePointerClick className="h-4 w-4 text-purple-500" />}
+                            {activity.activity_type === 'email_replied' && <MessageSquare className="h-4 w-4 text-amber-500" />}
+                            {activity.activity_type === 'email_bounced' && <XCircle className="h-4 w-4 text-red-500" />}
+                          </div>
+                          
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">
+                                {activity.metadata?.name || activity.contact_email || 'Unknown'}
+                              </p>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(activity.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground">
+                              {activity.activity_type === 'email_sent' && 'Email sent'}
+                              {activity.activity_type === 'email_opened' && 'Opened email'}
+                              {activity.activity_type === 'email_clicked' && 'Clicked link'}
+                              {activity.activity_type === 'email_replied' && 'Sent a reply'}
+                              {activity.activity_type === 'email_bounced' && 'Email bounced'}
+                            </p>
+                            
+                            {activity.buyer_company && (
+                              <p className="text-xs text-muted-foreground">
+                                {activity.buyer_company}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Legacy Activity for non-Smartlead campaigns */}
+      {!campaign.smartlead_campaign_id && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>
+              Latest email events from this campaign
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No recent activity to display
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {recentActivity.slice(0, 10).map((activity, index) => (
+                  <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
+                    <div className="mt-1">
+                      {activity.activity_type === 'email_sent' && <Mail className="h-4 w-4 text-blue-500" />}
+                      {activity.activity_type === 'email_opened' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                      {activity.activity_type === 'email_clicked' && <MousePointerClick className="h-4 w-4 text-purple-500" />}
+                      {activity.activity_type === 'email_replied' && <MessageSquare className="h-4 w-4 text-amber-500" />}
+                      {activity.activity_type === 'email_bounced' && <XCircle className="h-4 w-4 text-red-500" />}
                     </div>
                     
-                    <p className="text-sm text-muted-foreground">
-                      {activity.activity_type === 'email_sent' && 'Email sent'}
-                      {activity.activity_type === 'email_opened' && 'Opened email'}
-                      {activity.activity_type === 'email_clicked' && 'Clicked link'}
-                      {activity.activity_type === 'email_replied' && 'Sent a reply'}
-                      {activity.activity_type === 'email_bounced' && 'Email bounced'}
-                    </p>
-                    
-                    {activity.buyer_company && (
-                      <p className="text-xs text-muted-foreground">
-                        {activity.buyer_company}
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">
+                          {activity.metadata?.name || activity.contact_email || 'Unknown'}
+                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(activity.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground">
+                        {activity.activity_type === 'email_sent' && 'Email sent'}
+                        {activity.activity_type === 'email_opened' && 'Opened email'}
+                        {activity.activity_type === 'email_clicked' && 'Clicked link'}
+                        {activity.activity_type === 'email_replied' && 'Sent a reply'}
+                        {activity.activity_type === 'email_bounced' && 'Email bounced'}
                       </p>
-                    )}
+                      
+                      {activity.buyer_company && (
+                        <p className="text-xs text-muted-foreground">
+                          {activity.buyer_company}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

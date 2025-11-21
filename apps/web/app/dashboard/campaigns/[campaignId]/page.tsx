@@ -22,6 +22,14 @@ import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { EmailEventStats } from '@/components/email/email-event-stats'
+import { SmartleadEventStats } from '@/components/smartlead/event-stats'
+import { SmartleadEventTimeline } from '@/components/smartlead/event-timeline'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 
 const chartColors = {
   delivered: 'hsl(var(--primary))',
@@ -1141,13 +1149,40 @@ export default function CampaignDetailPage() {
             </div>
           </div>
 
-          {/* Email Event Statistics - User View (Common Statuses Only) */}
+          {/* Email Event Statistics - Enhanced with Smartlead */}
           <div className="rounded-xl border border-border/30 bg-card/60 p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Mail className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-semibold">Email Performance</h3>
+              {campaign?.smartlead_campaign_id && (
+                <Badge variant="secondary" className="text-xs">
+                  Live
+                </Badge>
+              )}
             </div>
-            <EmailEventStats campaignId={campaignId} isAdmin={false} />
+            
+            {campaign?.smartlead_campaign_id ? (
+              <Tabs defaultValue="smartlead" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="smartlead">Real-time Events</TabsTrigger>
+                  <TabsTrigger value="legacy">Legacy Stats</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="smartlead" className="mt-4">
+                  <SmartleadEventStats 
+                    campaignId={campaignId} 
+                    isAdmin={false}
+                    showChart={true}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="legacy" className="mt-4">
+                  <EmailEventStats campaignId={campaignId} isAdmin={false} />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <EmailEventStats campaignId={campaignId} isAdmin={false} />
+            )}
           </div>
 
           <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1.75fr,1fr]">
@@ -1158,6 +1193,9 @@ export default function CampaignDetailPage() {
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           <Activity className="h-4 w-4 text-primary" />
                           Engagement feed
+                          {campaign?.smartlead_campaign_id && (
+                            <Badge variant="secondary" className="text-xs">Smartlead</Badge>
+                          )}
                         </div>
                         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                           {activities.length} event{activities.length === 1 ? '' : 's'} · {uniqueContacts} engaged contact{uniqueContacts === 1 ? '' : 's'}
@@ -1172,7 +1210,15 @@ export default function CampaignDetailPage() {
                     </div>
 
                     <div className="mt-4 sm:mt-6">
-                      {activities.length === 0 ? (
+                      {/* Show Smartlead Timeline for Smartlead campaigns */}
+                      {campaign?.smartlead_campaign_id ? (
+                        <SmartleadEventTimeline 
+                          campaignId={campaignId}
+                          isAdmin={false}
+                          compact={true}
+                          limit={20}
+                        />
+                      ) : activities.length === 0 ? (
                         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/50 bg-background/60 py-8 sm:py-12 text-center">
                           <Activity className="h-8 sm:h-10 w-8 sm:w-10 text-muted-foreground/60 mb-3 sm:mb-4" />
                           <p className="text-sm font-medium">No engagement yet</p>

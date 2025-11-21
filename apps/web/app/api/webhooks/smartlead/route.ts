@@ -65,6 +65,7 @@ const SMARTLEAD_EVENT_TYPES = {
 // Based on official documentation: https://helpcenter.smartlead.ai/en/articles/125-full-api-documentation
 const EVENT_TYPE_MAPPING: Record<string, string> = {
   'EMAIL_SENT': 'sent',
+  'EMAIL_DELIVERED': 'delivered', // Email successfully delivered
   'EMAIL_OPEN': 'opened', // Official event type
   'EMAIL_OPENED': 'opened', // Handle both for backwards compatibility
   'EMAIL_LINK_CLICK': 'clicked', // Official event type
@@ -74,6 +75,21 @@ const EVENT_TYPE_MAPPING: Record<string, string> = {
   'LEAD_UNSUBSCRIBED': 'unsubscribed',
   'LEAD_CATEGORY_UPDATED': 'category_updated',
 };
+
+// Map event types to campaign activity types
+function mapEventToActivityType(eventType: string): string {
+  const activityMapping: Record<string, string> = {
+    'sent': 'email_sent',
+    'delivered': 'email_delivered',
+    'opened': 'email_opened',
+    'clicked': 'email_clicked',
+    'bounced': 'email_bounced',
+    'replied': 'email_replied',
+    'unsubscribed': 'email_unsubscribed',
+    'category_updated': 'lead_category_updated',
+  };
+  return activityMapping[eventType] || `email_${eventType}`;
+}
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -343,6 +359,44 @@ async function processSmartleadEvent(event: any) {
         });
     }
 
+    // Create campaign activity for UI display (critical for user dashboard)
+    console.log(`💾 Creating campaign activity for UI display...`);
+    const activityType = mapEventToActivityType(ourEventType);
+    const { error: activityError } = await supabaseAdmin
+      .from('campaign_activities')
+      .insert({
+        campaign_id: campaignId,
+        activity_type: activityType,
+        contact_email: leadEmail,
+        buyer_company: metadata.to_name || null,
+        metadata: {
+          event: ourEventType,
+          event_type: eventType, // Original Smartlead event type
+          timestamp: timestamp || new Date().toISOString(),
+          name: toName,
+          from_email: fromEmail,
+          subject: subject,
+          sequence_number: sequenceNumber,
+          stats_id: statsId,
+          message_id: messageId,
+          link: link,
+          reply_text: replyText,
+          reply_subject: replySubject,
+          bounce_reason: bounceReason,
+          bounce_type: bounceType,
+          user_agent: smartleadMetadata.user_agent,
+          ip_address: smartleadMetadata.ip_address,
+          device_used: smartleadMetadata.device_used,
+          ...rest
+        }
+      });
+
+    if (activityError) {
+      console.error('❌ Error inserting campaign activity:', activityError);
+    } else {
+      console.log('✅ Campaign activity created for UI display');
+    }
+
     // Update campaign metrics
     console.log(`📊 Updating campaign metrics...`);
     await updateCampaignMetricsFromSmartlead(campaignId, ourEventType);
@@ -407,6 +461,9 @@ async function updateCampaignMetricsFromSmartlead(campaignId: string, eventType:
       case 'replied':
       case 'threaded_reply':
         metricColumn = 'replies_received';
+        break;
+      case 'unsubscribed':
+        metricColumn = 'emails_unsubscribed';
         break;
     }
 
