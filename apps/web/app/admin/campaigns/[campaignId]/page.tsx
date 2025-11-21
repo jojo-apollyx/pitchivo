@@ -233,21 +233,26 @@ export default function CampaignDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border/50 bg-card/50">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4 flex-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/admin/campaigns')}
-                className="mt-1"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
+    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
+
+      <div className="relative">
+        {/* Header */}
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4 flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/admin/campaigns')}
+                  className="mt-1"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
               
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -335,57 +340,61 @@ export default function CampaignDetailPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* Tabs */}
+        <section className="px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <div className="bg-card/50 rounded-xl border border-border/30 p-2">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="overview" className="gap-2">
+                    <Activity className="h-4 w-4" />
+                    <span className="hidden sm:inline">Overview</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="leads" className="gap-2">
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">Leads</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="analytics" className="gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Analytics</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="sequences" className="gap-2">
+                    <List className="h-4 w-4" />
+                    <span className="hidden sm:inline">Sequences</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Settings</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="overview" className="space-y-6">
+                <OverviewTab campaign={campaign} onRefresh={loadCampaign} />
+              </TabsContent>
+
+              <TabsContent value="leads" className="space-y-6">
+                <LeadsTab campaign={campaign} onRefresh={loadCampaign} />
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-6">
+                <AnalyticsTab campaign={campaign} />
+              </TabsContent>
+
+              <TabsContent value="sequences" className="space-y-6">
+                <SequencesTab campaign={campaign} onRefresh={loadCampaign} />
+              </TabsContent>
+
+              <TabsContent value="settings" className="space-y-6">
+                <SettingsTab campaign={campaign} onRefresh={loadCampaign} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </section>
       </div>
-
-      {/* Tabs */}
-      <div className="px-4 sm:px-6 lg:px-8 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
-            <TabsTrigger value="overview" className="gap-2">
-              <Activity className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="leads" className="gap-2">
-              <Users className="h-4 w-4" />
-              Leads
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="sequences" className="gap-2">
-              <List className="h-4 w-4" />
-              Sequences
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <OverviewTab campaign={campaign} onRefresh={loadCampaign} />
-          </TabsContent>
-
-          <TabsContent value="leads" className="space-y-6">
-            <LeadsTab campaign={campaign} onRefresh={loadCampaign} />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <AnalyticsTab campaign={campaign} />
-          </TabsContent>
-
-          <TabsContent value="sequences" className="space-y-6">
-            <SequencesTab campaign={campaign} onRefresh={loadCampaign} />
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <SettingsTab campaign={campaign} onRefresh={loadCampaign} />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+    </main>
   )
 }
 

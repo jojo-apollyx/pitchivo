@@ -385,7 +385,7 @@ export function CampaignList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/admin/campaigns/${campaign.campaign_id}/settings`)}
+                        onClick={() => router.push(`/admin/campaigns/${campaign.campaign_id}`)}
                         className="gap-2 w-full justify-start"
                       >
                         <Settings className="h-4 w-4" />

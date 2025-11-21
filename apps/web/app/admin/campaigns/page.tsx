@@ -1,15 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { BarChart3, List, Mail, ChevronRight } from 'lucide-react'
+import { BarChart3, List } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OverallStatistics } from '@/components/admin/overall-statistics'
 import { CampaignList } from '@/components/admin/campaign-list'
-import { EmailProcessorMonitor } from '@/components/admin/email-processor-monitor'
 
 export default function AdminCampaignsPage() {
   const [activeTab, setActiveTab] = useState('statistics')
-  const [showMonitor, setShowMonitor] = useState(false)
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
@@ -30,36 +28,6 @@ export default function AdminCampaignsPage() {
                   Admin overview - All campaigns use Smartlead
                 </p>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Transactional Email Monitor */}
-        <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-card/50 rounded-xl border border-border/30 overflow-hidden">
-              <button
-                onClick={() => setShowMonitor(!showMonitor)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <div className="text-left">
-                    <h2 className="text-lg font-semibold">Transactional Email Queue (Brevo)</h2>
-                    <p className="text-xs text-muted-foreground">
-                      Monitor non-campaign emails: welcome emails, password resets, notifications (sent via Brevo)
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className={`h-5 w-5 transition-transform ${showMonitor ? 'rotate-90' : ''}`} />
-              </button>
-              {showMonitor && (
-                <div className="px-6 pb-6 border-t border-border/30">
-                  <div className="pt-6">
-                    <EmailProcessorMonitor />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </section>
