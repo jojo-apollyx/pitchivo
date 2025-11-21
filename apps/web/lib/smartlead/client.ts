@@ -149,19 +149,32 @@ export class SmartleadClient {
       client_id: data.client_id || null,
     };
 
-    const result = await this.request<{ ok: boolean; id: number; name: string; created_at: string }>('/campaigns/create', {
+    const result = await this.request<{ 
+      ok: boolean; 
+      id: number; 
+      name: string; 
+      created_at: string;
+      status?: string; // Smartlead may return status in response
+    }>('/campaigns/create', {
       method: 'POST',
       body: JSON.stringify(requestBody),
     });
 
     // Transform Smartlead response to our format
     if (result.success && result.data) {
+      // Use status from API response if available, otherwise default to DRAFT
+      // Smartlead API returns "DRAFTED" for new campaigns, but our type uses "DRAFT"
+      const rawStatus = (result.data.status || 'DRAFTED').toUpperCase();
+      const status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'STOPPED' = 
+        rawStatus === 'DRAFTED' ? 'DRAFT' : 
+        (rawStatus as 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'STOPPED');
+      
       return {
         success: true,
         data: {
           id: result.data.id,
           name: result.data.name,
-          status: 'DRAFT' as const, // New campaigns start as DRAFT
+          status,
           created_at: result.data.created_at,
           updated_at: result.data.created_at,
         },

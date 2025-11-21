@@ -79,14 +79,13 @@ export function OverallStatistics() {
         ? Math.round((totalEmailsClicked / totalEmailsSent) * 100) 
         : 0
 
-      // Status breakdown
+      // Status breakdown - matching Smartlead statuses
       const statusBreakdown = {
-        draft: campaigns.filter(c => c.status === 'draft').length,
-        scheduled: campaigns.filter(c => c.status === 'scheduled').length,
+        drafted: campaigns.filter(c => c.status === 'drafted').length,  // Matches Smartlead DRAFTED
         active: campaigns.filter(c => c.status === 'active').length,
         paused: campaigns.filter(c => c.status === 'paused').length,
         completed: campaigns.filter(c => c.status === 'completed').length,
-        cancelled: campaigns.filter(c => c.status === 'cancelled').length,
+        stopped: campaigns.filter(c => c.status === 'stopped').length,  // Matches Smartlead STOPPED
       }
 
       setStats({
@@ -252,15 +251,9 @@ export function OverallStatistics() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="bg-muted/50 rounded-lg p-4">
             <Badge variant="outline" className="mb-2 bg-gray-100">
-              Draft
+              Drafted
             </Badge>
-            <div className="text-2xl font-bold">{stats.statusBreakdown.draft}</div>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-4">
-            <Badge variant="outline" className="mb-2 bg-blue-100 text-blue-700 border-blue-300">
-              Scheduled
-            </Badge>
-            <div className="text-2xl font-bold">{stats.statusBreakdown.scheduled}</div>
+            <div className="text-2xl font-bold">{stats.statusBreakdown.drafted}</div>
           </div>
           <div className="bg-muted/50 rounded-lg p-4">
             <Badge variant="outline" className="mb-2 bg-green-100 text-green-700 border-green-300">
@@ -282,9 +275,9 @@ export function OverallStatistics() {
           </div>
           <div className="bg-muted/50 rounded-lg p-4">
             <Badge variant="outline" className="mb-2 bg-red-100 text-red-700 border-red-300">
-              Cancelled
+              Stopped
             </Badge>
-            <div className="text-2xl font-bold">{stats.statusBreakdown.cancelled}</div>
+            <div className="text-2xl font-bold">{stats.statusBreakdown.stopped}</div>
           </div>
         </div>
       </Card>

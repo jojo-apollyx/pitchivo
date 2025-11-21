@@ -513,17 +513,17 @@ async function handleCampaignEvent(
 
       case 'CAMPAIGN_STATUS_CHANGE':
         console.log(`📊 Campaign status changed to: ${eventData.status}`);
-        // Map Smartlead status to our status
-        const ourStatus = mapSmartleadStatus(eventData.status || '');
+        // Use Smartlead status directly (convert to lowercase for database)
+        const normalizedStatus = normalizeSmartleadStatus(eventData.status || '');
         await supabaseAdmin
           .from('campaigns')
           .update({
-            status: ourStatus,
+            status: normalizedStatus,
             updated_at: new Date().toISOString(),
           })
           .eq('campaign_id', campaignId);
         
-        console.log(`✅ Campaign status updated to: ${ourStatus}`);
+        console.log(`✅ Campaign status updated to: ${normalizedStatus}`);
         break;
 
       case 'CAMPAIGN_UPDATED':
@@ -555,21 +555,7 @@ async function handleCampaignEvent(
   }
 }
 
-/**
- * Map Smartlead campaign status to our internal status
- */
-function mapSmartleadStatus(smartleadStatus: string): string {
-  const statusMap: Record<string, string> = {
-    'DRAFTED': 'draft',
-    'ACTIVE': 'active',
-    'PAUSED': 'paused',
-    'STOPPED': 'stopped',
-    'COMPLETED': 'completed',
-    'START': 'active', // When campaign is started
-  };
-
-  return statusMap[smartleadStatus.toUpperCase()] || 'scheduled';
-}
+import { normalizeSmartleadStatus } from '@/lib/smartlead/utils';
 
 async function handleUnsubscribe(campaignId: string, leadId: string | undefined, leadEmail: string) {
   try {

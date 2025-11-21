@@ -395,13 +395,13 @@ export default function CampaignsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-      case 'scheduled':
+      case 'drafted':  // Matches Smartlead DRAFTED
         return 'bg-primary/10 text-primary border-primary/30'
       case 'completed':
         return 'bg-green-100 text-green-700 border-green-300'
       case 'paused':
         return 'bg-yellow-100 text-yellow-700 border-yellow-300'
-      case 'cancelled':
+      case 'stopped':  // Matches Smartlead STOPPED (replaces cancelled)
         return 'bg-red-100 text-red-700 border-red-300'
       default:
         return 'bg-muted text-muted-foreground border-border'
@@ -496,7 +496,7 @@ export default function CampaignsPage() {
             <TabsContent value="campaigns">
               <div className="divide-y divide-border/30">
                 {campaigns.map((campaign) => {
-              const canCancel = campaign.status === 'scheduled' || campaign.status === 'active'
+              const canCancel = campaign.status === 'drafted' || campaign.status === 'active'
               const canPause = campaign.status === 'active'
               const canResume = campaign.status === 'paused'
               const isLoading = cancellingCampaign === campaign.campaign_id
@@ -616,7 +616,7 @@ export default function CampaignsPage() {
                                   Cancel Campaign
                                 </DropdownMenuItem>
                               )}
-                              {(campaign.status === 'completed' || campaign.status === 'cancelled') && (
+                              {(campaign.status === 'completed' || campaign.status === 'stopped') && (
                                 <DropdownMenuItem
                                   onClick={(e) => handleArchiveClick(campaign.campaign_id, e)}
                                 >

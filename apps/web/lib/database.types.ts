@@ -329,7 +329,7 @@ export interface Database {
           start_date: string | null
           sender_subdomains: string[]
           sender_health: 'healthy' | 'warming_up' | 'caution' | 'poor'
-          status: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'cancelled'
+          status: 'drafted' | 'active' | 'paused' | 'completed' | 'stopped'
           emails_sent: number
           emails_delivered: number
           emails_opened: number

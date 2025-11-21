@@ -158,13 +158,13 @@ export function CampaignList() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-      case 'scheduled':
+      case 'drafted':  // Matches Smartlead DRAFTED
         return 'bg-primary/10 text-primary border-primary/30'
       case 'completed':
         return 'bg-green-100 text-green-700 border-green-300'
       case 'paused':
         return 'bg-yellow-100 text-yellow-700 border-yellow-300'
-      case 'cancelled':
+      case 'stopped':  // Matches Smartlead STOPPED (replaces cancelled)
         return 'bg-red-100 text-red-700 border-red-300'
       default:
         return 'bg-muted text-muted-foreground border-border'
@@ -187,9 +187,10 @@ export function CampaignList() {
   const statusCounts = {
     all: campaigns.length,
     active: campaigns.filter(c => c.status === 'active').length,
-    scheduled: campaigns.filter(c => c.status === 'scheduled').length,
+    drafted: campaigns.filter(c => c.status === 'drafted').length,  // Matches Smartlead DRAFTED
     paused: campaigns.filter(c => c.status === 'paused').length,
     completed: campaigns.filter(c => c.status === 'completed').length,
+    stopped: campaigns.filter(c => c.status === 'stopped').length,  // Matches Smartlead STOPPED
   }
 
   return (
@@ -213,7 +214,8 @@ export function CampaignList() {
           <SelectContent>
             <SelectItem value="all">All ({statusCounts.all})</SelectItem>
             <SelectItem value="active">Active ({statusCounts.active})</SelectItem>
-            <SelectItem value="scheduled">Scheduled ({statusCounts.scheduled})</SelectItem>
+            <SelectItem value="drafted">Drafted ({statusCounts.drafted})</SelectItem>
+            <SelectItem value="stopped">Stopped ({statusCounts.stopped})</SelectItem>
             <SelectItem value="paused">Paused ({statusCounts.paused})</SelectItem>
             <SelectItem value="completed">Completed ({statusCounts.completed})</SelectItem>
           </SelectContent>
@@ -336,12 +338,11 @@ export function CampaignList() {
                           </Badge>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="scheduled">Scheduled</SelectItem>
+                          <SelectItem value="drafted">Drafted</SelectItem>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="paused">Paused</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="stopped">Stopped</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

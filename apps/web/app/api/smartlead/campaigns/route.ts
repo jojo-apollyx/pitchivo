@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createSmartleadClient } from '@/lib/smartlead';
+import { normalizeSmartleadStatus } from '@/lib/smartlead/utils';
 
 /**
  * POST /api/smartlead/campaigns
@@ -70,11 +71,27 @@ export async function POST(request: NextRequest) {
       smartlead_campaign_id: result.data.id,
     });
 
-    // Update campaign in database with Smartlead ID
+    // Fetch the campaign from Smartlead to get the actual status
+    // (The create response might not include all fields)
+    const campaignResult = await smartlead.getCampaign(result.data.id.toString());
+    
+    // Use Smartlead status directly (convert to lowercase for database)
+    const smartleadStatus = campaignResult.success && campaignResult.data?.status 
+      ? campaignResult.data.status 
+      : result.data.status || 'DRAFTED';
+    const normalizedStatus = normalizeSmartleadStatus(smartleadStatus);
+
+    console.log('[Smartlead Campaign API] Syncing status:', {
+      smartlead_status: smartleadStatus,
+      normalized_status: normalizedStatus,
+    });
+
+    // Update campaign in database with Smartlead ID and synced status
     const { error: updateError } = await supabase
       .from('campaigns')
       .update({ 
         smartlead_campaign_id: result.data.id,
+        status: normalizedStatus,
         updated_at: new Date().toISOString()
       })
       .eq('campaign_id', campaign_id);

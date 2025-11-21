@@ -223,11 +223,10 @@ export default function CampaignDetailPage() {
 
   const displayName = campaign.display_name || getDisplayName(campaign.smartlead_name || '')
   const statusColors = {
-    draft: 'bg-gray-500',
-    scheduled: 'bg-blue-500',
+    drafted: 'bg-gray-500',  // Matches Smartlead DRAFTED
     active: 'bg-green-500',
     paused: 'bg-yellow-500',
-    stopped: 'bg-orange-500',
+    stopped: 'bg-orange-500',  // Matches Smartlead STOPPED (replaces cancelled)
     completed: 'bg-purple-500',
     deleted: 'bg-red-500'
   }

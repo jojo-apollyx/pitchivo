@@ -153,7 +153,7 @@ export default function ReviewLaunchPage() {
           start_date: draft.startDate?.toISOString() || new Date().toISOString(),
           priority_locations: priorityLocations.length > 0 ? priorityLocations : null,
           is_test: draft.isTest || false,
-          status: 'scheduled',
+          status: 'drafted',  // Will be synced with Smartlead status after creation
           launched_at: new Date().toISOString(),
           created_by: currentUser?.id
         })
