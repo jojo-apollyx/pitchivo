@@ -135,35 +135,75 @@ export async function POST(request: NextRequest) {
 
 async function processSmartleadEvent(event: any) {
   try {
-    // Smartlead webhook payload structure (adjust based on actual payload)
-    const {
-      event: eventType, // or event_type - check actual payload
-      campaign_id: smartleadCampaignId,
-      email: leadEmail, // or lead_email
-      lead_id: smartleadLeadId,
-      email_account: emailAccount,
-      message_id: messageId,
-      timestamp,
-      link,
-      reply_body: replyText, // or reply_text
-      reply_subject: replySubject,
-      bounce_reason: bounceReason,
-      bounce_type: bounceType,
-      // Campaign-level event fields
-      campaign_status: newCampaignStatus,
-      campaign_name: campaignName,
-      campaign_data: campaignData,
-      // Additional fields Smartlead may include
-      ...rest
-    } = event;
+    // Smartlead webhook payload structure based on official guide:
+    // https://help.smartlead.ai/Webhook-Guide-Updated-4d0ae6b2fa6a4db1b4c1ead824a86866
+    const eventType = event.event_type; // Official field name
+    const smartleadCampaignId = event.campaign_id; // Always present in payload
+    const leadEmail = event.to_email; // Official field name for recipient
+    const fromEmail = event.from_email;
+    const toName = event.to_name;
+    const statsId = event.stats_id; // Message/statistics ID
+    const messageId = event.sent_message?.message_id || statsId; // From sent_message object or stats_id
+    const timestamp = event.time_opened || event.time_clicked || event.time_replied || event.event_timestamp || event.timestamp;
+    const link = event.link || event.clicked_link;
+    const replyText = event.reply_body || event.reply_text;
+    const replySubject = event.subject || event.reply_subject;
+    const bounceReason = event.bounce_reason;
+    const bounceType = event.bounce_type;
+    const newCampaignStatus = event.campaign_status;
+    const campaignName = event.campaign_name;
+    const sequenceNumber = event.sequence_number;
+    const subject = event.subject;
+    const sentMessageBody = event.sent_message_body;
+    const sentMessage = event.sent_message; // Object with message_id, html, text
+    const clientId = event.client_id;
+    const smartleadMetadata = event.metadata || {};
+    
+    // Capture any additional fields for metadata
+    const rest = { ...event };
+    // Remove fields we've explicitly extracted
+    delete rest.event_type;
+    delete rest.campaign_id;
+    delete rest.to_email;
+    delete rest.from_email;
+    delete rest.to_name;
+    delete rest.stats_id;
+    delete rest.sent_message;
+    delete rest.time_opened;
+    delete rest.time_clicked;
+    delete rest.time_replied;
+    delete rest.event_timestamp;
+    delete rest.timestamp;
+    delete rest.link;
+    delete rest.clicked_link;
+    delete rest.reply_body;
+    delete rest.reply_text;
+    delete rest.subject;
+    delete rest.reply_subject;
+    delete rest.bounce_reason;
+    delete rest.bounce_type;
+    delete rest.campaign_status;
+    delete rest.campaign_name;
+    delete rest.sequence_number;
+    delete rest.sent_message_body;
+    delete rest.client_id;
+    delete rest.metadata;
+    delete rest.webhook_url;
+    delete rest.webhook_id;
+    delete rest.webhook_name;
+    delete rest.secret_key;
+    delete rest.app_url;
+    delete rest.ui_master_inbox_link;
+    delete rest.description;
 
     console.log(`📧 Event Type: ${eventType}`);
     console.log(`👤 Lead Email: ${leadEmail || 'N/A'}`);
-    console.log(`🎯 Smartlead Campaign ID: ${smartleadCampaignId}`);
-    console.log(`📬 Message ID: ${messageId || 'N/A'}`);
-    console.log(`📅 Timestamp: ${timestamp}`);
+    console.log(`📧 From Email: ${fromEmail || 'N/A'}`);
+    console.log(`🎯 Smartlead Campaign ID: ${smartleadCampaignId || 'N/A'}`);
+    console.log(`📬 Stats ID: ${statsId || 'N/A'}`);
+    console.log(`📅 Timestamp: ${timestamp || 'N/A'}`);
 
-    // Check if this is a campaign-level event (no lead email required)
+    // Check if this is a campaign-level event
     const isCampaignEvent = eventType && (
       eventType.includes('CAMPAIGN') || 
       eventType === 'CAMPAIGN_STATUS_CHANGE' || 
@@ -172,23 +212,29 @@ async function processSmartleadEvent(event: any) {
     );
 
     // Validate required fields based on event type
-    if (!eventType || !smartleadCampaignId) {
-      console.error('❌ Missing required fields:', { eventType, smartleadCampaignId });
-      return { success: false, error: 'Missing required event type or campaign ID' };
+    if (!eventType) {
+      console.error('❌ Missing event_type. Available fields:', Object.keys(event));
+      return { success: false, error: 'Missing required event_type' };
     }
 
-    // For lead-level events, require lead email
+    // According to Smartlead webhook guide, campaign_id is always present
+    if (!smartleadCampaignId) {
+      console.error('❌ Missing campaign_id. Available fields:', Object.keys(event));
+      console.error('❌ Event payload:', JSON.stringify(event, null, 2));
+      return { success: false, error: 'Missing required campaign_id' };
+    }
+
+    // For lead-level events, require to_email (recipient)
     if (!isCampaignEvent && !leadEmail) {
-      console.error('❌ Missing lead email for lead-level event:', { eventType, smartleadCampaignId });
-      return { success: false, error: 'Missing lead email for lead-level event' };
+      console.error('❌ Missing to_email for lead-level event:', { eventType, smartleadCampaignId });
+      return { success: false, error: 'Missing to_email for lead-level event' };
     }
 
     // Handle campaign-level events
     if (isCampaignEvent) {
-      return await handleCampaignEvent(eventType, smartleadCampaignId, {
+      return await handleCampaignEvent(eventType, smartleadCampaignId.toString(), {
         status: newCampaignStatus,
         name: campaignName,
-        data: campaignData,
         timestamp,
         ...rest
       });
@@ -199,14 +245,24 @@ async function processSmartleadEvent(event: any) {
     console.log(`🔄 Mapped event type: ${eventType} → ${ourEventType}`);
 
     // Find our campaign by smartlead_campaign_id
+    // Convert to string to handle both numeric and string IDs from Smartlead
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
       .select('campaign_id, org_id')
-      .eq('smartlead_campaign_id', smartleadCampaignId)
+      .eq('smartlead_campaign_id', smartleadCampaignId.toString())
       .single();
 
     if (campaignError || !campaign) {
       console.error('❌ Campaign not found for Smartlead ID:', smartleadCampaignId);
+      console.error('❌ Attempted lookup with:', smartleadCampaignId.toString());
+      console.error('❌ Database error:', campaignError);
+      // Log available campaigns for debugging (first 5)
+      const { data: sampleCampaigns } = await supabaseAdmin
+        .from('campaigns')
+        .select('campaign_id, smartlead_campaign_id, campaign_name')
+        .not('smartlead_campaign_id', 'is', null)
+        .limit(5);
+      console.log('📋 Sample campaigns with smartlead_campaign_id:', sampleCampaigns);
       return { success: false, error: 'Campaign not found' };
     }
 
@@ -223,16 +279,23 @@ async function processSmartleadEvent(event: any) {
 
     const leadId = lead?.lead_id;
 
-    // Prepare metadata
+    // Prepare metadata from Smartlead payload
     const metadata: any = {
-      smartlead_lead_id: smartleadLeadId,
-      email_account: emailAccount,
-      message_id: messageId,
-      original_event_type: eventType, // Store original Smartlead event type
-      ...rest
+      stats_id: statsId,
+      from_email: fromEmail,
+      to_name: toName,
+      sequence_number: sequenceNumber,
+      subject: subject,
+      sent_message_body: sentMessageBody,
+      sent_message: sentMessage,
+      client_id: clientId,
+      original_event_type: eventType,
+      ...smartleadMetadata, // Include metadata from Smartlead
+      ...rest // Include any additional fields
     };
 
     if (link) metadata.link = link;
+    if (event.clicked_link) metadata.clicked_link = event.clicked_link;
     if (replyText) metadata.reply_text = replyText;
     if (replySubject) metadata.reply_subject = replySubject;
     if (bounceReason) metadata.bounce_reason = bounceReason;
@@ -245,8 +308,8 @@ async function processSmartleadEvent(event: any) {
       .insert({
         campaign_id: campaignId,
         lead_id: leadId,
-        smartlead_campaign_id: smartleadCampaignId,
-        smartlead_lead_id: smartleadLeadId,
+        smartlead_campaign_id: smartleadCampaignId.toString(), // Ensure string format
+        smartlead_lead_id: null, // Smartlead doesn't provide lead_id in webhook payload
         lead_email: leadEmail,
         event_type: ourEventType,
         event_timestamp: timestamp || new Date().toISOString(),
@@ -293,7 +356,7 @@ async function processSmartleadEvent(event: any) {
     // Handle special events
     if (eventType === 'EMAIL_REPLY' || ourEventType === 'replied') {
       console.log(`💬 REPLY RECEIVED - Creating reply record`);
-      await handleReply(campaignId, leadId, leadEmail, replyText, replySubject, timestamp);
+      await handleReply(campaignId, leadId, leadEmail, replyText, replySubject || subject, timestamp);
     }
 
     if (eventType === 'LEAD_UNSUBSCRIBED' || ourEventType === 'unsubscribed') {
@@ -468,7 +531,7 @@ async function handleReply(
  */
 async function handleCampaignEvent(
   eventType: string,
-  smartleadCampaignId: string,
+  smartleadCampaignId: string | number,
   eventData: {
     status?: string;
     name?: string;
@@ -481,10 +544,11 @@ async function handleCampaignEvent(
     console.log(`🎯 Handling campaign event: ${eventType} for campaign ${smartleadCampaignId}`);
 
     // Find our campaign by smartlead_campaign_id
+    // Convert to string to handle both numeric and string IDs from Smartlead
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
       .select('campaign_id, campaign_name, status')
-      .eq('smartlead_campaign_id', smartleadCampaignId)
+      .eq('smartlead_campaign_id', smartleadCampaignId.toString())
       .single();
 
     if (campaignError || !campaign) {
