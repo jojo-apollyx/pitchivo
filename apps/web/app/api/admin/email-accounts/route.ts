@@ -39,8 +39,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Get email accounts from Smartlead
+    console.log(`[Email Accounts API] ============================================`);
+    console.log(`[Email Accounts API] 🚀 CALLING SMARTLEAD API: getAllEmailAccounts`);
+    console.log(`[Email Accounts API] User: ${authResult.user?.id || 'unknown'}`);
+    console.log(`[Email Accounts API] ============================================`);
+
     const smartlead = createSmartleadClient()
     const result = await smartlead.getAllEmailAccounts()
+
+    console.log(`[Email Accounts API] Smartlead API response:`, {
+      success: result.success,
+      accounts_count: result.data?.length || 0,
+      error: result.error,
+    });
 
     if (!result.success) {
       throw new Error(result.error?.message || 'Failed to fetch email accounts')
@@ -84,6 +95,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create email account in Smartlead
+    console.log(`[Email Accounts API] ============================================`);
+    console.log(`[Email Accounts API] 🚀 CALLING SMARTLEAD API: saveEmailAccount`);
+    console.log(`[Email Accounts API] Email: ${body.from_email}`);
+    console.log(`[Email Accounts API] From Name: ${body.from_name}`);
+    console.log(`[Email Accounts API] SMTP Host: ${body.smtp_host}:${body.smtp_port}`);
+    console.log(`[Email Accounts API] Max Emails/Day: ${body.max_email_per_day}`);
+    console.log(`[Email Accounts API] Warmup Enabled: ${body.warmup_enabled}`);
+    console.log(`[Email Accounts API] User: ${authResult.user?.id || 'unknown'}`);
+    console.log(`[Email Accounts API] ============================================`);
+
     const smartlead = createSmartleadClient()
     const result = await smartlead.saveEmailAccount({
       id: null, // null means create new account
@@ -100,7 +121,15 @@ export async function POST(request: NextRequest) {
       client_id: null,
     })
 
+    console.log(`[Email Accounts API] Smartlead API response:`, {
+      success: result.success,
+      account_id: result.data?.emailAccountId,
+      warmup_key: result.data?.warmupKey,
+      error: result.error,
+    });
+
     if (!result.success) {
+      console.error(`[Email Accounts API] ❌ FAILED to create email account in Smartlead:`, result.error);
       const errorMessage = result.error?.message || result.error?.error || 'Failed to create email account'
       return NextResponse.json(
         { 
@@ -110,6 +139,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    console.log(`[Email Accounts API] ✅ Email account created successfully in Smartlead`);
+    console.log(`[Email Accounts API] Account ID: ${result.data?.emailAccountId}`);
 
     return NextResponse.json({
       success: true,

@@ -238,6 +238,26 @@ export class SmartleadClient {
   }
 
   /**
+   * Stop a campaign
+   * 
+   * @param campaignId Smartlead campaign ID
+   * 
+   * API Reference: https://helpcenter.smartlead.ai/en/articles/125-full-api-documentation
+   * Endpoint: POST /api/v1/campaigns/{campaign_id}/status
+   */
+  async stopCampaign(campaignId: string): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/campaigns/${campaignId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status: 'STOPPED' }),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
    * Delete a campaign
    * 
    * API Reference: DELETE /api/v1/campaigns/{campaign_id}

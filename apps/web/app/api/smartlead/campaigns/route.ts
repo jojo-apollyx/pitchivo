@@ -40,14 +40,22 @@ export async function POST(request: NextRequest) {
     const smartlead = createSmartleadClient();
 
     // Create campaign in Smartlead
-    console.log(`[Smartlead Campaign API] Creating campaign:`, {
-      campaign_id,
-      campaign_name,
-    });
+    console.log(`[Smartlead Campaign API] ============================================`);
+    console.log(`[Smartlead Campaign API] 🚀 CALLING SMARTLEAD API: createCampaign`);
+    console.log(`[Smartlead Campaign API] Campaign ID (local): ${campaign_id}`);
+    console.log(`[Smartlead Campaign API] Campaign Name: ${campaign_name}`);
+    console.log(`[Smartlead Campaign API] User: ${user.id}`);
+    console.log(`[Smartlead Campaign API] ============================================`);
 
     const result = await smartlead.createCampaign({
       name: campaign_name,
       // client_id is optional - can be set later if needed
+    });
+
+    console.log(`[Smartlead Campaign API] Smartlead API response received:`, {
+      success: result.success,
+      smartlead_campaign_id: result.data?.id,
+      error: result.error,
     });
 
     if (!result.success || !result.data) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createSmartleadClient } from '@/lib/smartlead'
 
 export async function POST(
   request: NextRequest,
@@ -74,7 +75,7 @@ export async function POST(
     console.log('[toggle-processing] Fetching campaign:', campaignId)
     const { data: campaign, error: fetchError } = await supabase
       .from('campaigns')
-      .select('admin_processing_paused, campaign_name')
+      .select('admin_processing_paused, campaign_name, smartlead_campaign_id, status')
       .eq('campaign_id', campaignId)
       .maybeSingle()
 
@@ -88,11 +89,55 @@ export async function POST(
     }
     
     console.log('[toggle-processing] Campaign found:', campaign.campaign_name, 'Current paused state:', campaign.admin_processing_paused)
+    console.log('[toggle-processing] Campaign Smartlead ID:', campaign.smartlead_campaign_id)
+    console.log('[toggle-processing] Campaign current status:', campaign.status)
 
-    // Update the pause state
+    // If campaign is synced with Smartlead, update status there too
+    if (campaign.smartlead_campaign_id) {
+      console.log('[toggle-processing] Campaign is synced with Smartlead, updating Smartlead status')
+      const smartlead = createSmartleadClient()
+      
+      try {
+        const smartleadStatus = paused ? 'PAUSED' : 'START'
+        console.log('[toggle-processing] Calling Smartlead API to update status:', {
+          smartlead_campaign_id: campaign.smartlead_campaign_id,
+          new_status: smartleadStatus,
+        })
+
+        let result
+        if (paused) {
+          result = await smartlead.pauseCampaign(campaign.smartlead_campaign_id.toString())
+        } else {
+          result = await smartlead.resumeCampaign(campaign.smartlead_campaign_id.toString())
+        }
+
+        if (!result.success) {
+          console.error('[toggle-processing] Failed to update Smartlead status:', {
+            error: result.error,
+            smartlead_campaign_id: campaign.smartlead_campaign_id,
+            status: smartleadStatus,
+          })
+          // Continue with database update even if Smartlead fails
+        } else {
+          console.log('[toggle-processing] Smartlead status updated successfully:', smartleadStatus)
+        }
+      } catch (error) {
+        console.error('[toggle-processing] Error calling Smartlead API:', error)
+        // Continue with database update even if Smartlead fails
+      }
+    } else {
+      console.log('[toggle-processing] Campaign not synced with Smartlead, skipping Smartlead API call')
+    }
+
+    // Update the pause state in database
     const updateData: any = {
       admin_processing_paused: paused,
       updated_at: new Date().toISOString()
+    }
+
+    // Also update campaign status if synced with Smartlead
+    if (campaign.smartlead_campaign_id) {
+      updateData.status = paused ? 'paused' : 'active'
     }
 
     if (paused) {
@@ -110,7 +155,7 @@ export async function POST(
     }
 
     console.log('[toggle-processing] Update data:', JSON.stringify(updateData))
-    console.log('[toggle-processing] Updating campaign:', campaignId)
+    console.log('[toggle-processing] Updating campaign in database:', campaignId)
     const { error: updateError } = await supabase
       .from('campaigns')
       .update(updateData)
@@ -124,7 +169,7 @@ export async function POST(
       )
     }
     
-    console.log('[toggle-processing] Campaign updated successfully')
+    console.log('[toggle-processing] Campaign updated successfully in database')
 
     return NextResponse.json({
       success: true,
