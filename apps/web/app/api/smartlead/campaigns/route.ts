@@ -114,24 +114,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-populate sequences from default template if configured
+    // Auto-populate sequences from admin's default sequences if configured
     try {
-      const { data: campaignData } = await supabase
-        .from('campaigns')
-        .select('default_template_name, org_id')
-        .eq('campaign_id', campaign_id)
+      // Get admin's default sequence configuration
+      const { data: defaultConfig } = await supabase
+        .from('admin_default_sequences')
+        .select('template_ids')
         .single();
 
-      if (campaignData?.default_template_name) {
-        console.log(`[Smartlead Campaign API] Auto-populating sequences from template: ${campaignData.default_template_name}`);
+      const templateIds = defaultConfig?.template_ids || [];
+
+      if (templateIds.length > 0) {
+        console.log(`[Smartlead Campaign API] Auto-populating ${templateIds.length} default sequences`);
         
-        // Get template sequences
-        const { data: templateSequences } = await supabase
+        // Get template sequences in order
+        const { data: allTemplates } = await supabase
           .from('global_sequence_templates')
           .select('*')
-          .eq('template_name', campaignData.default_template_name)
-          .eq('is_active', true)
-          .order('seq_number', { ascending: true });
+          .in('template_id', templateIds)
+          .eq('is_active', true);
+
+        // Sort templates by the order in template_ids
+        const templateSequences = templateIds
+          .map(id => allTemplates?.find(t => t.template_id === id))
+          .filter(Boolean);
 
         if (templateSequences && templateSequences.length > 0) {
           // Get placeholder context for replacement

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Save, X, Copy, GripVertical } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Copy, GripVertical, ChevronDown, ChevronUp, Info, CheckCircle2, ArrowRight, MoveVertical } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +12,17 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface Template {
   template_id: string
@@ -28,10 +39,12 @@ interface Template {
 export function GlobalSequenceTemplatesTab() {
   const [templates, setTemplates] = useState<Record<string, Template[]>>({})
   const [allTemplates, setAllTemplates] = useState<Template[]>([])
+  const [defaultSequences, setDefaultSequences] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showPlaceholders, setShowPlaceholders] = useState(false)
   const [formData, setFormData] = useState<{
     template_name: string
     subject: string
@@ -44,9 +57,11 @@ export function GlobalSequenceTemplatesTab() {
     delay_days: 1,
   })
   const [draggedTemplate, setDraggedTemplate] = useState<string | null>(null)
+  const [draggedDefaultIndex, setDraggedDefaultIndex] = useState<number | null>(null)
 
   useEffect(() => {
     loadTemplates()
+    loadDefaultSequences()
   }, [])
 
   async function loadTemplates() {
@@ -68,6 +83,79 @@ export function GlobalSequenceTemplatesTab() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function loadDefaultSequences() {
+    try {
+      const response = await fetch('/api/admin/sequence-templates/defaults')
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load default sequences')
+      }
+      
+      const data = await response.json()
+      setDefaultSequences(data.defaults || [])
+    } catch (error) {
+      console.error('Error loading default sequences:', error)
+      // Don't show error toast, defaults are optional
+    }
+  }
+
+  async function saveDefaultSequences(newDefaults: Template[]) {
+    try {
+      setSaving(true)
+      const response = await fetch('/api/admin/sequence-templates/defaults', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          defaults: newDefaults.map(t => t.template_id)
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to save default sequences')
+      }
+
+      toast.success('Default sequences updated')
+      await loadDefaultSequences()
+    } catch (error: any) {
+      console.error('Error saving default sequences:', error)
+      toast.error(error.message || 'Failed to save default sequences')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function addToDefaults(template: Template) {
+    const newDefaults = [...defaultSequences, template]
+    setDefaultSequences(newDefaults)
+    saveDefaultSequences(newDefaults)
+  }
+
+  function removeFromDefaults(templateId: string) {
+    const newDefaults = defaultSequences.filter(t => t.template_id !== templateId)
+    setDefaultSequences(newDefaults)
+    saveDefaultSequences(newDefaults)
+  }
+
+  function reorderDefaults(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || 
+        fromIndex >= defaultSequences.length || toIndex >= defaultSequences.length) {
+      return
+    }
+
+    const reordered = [...defaultSequences]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+    
+    setDefaultSequences(reordered)
+    saveDefaultSequences(reordered)
+  }
+
+  function isInDefaults(templateId: string): boolean {
+    return defaultSequences.some(t => t.template_id === templateId)
   }
 
   function handleAddNew() {
@@ -250,11 +338,12 @@ export function GlobalSequenceTemplatesTab() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Global Sequence Templates</h3>
           <p className="text-sm text-muted-foreground">
-            Create default sequence templates that can be used across all campaigns. Use placeholders like {'{{product_url}}'}, {'{{product_name}}'}, {'{{user_org_name}}'}
+            Create templates and select default sequences for new campaigns
           </p>
         </div>
         <Button onClick={handleAddNew}>
@@ -263,114 +352,290 @@ export function GlobalSequenceTemplatesTab() {
         </Button>
       </div>
 
-      {/* Placeholder Info */}
-      <Alert>
-        <AlertDescription>
-          <div className="space-y-1">
-            <p className="font-medium">Available Placeholders (replaced when template is applied):</p>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li><code className="bg-muted px-1 rounded">{"{{product_url}}"}</code> - Full URL to the product page</li>
-              <li><code className="bg-muted px-1 rounded">{"{{product_name}}"}</code> - Name of the product</li>
-              <li><code className="bg-muted px-1 rounded">{"{{user_org_name}}"}</code> - Organization name</li>
-              <li><code className="bg-muted px-1 rounded">{"{{user_name}}"}</code> - Campaign creator name</li>
-              <li><code className="bg-muted px-1 rounded">{"{{campaign_name}}"}</code> - Campaign display name</li>
-            </ul>
-            <p className="text-xs mt-2 font-medium">Smartlead Native Merge Tags (replaced automatically by Smartlead):</p>
-            <ul className="list-disc list-inside text-xs space-y-1 mt-1">
-              <li><code className="bg-muted px-1 rounded">{"{first_name}"}</code>, <code className="bg-muted px-1 rounded">{"{last_name}"}</code>, <code className="bg-muted px-1 rounded">{"{full_name}"}</code> - Lead name</li>
-              <li><code className="bg-muted px-1 rounded">{"{company_name}"}</code> - Lead company</li>
-              <li><code className="bg-muted px-1 rounded">{"{email}"}</code> - Lead email</li>
-              <li><code className="bg-muted px-1 rounded">{"{Title}"}</code> - Lead job title (from custom fields)</li>
-            </ul>
-            <p className="text-xs mt-2">These templates can be used as defaults for campaigns. Campaigns can override with custom sequences.</p>
-          </div>
-        </AlertDescription>
-      </Alert>
-
-      {templateNames.length === 0 ? (
-        <Alert>
-          <AlertDescription>
-            No global sequence templates found. Click "New Template" to create one.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <div className="space-y-6">
-          {templateNames.map((templateName) => {
-            const sequences = templates[templateName].sort((a, b) => a.seq_number - b.seq_number)
-            return (
-              <Card key={templateName}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>{templateName}</CardTitle>
-                      <CardDescription>
-                        {sequences.length} sequence{sequences.length !== 1 ? 's' : ''}
-                      </CardDescription>
+      {/* Collapsible Placeholder Info */}
+      <Collapsible open={showPlaceholders} onOpenChange={setShowPlaceholders}>
+        <Card className="border-dashed">
+          <CardHeader className="pb-3">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-0 hover:bg-transparent">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Available Placeholders & Merge Tags</span>
+                </div>
+                {showPlaceholders ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Pitchivo Placeholders</p>
+                  <div className="space-y-1">
+                    <TooltipProvider>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-0.5 rounded">{"{{product_url}}"}</code>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>Full URL to the product page</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-0.5 rounded">{"{{product_name}}"}</code>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>Name of the product</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-0.5 rounded">{"{{user_org_name}}"}</code>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>Organization name</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-0.5 rounded">{"{{user_name}}"}</code>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>Campaign creator name</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-0.5 rounded">{"{{campaign_name}}"}</code>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>Campaign display name</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Smartlead Merge Tags</p>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted px-2 py-0.5 rounded">{"{first_name}"}</code>
+                      <code className="bg-muted px-2 py-0.5 rounded">{"{last_name}"}</code>
+                      <code className="bg-muted px-2 py-0.5 rounded">{"{full_name}"}</code>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted px-2 py-0.5 rounded">{"{company_name}"}</code>
+                      <code className="bg-muted px-2 py-0.5 rounded">{"{email}"}</code>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted px-2 py-0.5 rounded">{"{Title}"}</code>
+                      <span className="text-muted-foreground">(from custom fields)</span>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {sequences.map((template, index) => (
-                      <div 
-                        key={template.template_id} 
-                        className="border rounded-lg p-4 space-y-2 group hover:border-primary/50 transition-colors"
-                        draggable
-                        onDragStart={(e) => {
-                          setDraggedTemplate(template.template_id)
-                          e.dataTransfer.effectAllowed = 'move'
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault()
-                          e.dataTransfer.dropEffect = 'move'
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          if (draggedTemplate && draggedTemplate !== template.template_id) {
-                            const draggedIndex = sequences.findIndex(t => t.template_id === draggedTemplate)
-                            if (draggedIndex !== -1) {
-                              handleReorder(templateName, draggedIndex, index)
-                            }
-                          }
-                          setDraggedTemplate(null)
-                        }}
-                        onDragEnd={() => setDraggedTemplate(null)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-move opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Badge>Sequence {template.seq_number}</Badge>
-                            {template.delay_days > 0 && (
-                              <Badge variant="outline">
-                                {template.delay_days} day{template.delay_days !== 1 ? 's' : ''} delay
-                              </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Two-Column Layout */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Left Column: All Templates */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">All Sequence Templates</CardTitle>
+            <CardDescription>
+              Click <ArrowRight className="h-3 w-3 inline mx-1" /> to add to defaults
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 max-h-[600px] overflow-y-auto">
+            {templateNames.length === 0 ? (
+              <Alert>
+                <AlertDescription>
+                  No templates found. Click "New Template" to create one.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              templateNames.map((templateName) => {
+                const sequences = templates[templateName].sort((a, b) => a.seq_number - b.seq_number)
+                return (
+                  <div key={templateName} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-sm">{templateName}</h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {sequences.length} seq
+                      </Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {sequences.map((template) => {
+                        const inDefaults = isInDefaults(template.template_id)
+                        return (
+                          <div 
+                            key={template.template_id} 
+                            className="border rounded-lg p-3 space-y-2 group hover:border-primary/50 transition-colors bg-card"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  #{template.seq_number}
+                                </Badge>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+                                  <span>{template.delay_days}d delay</span>
+                                  {inDefaults && (
+                                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {!inDefaults && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => addToDefaults(template)}
+                                    title="Add to defaults"
+                                  >
+                                    <ArrowRight className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleEdit(template)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 w-7 p-0 text-destructive"
+                                  onClick={() => handleDelete(template)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            {template.subject && (
+                              <p className="text-xs font-medium truncate" title={template.subject}>
+                                📧 {template.subject}
+                              </p>
                             )}
+                            <div 
+                              className="text-xs text-muted-foreground line-clamp-2"
+                              dangerouslySetInnerHTML={{ __html: template.email_body }}
+                            />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(template)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(template)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        {template.subject && (
-                          <p className="text-sm font-medium">Subject: {template.subject}</p>
-                        )}
-                        <div 
-                          className="prose prose-sm max-w-none text-sm text-muted-foreground line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: template.email_body }}
-                        />
-                      </div>
-                    ))}
+                        )
+                      })}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
+                )
+              })
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Right Column: Default Sequences */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              Default Sequences
+            </CardTitle>
+            <CardDescription>
+              Auto-applied to new campaigns (drag to reorder)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+            {defaultSequences.length === 0 ? (
+              <Alert>
+                <AlertDescription className="text-sm">
+                  No default sequences selected. Add sequences from the left panel.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              defaultSequences.map((template, index) => (
+                <div 
+                  key={template.template_id}
+                  className="border-2 border-primary/20 rounded-lg p-3 space-y-2 group hover:border-primary/50 transition-colors bg-primary/5 cursor-move"
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedDefaultIndex(index)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    if (draggedDefaultIndex !== null && draggedDefaultIndex !== index) {
+                      reorderDefaults(draggedDefaultIndex, index)
+                    }
+                    setDraggedDefaultIndex(null)
+                  }}
+                  onDragEnd={() => setDraggedDefaultIndex(null)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1">
+                      <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      <Badge className="text-xs shrink-0 bg-primary">
+                        Seq {index + 1}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {template.template_name}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {template.delay_days}d
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeFromDefaults(template.template_id)}
+                        title="Remove from defaults"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  {template.subject && (
+                    <p className="text-xs font-medium truncate ml-6" title={template.subject}>
+                      📧 {template.subject}
+                    </p>
+                  )}
+                  <div 
+                    className="text-xs text-muted-foreground line-clamp-2 ml-6"
+                    dangerouslySetInnerHTML={{ __html: template.email_body }}
+                  />
+                </div>
+              ))
+            )}
+            {defaultSequences.length > 0 && (
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <MoveVertical className="h-3 w-3" />
+                  Drag to reorder • Click <X className="h-3 w-3 inline" /> to remove
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
