@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { BarChart3, List, AtSign } from 'lucide-react'
+import { BarChart3, List, AtSign, FileText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OverallStatistics } from '@/components/admin/overall-statistics'
 import { CampaignList } from '@/components/admin/campaign-list'
 import { EmailAccountsTab } from './components/EmailAccountsTab'
+import { GlobalSequenceTemplatesTab } from './components/GlobalSequenceTemplatesTab'
 
 export default function AdminCampaignsPage() {
   const [activeTab, setActiveTab] = useState('statistics')
@@ -37,7 +38,7 @@ export default function AdminCampaignsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-7xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto">
+              <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto">
                 <TabsTrigger value="statistics" className="gap-2">
                   <BarChart3 className="h-4 w-4" />
                   <span className="hidden sm:inline">Overall Statistics</span>
@@ -47,6 +48,11 @@ export default function AdminCampaignsPage() {
                   <List className="h-4 w-4" />
                   <span className="hidden sm:inline">Campaign List</span>
                   <span className="sm:hidden">Campaigns</span>
+                </TabsTrigger>
+                <TabsTrigger value="sequence-templates" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sequence Templates</span>
+                  <span className="sm:hidden">Templates</span>
                 </TabsTrigger>
                 <TabsTrigger value="email-accounts" className="gap-2">
                   <AtSign className="h-4 w-4" />
@@ -63,6 +69,11 @@ export default function AdminCampaignsPage() {
               {/* Campaign List Tab */}
               <TabsContent value="campaigns" className="space-y-6">
                 <CampaignList />
+              </TabsContent>
+
+              {/* Global Sequence Templates Tab */}
+              <TabsContent value="sequence-templates" className="space-y-6">
+                <GlobalSequenceTemplatesTab />
               </TabsContent>
 
               {/* Email Accounts Tab */}
