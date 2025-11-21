@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { TimePicker } from '@/components/ui/time-picker'
 import { toast } from 'sonner'
 
 interface SettingsTabProps {
@@ -221,25 +222,23 @@ export function SettingsTab({ campaign, onRefresh }: SettingsTabProps) {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="start-hour">Start Time</Label>
-              <Input
-                id="start-hour"
-                type="time"
-                value={startHour}
-                onChange={(e) => setStartHour(e.target.value)}
-              />
-            </div>
+            <TimePicker
+              id="campaign-schedule-start-time"
+              label="Start Time"
+              value={startHour}
+              onChange={setStartHour}
+              placeholder="Select start time"
+              aria-label="Campaign start time"
+            />
             
-            <div className="space-y-2">
-              <Label htmlFor="end-hour">End Time</Label>
-              <Input
-                id="end-hour"
-                type="time"
-                value={endHour}
-                onChange={(e) => setEndHour(e.target.value)}
-              />
-            </div>
+            <TimePicker
+              id="campaign-schedule-end-time"
+              label="End Time"
+              value={endHour}
+              onChange={setEndHour}
+              placeholder="Select end time"
+              aria-label="Campaign end time"
+            />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
