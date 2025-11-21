@@ -6,6 +6,7 @@ import {
   LayoutDashboard, 
   Users, 
   Mail, 
+  Send,
   MessageSquare, 
   UserPlus,
   Shield,
@@ -30,6 +31,11 @@ const menuItems = [
     label: 'Campaigns Overview',
     href: '/admin/campaigns',
     icon: Mail,
+  },
+  {
+    label: 'Brevo Emails',
+    href: '/admin/emails',
+    icon: Send,
   },
   {
     label: 'RFQs Overview',
