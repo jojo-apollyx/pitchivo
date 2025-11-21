@@ -30,12 +30,17 @@ export function SequencesTab({ campaign, onRefresh }: SequencesTabProps) {
 
     try {
       setLoading(true)
-      const response = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/sequences`)
+      const response = await fetch(`/api/smartlead/campaigns/${campaign.campaign_id}/sequences`)
       
-      if (!response.ok) throw new Error('Failed to load sequences')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load sequences')
+      }
       
       const data = await response.json()
-      setSequences(Array.isArray(data) ? data : [data])
+      // API returns { success: true, sequences: [...] }
+      const sequencesArray = data.sequences || []
+      setSequences(Array.isArray(sequencesArray) ? sequencesArray : [sequencesArray])
     } catch (error) {
       console.error('Error loading sequences:', error)
       toast.error('Failed to load sequences')

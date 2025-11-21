@@ -376,9 +376,19 @@ export class SmartleadClient {
       company_url: (lead as any).company_url,
     };
 
+    // Smartlead API requires lead_list array and settings object
+    const requestBody = {
+      lead_list: [smartleadLead],
+      settings: {
+        ignore_global_block_list: false,
+        ignore_unsubscribe_list: false,
+        ignore_duplicate_leads_in_other_campaign: false,
+      },
+    };
+
     const result = await this.request<{ ok: boolean }>(`/campaigns/${campaignId}/leads`, {
       method: 'POST',
-      body: JSON.stringify(smartleadLead),
+      body: JSON.stringify(requestBody),
     });
 
     return result;
@@ -387,45 +397,115 @@ export class SmartleadClient {
   /**
    * Add multiple leads to a campaign
    * 
-   * NOTE: Bulk endpoint is not documented in Smartlead API docs.
-   * This method adds leads one by one. Consider rate limits (10 requests per 2 seconds).
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/leads
+   * Supports bulk adding via lead_list array (max 100 leads per request)
    * 
    * @param campaignId Smartlead campaign ID
    * @param leads Array of leads to add
    */
   async addLeads(campaignId: string, leads: AddLeadData[]): Promise<SmartleadApiResponse<{ added: number }>> {
-    // Since bulk endpoint is not documented, add leads sequentially
-    // TODO: Check if Smartlead has a bulk endpoint or batch API
-    let added = 0;
-    const errors: string[] = [];
-
-    for (const lead of leads) {
-      const result = await this.addLead(campaignId, lead);
-      if (result.success) {
-        added++;
-      } else {
-        errors.push(`${lead.email}: ${result.error?.message || 'Unknown error'}`);
+    // Smartlead supports bulk adding via lead_list array (max 100 leads)
+    // If more than 100, we'll need to batch them
+    const MAX_LEADS_PER_REQUEST = 100;
+    
+    if (leads.length > MAX_LEADS_PER_REQUEST) {
+      // Batch leads into chunks of 100
+      let totalAdded = 0;
+      const errors: string[] = [];
+      
+      for (let i = 0; i < leads.length; i += MAX_LEADS_PER_REQUEST) {
+        const batch = leads.slice(i, i + MAX_LEADS_PER_REQUEST);
+        const result = await this.addLeadsBatch(campaignId, batch);
+        
+        if (result.success && result.data) {
+          totalAdded += result.data.added || batch.length;
+        } else {
+          errors.push(`Batch ${Math.floor(i / MAX_LEADS_PER_REQUEST) + 1}: ${result.error?.message || 'Unknown error'}`);
+        }
+        
+        // Respect rate limit between batches
+        if (i + MAX_LEADS_PER_REQUEST < leads.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
       }
-      // Respect rate limit: 10 requests per 2 seconds = 200ms between requests
-      if (leads.length > 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+      
+      if (errors.length > 0) {
+        return {
+          success: false,
+          error: {
+            error: 'Partial Failure',
+            message: `Added ${totalAdded}/${leads.length} leads. Errors: ${errors.join('; ')}`,
+            status_code: 207,
+          },
+        };
       }
-    }
-
-    if (errors.length > 0) {
+      
       return {
-        success: false,
-        error: {
-          error: 'Partial Failure',
-          message: `Added ${added}/${leads.length} leads. Errors: ${errors.join('; ')}`,
-          status_code: 207, // Multi-Status
+        success: true,
+        data: { added: totalAdded },
+      };
+    }
+    
+    // Single batch request
+    return this.addLeadsBatch(campaignId, leads);
+  }
+
+  /**
+   * Internal method to add a batch of leads (up to 100)
+   */
+  private async addLeadsBatch(campaignId: string, leads: AddLeadData[]): Promise<SmartleadApiResponse<{ added: number }>> {
+    const smartleadLeads = leads.map(lead => ({
+      first_name: lead.first_name || '',
+      last_name: lead.last_name || '',
+      email: lead.email,
+      company_name: lead.company_name || '',
+      custom_fields: lead.custom_fields || {},
+      phone_number: (lead as any).phone_number,
+      website: (lead as any).website,
+      location: (lead as any).location,
+      linkedin_profile: (lead as any).linkedin_profile,
+      company_url: (lead as any).company_url,
+    }));
+
+    const requestBody = {
+      lead_list: smartleadLeads,
+      settings: {
+        ignore_global_block_list: false,
+        ignore_unsubscribe_list: false,
+        ignore_duplicate_leads_in_other_campaign: false,
+      },
+    };
+
+    const result = await this.request<{ 
+      ok: boolean;
+      upload_count?: number;
+      total_leads?: number;
+      already_added_to_campaign?: number;
+      duplicate_count?: number;
+      invalid_email_count?: number;
+      unsubscribed_leads?: number;
+    }>(`/campaigns/${campaignId}/leads`, {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
+
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: { 
+          added: result.data.upload_count || result.data.total_leads || leads.length 
         },
       };
     }
 
+    // Return error response with proper type
     return {
-      success: true,
-      data: { added },
+      success: false,
+      error: result.error || {
+        error: 'Unknown Error',
+        message: 'Failed to add leads',
+        status_code: 500,
+      },
     };
   }
 
@@ -444,7 +524,7 @@ export class SmartleadClient {
   async listLeads(
     campaignId: string,
     options?: { offset?: number; limit?: number }
-  ): Promise<SmartleadApiResponse<SmartleadLead[]>> {
+  ): Promise<SmartleadApiResponse<{ data: any[]; total_leads: number; offset: number; limit: number }>> {
     const offset = options?.offset ?? 0;
     const limit = options?.limit ?? 100;
 
@@ -452,19 +532,35 @@ export class SmartleadClient {
     // The request method will add the API key automatically
     const endpoint = `/campaigns/${campaignId}/leads?offset=${offset}&limit=${limit}`;
 
-    const result = await this.request<SmartleadLead[]>(endpoint, {
+    // Smartlead returns: { total_leads, offset, limit, data: [...] }
+    const result = await this.request<{
+      total_leads: number | string;
+      offset: number;
+      limit: number;
+      data: Array<{
+        campaign_lead_map_id: number;
+        status: string;
+        lead: any;
+      }>;
+    }>(endpoint, {
       method: 'GET',
     });
 
-    // Ensure we return an array even if API returns something else
     if (result.success && result.data) {
       return {
         success: true,
-        data: Array.isArray(result.data) ? result.data : [],
+        data: {
+          data: result.data.data || [],
+          total_leads: typeof result.data.total_leads === 'string' 
+            ? parseInt(result.data.total_leads, 10) 
+            : result.data.total_leads || 0,
+          offset: result.data.offset || offset,
+          limit: result.data.limit || limit,
+        },
       };
     }
 
-    return result;
+    return result as SmartleadApiResponse<{ data: any[]; total_leads: number; offset: number; limit: number }>;
   }
 
   /**

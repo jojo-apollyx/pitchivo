@@ -52,15 +52,17 @@ export async function GET(
       );
     }
 
-    // Check user has access
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('org_id', campaign.org_id)
-      .eq('user_id', user.id)
+    // Check if user is admin or has access to this organization
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('is_pitchivo_admin, organization_id')
+      .eq('id', user.id)
       .single();
 
-    if (!membership) {
+    const isAdmin = profile?.is_pitchivo_admin || false;
+    const hasOrgAccess = profile?.organization_id === campaign.org_id;
+
+    if (!isAdmin && !hasOrgAccess) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -81,7 +83,7 @@ export async function GET(
     });
 
     const smartlead = createSmartleadClient();
-    const result = await smartlead.listLeads(campaign.smartlead_campaign_id, {
+    const result = await smartlead.listLeads(campaign.smartlead_campaign_id.toString(), {
       offset,
       limit,
     });
@@ -102,9 +104,16 @@ export async function GET(
       );
     }
 
+    // listLeads now returns { data: { data: [...], total_leads, offset, limit } }
+    const leadsData = result.data?.data || [];
+    const totalLeads = result.data?.total_leads || 0;
+
     return NextResponse.json({
       success: true,
-      leads: result.data || []
+      leads: leadsData,
+      total_leads: totalLeads,
+      offset: result.data?.offset || offset,
+      limit: result.data?.limit || limit,
     });
 
   } catch (error) {
@@ -174,15 +183,17 @@ export async function POST(
       );
     }
 
-    // Check user has access
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('org_id', campaign.org_id)
-      .eq('user_id', user.id)
+    // Check if user is admin or has access to this organization
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('is_pitchivo_admin, organization_id')
+      .eq('id', user.id)
       .single();
 
-    if (!membership) {
+    const isAdmin = profile?.is_pitchivo_admin || false;
+    const hasOrgAccess = profile?.organization_id === campaign.org_id;
+
+    if (!isAdmin && !hasOrgAccess) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -199,11 +210,30 @@ export async function POST(
     const smartlead = createSmartleadClient();
     const leadsArray = Array.isArray(leads) ? leads : [leads];
     
+    // Transform lead data: move 'title' to custom_fields.Title
+    const transformedLeads = leadsArray.map((lead: any) => {
+      const { title, ...rest } = lead;
+      const custom_fields = {
+        ...(lead.custom_fields || {}),
+        ...(title ? { Title: title } : {}),
+      };
+      return {
+        ...rest,
+        ...(Object.keys(custom_fields).length > 0 ? { custom_fields } : {}),
+      };
+    });
+    
+    console.log('[Smartlead Leads API] Transformed leads:', {
+      original_count: leadsArray.length,
+      transformed_count: transformedLeads.length,
+      sample_lead: transformedLeads[0],
+    });
+    
     let result;
-    if (leadsArray.length === 1) {
-      result = await smartlead.addLead(campaign.smartlead_campaign_id, leadsArray[0]);
+    if (transformedLeads.length === 1) {
+      result = await smartlead.addLead(campaign.smartlead_campaign_id.toString(), transformedLeads[0]);
     } else {
-      result = await smartlead.addLeads(campaign.smartlead_campaign_id, leadsArray);
+      result = await smartlead.addLeads(campaign.smartlead_campaign_id.toString(), transformedLeads);
     }
 
     if (!result.success) {
@@ -211,7 +241,8 @@ export async function POST(
         error: result.error,
         campaign_id: campaignId,
         smartlead_campaign_id: campaign.smartlead_campaign_id,
-        leads_count: leadsArray.length,
+        leads_count: transformedLeads.length,
+        transformed_lead_sample: transformedLeads[0],
       });
       return NextResponse.json(
         { 
@@ -225,7 +256,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Successfully added ${leadsArray.length} lead(s)`,
+      message: `Successfully added ${transformedLeads.length} lead(s)`,
       data: result.data
     });
 
@@ -296,15 +327,17 @@ export async function DELETE(
       );
     }
 
-    // Check user has access
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('org_id', campaign.org_id)
-      .eq('user_id', user.id)
+    // Check if user is admin or has access to this organization
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('is_pitchivo_admin, organization_id')
+      .eq('id', user.id)
       .single();
 
-    if (!membership) {
+    const isAdmin = profile?.is_pitchivo_admin || false;
+    const hasOrgAccess = profile?.organization_id === campaign.org_id;
+
+    if (!isAdmin && !hasOrgAccess) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }

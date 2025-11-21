@@ -1,7 +1,7 @@
 /**
- * Smartlead Campaign Analytics API
+ * Smartlead Campaign Sequences API
  * 
- * GET /api/smartlead/campaigns/[campaignId]/analytics
+ * GET /api/smartlead/campaigns/[campaignId]/sequences
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -31,7 +31,7 @@ export async function GET(
       .from('campaigns')
       .select('smartlead_campaign_id, org_id')
       .eq('campaign_id', campaignId)
-      .single();
+      .maybeSingle();
 
     if (dbError || !campaign) {
       return NextResponse.json(
@@ -64,24 +64,24 @@ export async function GET(
       );
     }
 
-    // Get analytics from Smartlead
-    console.log(`[Smartlead Analytics API] Getting analytics for campaign:`, {
+    // Get sequences from Smartlead
+    console.log(`[Smartlead Sequences API] Getting sequences for campaign:`, {
       campaign_id: campaignId,
       smartlead_campaign_id: campaign.smartlead_campaign_id,
     });
 
     const smartlead = createSmartleadClient();
-    const result = await smartlead.getCampaignAnalytics(campaign.smartlead_campaign_id);
+    const result = await smartlead.getCampaignSequences(campaign.smartlead_campaign_id);
 
-    if (!result.success || !result.data) {
-      console.error('[Smartlead Analytics API] Failed to get analytics:', {
+    if (!result.success) {
+      console.error('[Smartlead Sequences API] Failed to get sequences:', {
         error: result.error,
         campaign_id: campaignId,
         smartlead_campaign_id: campaign.smartlead_campaign_id,
       });
       return NextResponse.json(
         { 
-          error: 'Failed to get campaign analytics from Smartlead',
+          error: 'Failed to get campaign sequences from Smartlead',
           details: result.error?.message || result.error?.error || 'Unknown error',
           status_code: result.error?.status_code,
         },
@@ -91,11 +91,11 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      analytics: result.data
+      sequences: result.data || []
     });
 
   } catch (error) {
-    console.error('[Smartlead Analytics API] Unexpected error getting analytics:', {
+    console.error('[Smartlead Sequences API] Unexpected error getting sequences:', {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,

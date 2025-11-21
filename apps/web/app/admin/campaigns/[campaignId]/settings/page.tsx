@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Mail, Send, Sparkles, FileText, Zap, CalendarDays, Star } from 'lucide-react'
+import { ArrowLeft, Mail, Send, Sparkles, FileText, Zap, CalendarDays, Star, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -200,6 +200,17 @@ export default function CampaignSettingsPage() {
                   Email management and settings
                 </p>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/admin/campaigns/${campaignId}`)}
+                className="gap-2"
+              >
+                <Activity className="h-4 w-4" />
+                Campaign Details
+              </Button>
             </div>
           </div>
         </div>

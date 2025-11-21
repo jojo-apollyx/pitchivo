@@ -32,12 +32,16 @@ export function AnalyticsTab({ campaign }: AnalyticsTabProps) {
 
     try {
       setLoading(true)
-      const response = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/analytics`)
+      const response = await fetch(`/api/smartlead/campaigns/${campaign.campaign_id}/analytics`)
       
-      if (!response.ok) throw new Error('Failed to load analytics')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load analytics')
+      }
       
       const data = await response.json()
-      setAnalytics(data)
+      // API returns { success: true, analytics: {...} }
+      setAnalytics(data.analytics || data)
     } catch (error) {
       console.error('Error loading analytics:', error)
       toast.error('Failed to load analytics')
@@ -55,13 +59,17 @@ export function AnalyticsTab({ campaign }: AnalyticsTabProps) {
       const endDate = dateRange.to.toISOString().split('T')[0]
       
       const response = await fetch(
-        `/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/analytics-by-date?start_date=${startDate}&end_date=${endDate}`
+        `/api/smartlead/campaigns/${campaign.campaign_id}/analytics-by-date?start_date=${startDate}&end_date=${endDate}`
       )
       
-      if (!response.ok) throw new Error('Failed to load date range analytics')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load date range analytics')
+      }
       
       const data = await response.json()
-      setAnalytics(data)
+      // API returns { success: true, analytics: {...} }
+      setAnalytics(data.analytics || data)
       toast.success('Analytics updated for selected date range')
     } catch (error) {
       console.error('Error loading date range analytics:', error)

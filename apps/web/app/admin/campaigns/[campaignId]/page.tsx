@@ -142,7 +142,7 @@ export default function CampaignDetailPage() {
     try {
       // Delete from Smartlead if campaign is synced
       if (campaign?.smartlead_campaign_id) {
-        const response = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}`, {
+        const response = await fetch(`/api/smartlead/campaigns/${campaignId}`, {
           method: 'DELETE'
         })
         

@@ -103,31 +103,42 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
 
       // Load from Smartlead
       const response = await fetch(
-        `/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/leads?offset=${page * pageSize}&limit=${pageSize}`
+        `/api/smartlead/campaigns/${campaign.campaign_id}/leads?offset=${page * pageSize}&limit=${pageSize}`
       )
       
-      if (!response.ok) throw new Error('Failed to load leads')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load leads')
+      }
       
       const data = await response.json()
       
       // Transform Smartlead leads to our format
-      const transformedLeads = (data.data || []).map((item: any) => ({
-        lead_id: item.lead?.id || item.campaign_lead_map_id,
-        smartlead_lead_id: item.lead?.id,
-        email: item.lead?.email || '',
-        name: `${item.lead?.first_name || ''} ${item.lead?.last_name || ''}`.trim(),
-        title: item.lead?.custom_fields?.Title || '',
-        company: item.lead?.company_name || '',
-        status: item.status?.toLowerCase() || 'active',
-        last_contacted: item.last_contacted,
-        open_count: 0,
-        click_count: 0,
-        reply_count: 0,
-        current_sequence: item.last_email_sequence_sent || 0,
-      }))
+      // API returns { success: true, leads: [...], total_leads: number }
+      // Smartlead format: { campaign_lead_map_id, status, lead: { id, email, first_name, ... } }
+      const leadsArray = data.leads || []
+      const transformedLeads = leadsArray.map((item: any) => {
+        // Smartlead returns leads wrapped in { campaign_lead_map_id, status, lead: {...} }
+        const lead = item.lead || item;
+        return {
+          lead_id: lead.id?.toString() || item.campaign_lead_map_id?.toString() || lead.email,
+          smartlead_lead_id: lead.id?.toString(),
+          email: lead.email || '',
+          name: `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || lead.email,
+          title: lead.custom_fields?.Title || '',
+          company: lead.company_name || '',
+          status: item.status?.toLowerCase() || 'active',
+          last_contacted: undefined,
+          open_count: 0,
+          click_count: 0,
+          reply_count: 0,
+          current_sequence: 0,
+        };
+      })
       
       setLeads(transformedLeads)
-      setTotalLeads(data.total_leads || 0)
+      // Use total_leads from API response if available
+      setTotalLeads(data.total_leads || transformedLeads.length)
     } catch (error) {
       console.error('Error loading leads:', error)
       toast.error('Failed to load leads')
@@ -144,16 +155,11 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
 
     setIsProcessing(true)
     try {
-      const response = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/leads`, {
+      const response = await fetch(`/api/smartlead/campaigns/${campaign.campaign_id}/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lead_list: [newLead],
-          settings: {
-            ignore_global_block_list: false,
-            ignore_unsubscribe_list: false,
-            ignore_duplicate_leads_in_other_campaign: false,
-          }
+          leads: [newLead]
         })
       })
 
@@ -202,7 +208,7 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
           endpoint = `/api/admin/campaigns/${campaign.campaign_id}/leads/${leadId}/unsubscribe`
           break
         case 'delete':
-          endpoint = `/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/leads?email=${encodeURIComponent(leadEmail)}`
+          endpoint = `/api/smartlead/campaigns/${campaign.campaign_id}/leads?email=${encodeURIComponent(leadEmail)}`
           method = 'DELETE'
           break
       }

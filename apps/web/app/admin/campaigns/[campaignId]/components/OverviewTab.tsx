@@ -27,10 +27,11 @@ export function OverviewTab({ campaign, onRefresh }: OverviewTabProps) {
       
       // Load analytics from Smartlead if available
       if (campaign.smartlead_campaign_id) {
-        const analyticsRes = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/analytics`)
+        const analyticsRes = await fetch(`/api/smartlead/campaigns/${campaign.campaign_id}/analytics`)
         if (analyticsRes.ok) {
           const data = await analyticsRes.json()
-          setAnalytics(data)
+          // API returns { success: true, analytics: {...} }
+          setAnalytics(data.analytics || data)
         }
       }
       

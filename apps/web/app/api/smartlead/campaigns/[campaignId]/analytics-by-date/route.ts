@@ -1,7 +1,7 @@
 /**
- * Smartlead Campaign Analytics API
+ * Smartlead Campaign Analytics by Date Range API
  * 
- * GET /api/smartlead/campaigns/[campaignId]/analytics
+ * GET /api/smartlead/campaigns/[campaignId]/analytics-by-date?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,13 +25,23 @@ export async function GET(
     }
 
     const { campaignId } = await params;
+    const searchParams = request.nextUrl.searchParams;
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
+
+    if (!startDate || !endDate) {
+      return NextResponse.json(
+        { error: 'Missing start_date or end_date parameters' },
+        { status: 400 }
+      );
+    }
 
     // Get campaign from database
     const { data: campaign, error: dbError } = await supabase
       .from('campaigns')
       .select('smartlead_campaign_id, org_id')
       .eq('campaign_id', campaignId)
-      .single();
+      .maybeSingle();
 
     if (dbError || !campaign) {
       return NextResponse.json(
@@ -65,16 +75,22 @@ export async function GET(
     }
 
     // Get analytics from Smartlead
-    console.log(`[Smartlead Analytics API] Getting analytics for campaign:`, {
+    console.log(`[Smartlead Analytics-by-Date API] Getting analytics for campaign:`, {
       campaign_id: campaignId,
       smartlead_campaign_id: campaign.smartlead_campaign_id,
+      start_date: startDate,
+      end_date: endDate,
     });
 
     const smartlead = createSmartleadClient();
-    const result = await smartlead.getCampaignAnalytics(campaign.smartlead_campaign_id);
+    const result = await smartlead.getCampaignAnalyticsByDate(
+      campaign.smartlead_campaign_id,
+      startDate,
+      endDate
+    );
 
     if (!result.success || !result.data) {
-      console.error('[Smartlead Analytics API] Failed to get analytics:', {
+      console.error('[Smartlead Analytics-by-Date API] Failed to get analytics:', {
         error: result.error,
         campaign_id: campaignId,
         smartlead_campaign_id: campaign.smartlead_campaign_id,
@@ -95,7 +111,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('[Smartlead Analytics API] Unexpected error getting analytics:', {
+    console.error('[Smartlead Analytics-by-Date API] Unexpected error getting analytics:', {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
