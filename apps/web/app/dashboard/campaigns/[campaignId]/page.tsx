@@ -24,12 +24,6 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { EmailEventStats } from '@/components/email/email-event-stats'
 import { SmartleadEventStats } from '@/components/smartlead/event-stats'
 import { SmartleadEventTimeline } from '@/components/smartlead/event-timeline'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
 
 const chartColors = {
   delivered: 'hsl(var(--primary))',
@@ -130,6 +124,7 @@ interface Campaign {
   launched_at: string | null
   created_at: string
   product_id: string
+  smartlead_campaign_id?: string | null
   products?: {
     product_name: string
     product_data?: any
@@ -1149,7 +1144,7 @@ export default function CampaignDetailPage() {
             </div>
           </div>
 
-          {/* Email Event Statistics - Enhanced with Smartlead */}
+          {/* Email Event Statistics */}
           <div className="rounded-xl border border-border/30 bg-card/60 p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Mail className="h-5 w-5 text-primary" />
@@ -1162,24 +1157,11 @@ export default function CampaignDetailPage() {
             </div>
             
             {campaign?.smartlead_campaign_id ? (
-              <Tabs defaultValue="smartlead" className="w-full">
-                <TabsList className="grid w-full max-w-md grid-cols-2">
-                  <TabsTrigger value="smartlead">Real-time Events</TabsTrigger>
-                  <TabsTrigger value="legacy">Legacy Stats</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="smartlead" className="mt-4">
-                  <SmartleadEventStats 
-                    campaignId={campaignId} 
-                    isAdmin={false}
-                    showChart={true}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="legacy" className="mt-4">
-                  <EmailEventStats campaignId={campaignId} isAdmin={false} />
-                </TabsContent>
-              </Tabs>
+              <SmartleadEventStats 
+                campaignId={campaignId} 
+                isAdmin={false}
+                showChart={true}
+              />
             ) : (
               <EmailEventStats campaignId={campaignId} isAdmin={false} />
             )}
@@ -1193,9 +1175,6 @@ export default function CampaignDetailPage() {
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           <Activity className="h-4 w-4 text-primary" />
                           Engagement feed
-                          {campaign?.smartlead_campaign_id && (
-                            <Badge variant="secondary" className="text-xs">Smartlead</Badge>
-                          )}
                         </div>
                         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                           {activities.length} event{activities.length === 1 ? '' : 's'} · {uniqueContacts} engaged contact{uniqueContacts === 1 ? '' : 's'}
@@ -1210,7 +1189,7 @@ export default function CampaignDetailPage() {
                     </div>
 
                     <div className="mt-4 sm:mt-6">
-                      {/* Show Smartlead Timeline for Smartlead campaigns */}
+                      {/* Show Timeline for campaigns */}
                       {campaign?.smartlead_campaign_id ? (
                         <SmartleadEventTimeline 
                           campaignId={campaignId}

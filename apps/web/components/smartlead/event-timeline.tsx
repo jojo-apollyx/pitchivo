@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { 
   Mail, 
-  MailCheck, 
   MousePointerClick, 
   MessageSquare, 
   XCircle, 
@@ -12,7 +11,6 @@ import {
   MailOpen,
   Send,
   AlertCircle,
-  CheckCircle2,
   ExternalLink,
   ChevronDown,
   ChevronUp,
@@ -56,6 +54,14 @@ interface SmartleadEventTimelineProps {
   limit?: number
 }
 
+// Event types supported by Smartlead webhooks (per SMARTLEAD_WEBHOOK_API_REFERENCE.md):
+// - EMAIL_SENT -> 'sent'
+// - EMAIL_OPEN -> 'opened'
+// - EMAIL_LINK_CLICK -> 'clicked'
+// - EMAIL_REPLY -> 'replied'
+// - LEAD_UNSUBSCRIBED -> 'unsubscribed'
+// - LEAD_CATEGORY_UPDATED -> 'category_updated'
+// - EMAIL_BOUNCE -> 'bounced'
 const EVENT_CONFIG = {
   sent: {
     icon: Send,
@@ -63,15 +69,7 @@ const EVENT_CONFIG = {
     color: 'text-blue-500',
     bgColor: 'bg-blue-50 dark:bg-blue-950/20',
     borderColor: 'border-blue-200 dark:border-blue-800',
-    description: 'Email successfully sent'
-  },
-  delivered: {
-    icon: MailCheck,
-    label: 'Delivered',
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-50 dark:bg-emerald-950/20',
-    borderColor: 'border-emerald-200 dark:border-emerald-800',
-    description: 'Email delivered to inbox'
+    description: 'Email successfully sent (EMAIL_SENT)'
   },
   opened: {
     icon: MailOpen,
@@ -79,7 +77,7 @@ const EVENT_CONFIG = {
     color: 'text-purple-500',
     bgColor: 'bg-purple-50 dark:bg-purple-950/20',
     borderColor: 'border-purple-200 dark:border-purple-800',
-    description: 'Lead opened the email'
+    description: 'Lead opened the email (EMAIL_OPEN)'
   },
   clicked: {
     icon: MousePointerClick,
@@ -87,7 +85,7 @@ const EVENT_CONFIG = {
     color: 'text-indigo-500',
     bgColor: 'bg-indigo-50 dark:bg-indigo-950/20',
     borderColor: 'border-indigo-200 dark:border-indigo-800',
-    description: 'Lead clicked a link'
+    description: 'Lead clicked a link (EMAIL_LINK_CLICK)'
   },
   replied: {
     icon: MessageSquare,
@@ -95,7 +93,7 @@ const EVENT_CONFIG = {
     color: 'text-green-500',
     bgColor: 'bg-green-50 dark:bg-green-950/20',
     borderColor: 'border-green-200 dark:border-green-800',
-    description: 'Lead replied to email'
+    description: 'Lead replied to email (EMAIL_REPLY)'
   },
   bounced: {
     icon: XCircle,
@@ -103,7 +101,7 @@ const EVENT_CONFIG = {
     color: 'text-red-500',
     bgColor: 'bg-red-50 dark:bg-red-950/20',
     borderColor: 'border-red-200 dark:border-red-800',
-    description: 'Email bounced'
+    description: 'Email bounced (EMAIL_BOUNCE)'
   },
   unsubscribed: {
     icon: UserX,
@@ -111,7 +109,7 @@ const EVENT_CONFIG = {
     color: 'text-gray-500',
     bgColor: 'bg-gray-50 dark:bg-gray-950/20',
     borderColor: 'border-gray-200 dark:border-gray-800',
-    description: 'Lead unsubscribed'
+    description: 'Lead unsubscribed (LEAD_UNSUBSCRIBED)'
   },
   category_updated: {
     icon: AlertCircle,
@@ -119,7 +117,7 @@ const EVENT_CONFIG = {
     color: 'text-amber-500',
     bgColor: 'bg-amber-50 dark:bg-amber-950/20',
     borderColor: 'border-amber-200 dark:border-amber-800',
-    description: 'Lead category changed'
+    description: 'Lead category changed (LEAD_CATEGORY_UPDATED)'
   },
 }
 
