@@ -26,7 +26,14 @@ export function Calendar({ value, onChange, minDate, className }: CalendarProps)
 
   const handleDateClick = (day: Date) => {
     if (minDate && day < minDate) return
-    if (!isSameMonth(day, currentMonth)) return
+    
+    // Allow selecting dates from adjacent months (they're visible in the calendar)
+    // If clicking a date from another month, navigate to that month and select it
+    if (!isSameMonth(day, currentMonth)) {
+      setCurrentMonth(day)
+    }
+    
+    // Always allow selection, even if from adjacent month
     onChange(isSameDay(day, value || new Date()) ? undefined : day)
   }
 
