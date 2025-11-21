@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
     // Verify admin role
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('role')
+      .select('is_pitchivo_admin')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'admin') {
+    if (!profile?.is_pitchivo_admin) {
       return NextResponse.json(
         { error: 'Forbidden - Admin access required' },
         { status: 403 }
@@ -96,11 +96,11 @@ export async function POST(request: NextRequest) {
     // Verify admin role
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('role')
+      .select('is_pitchivo_admin')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'admin') {
+    if (!profile?.is_pitchivo_admin) {
       return NextResponse.json(
         { error: 'Forbidden - Admin access required' },
         { status: 403 }

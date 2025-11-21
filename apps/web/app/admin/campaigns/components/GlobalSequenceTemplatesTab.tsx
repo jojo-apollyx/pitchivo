@@ -664,20 +664,6 @@ export function GlobalSequenceTemplatesTab() {
               </p>
             </div>
 
-            {editingTemplate && (
-              <div className="space-y-2">
-                <Label>Sequence Number</Label>
-                <Input
-                  value={editingTemplate.seq_number}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Sequence number is auto-assigned based on order. Use drag-and-drop to reorder templates.
-                </p>
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="delay_days">Delay (days)</Label>
               <Input
