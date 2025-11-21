@@ -7,9 +7,10 @@ import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
-import TextStyle from '@tiptap/extension-text-style'
-import Color from '@tiptap/extension-color'
-import { useEffect } from 'react'
+// TextStyle is required for Color extension
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Color } from '@tiptap/extension-color'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { 
   Bold, 
@@ -27,13 +28,25 @@ import {
   Code,
   Undo,
   Redo,
-  Palette
+  Palette,
+  Upload,
+  X,
+  Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { toast } from 'sonner'
 
 interface RichTextEditorProps {
   value: string
@@ -50,7 +63,18 @@ export function RichTextEditor({
   className,
   minHeight = '200px'
 }: RichTextEditorProps) {
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkText, setLinkText] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+
   const editor = useEditor({
+    immediatelyRender: false,
+    editable: true,
     extensions: [
       StarterKit.configure({
         heading: {
@@ -70,6 +94,7 @@ export function RichTextEditor({
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+        defaultAlignment: 'left',
       }),
       Placeholder.configure({
         placeholder,
@@ -100,28 +125,126 @@ export function RichTextEditor({
     }
   }, [value, editor])
 
-  const setLink = () => {
+  // Handle button clicks with proper editor state check
+  const handleCommand = (command: () => void) => {
+    if (!editor || !editor.isEditable) return
+    command()
+  }
+
+  const openLinkDialog = () => {
     if (!editor) return
+    
+    const { from, to } = editor.state.selection
+    const selectedText = editor.state.doc.textBetween(from, to, ' ')
+    const linkAttributes = editor.getAttributes('link')
+    
+    setLinkText(selectedText || linkAttributes.href || '')
+    setLinkUrl(linkAttributes.href || '')
+    setIsLinkDialogOpen(true)
+  }
 
-    const previousUrl = editor.getAttributes('link').href
-    const url = window.prompt('Enter URL:', previousUrl)
+  const insertLink = () => {
+    if (!editor || !linkUrl.trim()) return
 
-    if (url === null) return
+    if (linkText.trim()) {
+      // Insert link with custom text
+      editor.chain().focus().insertContent(`<a href="${linkUrl}">${linkText}</a>`).run()
+    } else {
+      // Apply link to selected text or insert URL
+      if (editor.state.selection.empty) {
+        editor.chain().focus().insertContent(`<a href="${linkUrl}">${linkUrl}</a>`).run()
+      } else {
+        editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run()
+      }
+    }
+    
+    setIsLinkDialogOpen(false)
+    setLinkUrl('')
+    setLinkText('')
+    toast.success('Link inserted successfully')
+  }
 
-    if (url === '') {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run()
+  const removeLink = () => {
+    if (!editor) return
+    editor.chain().focus().extendMarkRange('link').unsetLink().run()
+    setIsLinkDialogOpen(false)
+    toast.success('Link removed')
+  }
+
+  const openImageDialog = () => {
+    setImageUrl('')
+    setImageFile(null)
+    setImagePreview(null)
+    setIsImageDialogOpen(true)
+  }
+
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
       return
     }
 
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB')
+      return
+    }
+
+    setImageFile(file)
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
   }
 
-  const addImage = () => {
+  const uploadImage = async () => {
     if (!editor) return
 
-    const url = window.prompt('Enter image URL:')
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
+    if (imageFile) {
+      setIsUploading(true)
+      try {
+        const formData = new FormData()
+        formData.append('file', imageFile)
+
+        const response = await fetch('/api/upload/image', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+          throw new Error(errorData.error || 'Failed to upload image')
+        }
+
+        const result = await response.json()
+        const uploadedUrl = result.image.url
+
+        editor.chain().focus().setImage({ src: uploadedUrl }).run()
+        setIsImageDialogOpen(false)
+        setImageFile(null)
+        setImagePreview(null)
+        toast.success('Image uploaded and inserted successfully')
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        toast.error(error instanceof Error ? error.message : 'Failed to upload image')
+      } finally {
+        setIsUploading(false)
+      }
+    } else if (imageUrl.trim()) {
+      // Insert image from URL
+      editor.chain().focus().setImage({ src: imageUrl }).run()
+      setIsImageDialogOpen(false)
+      setImageUrl('')
+      toast.success('Image inserted successfully')
+    } else {
+      toast.error('Please provide an image URL or upload a file')
     }
   }
 
@@ -139,7 +262,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleBold().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleBold().run())}
             className={cn('h-8 w-8 p-0', editor.isActive('bold') && 'bg-muted')}
             title="Bold"
           >
@@ -149,7 +272,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleItalic().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleItalic().run())}
             className={cn('h-8 w-8 p-0', editor.isActive('italic') && 'bg-muted')}
             title="Italic"
           >
@@ -159,7 +282,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleUnderline().run())}
             className={cn('h-8 w-8 p-0', editor.isActive('underline') && 'bg-muted')}
             title="Underline"
           >
@@ -175,7 +298,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleHeading({ level: 2 }).run())}
             className={cn('h-8 px-2 text-xs', editor.isActive('heading', { level: 2 }) && 'bg-muted')}
             title="Heading"
           >
@@ -185,7 +308,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleBlockquote().run())}
             className={cn('h-8 w-8 p-0', editor.isActive('blockquote') && 'bg-muted')}
             title="Quote"
           >
@@ -195,7 +318,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleCodeBlock().run())}
             className={cn('h-8 w-8 p-0', editor.isActive('codeBlock') && 'bg-muted')}
             title="Code Block"
           >
@@ -211,7 +334,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleBulletList().run())}
             className={cn('h-8 w-8 p-0', editor.isActive('bulletList') && 'bg-muted')}
             title="Bullet List"
           >
@@ -221,7 +344,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().toggleOrderedList().run())}
             className={cn('h-8 w-8 p-0', editor.isActive('orderedList') && 'bg-muted')}
             title="Numbered List"
           >
@@ -237,7 +360,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            onClick={() => handleCommand(() => editor.chain().focus().setTextAlign('left').run())}
             className={cn('h-8 w-8 p-0', editor.isActive({ textAlign: 'left' }) && 'bg-muted')}
             title="Align Left"
           >
@@ -247,7 +370,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            onClick={() => handleCommand(() => editor.chain().focus().setTextAlign('center').run())}
             className={cn('h-8 w-8 p-0', editor.isActive({ textAlign: 'center' }) && 'bg-muted')}
             title="Align Center"
           >
@@ -257,7 +380,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            onClick={() => handleCommand(() => editor.chain().focus().setTextAlign('right').run())}
             className={cn('h-8 w-8 p-0', editor.isActive({ textAlign: 'right' }) && 'bg-muted')}
             title="Align Right"
           >
@@ -273,7 +396,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={setLink}
+            onClick={openLinkDialog}
             className={cn('h-8 w-8 p-0', editor.isActive('link') && 'bg-muted')}
             title="Add Link"
           >
@@ -283,7 +406,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={addImage}
+            onClick={openImageDialog}
             className="h-8 w-8 p-0"
             title="Add Image"
           >
@@ -299,7 +422,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().undo().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().undo().run())}
             disabled={!editor.can().undo()}
             className="h-8 w-8 p-0"
             title="Undo"
@@ -310,7 +433,7 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().redo().run()}
+            onClick={() => handleCommand(() => editor.chain().focus().redo().run())}
             disabled={!editor.can().redo()}
             className="h-8 w-8 p-0"
             title="Redo"
@@ -397,7 +520,199 @@ export function RichTextEditor({
       >
         <EditorContent editor={editor} />
       </div>
+
+      {/* Link Dialog */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Insert Link</DialogTitle>
+            <DialogDescription>
+              Add a link to your content. You can link to selected text or insert a new link.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="link-text">Link Text</Label>
+              <Input
+                id="link-text"
+                placeholder="Enter link text (optional)"
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave empty to use the URL as link text
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="link-url">URL *</Label>
+              <Input
+                id="link-url"
+                type="url"
+                placeholder="https://example.com"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && linkUrl.trim()) {
+                    insertLink()
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            {editor.isActive('link') && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={removeLink}
+              >
+                Remove Link
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsLinkDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={insertLink}
+              disabled={!linkUrl.trim()}
+            >
+              Insert Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Dialog */}
+      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Insert Image</DialogTitle>
+            <DialogDescription>
+              Upload an image file or provide an image URL to insert into your content.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Upload Option */}
+            <div className="space-y-2">
+              <Label>Upload Image</Label>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                {imagePreview ? (
+                  <div className="space-y-3">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-h-48 mx-auto rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setImageFile(null)
+                        setImagePreview(null)
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <Label htmlFor="image-upload" className="cursor-pointer">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <span>Choose Image</span>
+                        </Button>
+                      </Label>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageFileSelect}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      JPG, PNG, GIF, WEBP up to 10MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">OR</span>
+              </div>
+            </div>
+
+            {/* URL Option */}
+            <div className="space-y-2">
+              <Label htmlFor="image-url">Image URL</Label>
+              <Input
+                id="image-url"
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                disabled={!!imageFile}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && imageUrl.trim() && !imageFile) {
+                    uploadImage()
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter a direct image URL
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsImageDialogOpen(false)
+                setImageFile(null)
+                setImagePreview(null)
+                setImageUrl('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={uploadImage}
+              disabled={(!imageFile && !imageUrl.trim()) || isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Insert Image'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-
