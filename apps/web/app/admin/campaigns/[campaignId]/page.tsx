@@ -242,56 +242,85 @@ export default function CampaignDetailPage() {
         {/* Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
           <div className="px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4 flex-1">
+            {/* Top Row: Back, Title, Badges, Export, Delete */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => router.push('/admin/campaigns')}
-                  className="mt-1"
+                  className="mt-1 flex-shrink-0"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
+                  <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
               
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold">{displayName}</h1>
-                  <Badge className={statusColors[campaign.status as keyof typeof statusColors] || 'bg-gray-500'}>
-                    {campaign.status}
-                  </Badge>
-                  {!campaign.smartlead_campaign_id && (
-                    <Badge variant="outline" className="text-amber-600">
-                      Not Synced
-                    </Badge>
-                  )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                    <h1 className="text-xl sm:text-2xl font-bold truncate">{displayName}</h1>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={statusColors[campaign.status as keyof typeof statusColors] || 'bg-gray-500'}>
+                        {campaign.status}
+                      </Badge>
+                      {!campaign.smartlead_campaign_id && (
+                        <Badge variant="outline" className="text-amber-600">
+                          Not Synced
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                    <span className="whitespace-nowrap">Product: {campaign.products?.product_name}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="whitespace-nowrap">Created: {new Date(campaign.created_at).toLocaleDateString()}</span>
+                    {campaign.launched_at && (
+                      <>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="whitespace-nowrap">Launched: {new Date(campaign.launched_at).toLocaleDateString()}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
+              </div>
+              
+              {/* Export and Delete buttons on the right */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
                 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>Product: {campaign.products?.product_name}</span>
-                  <span>•</span>
-                  <span>Created: {new Date(campaign.created_at).toLocaleDateString()}</span>
-                  {campaign.launched_at && (
-                    <>
-                      <span>•</span>
-                      <span>Launched: {new Date(campaign.launched_at).toLocaleDateString()}</span>
-                    </>
-                  )}
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive gap-2"
+                  onClick={handleDelete}
+                  disabled={isUpdating}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
               </div>
             </div>
             
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            {/* Status Control Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
               {campaign.status === 'active' && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleStatusChange('paused')}
                   disabled={isUpdating}
+                  className="gap-2"
                 >
-                  <Pause className="h-4 w-4 mr-2" />
-                  Pause
+                  <Pause className="h-4 w-4" />
+                  <span className="hidden sm:inline">Pause</span>
                 </Button>
               )}
               
@@ -301,9 +330,10 @@ export default function CampaignDetailPage() {
                   size="sm"
                   onClick={() => handleStatusChange('active')}
                   disabled={isUpdating}
+                  className="gap-2"
                 >
-                  <Play className="h-4 w-4 mr-2" />
-                  Resume
+                  <Play className="h-4 w-4" />
+                  <span className="hidden sm:inline">Resume</span>
                 </Button>
               )}
               
@@ -313,31 +343,12 @@ export default function CampaignDetailPage() {
                   size="sm"
                   onClick={() => handleStatusChange('stopped')}
                   disabled={isUpdating}
+                  className="gap-2"
                 >
-                  <Square className="h-4 w-4 mr-2" />
-                  Stop
+                  <Square className="h-4 w-4" />
+                  <span className="hidden sm:inline">Stop</span>
                 </Button>
               )}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={handleDelete}
-                disabled={isUpdating}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
             </div>
           </div>
         </section>
