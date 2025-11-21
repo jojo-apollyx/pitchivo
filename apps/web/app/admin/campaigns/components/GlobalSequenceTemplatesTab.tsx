@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Save, X, Copy } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Copy, GripVertical } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -34,17 +34,16 @@ export function GlobalSequenceTemplatesTab() {
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<{
     template_name: string
-    seq_number: number
     subject: string
     email_body: string
     delay_days: number
   }>({
     template_name: '',
-    seq_number: 1,
     subject: '',
     email_body: '',
     delay_days: 1,
   })
+  const [draggedTemplate, setDraggedTemplate] = useState<string | null>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -75,7 +74,6 @@ export function GlobalSequenceTemplatesTab() {
     setEditingTemplate(null)
     setFormData({
       template_name: '',
-      seq_number: 1,
       subject: '',
       email_body: '',
       delay_days: 1,
@@ -83,11 +81,65 @@ export function GlobalSequenceTemplatesTab() {
     setIsDialogOpen(true)
   }
 
+  async function handleReorder(templateName: string, fromIndex: number, toIndex: number) {
+    const templateList = templates[templateName] || []
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= templateList.length || toIndex >= templateList.length) {
+      return
+    }
+
+    // Reorder in local state
+    const reordered = [...templateList]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+
+    // Update seq_number based on new order (1, 2, 3, ...)
+    const updated = reordered.map((template, index) => ({
+      ...template,
+      seq_number: index + 1,
+    }))
+
+    setTemplates({
+      ...templates,
+      [templateName]: updated,
+    })
+
+    // Update in database
+    try {
+      setSaving(true)
+      
+      // Update all sequences in the template with new seq_numbers
+      await Promise.all(
+        updated.map((template, index) =>
+          fetch(`/api/admin/sequence-templates/${template.template_id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              template_name: templateName,
+              seq_number: index + 1,
+              subject: template.subject || null,
+              email_body: template.email_body,
+              delay_days: template.delay_days,
+              is_active: template.is_active,
+            })
+          })
+        )
+      )
+
+      toast.success('Template order updated')
+      await loadTemplates()
+    } catch (error: any) {
+      console.error('Error reordering templates:', error)
+      toast.error('Failed to update template order')
+      await loadTemplates() // Reload to revert
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function handleEdit(template: Template) {
     setEditingTemplate(template)
     setFormData({
       template_name: template.template_name,
-      seq_number: template.seq_number,
       subject: template.subject || '',
       email_body: template.email_body,
       delay_days: template.delay_days,
@@ -105,11 +157,14 @@ export function GlobalSequenceTemplatesTab() {
       setSaving(true)
 
       if (editingTemplate) {
-        // Update existing
+        // Update existing - keep existing seq_number
         const response = await fetch(`/api/admin/sequence-templates/${editingTemplate.template_id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            ...formData,
+            seq_number: editingTemplate.seq_number, // Keep existing order
+          }),
         })
 
         if (!response.ok) {
@@ -118,11 +173,19 @@ export function GlobalSequenceTemplatesTab() {
         }
         toast.success('Template updated successfully')
       } else {
-        // Create new
+        // Create new - auto-assign seq_number based on existing count
+        const existingSequences = allTemplates.filter(
+          t => t.template_name === formData.template_name && t.is_active
+        )
+        const nextSeqNumber = existingSequences.length + 1
+
         const response = await fetch('/api/admin/sequence-templates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            ...formData,
+            seq_number: nextSeqNumber, // Auto-assign based on order
+          }),
         })
 
         if (!response.ok) {
@@ -248,10 +311,34 @@ export function GlobalSequenceTemplatesTab() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {sequences.map((template) => (
-                      <div key={template.template_id} className="border rounded-lg p-4 space-y-2">
+                    {sequences.map((template, index) => (
+                      <div 
+                        key={template.template_id} 
+                        className="border rounded-lg p-4 space-y-2 group hover:border-primary/50 transition-colors"
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedTemplate(template.template_id)
+                          e.dataTransfer.effectAllowed = 'move'
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          e.dataTransfer.dropEffect = 'move'
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          if (draggedTemplate && draggedTemplate !== template.template_id) {
+                            const draggedIndex = sequences.findIndex(t => t.template_id === draggedTemplate)
+                            if (draggedIndex !== -1) {
+                              handleReorder(templateName, draggedIndex, index)
+                            }
+                          }
+                          setDraggedTemplate(null)
+                        }}
+                        onDragEnd={() => setDraggedTemplate(null)}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
+                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-move opacity-0 group-hover:opacity-100 transition-opacity" />
                             <Badge>Sequence {template.seq_number}</Badge>
                             {template.delay_days > 0 && (
                               <Badge variant="outline">
@@ -312,16 +399,19 @@ export function GlobalSequenceTemplatesTab() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="seq_number">Sequence Number *</Label>
-              <Input
-                id="seq_number"
-                type="number"
-                min="1"
-                value={formData.seq_number}
-                onChange={(e) => setFormData({ ...formData, seq_number: parseInt(e.target.value) || 1 })}
-              />
-            </div>
+            {editingTemplate && (
+              <div className="space-y-2">
+                <Label>Sequence Number</Label>
+                <Input
+                  value={editingTemplate.seq_number}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sequence number is auto-assigned based on order. Use drag-and-drop to reorder templates.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="delay_days">Delay (days)</Label>

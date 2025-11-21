@@ -42,6 +42,46 @@ export async function PUT(
     const body = await request.json();
     const { template_name, seq_number, subject, email_body, delay_days, is_active } = body;
 
+    // Get current template to check what's changing
+    const { data: currentTemplate } = await supabase
+      .from('global_sequence_templates')
+      .select('template_name, seq_number')
+      .eq('template_id', templateId)
+      .single();
+
+    if (!currentTemplate) {
+      return NextResponse.json(
+        { error: 'Template not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if sequence number or template name is being changed to a duplicate
+    const finalTemplateName = template_name !== undefined ? template_name : currentTemplate.template_name;
+    const finalSeqNumber = seq_number !== undefined ? seq_number : currentTemplate.seq_number;
+
+    // Only check for duplicates if template_name or seq_number is being changed
+    if ((template_name !== undefined || seq_number !== undefined) && 
+        (finalTemplateName !== currentTemplate.template_name || finalSeqNumber !== currentTemplate.seq_number)) {
+      const { data: existingTemplate } = await supabase
+        .from('global_sequence_templates')
+        .select('template_id')
+        .eq('template_name', finalTemplateName)
+        .eq('seq_number', finalSeqNumber)
+        .neq('template_id', templateId) // Exclude current template
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (existingTemplate) {
+        return NextResponse.json(
+          { 
+            error: `Sequence ${finalSeqNumber} already exists for template "${finalTemplateName}". Please use a different sequence number.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update template
     const updateData: any = {};
     if (template_name !== undefined) updateData.template_name = template_name;
@@ -60,6 +100,17 @@ export async function PUT(
 
     if (error) {
       console.error('[Global Sequence Templates API] Error updating template:', error);
+      
+      // Check if it's a unique constraint violation
+      if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
+        return NextResponse.json(
+          { 
+            error: `Sequence ${finalSeqNumber} already exists for template "${finalTemplateName}". Please use a different sequence number.`,
+          },
+          { status: 400 }
+        );
+      }
+      
       return NextResponse.json(
         { error: 'Failed to update template', details: error.message },
         { status: 500 }

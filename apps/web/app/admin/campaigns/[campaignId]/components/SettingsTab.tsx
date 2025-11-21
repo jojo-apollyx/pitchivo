@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -40,6 +40,11 @@ export function SettingsTab({ campaign, onRefresh }: SettingsTabProps) {
   const [stopOnOpen, setStopOnOpen] = useState(campaign.stop_on_open ?? false)
   const [sendPlainText, setSendPlainText] = useState(campaign.send_as_plain_text ?? false)
   const [followUpPercentage, setFollowUpPercentage] = useState(campaign.follow_up_percentage || 100)
+
+  // Default template settings
+  const [defaultTemplateName, setDefaultTemplateName] = useState(campaign.default_template_name || '')
+  const [availableTemplates, setAvailableTemplates] = useState<Record<string, any[]>>({})
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
 
   const daysOfWeek = [
     { value: 0, label: 'Sunday' },
@@ -432,6 +437,61 @@ export function SettingsTab({ campaign, onRefresh }: SettingsTabProps) {
 
           <Button onClick={handleSaveBehavior} disabled={saving}>
             Save Behavior Settings
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Default Template Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Default Sequence Template</CardTitle>
+          <CardDescription>
+            Configure which global template to use for auto-populating sequences when this campaign is created in Smartlead
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="default-template">Default Template</Label>
+            <Select 
+              value={defaultTemplateName} 
+              onValueChange={setDefaultTemplateName}
+              disabled={loadingTemplates}
+            >
+              <SelectTrigger id="default-template">
+                <SelectValue placeholder={loadingTemplates ? "Loading templates..." : "Select a template (optional)"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None (no auto-population)</SelectItem>
+                {Object.keys(availableTemplates).map((templateName) => (
+                  <SelectItem key={templateName} value={templateName}>
+                    {templateName} ({availableTemplates[templateName].length} sequences)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              When a new campaign is created in Smartlead, sequences from the selected template will be automatically populated.
+              Leave empty to disable auto-population.
+            </p>
+          </div>
+
+          {defaultTemplateName && availableTemplates[defaultTemplateName] && (
+            <Alert>
+              <AlertDescription>
+                <p className="font-medium mb-2">Selected template contains:</p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  {availableTemplates[defaultTemplateName].map((seq: any) => (
+                    <li key={seq.template_id}>
+                      Sequence {seq.seq_number} - {seq.delay_days} day{seq.delay_days !== 1 ? 's' : ''} delay
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button onClick={handleSaveDefaultTemplate} disabled={saving}>
+            Save Default Template
           </Button>
         </CardContent>
       </Card>

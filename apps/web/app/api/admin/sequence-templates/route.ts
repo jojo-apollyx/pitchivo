@@ -116,6 +116,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if sequence with same number already exists for this template
+    const { data: existingTemplate } = await supabase
+      .from('global_sequence_templates')
+      .select('template_id')
+      .eq('template_name', template_name)
+      .eq('seq_number', seq_number)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (existingTemplate) {
+      return NextResponse.json(
+        { 
+          error: `Sequence ${seq_number} already exists for template "${template_name}". Please edit the existing sequence or use a different sequence number.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Insert template
     const { data: template, error } = await supabase
       .from('global_sequence_templates')
@@ -133,6 +151,17 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[Global Sequence Templates API] Error creating template:', error);
+      
+      // Check if it's a unique constraint violation
+      if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
+        return NextResponse.json(
+          { 
+            error: `Sequence ${seq_number} already exists for template "${template_name}". Please edit the existing sequence or use a different sequence number.`,
+          },
+          { status: 400 }
+        );
+      }
+      
       return NextResponse.json(
         { error: 'Failed to create template', details: error.message },
         { status: 500 }

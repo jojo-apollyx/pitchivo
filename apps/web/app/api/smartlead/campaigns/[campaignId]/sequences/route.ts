@@ -321,13 +321,17 @@ export async function POST(
         placeholderContext
       );
 
+      // Smartlead API uses 'seq_variants' in POST but returns 'sequence_variants' in GET
+      // Handle both field names for compatibility
+      const variants = seq.seq_variants || seq.sequence_variants;
+      
       return {
         id: seq.id, // Include when updating existing sequence
         seq_number: seq.seq_number,
         seq_delay_details: { delay_in_days: seq.delay_days || seq.seq_delay_details?.delay_in_days || 1 },
         subject: subject || undefined, // Empty string becomes undefined for same-thread follow-ups
         email_body: emailBody,
-        seq_variants: seq.seq_variants?.map((variant: any) => ({
+        seq_variants: variants?.map((variant: any) => ({
           subject: replacePlaceholders(variant.subject || '', placeholderContext),
           email_body: replacePlaceholders(variant.email_body || '', placeholderContext),
           variant_label: variant.variant_label,
@@ -339,7 +343,12 @@ export async function POST(
     console.log(`[Smartlead Sequences API] Smartlead Campaign ID: ${campaign.smartlead_campaign_id}`);
     console.log(`[Smartlead Sequences API] Sequences to save: ${processedSequences.length}`);
     processedSequences.forEach((seq, idx) => {
-      console.log(`[Smartlead Sequences API]   Sequence ${idx + 1}: seq_number=${seq.seq_number}, delay=${seq.seq_delay_details?.delay_in_days} days, has_subject=${!!seq.subject}`);
+      console.log(`[Smartlead Sequences API]   Sequence ${idx + 1}: seq_number=${seq.seq_number}, delay=${seq.seq_delay_details?.delay_in_days} days, has_subject=${!!seq.subject}, variants_count=${seq.seq_variants?.length || 0}`);
+      if (seq.seq_variants && seq.seq_variants.length > 0) {
+        seq.seq_variants.forEach((v: any, vIdx: number) => {
+          console.log(`[Smartlead Sequences API]     Variant ${vIdx + 1}: label=${v.variant_label}, has_subject=${!!v.subject}`);
+        });
+      }
     });
 
     const smartlead = createSmartleadClient();

@@ -114,6 +114,111 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-populate sequences from default template if configured
+    try {
+      const { data: campaignData } = await supabase
+        .from('campaigns')
+        .select('default_template_name, org_id')
+        .eq('campaign_id', campaign_id)
+        .single();
+
+      if (campaignData?.default_template_name) {
+        console.log(`[Smartlead Campaign API] Auto-populating sequences from template: ${campaignData.default_template_name}`);
+        
+        // Get template sequences
+        const { data: templateSequences } = await supabase
+          .from('global_sequence_templates')
+          .select('*')
+          .eq('template_name', campaignData.default_template_name)
+          .eq('is_active', true)
+          .order('seq_number', { ascending: true });
+
+        if (templateSequences && templateSequences.length > 0) {
+          // Get placeholder context for replacement
+          const { data: campaignData } = await supabase
+            .from('campaigns')
+            .select(`
+              product_id,
+              org_id,
+              display_name,
+              campaign_name,
+              created_by
+            `)
+            .eq('campaign_id', campaign_id)
+            .single();
+
+          // Get product and org data
+          let productName: string | undefined;
+          let orgName: string | undefined;
+          
+          if (campaignData?.product_id) {
+            const { data: product } = await supabase
+              .from('products')
+              .select('product_name, org_id, organizations:org_id(name)')
+              .eq('product_id', campaignData.product_id)
+              .single();
+            
+            productName = product?.product_name;
+            orgName = (product?.organizations as any)?.name;
+          }
+
+          // Get user profile
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('full_name, email')
+            .eq('id', campaignData?.created_by)
+            .single();
+
+          // Import placeholder utilities
+          const { replacePlaceholdersInSequence } = await import('@/lib/smartlead/placeholders');
+          
+          // Build placeholder context
+          const productUrl = campaignData?.product_id
+            ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaignData.product_id}`
+            : undefined;
+          
+          const placeholderContext = {
+            productUrl,
+            productName,
+            userOrgName: orgName,
+            userName: userProfile?.full_name || userProfile?.email?.split('@')[0] || 'Team',
+            campaignName: campaignData?.display_name || campaignData?.campaign_name,
+          };
+
+          // Prepare sequences for Smartlead
+          const sequencesForSmartlead = templateSequences.map((template: any) => {
+            const { subject, emailBody } = replacePlaceholdersInSequence(
+              template.subject || '',
+              template.email_body,
+              placeholderContext
+            );
+
+            return {
+              seq_number: template.seq_number,
+              seq_delay_details: { delay_in_days: template.delay_days || 1 },
+              subject: subject || undefined,
+              email_body: emailBody,
+            };
+          });
+
+          // Save sequences to Smartlead
+          const sequencesResult = await smartlead.saveCampaignSequences(
+            result.data.id.toString(),
+            sequencesForSmartlead
+          );
+
+          if (sequencesResult.success) {
+            console.log(`[Smartlead Campaign API] ✅ Auto-populated ${sequencesForSmartlead.length} sequences from template`);
+          } else {
+            console.error(`[Smartlead Campaign API] ⚠️ Failed to auto-populate sequences:`, sequencesResult.error);
+          }
+        }
+      }
+    } catch (autoPopulateError) {
+      // Don't fail campaign creation if auto-populate fails
+      console.error('[Smartlead Campaign API] Error auto-populating sequences:', autoPopulateError);
+    }
+
     return NextResponse.json({
       success: true,
       smartlead_campaign_id: result.data.id,
