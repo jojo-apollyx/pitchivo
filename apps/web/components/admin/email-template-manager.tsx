@@ -97,7 +97,7 @@ export function EmailTemplateManager({ onSelectTemplate }: EmailTemplateManagerP
                 subject,
                 content,
                 category,
-                isDefault: false // New templates are not default by default
+                description
               }
         )
       })
@@ -110,7 +110,8 @@ export function EmailTemplateManager({ onSelectTemplate }: EmailTemplateManagerP
       setTemplateName('')
       setSubject('')
       setContent('')
-      setIsDefault(false)
+      setCategory('general')
+      setDescription('')
       setEditingTemplate(null)
       setShowForm(false)
       
@@ -134,7 +135,7 @@ export function EmailTemplateManager({ onSelectTemplate }: EmailTemplateManagerP
 
     setDeleteDialogOpen(false)
     try {
-      const response = await fetch(`/api/admin/campaigns/templates?templateId=${templateToDelete}`, {
+      const response = await fetch(`/api/admin/templates?templateId=${templateToDelete}`, {
         method: 'DELETE'
       })
 
@@ -155,7 +156,8 @@ export function EmailTemplateManager({ onSelectTemplate }: EmailTemplateManagerP
     setTemplateName(template.template_name)
     setSubject(template.subject)
     setContent(template.content)
-    setIsDefault(template.is_default)
+    setCategory(template.category || 'general')
+    setDescription(template.description || '')
     setShowForm(true)
   }
 
@@ -164,42 +166,22 @@ export function EmailTemplateManager({ onSelectTemplate }: EmailTemplateManagerP
     setTemplateName('')
     setSubject('')
     setContent('')
-    setIsDefault(false)
+    setCategory('general')
+    setDescription('')
     setShowForm(false)
   }
 
   async function handleUseTemplate(template: EmailTemplate) {
     try {
-      // Set as default template
-      if (!template.is_default) {
-        const response = await fetch('/api/admin/campaigns/templates', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            templateId: template.template_id,
-            isDefault: true
-          })
-        })
-
-        if (!response.ok) throw new Error('Failed to set default template')
-        
-        // Update local state
-        setTemplates(prev => prev.map(t => 
-          t.template_id === template.template_id 
-            ? { ...t, is_default: true }
-            : { ...t, is_default: false }
-        ))
-      }
-
       // Load template into send form
       if (onSelectTemplate) {
         onSelectTemplate(template)
       }
 
-      toast.success(`Template "${template.template_name}" set as default and loaded!`)
+      toast.success(`Template "${template.template_name}" loaded!`)
     } catch (error) {
       console.error('Error using template:', error)
-      toast.error('Failed to set default template')
+      toast.error('Failed to load template')
     }
   }
 

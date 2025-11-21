@@ -27,19 +27,3 @@ ON CONFLICT (domain) DO NOTHING;
 INSERT INTO email_domain_policy (domain, status, reason) VALUES
   ('pitchivo.com', 'whitelisted', 'Pitchivo company domain')
 ON CONFLICT (domain) DO NOTHING;
-
--- ============================================================================
--- DEFAULT EMAIL TEMPLATES
--- ============================================================================
--- Note: Default "reach out" email templates are automatically created for new campaigns
--- via the trigger_create_default_email_template() function (see migration 20240101000056).
--- 
--- To create a default template for an existing campaign, you can call:
--- SELECT create_default_email_template('campaign_id_here');
---
--- The default template includes:
--- - Name: "Default Reach Out"
--- - Subject: "Introducing {{product_name}} - Premium Solution for Your Business"
--- - Content: Professional reach-out email with placeholders for personalization
--- - is_default: true
-

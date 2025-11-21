@@ -45,25 +45,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Build insert data - only include optional fields if they exist in the schema
+    const insertData: any = {
+      template_name: templateName,
+      subject,
+      content,
+    }
+
+    // Only add category and description if they're provided and not empty
+    // (columns may not exist if migration hasn't run)
+    if (category !== undefined && category !== null && category !== '') {
+      insertData.category = category
+    }
+    if (description !== undefined && description !== null && description !== '') {
+      insertData.description = description
+    }
+
     const { data: template, error } = await supabaseAdmin
       .from('email_templates')
-      .insert({
-        template_name: templateName,
-        subject,
-        content,
-        category: category || 'general',
-        description: description || null,
-      })
+      .insert(insertData)
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Error creating template - full error:', JSON.stringify(error, null, 2))
+      throw error
+    }
 
     return NextResponse.json({ template }, { status: 201 })
   } catch (error: any) {
     console.error('Error creating template:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    })
     return NextResponse.json(
-      { error: error.message || 'Failed to create template' },
+      { 
+        error: error.message || 'Failed to create template',
+        details: error.details || error.hint || undefined
+      },
       { status: 500 }
     )
   }
@@ -89,8 +111,14 @@ export async function PUT(request: NextRequest) {
     if (templateName) updateData.template_name = templateName
     if (subject) updateData.subject = subject
     if (content) updateData.content = content
-    if (category !== undefined) updateData.category = category
-    if (description !== undefined) updateData.description = description
+    // Only include category and description if provided and not empty
+    // (columns may not exist if migration hasn't run)
+    if (category !== undefined && category !== null && category !== '') {
+      updateData.category = category
+    }
+    if (description !== undefined && description !== null && description !== '') {
+      updateData.description = description
+    }
 
     const { data: template, error } = await supabaseAdmin
       .from('email_templates')
