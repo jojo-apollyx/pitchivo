@@ -20,19 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AddLeadDialog } from '@/components/admin/add-lead-dialog'
 
 interface LeadsTabProps {
   campaign: any
@@ -62,24 +53,12 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [addLeadOpen, setAddLeadOpen] = useState(false)
-  const [bulkAddOpen, setBulkAddOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   
   // Pagination
   const [page, setPage] = useState(0)
   const [totalLeads, setTotalLeads] = useState(0)
   const pageSize = 50
-
-  // Add lead form
-  const [newLead, setNewLead] = useState({
-    email: '',
-    first_name: '',
-    last_name: '',
-    company_name: '',
-    title: '',
-    phone_number: '',
-    location: '',
-  })
 
   useEffect(() => {
     loadLeads()
@@ -147,43 +126,10 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
     }
   }
 
-  async function handleAddLead() {
-    if (!newLead.email) {
-      toast.error('Email is required')
-      return
-    }
-
-    setIsProcessing(true)
-    try {
-      const response = await fetch(`/api/smartlead/campaigns/${campaign.campaign_id}/leads`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leads: [newLead]
-        })
-      })
-
-      if (!response.ok) throw new Error('Failed to add lead')
-
-      toast.success('Lead added successfully')
-      setAddLeadOpen(false)
-      setNewLead({
-        email: '',
-        first_name: '',
-        last_name: '',
-        company_name: '',
-        title: '',
-        phone_number: '',
-        location: '',
-      })
-      loadLeads()
-      onRefresh()
-    } catch (error) {
-      console.error('Error adding lead:', error)
-      toast.error('Failed to add lead')
-    } finally {
-      setIsProcessing(false)
-    }
+  function handleLeadsAdded(newLeads: any[]) {
+    // Refresh the leads list after adding new leads
+    loadLeads()
+    onRefresh()
   }
 
   async function handleLeadAction(leadId: string, leadEmail: string, action: 'pause' | 'resume' | 'unsubscribe' | 'delete') {
@@ -402,93 +348,10 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
             Export All
           </Button>
 
-          <Dialog open={addLeadOpen} onOpenChange={setAddLeadOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Lead
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add New Lead</DialogTitle>
-                <DialogDescription>
-                  Add a new lead to this campaign
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newLead.email}
-                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                    placeholder="john@example.com"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="first_name">First Name</Label>
-                    <Input
-                      id="first_name"
-                      value={newLead.first_name}
-                      onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })}
-                      placeholder="John"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="last_name">Last Name</Label>
-                    <Input
-                      id="last_name"
-                      value={newLead.last_name}
-                      onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
-                      placeholder="Doe"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="company_name">Company</Label>
-                  <Input
-                    id="company_name"
-                    value={newLead.company_name}
-                    onChange={(e) => setNewLead({ ...newLead, company_name: e.target.value })}
-                    placeholder="Company Inc"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={newLead.title}
-                    onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
-                    placeholder="CEO"
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setAddLeadOpen(false)}
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddLead}
-                  disabled={isProcessing || !newLead.email}
-                >
-                  Add Lead
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button size="sm" onClick={() => setAddLeadOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Lead
+          </Button>
         </div>
       </div>
 
@@ -651,6 +514,14 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
           </div>
         </div>
       )}
+
+      {/* Add Lead Dialog */}
+      <AddLeadDialog
+        open={addLeadOpen}
+        onOpenChange={setAddLeadOpen}
+        campaignId={campaign.campaign_id}
+        onLeadsAdded={handleLeadsAdded}
+      />
     </div>
   )
 }
