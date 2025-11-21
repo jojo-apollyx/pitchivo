@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Mail, Send, Sparkles, FileText } from 'lucide-react'
+import { Mail, Send, Sparkles, FileText, History } from 'lucide-react'
 import { EmailQualityChecker } from '@/components/admin/email-quality-checker'
 import { EmailTemplateManager } from '@/components/admin/email-template-manager'
+import { BrevoEmailHistory } from '@/components/admin/brevo-email-history'
 
 export default function BrevoEmailsPage() {
   const [activeTab, setActiveTab] = useState('send')
@@ -89,7 +90,7 @@ export default function BrevoEmailsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-5xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+              <TabsList className="grid w-full grid-cols-4 max-w-3xl">
                 <TabsTrigger value="send" className="gap-2">
                   <Send className="h-4 w-4" />
                   Send Email
@@ -101,6 +102,10 @@ export default function BrevoEmailsPage() {
                 <TabsTrigger value="templates" className="gap-2">
                   <FileText className="h-4 w-4" />
                   Templates
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-2">
+                  <History className="h-4 w-4" />
+                  Email History
                 </TabsTrigger>
               </TabsList>
 
@@ -238,6 +243,28 @@ export default function BrevoEmailsPage() {
                         <li>• Templates are global and available for all transactional emails</li>
                         <li>• Organize templates by category (welcome, notification, alert, etc.)</li>
                         <li>• No campaign placeholders - pure content only</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Email History Tab */}
+              <TabsContent value="history" className="space-y-4">
+                <Card className="p-6">
+                  <BrevoEmailHistory />
+                </Card>
+
+                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                  <div className="flex items-start gap-2">
+                    <History className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-green-800">
+                      <p className="font-semibold mb-1">Email Tracking</p>
+                      <ul className="space-y-1 text-xs">
+                        <li>• View all emails sent via Brevo with complete event history</li>
+                        <li>• Track delivery, opens, clicks, bounces, and spam reports</li>
+                        <li>• Click "Details" to see the full event timeline for any email</li>
+                        <li>• Events are updated in real-time via Brevo webhooks</li>
                       </ul>
                     </div>
                   </div>

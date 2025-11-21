@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/emails/brevo'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 // POST - Send email via Brevo
 export async function POST(request: NextRequest) {
@@ -35,6 +47,28 @@ export async function POST(request: NextRequest) {
     })
 
     console.log('[admin/brevo/send] Email sent successfully:', result?.messageId)
+
+    // Store initial 'sent' event in database for tracking
+    if (result?.messageId) {
+      try {
+        await supabaseAdmin.from('email_events').insert({
+          brevo_message_id: result.messageId,
+          recipient_email: to,
+          event_type: 'sent',
+          event_timestamp: new Date().toISOString(),
+          tags: ['admin-transactional'],
+          metadata: {
+            subject,
+            sent_by: 'admin',
+            sent_at: new Date().toISOString()
+          }
+        })
+        console.log('[admin/brevo/send] Stored sent event in database')
+      } catch (dbError) {
+        console.error('[admin/brevo/send] Failed to store event:', dbError)
+        // Don't fail the request if event storage fails
+      }
+    }
 
     return NextResponse.json({
       success: true,
