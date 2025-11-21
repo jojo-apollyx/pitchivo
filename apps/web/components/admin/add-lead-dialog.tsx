@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,16 +15,32 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Search, Plus, Users, Building2 } from 'lucide-react'
-import { generateMockBuyers, type Buyer, type BuyerContact } from '@/lib/mock-data/buyers'
+import { Search, Plus, Users, Building2, Loader2 } from 'lucide-react'
 import type { Lead } from '@/lib/mock-data/leads'
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
-  createColumnHelper,
   type ColumnDef,
 } from '@tanstack/react-table'
+
+// Types for database leads
+interface Contact {
+  lead_id: string
+  email: string
+  name: string
+  title: string
+  phone?: string
+  linkedin_url?: string
+  status: string
+}
+
+interface Company {
+  company: string
+  industry: string
+  country: string
+  contacts: Contact[]
+}
 
 interface AddLeadDialogProps {
   open: boolean
@@ -37,7 +53,6 @@ interface AddLeadDialogProps {
 type ContactRow = {
   id: string
   company: string
-  companyWebsite: string
   contactName: string
   contactTitle: string
   contactEmail: string
@@ -45,8 +60,8 @@ type ContactRow = {
   country: string
   isCompanyHeader: boolean
   contactCount?: number
-  buyer: Buyer
-  contact?: BuyerContact
+  companyData: Company
+  contact?: Contact
 }
 
 export function AddLeadDialog({
@@ -63,70 +78,82 @@ export function AddLeadDialog({
   // Database search state
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set())
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [searching, setSearching] = useState(false)
   
-  // Load buyer database (in real app, this would be from API)
-  const buyers = useMemo(() => generateMockBuyers(200), [])
-  
-  // Filter buyers based on search
-  const filteredBuyers = useMemo(() => {
-    if (!searchTerm.trim()) return buyers.slice(0, 20) // Show first 20 if no search
-    
-    const term = searchTerm.toLowerCase()
-    return buyers.filter(buyer =>
-      buyer.company.toLowerCase().includes(term) ||
-      buyer.industry.toLowerCase().includes(term) ||
-      buyer.country.toLowerCase().includes(term) ||
-      buyer.contactDetails?.some(contact =>
-        contact.name.toLowerCase().includes(term) ||
-        contact.email.toLowerCase().includes(term) ||
-        contact.role.toLowerCase().includes(term)
-      )
-    ).slice(0, 50) // Limit to 50 results
-  }, [buyers, searchTerm])
+  // Debounced search effect
+  useEffect(() => {
+    if (!searchTerm || searchTerm.trim().length < 2) {
+      setCompanies([])
+      return
+    }
+
+    const timeoutId = setTimeout(async () => {
+      await searchLeads(searchTerm)
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm])
+
+  async function searchLeads(term: string) {
+    if (!term || term.trim().length < 2) return
+
+    setSearching(true)
+    try {
+      const response = await fetch(`/api/admin/leads/search?q=${encodeURIComponent(term)}&limit=50`)
+      if (!response.ok) throw new Error('Failed to search leads')
+      
+      const data = await response.json()
+      setCompanies(data.companies || [])
+    } catch (error) {
+      console.error('Error searching leads:', error)
+      toast.error('Failed to search leads')
+    } finally {
+      setSearching(false)
+    }
+  }
 
   // Flatten data for TanStack Table - create rows for both company headers and contacts
   const tableData = useMemo(() => {
     const rows: ContactRow[] = []
     
-    filteredBuyers.forEach(buyer => {
-      const contacts = buyer.contactDetails || []
+    companies.forEach(company => {
+      const contacts = company.contacts || []
       if (contacts.length === 0) return
       
       // Add company header row
       rows.push({
-        id: `company-${buyer.company}`,
-        company: buyer.company,
-        companyWebsite: buyer.website || '',
+        id: `company-${company.company}`,
+        company: company.company,
         contactName: '',
         contactTitle: '',
         contactEmail: '',
-        industry: buyer.industry,
-        country: buyer.country,
+        industry: company.industry,
+        country: company.country,
         isCompanyHeader: true,
         contactCount: contacts.length,
-        buyer
+        companyData: company
       })
       
       // Add contact rows
       contacts.forEach(contact => {
         rows.push({
-          id: `${buyer.company}|${contact.email}`,
-          company: buyer.company,
-          companyWebsite: '',
+          id: `${company.company}|${contact.email}`,
+          company: company.company,
           contactName: contact.name,
-          contactTitle: contact.title || contact.role,
+          contactTitle: contact.title,
           contactEmail: contact.email,
           industry: '',
           country: '',
           isCompanyHeader: false,
-          buyer,
+          companyData: company,
           contact
         })
       })
     })
     
     return rows
-  }, [filteredBuyers])
+  }, [companies])
 
   async function handleManualAdd() {
     if (!newLead.email || !newLead.name || !newLead.company) {
@@ -188,20 +215,20 @@ export function AddLeadDialog({
     setSelectedContacts(newSelected)
   }
 
-  function toggleBuyerSelection(buyer: Buyer) {
-    const contacts = buyer.contactDetails || []
+  function toggleCompanySelection(company: Company) {
+    const contacts = company.contacts || []
     const allSelected = contacts.every(c => 
-      selectedContacts.has(`${buyer.company}|${c.email}`)
+      selectedContacts.has(`${company.company}|${c.email}`)
     )
     
     const newSelected = new Set(selectedContacts)
     
     if (allSelected) {
       // Deselect all
-      contacts.forEach(c => newSelected.delete(`${buyer.company}|${c.email}`))
+      contacts.forEach(c => newSelected.delete(`${company.company}|${c.email}`))
     } else {
       // Select all
-      contacts.forEach(c => newSelected.add(`${buyer.company}|${c.email}`))
+      contacts.forEach(c => newSelected.add(`${company.company}|${c.email}`))
     }
     
     setSelectedContacts(newSelected)
@@ -215,14 +242,14 @@ export function AddLeadDialog({
       cell: ({ row }) => {
         const data = row.original
         if (data.isCompanyHeader) {
-          const contacts = data.buyer.contactDetails || []
+          const contacts = data.companyData.contacts || []
           const allSelected = contacts.every(c => 
             selectedContacts.has(`${data.company}|${c.email}`)
           )
           return (
             <Checkbox
               checked={allSelected}
-              onCheckedChange={() => toggleBuyerSelection(data.buyer)}
+              onCheckedChange={() => toggleCompanySelection(data.companyData)}
               aria-label={`Select all contacts from ${data.company}`}
             />
           )
@@ -267,20 +294,7 @@ export function AddLeadDialog({
       cell: ({ row }) => {
         const data = row.original
         if (data.isCompanyHeader) {
-          return (
-            <div className="text-sm text-muted-foreground">
-              {data.companyWebsite && (
-                <a 
-                  href={data.companyWebsite} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:text-primary"
-                >
-                  {data.companyWebsite}
-                </a>
-              )}
-            </div>
-          )
+          return null
         } else {
           return <span className="font-medium">{data.contactName}</span>
         }
@@ -346,17 +360,17 @@ export function AddLeadDialog({
     
     selectedContacts.forEach(key => {
       const [companyName, email] = key.split('|')
-      const buyer = buyers.find(b => b.company === companyName)
-      const contact = buyer?.contactDetails?.find(c => c.email === email)
+      const company = companies.find(c => c.company === companyName)
+      const contact = company?.contacts?.find(c => c.email === email)
       
-      if (buyer && contact) {
+      if (company && contact) {
         leads.push({
           email: contact.email,
           name: contact.name,
-          title: contact.title || contact.role,
-          company: buyer.company,
-          country: buyer.country,
-          industry: buyer.industry,
+          title: contact.title,
+          company: company.company,
+          country: company.country,
+          industry: company.industry,
           status: 'active'
         })
       }
@@ -472,11 +486,14 @@ export function AddLeadDialog({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by company, industry, contact name, or email..."
+                  placeholder="Search by company, industry, contact name, or email... (min 2 chars)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
                 />
+                {searching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
               </div>
 
               {selectedContacts.size > 0 && (
@@ -521,7 +538,16 @@ export function AddLeadDialog({
                       {tableData.length === 0 ? (
                         <tr>
                           <td colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                            {searchTerm ? 'No matching companies found' : 'Enter a search term to find companies'}
+                            {searching ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                Searching database...
+                              </div>
+                            ) : searchTerm && searchTerm.length >= 2 ? (
+                              'No matching companies found'
+                            ) : (
+                              'Enter at least 2 characters to search existing leads'
+                            )}
                           </td>
                         </tr>
                       ) : (
