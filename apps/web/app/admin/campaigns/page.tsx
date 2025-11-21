@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { BarChart3, List } from 'lucide-react'
+import { BarChart3, List, AtSign } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OverallStatistics } from '@/components/admin/overall-statistics'
 import { CampaignList } from '@/components/admin/campaign-list'
+import { EmailAccountsTab } from './components/EmailAccountsTab'
 
 export default function AdminCampaignsPage() {
   const [activeTab, setActiveTab] = useState('statistics')
@@ -36,7 +37,7 @@ export default function AdminCampaignsPage() {
         <section className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-7xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 max-w-xl mx-auto">
+              <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto">
                 <TabsTrigger value="statistics" className="gap-2">
                   <BarChart3 className="h-4 w-4" />
                   <span className="hidden sm:inline">Overall Statistics</span>
@@ -46,6 +47,11 @@ export default function AdminCampaignsPage() {
                   <List className="h-4 w-4" />
                   <span className="hidden sm:inline">Campaign List</span>
                   <span className="sm:hidden">Campaigns</span>
+                </TabsTrigger>
+                <TabsTrigger value="email-accounts" className="gap-2">
+                  <AtSign className="h-4 w-4" />
+                  <span className="hidden sm:inline">Email Accounts</span>
+                  <span className="sm:hidden">Accounts</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -57,6 +63,11 @@ export default function AdminCampaignsPage() {
               {/* Campaign List Tab */}
               <TabsContent value="campaigns" className="space-y-6">
                 <CampaignList />
+              </TabsContent>
+
+              {/* Email Accounts Tab */}
+              <TabsContent value="email-accounts" className="space-y-6">
+                <EmailAccountsTab />
               </TabsContent>
             </Tabs>
           </div>
