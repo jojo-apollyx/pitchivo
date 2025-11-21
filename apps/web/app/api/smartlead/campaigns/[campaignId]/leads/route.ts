@@ -17,19 +17,30 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ campaignId: string }> }
 ) {
+  const { campaignId } = await params;
+  
+  console.log(`[Smartlead Leads API] ============================================`);
+  console.log(`[Smartlead Leads API] 🚀 GET /api/smartlead/campaigns/${campaignId}/leads`);
+  console.log(`[Smartlead Leads API] Campaign ID: ${campaignId}`);
+  console.log(`[Smartlead Leads API] ============================================`);
+
   try {
     const supabase = await createClient();
     
     // Check authentication
+    console.log(`[Smartlead Leads API] Checking authentication...`);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error(`[Smartlead Leads API] ❌ Authentication failed:`, {
+        authError: authError?.message,
+        hasUser: !!user,
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-
-    const { campaignId } = await params;
+    console.log(`[Smartlead Leads API] ✅ Authenticated user: ${user.id}`);
 
     // Get campaign from database
     const { data: campaign, error: dbError } = await supabase
@@ -75,17 +86,21 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '100', 10);
 
     // Get leads from Smartlead
-    console.log(`[Smartlead Leads API] Getting leads for campaign:`, {
-      campaign_id: campaignId,
-      smartlead_campaign_id: campaign.smartlead_campaign_id,
-      offset,
-      limit,
-    });
+    console.log(`[Smartlead Leads API] 🚀 CALLING SMARTLEAD API: listLeads`);
+    console.log(`[Smartlead Leads API] Smartlead Campaign ID: ${campaign.smartlead_campaign_id}`);
+    console.log(`[Smartlead Leads API] Pagination: offset=${offset}, limit=${limit}`);
 
     const smartlead = createSmartleadClient();
     const result = await smartlead.listLeads(campaign.smartlead_campaign_id.toString(), {
       offset,
       limit,
+    });
+    
+    console.log(`[Smartlead Leads API] Smartlead API response:`, {
+      success: result.success,
+      leads_count: result.data?.data?.length || 0,
+      total_leads: result.data?.total_leads,
+      error: result.error,
     });
 
     if (!result.success) {
@@ -201,11 +216,9 @@ export async function POST(
     }
 
     // Add leads to Smartlead
-    console.log(`[Smartlead Leads API] Adding leads to campaign:`, {
-      campaign_id: campaignId,
-      smartlead_campaign_id: campaign.smartlead_campaign_id,
-      leads_count: Array.isArray(leads) ? leads.length : 1,
-    });
+    console.log(`[Smartlead Leads API] 🚀 CALLING SMARTLEAD API: addLead/addLeads`);
+    console.log(`[Smartlead Leads API] Smartlead Campaign ID: ${campaign.smartlead_campaign_id}`);
+    console.log(`[Smartlead Leads API] Leads to add: ${Array.isArray(leads) ? leads.length : 1}`);
 
     const smartlead = createSmartleadClient();
     const leadsArray = Array.isArray(leads) ? leads : [leads];
@@ -226,15 +239,27 @@ export async function POST(
     console.log('[Smartlead Leads API] Transformed leads:', {
       original_count: leadsArray.length,
       transformed_count: transformedLeads.length,
-      sample_lead: transformedLeads[0],
+      sample_lead: transformedLeads[0] ? {
+        email: transformedLeads[0].email,
+        first_name: transformedLeads[0].first_name,
+        company_name: transformedLeads[0].company_name,
+        has_custom_fields: !!transformedLeads[0].custom_fields,
+      } : null,
     });
     
     let result;
     if (transformedLeads.length === 1) {
+      console.log(`[Smartlead Leads API] Using addLead (single lead)`);
       result = await smartlead.addLead(campaign.smartlead_campaign_id.toString(), transformedLeads[0]);
     } else {
+      console.log(`[Smartlead Leads API] Using addLeads (bulk: ${transformedLeads.length} leads)`);
       result = await smartlead.addLeads(campaign.smartlead_campaign_id.toString(), transformedLeads);
     }
+    
+    console.log(`[Smartlead Leads API] Smartlead API response:`, {
+      success: result.success,
+      error: result.error,
+    });
 
     if (!result.success) {
       console.error('[Smartlead Leads API] Failed to add leads:', {

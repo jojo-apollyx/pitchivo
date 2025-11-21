@@ -97,8 +97,6 @@ export async function getPlaceholderContext(
   },
   userProfile?: {
     full_name?: string | null;
-    first_name?: string | null;
-    last_name?: string | null;
     email?: string;
   }
 ): Promise<PlaceholderContext> {
@@ -114,11 +112,8 @@ export async function getPlaceholderContext(
   let userName: string | undefined;
   if (userProfile) {
     userName = userProfile.full_name || 
-               (userProfile.first_name && userProfile.last_name 
-                 ? `${userProfile.first_name} ${userProfile.last_name}` 
-                 : userProfile.first_name || 
-                   userProfile.email?.split('@')[0] || 
-                   'Team');
+               userProfile.email?.split('@')[0] || 
+               'Team';
   }
 
   return {

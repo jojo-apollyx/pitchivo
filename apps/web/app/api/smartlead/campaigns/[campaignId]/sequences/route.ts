@@ -14,21 +14,33 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ campaignId: string }> }
 ) {
+  const { campaignId } = await params;
+  
+  console.log(`[Smartlead Sequences API] ============================================`);
+  console.log(`[Smartlead Sequences API] 🚀 GET /api/smartlead/campaigns/${campaignId}/sequences`);
+  console.log(`[Smartlead Sequences API] Campaign ID: ${campaignId}`);
+  console.log(`[Smartlead Sequences API] ============================================`);
+
   try {
     const supabase = await createClient();
     
     // Check authentication
+    console.log(`[Smartlead Sequences API] Checking authentication...`);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error(`[Smartlead Sequences API] ❌ Authentication failed:`, {
+        authError: authError?.message,
+        hasUser: !!user,
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-
-    const { campaignId } = await params;
+    console.log(`[Smartlead Sequences API] ✅ Authenticated user: ${user.id}`);
 
     // Get campaign from database
+    console.log(`[Smartlead Sequences API] Fetching campaign from database...`);
     const { data: campaign, error: dbError } = await supabase
       .from('campaigns')
       .select('smartlead_campaign_id, org_id')
@@ -36,13 +48,24 @@ export async function GET(
       .maybeSingle();
 
     if (dbError || !campaign) {
+      console.error(`[Smartlead Sequences API] ❌ Campaign not found:`, {
+        campaignId,
+        dbError: dbError?.message,
+        hasCampaign: !!campaign,
+      });
       return NextResponse.json(
         { error: 'Campaign not found' },
         { status: 404 }
       );
     }
+    console.log(`[Smartlead Sequences API] ✅ Campaign found:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+      org_id: campaign.org_id,
+    });
 
     if (!campaign.smartlead_campaign_id) {
+      console.error(`[Smartlead Sequences API] ❌ Campaign not integrated with Smartlead`);
       return NextResponse.json(
         { error: 'Campaign not integrated with Smartlead' },
         { status: 400 }
@@ -50,30 +73,53 @@ export async function GET(
     }
 
     // Check if user is admin or has access to this organization
-    const { data: profile } = await supabase
+    console.log(`[Smartlead Sequences API] Checking authorization...`);
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('is_pitchivo_admin, organization_id')
       .eq('id', user.id)
       .single();
 
+    if (profileError) {
+      console.error(`[Smartlead Sequences API] ❌ Failed to fetch user profile:`, profileError);
+    }
+
     const isAdmin = profile?.is_pitchivo_admin || false;
     const hasOrgAccess = profile?.organization_id === campaign.org_id;
 
+    console.log(`[Smartlead Sequences API] Authorization check:`, {
+      user_id: user.id,
+      isAdmin,
+      user_org_id: profile?.organization_id,
+      campaign_org_id: campaign.org_id,
+      hasOrgAccess,
+    });
+
     if (!isAdmin && !hasOrgAccess) {
+      console.error(`[Smartlead Sequences API] ❌ Forbidden: User does not have access`, {
+        user_id: user.id,
+        isAdmin,
+        user_org_id: profile?.organization_id,
+        campaign_org_id: campaign.org_id,
+      });
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
       );
     }
+    console.log(`[Smartlead Sequences API] ✅ Authorization granted`);
 
     // Get sequences from Smartlead
-    console.log(`[Smartlead Sequences API] Getting sequences for campaign:`, {
-      campaign_id: campaignId,
-      smartlead_campaign_id: campaign.smartlead_campaign_id,
-    });
-
+    console.log(`[Smartlead Sequences API] 🚀 CALLING SMARTLEAD API: getCampaignSequences`);
+    console.log(`[Smartlead Sequences API] Smartlead Campaign ID: ${campaign.smartlead_campaign_id}`);
     const smartlead = createSmartleadClient();
     const result = await smartlead.getCampaignSequences(campaign.smartlead_campaign_id);
+    
+    console.log(`[Smartlead Sequences API] Smartlead API response:`, {
+      success: result.success,
+      sequences_count: result.data ? (Array.isArray(result.data) ? result.data.length : 1) : 0,
+      error: result.error,
+    });
 
     if (!result.success) {
       console.error('[Smartlead Sequences API] Failed to get sequences:', {
@@ -116,23 +162,40 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ campaignId: string }> }
 ) {
+  const { campaignId } = await params;
+  
+  console.log(`[Smartlead Sequences API] ============================================`);
+  console.log(`[Smartlead Sequences API] 🚀 POST /api/smartlead/campaigns/${campaignId}/sequences`);
+  console.log(`[Smartlead Sequences API] Campaign ID: ${campaignId}`);
+  console.log(`[Smartlead Sequences API] ============================================`);
+
   try {
     const supabase = await createClient();
     
     // Check authentication
+    console.log(`[Smartlead Sequences API] Checking authentication...`);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error(`[Smartlead Sequences API] ❌ Authentication failed:`, {
+        authError: authError?.message,
+        hasUser: !!user,
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+    console.log(`[Smartlead Sequences API] ✅ Authenticated user: ${user.id}`);
 
-    const { campaignId } = await params;
     const body = await request.json();
     const { sequences } = body;
+    console.log(`[Smartlead Sequences API] Request body:`, {
+      sequences_count: sequences?.length || 0,
+      sequences: sequences?.map((s: any) => ({ seq_number: s.seq_number, has_subject: !!s.subject })),
+    });
 
     if (!sequences || !Array.isArray(sequences)) {
+      console.error(`[Smartlead Sequences API] ❌ Invalid request: sequences array is required`);
       return NextResponse.json(
         { error: 'Invalid request: sequences array is required' },
         { status: 400 }
@@ -140,6 +203,7 @@ export async function POST(
     }
 
     // Get campaign from database with product and org info
+    console.log(`[Smartlead Sequences API] Fetching campaign from database...`);
     const { data: campaign, error: dbError } = await supabase
       .from('campaigns')
       .select(`
@@ -161,13 +225,25 @@ export async function POST(
       .maybeSingle();
 
     if (dbError || !campaign) {
+      console.error(`[Smartlead Sequences API] ❌ Campaign not found:`, {
+        campaignId,
+        dbError: dbError?.message,
+        hasCampaign: !!campaign,
+      });
       return NextResponse.json(
         { error: 'Campaign not found' },
         { status: 404 }
       );
     }
+    console.log(`[Smartlead Sequences API] ✅ Campaign found:`, {
+      campaign_id: campaignId,
+      smartlead_campaign_id: campaign.smartlead_campaign_id,
+      org_id: campaign.org_id,
+      display_name: campaign.display_name,
+    });
 
     if (!campaign.smartlead_campaign_id) {
+      console.error(`[Smartlead Sequences API] ❌ Campaign not integrated with Smartlead`);
       return NextResponse.json(
         { error: 'Campaign not integrated with Smartlead' },
         { status: 400 }
@@ -175,28 +251,48 @@ export async function POST(
     }
 
     // Check if user is admin or has access to this organization
-    const { data: profile } = await supabase
+    console.log(`[Smartlead Sequences API] Checking authorization...`);
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('is_pitchivo_admin, organization_id, full_name, first_name, last_name, email')
+      .select('is_pitchivo_admin, organization_id, full_name, email')
       .eq('id', user.id)
       .single();
+
+    if (profileError) {
+      console.error(`[Smartlead Sequences API] ❌ Failed to fetch user profile:`, profileError);
+    }
 
     const isAdmin = profile?.is_pitchivo_admin || false;
     const hasOrgAccess = profile?.organization_id === campaign.org_id;
 
+    console.log(`[Smartlead Sequences API] Authorization check:`, {
+      user_id: user.id,
+      isAdmin,
+      user_org_id: profile?.organization_id,
+      campaign_org_id: campaign.org_id,
+      hasOrgAccess,
+    });
+
     if (!isAdmin && !hasOrgAccess) {
+      console.error(`[Smartlead Sequences API] ❌ Forbidden: User does not have access`, {
+        user_id: user.id,
+        isAdmin,
+        user_org_id: profile?.organization_id,
+        campaign_org_id: campaign.org_id,
+      });
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
       );
     }
+    console.log(`[Smartlead Sequences API] ✅ Authorization granted`);
 
     // Get user profile for campaign creator if available
     let userProfile = null;
     if (campaign.created_by) {
       const { data: creatorProfile } = await supabase
         .from('user_profiles')
-        .select('full_name, first_name, last_name, email')
+        .select('full_name, email')
         .eq('id', campaign.created_by)
         .single();
       userProfile = creatorProfile;
@@ -206,9 +302,18 @@ export async function POST(
     }
 
     // Get placeholder context
+    console.log(`[Smartlead Sequences API] Getting placeholder context...`);
     const placeholderContext = await getPlaceholderContext(campaign as any, userProfile || undefined);
+    console.log(`[Smartlead Sequences API] Placeholder context:`, {
+      hasProductUrl: !!placeholderContext.productUrl,
+      productName: placeholderContext.productName,
+      userOrgName: placeholderContext.userOrgName,
+      userName: placeholderContext.userName,
+      campaignName: placeholderContext.campaignName,
+    });
 
     // Process sequences: replace placeholders before sending to Smartlead
+    console.log(`[Smartlead Sequences API] Processing ${sequences.length} sequences...`);
     const processedSequences = sequences.map((seq: any) => {
       const { subject, emailBody } = replacePlaceholdersInSequence(
         seq.subject,
@@ -230,10 +335,11 @@ export async function POST(
       };
     });
 
-    console.log(`[Smartlead Sequences API] Saving sequences for campaign:`, {
-      campaign_id: campaignId,
-      smartlead_campaign_id: campaign.smartlead_campaign_id,
-      sequences_count: processedSequences.length,
+    console.log(`[Smartlead Sequences API] 🚀 CALLING SMARTLEAD API: saveCampaignSequences`);
+    console.log(`[Smartlead Sequences API] Smartlead Campaign ID: ${campaign.smartlead_campaign_id}`);
+    console.log(`[Smartlead Sequences API] Sequences to save: ${processedSequences.length}`);
+    processedSequences.forEach((seq, idx) => {
+      console.log(`[Smartlead Sequences API]   Sequence ${idx + 1}: seq_number=${seq.seq_number}, delay=${seq.seq_delay_details?.delay_in_days} days, has_subject=${!!seq.subject}`);
     });
 
     const smartlead = createSmartleadClient();
@@ -242,11 +348,18 @@ export async function POST(
       processedSequences
     );
 
+    console.log(`[Smartlead Sequences API] Smartlead API response:`, {
+      success: result.success,
+      error: result.error,
+    });
+
     if (!result.success) {
-      console.error('[Smartlead Sequences API] Failed to save sequences:', {
+      console.error('[Smartlead Sequences API] ❌ FAILED to save sequences:', {
         error: result.error,
         campaign_id: campaignId,
         smartlead_campaign_id: campaign.smartlead_campaign_id,
+        error_message: result.error?.message || result.error?.error,
+        error_status_code: result.error?.status_code,
       });
       return NextResponse.json(
         { 
@@ -258,6 +371,7 @@ export async function POST(
       );
     }
 
+    console.log(`[Smartlead Sequences API] ✅ Successfully saved ${processedSequences.length} sequences to Smartlead`);
     return NextResponse.json({
       success: true,
       message: 'Sequences saved successfully',

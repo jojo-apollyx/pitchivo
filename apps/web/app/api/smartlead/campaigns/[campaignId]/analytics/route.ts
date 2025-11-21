@@ -12,19 +12,30 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ campaignId: string }> }
 ) {
+  const { campaignId } = await params;
+  
+  console.log(`[Smartlead Analytics API] ============================================`);
+  console.log(`[Smartlead Analytics API] 🚀 GET /api/smartlead/campaigns/${campaignId}/analytics`);
+  console.log(`[Smartlead Analytics API] Campaign ID: ${campaignId}`);
+  console.log(`[Smartlead Analytics API] ============================================`);
+
   try {
     const supabase = await createClient();
     
     // Check authentication
+    console.log(`[Smartlead Analytics API] Checking authentication...`);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error(`[Smartlead Analytics API] ❌ Authentication failed:`, {
+        authError: authError?.message,
+        hasUser: !!user,
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-
-    const { campaignId } = await params;
+    console.log(`[Smartlead Analytics API] ✅ Authenticated user: ${user.id}`);
 
     // Get campaign from database
     const { data: campaign, error: dbError } = await supabase
@@ -65,13 +76,17 @@ export async function GET(
     }
 
     // Get analytics from Smartlead
-    console.log(`[Smartlead Analytics API] Getting analytics for campaign:`, {
-      campaign_id: campaignId,
-      smartlead_campaign_id: campaign.smartlead_campaign_id,
-    });
+    console.log(`[Smartlead Analytics API] 🚀 CALLING SMARTLEAD API: getCampaignAnalytics`);
+    console.log(`[Smartlead Analytics API] Smartlead Campaign ID: ${campaign.smartlead_campaign_id}`);
 
     const smartlead = createSmartleadClient();
     const result = await smartlead.getCampaignAnalytics(campaign.smartlead_campaign_id);
+    
+    console.log(`[Smartlead Analytics API] Smartlead API response:`, {
+      success: result.success,
+      hasData: !!result.data,
+      error: result.error,
+    });
 
     if (!result.success || !result.data) {
       console.error('[Smartlead Analytics API] Failed to get analytics:', {
