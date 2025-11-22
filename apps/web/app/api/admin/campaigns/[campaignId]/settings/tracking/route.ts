@@ -47,7 +47,7 @@ export async function POST(
     }
 
     if (!campaign.smartlead_campaign_id) {
-      return NextResponse.json({ error: 'Campaign not synced with Smartlead' }, { status: 400 })
+      return NextResponse.json({ error: 'Campaign not configured' }, { status: 400 })
     }
 
     // Update tracking settings in Smartlead

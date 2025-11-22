@@ -195,20 +195,20 @@ export default function ReviewLaunchPage() {
 
           if (!smartleadResponse.ok) {
             console.error('Failed to create campaign in Smartlead:', await smartleadResponse.text())
-            // Don't fail the campaign launch if Smartlead fails
-            toast.error('Campaign created but Smartlead integration failed', {
-              description: 'The campaign was created but could not be synced with Smartlead. You can manage it from the admin panel.'
+            // Don't fail the campaign launch if backend fails
+            toast.error('Campaign created but setup incomplete', {
+              description: 'The campaign was created but could not be fully configured. You can manage it from the admin panel.'
             })
           } else {
             const smartleadData = await smartleadResponse.json()
             console.log('Campaign created in Smartlead:', smartleadData.smartlead_campaign_id)
-            toast.success('Campaign created and synced with Smartlead')
+            toast.success('Campaign created and started successfully')
           }
         } catch (smartleadError) {
           console.error('Error creating campaign in Smartlead:', smartleadError)
-          // Don't fail the campaign launch if Smartlead fails
-          toast.error('Campaign created but Smartlead integration failed', {
-            description: 'The campaign was created but could not be synced with Smartlead.'
+          // Don't fail the campaign launch if backend fails
+          toast.error('Campaign created but setup incomplete', {
+            description: 'The campaign was created but could not be fully configured.'
           })
         }
       }

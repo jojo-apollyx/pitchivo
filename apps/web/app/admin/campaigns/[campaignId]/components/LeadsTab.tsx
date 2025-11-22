@@ -134,7 +134,7 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
 
   async function handleLeadAction(leadId: string, leadEmail: string, action: 'pause' | 'resume' | 'unsubscribe' | 'delete') {
     if (!campaign.smartlead_campaign_id) {
-      toast.error('Campaign not synced with Smartlead')
+      toast.error('Campaign not configured')
       return
     }
 

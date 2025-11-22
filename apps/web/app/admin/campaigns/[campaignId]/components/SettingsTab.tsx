@@ -53,7 +53,7 @@ export function SettingsTab({ campaign, onRefresh }: SettingsTabProps) {
 
   async function handleSaveSchedule() {
     if (!campaign.smartlead_campaign_id) {
-      toast.error('Campaign not synced with Smartlead')
+      toast.error('Campaign not configured')
       return
     }
 
@@ -87,7 +87,7 @@ export function SettingsTab({ campaign, onRefresh }: SettingsTabProps) {
 
   async function handleSaveTracking() {
     if (!campaign.smartlead_campaign_id) {
-      toast.error('Campaign not synced with Smartlead')
+      toast.error('Campaign not configured')
       return
     }
 
@@ -121,7 +121,7 @@ export function SettingsTab({ campaign, onRefresh }: SettingsTabProps) {
 
   async function handleSaveBehavior() {
     if (!campaign.smartlead_campaign_id) {
-      toast.error('Campaign not synced with Smartlead')
+      toast.error('Campaign not configured')
       return
     }
 
@@ -159,7 +159,7 @@ export function SettingsTab({ campaign, onRefresh }: SettingsTabProps) {
     return (
       <Alert>
         <AlertDescription>
-          Campaign not synced with Smartlead. Settings are only available for synced campaigns.
+          Campaign not configured. Settings are only available for active campaigns.
         </AlertDescription>
       </Alert>
     )

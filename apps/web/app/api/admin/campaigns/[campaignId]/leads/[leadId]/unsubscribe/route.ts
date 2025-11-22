@@ -34,7 +34,7 @@ export async function POST(
     }
 
     if (!campaign.smartlead_campaign_id) {
-      return NextResponse.json({ error: 'Campaign not synced with Smartlead' }, { status: 400 })
+      return NextResponse.json({ error: 'Campaign not configured' }, { status: 400 })
     }
 
     // Call Smartlead API to unsubscribe lead
@@ -44,7 +44,7 @@ export async function POST(
 
     if (!result.success) {
       console.error('[Unsubscribe Lead API] Smartlead error:', result.error)
-      throw new Error(result.error?.message || 'Failed to unsubscribe lead in Smartlead')
+      throw new Error(result.error?.message || 'Failed to unsubscribe lead')
     }
 
     // Update local database

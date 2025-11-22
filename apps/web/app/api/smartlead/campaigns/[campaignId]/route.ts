@@ -47,7 +47,7 @@ export async function DELETE(
 
       return NextResponse.json(
         { 
-          error: 'Failed to delete campaign from Smartlead',
+          error: 'Failed to delete campaign',
           details: result.error?.message || result.error?.error || 'Unknown error',
           status_code: result.error?.status_code,
         },

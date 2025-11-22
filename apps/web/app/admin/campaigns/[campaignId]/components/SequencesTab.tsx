@@ -415,10 +415,10 @@ export function SequencesTab({ campaign, onRefresh }: SequencesTabProps) {
         <div className="rounded-full bg-muted p-3 mb-4">
           <AlertCircle className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">Campaign Not Synced</h3>
+        <h3 className="text-lg font-semibold mb-2">Campaign Not Configured</h3>
         <p className="text-sm text-muted-foreground text-center max-w-md">
-          Sequences are only available for campaigns synced with Smartlead. 
-          Please sync this campaign first to manage email sequences.
+          Sequences are only available for active campaigns. 
+          Please configure this campaign first to manage email sequences.
         </p>
       </div>
     )

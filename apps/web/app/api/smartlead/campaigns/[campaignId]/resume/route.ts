@@ -42,7 +42,7 @@ export async function POST(
 
     if (!campaign.smartlead_campaign_id) {
       return NextResponse.json(
-        { error: 'Campaign not integrated with Smartlead' },
+        { error: 'Campaign not configured' },
         { status: 400 }
       );
     }
@@ -79,7 +79,7 @@ export async function POST(
       });
       return NextResponse.json(
         { 
-          error: 'Failed to resume campaign in Smartlead',
+          error: 'Failed to resume campaign',
           details: result.error?.message || result.error?.error || 'Unknown error',
           status_code: result.error?.status_code,
         },

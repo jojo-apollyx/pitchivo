@@ -312,9 +312,9 @@ export default function CampaignsPage() {
           
           if (!smartleadResponse.ok) {
             console.error('Failed to delete campaign from Smartlead:', await smartleadResponse.text())
-            // Continue with local deletion even if Smartlead deletion fails
-            toast.error('Campaign deleted locally but Smartlead deletion failed', {
-              description: 'The campaign was removed from your dashboard but may still exist in Smartlead.'
+            // Continue with local deletion even if remote deletion fails
+            toast.error('Campaign deleted locally but remote deletion failed', {
+              description: 'The campaign was removed from your dashboard but may still exist remotely.'
             })
           } else {
             console.log('Campaign deleted from Smartlead successfully')

@@ -483,7 +483,7 @@ export function RichTextEditor({
                 </div>
                 <Separator />
                 <div>
-                  <h4 className="font-semibold text-sm mb-2">Smartlead Merge Tags</h4>
+                  <h4 className="font-semibold text-sm mb-2">Email Merge Tags</h4>
                   <div className="space-y-1.5">
                     {[
                       { code: '{first_name}', desc: 'Lead first name' },

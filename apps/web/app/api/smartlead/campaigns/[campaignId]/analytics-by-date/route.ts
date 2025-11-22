@@ -52,7 +52,7 @@ export async function GET(
 
     if (!campaign.smartlead_campaign_id) {
       return NextResponse.json(
-        { error: 'Campaign not integrated with Smartlead' },
+        { error: 'Campaign not configured' },
         { status: 400 }
       );
     }
@@ -97,7 +97,7 @@ export async function GET(
       });
       return NextResponse.json(
         { 
-          error: 'Failed to get campaign analytics from Smartlead',
+          error: 'Failed to get campaign analytics',
           details: result.error?.message || result.error?.error || 'Unknown error',
           status_code: result.error?.status_code,
         },

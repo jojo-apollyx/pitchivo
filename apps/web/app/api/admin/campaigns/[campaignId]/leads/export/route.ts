@@ -39,7 +39,7 @@ export async function GET(
       const result = await smartlead.exportCampaignLeads(campaign.smartlead_campaign_id.toString())
 
       if (!result.success || !result.data) {
-        throw new Error(result.error?.message || 'Failed to export from Smartlead')
+        throw new Error(result.error?.message || 'Failed to export leads')
       }
 
       const csvData = result.data

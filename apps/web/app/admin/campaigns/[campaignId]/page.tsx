@@ -90,7 +90,7 @@ export default function CampaignDetailPage() {
 
   async function handleStatusChange(newStatus: 'active' | 'paused' | 'stopped') {
     if (!campaign?.smartlead_campaign_id) {
-      toast.error('Campaign not synced with Smartlead')
+      toast.error('Campaign not configured')
       return
     }
 
@@ -170,7 +170,7 @@ export default function CampaignDetailPage() {
 
   async function handleExport() {
     if (!campaign?.smartlead_campaign_id) {
-      toast.error('Campaign not synced with Smartlead')
+      toast.error('Campaign not configured')
       return
     }
 

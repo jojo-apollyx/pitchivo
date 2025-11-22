@@ -58,7 +58,7 @@ export async function GET(
 
     if (!campaign.smartlead_campaign_id) {
       return NextResponse.json(
-        { error: 'Campaign not integrated with Smartlead' },
+        { error: 'Campaign not configured' },
         { status: 400 }
       );
     }
@@ -111,7 +111,7 @@ export async function GET(
       });
       return NextResponse.json(
         { 
-          error: 'Failed to get leads from Smartlead',
+          error: 'Failed to get leads',
           details: result.error?.message || result.error?.error || 'Unknown error',
           status_code: result.error?.status_code,
         },
@@ -193,7 +193,7 @@ export async function POST(
 
     if (!campaign.smartlead_campaign_id) {
       return NextResponse.json(
-        { error: 'Campaign not integrated with Smartlead' },
+        { error: 'Campaign not configured' },
         { status: 400 }
       );
     }
@@ -271,7 +271,7 @@ export async function POST(
       });
       return NextResponse.json(
         { 
-          error: 'Failed to add leads to Smartlead',
+          error: 'Failed to add leads',
           details: result.error?.message || result.error?.error || 'Unknown error',
           status_code: result.error?.status_code,
         },
@@ -347,7 +347,7 @@ export async function DELETE(
 
     if (!campaign.smartlead_campaign_id) {
       return NextResponse.json(
-        { error: 'Campaign not integrated with Smartlead' },
+        { error: 'Campaign not configured' },
         { status: 400 }
       );
     }
@@ -388,7 +388,7 @@ export async function DELETE(
       });
       return NextResponse.json(
         { 
-          error: 'Failed to remove lead from Smartlead',
+          error: 'Failed to remove lead',
           details: result.error?.message || result.error?.error || 'Unknown error',
           status_code: result.error?.status_code,
         },
