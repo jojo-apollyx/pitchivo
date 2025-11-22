@@ -7,7 +7,33 @@
 -- Add send_sequence_number to track multiple sends to the same lead
 -- This helps distinguish between first send, second send, etc.
 ALTER TABLE scheduled_emails 
-ADD COLUMN IF NOT EXISTS send_sequence_number INTEGER NOT NULL DEFAULT 1;
+ADD COLUMN IF NOT EXISTS send_sequence_number INTEGER;
+
+-- Assign proper sequence numbers to existing rows to avoid duplicates
+-- Use ROW_NUMBER() to assign sequential numbers based on creation time
+UPDATE scheduled_emails se
+SET send_sequence_number = sub.row_num
+FROM (
+  SELECT 
+    scheduled_email_id,
+    ROW_NUMBER() OVER (
+      PARTITION BY lead_id, campaign_id 
+      ORDER BY created_at ASC, scheduled_email_id ASC
+    ) as row_num
+  FROM scheduled_emails
+  WHERE lead_id IS NOT NULL AND send_sequence_number IS NULL
+) sub
+WHERE se.scheduled_email_id = sub.scheduled_email_id;
+
+-- Set default for any remaining NULL values (shouldn't happen, but just in case)
+UPDATE scheduled_emails 
+SET send_sequence_number = 1 
+WHERE send_sequence_number IS NULL;
+
+-- Now make it NOT NULL
+ALTER TABLE scheduled_emails 
+ALTER COLUMN send_sequence_number SET NOT NULL,
+ALTER COLUMN send_sequence_number SET DEFAULT 1;
 
 -- Create index for efficient querying of send sequences
 CREATE INDEX IF NOT EXISTS idx_scheduled_emails_lead_sequence 
