@@ -358,7 +358,6 @@ export function SequencesTab({ campaign, onRefresh }: SequencesTabProps) {
           delay_in_days: formData.delay_days,
         },
         sequence_variants: existingSequence?.sequence_variants || undefined,
-        seq_variants: existingSequence?.sequence_variants || undefined,
       }
 
       let updatedSequences: Sequence[]

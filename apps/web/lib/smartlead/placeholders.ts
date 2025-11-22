@@ -74,9 +74,6 @@ export function replacePlaceholdersInSequence(
   };
 }
 
-// Export replacePlaceholders for use in API routes
-export { replacePlaceholders };
-
 /**
  * Get placeholder context from campaign data
  */

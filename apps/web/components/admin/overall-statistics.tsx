@@ -81,11 +81,12 @@ export function OverallStatistics() {
 
       // Status breakdown - matching Smartlead statuses
       const statusBreakdown = {
-        drafted: campaigns.filter(c => c.status === 'drafted').length,  // Matches Smartlead DRAFTED
+        draft: campaigns.filter(c => c.status === 'drafted').length,  // Matches Smartlead DRAFTED
+        scheduled: campaigns.filter(c => c.status === 'scheduled').length,
         active: campaigns.filter(c => c.status === 'active').length,
         paused: campaigns.filter(c => c.status === 'paused').length,
         completed: campaigns.filter(c => c.status === 'completed').length,
-        stopped: campaigns.filter(c => c.status === 'stopped').length,  // Matches Smartlead STOPPED
+        cancelled: campaigns.filter(c => c.status === 'stopped').length,  // Matches Smartlead STOPPED
       }
 
       setStats({
@@ -253,7 +254,7 @@ export function OverallStatistics() {
             <Badge variant="outline" className="mb-2 bg-gray-100">
               Drafted
             </Badge>
-            <div className="text-2xl font-bold">{stats.statusBreakdown.drafted}</div>
+            <div className="text-2xl font-bold">{stats.statusBreakdown.draft}</div>
           </div>
           <div className="bg-muted/50 rounded-lg p-4">
             <Badge variant="outline" className="mb-2 bg-green-100 text-green-700 border-green-300">
@@ -277,7 +278,7 @@ export function OverallStatistics() {
             <Badge variant="outline" className="mb-2 bg-red-100 text-red-700 border-red-300">
               Stopped
             </Badge>
-            <div className="text-2xl font-bold">{stats.statusBreakdown.stopped}</div>
+            <div className="text-2xl font-bold">{stats.statusBreakdown.cancelled}</div>
           </div>
         </div>
       </Card>

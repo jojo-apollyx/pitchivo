@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     // Sort templates by the order in template_ids
     const orderedTemplates = templateIds
-      .map(id => templates?.find(t => t.template_id === id))
+      .map((id: string) => templates?.find(t => t.template_id === id))
       .filter(Boolean)
 
     return NextResponse.json({ defaults: orderedTemplates })
