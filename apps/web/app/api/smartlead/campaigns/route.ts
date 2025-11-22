@@ -356,6 +356,49 @@ export async function POST(request: NextRequest) {
       console.error('[Smartlead Campaign API] Error auto-adding email accounts:', emailAccountError);
     }
 
+    // Add 2 mock leads for testing
+    try {
+      console.log(`[Smartlead Campaign API] Adding 2 mock leads to campaign for testing`);
+      
+      const mockLeads = [
+        {
+          email: 'test.lead1@example.com',
+          first_name: 'John',
+          last_name: 'Doe',
+          company_name: 'Test Company 1',
+          custom_fields: {
+            Title: 'CEO',
+            Location: 'New York, USA'
+          }
+        },
+        {
+          email: 'test.lead2@example.com',
+          first_name: 'Jane',
+          last_name: 'Smith',
+          company_name: 'Test Company 2',
+          custom_fields: {
+            Title: 'Marketing Director',
+            Location: 'San Francisco, USA'
+          }
+        }
+      ];
+
+      const addLeadsResult = await smartlead.addLeads(
+        result.data.id.toString(),
+        mockLeads
+      );
+
+      if (addLeadsResult.success) {
+        console.log(`[Smartlead Campaign API] ✅ Successfully added 2 mock leads to campaign`);
+      } else {
+        console.error(`[Smartlead Campaign API] ⚠️ Failed to add mock leads:`, addLeadsResult.error);
+        // Don't fail campaign creation if adding mock leads fails
+      }
+    } catch (mockLeadsError) {
+      // Don't fail campaign creation if adding mock leads fails
+      console.error('[Smartlead Campaign API] Error adding mock leads:', mockLeadsError);
+    }
+
     return NextResponse.json({
       success: true,
       smartlead_campaign_id: result.data.id,

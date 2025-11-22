@@ -25,9 +25,18 @@ export default function ChooseProductPage() {
   const router = useRouter()
   const { draft, setDraft, nextStep } = useCampaignStore()
   const [products, setProducts] = useState<Product[]>([])
-  const [selectedProductId, setSelectedProductId] = useState<string | undefined>(draft.productId)
+  const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    setMounted(true)
+    // Initialize from draft after mount to prevent hydration mismatch
+    if (draft.productId) {
+      setSelectedProductId(draft.productId)
+    }
+  }, [draft.productId])
 
   useEffect(() => {
     loadProducts()
@@ -318,7 +327,7 @@ export default function ChooseProductPage() {
             {/* Next Button */}
             <Button
               onClick={handleNext}
-              disabled={!selectedProductId}
+              disabled={!mounted || !selectedProductId || loading}
               className="gap-2 min-h-[44px]"
             >
               Next: Matched Buyers

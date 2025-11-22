@@ -48,11 +48,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
     }
     
+    // Ensure disabled is always a boolean to prevent hydration mismatches
+    const isDisabled = Boolean(disabled)
+    
     return (
       <button
-        className={cn(buttonVariants({ variant, size, className }), disabled && 'hover:scale-100 active:scale-100')}
+        className={cn(buttonVariants({ variant, size, className }), isDisabled && 'hover:scale-100 active:scale-100')}
         ref={ref}
-        disabled={disabled}
+        disabled={isDisabled}
         {...props}
       />
     )
