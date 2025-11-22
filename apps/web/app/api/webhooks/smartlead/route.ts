@@ -93,11 +93,42 @@ function mapEventToActivityType(eventType: string): string {
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
     console.log('============================================');
     console.log('🚀 SMARTLEAD WEBHOOK RECEIVED');
+    console.log('Request ID:', requestId);
     console.log('Timestamp:', new Date().toISOString());
+    console.log('Environment:', process.env.NODE_ENV || 'unknown');
+    
+    // Log request metadata
+    const url = request.url;
+    const method = request.method;
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    
+    console.log('📡 Request Details:');
+    console.log('  Method:', method);
+    console.log('  URL:', url);
+    console.log('  Headers:', JSON.stringify(headers, null, 2));
+    
+    // Log IP address if available
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+    console.log('  IP Address:', ip);
+    
+    // Log user agent
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    console.log('  User-Agent:', userAgent);
+    
+    // Check environment variables
+    console.log('🔧 Environment Check:');
+    console.log('  NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing');
+    console.log('  SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Missing');
     
     // Note: Smartlead does not provide webhook signatures or secrets
     // Security recommendations:
@@ -106,19 +137,63 @@ export async function POST(request: NextRequest) {
     // 3. Monitor for suspicious activity
     // 4. Implement rate limiting
     
-    const body = await request.json();
-    console.log('📦 Raw payload:', JSON.stringify(body, null, 2));
+    console.log('📥 Reading request body...');
+    const bodyStartTime = Date.now();
+    let body: any;
+    try {
+      body = await request.json();
+      const bodyReadTime = Date.now() - bodyStartTime;
+      console.log(`✅ Body read in ${bodyReadTime}ms`);
+    } catch (bodyError: any) {
+      console.error('❌ ERROR READING REQUEST BODY');
+      console.error('  Error type:', bodyError.constructor.name);
+      console.error('  Error message:', bodyError.message);
+      console.error('  Stack trace:', bodyError.stack);
+      throw bodyError;
+    }
+    
+    console.log('📦 Raw payload:');
+    console.log(JSON.stringify(body, null, 2));
+    console.log('📦 Payload type:', Array.isArray(body) ? 'Array' : typeof body);
+    console.log('📦 Payload keys:', Object.keys(body));
 
     // Smartlead can send single event or batch
     const events = Array.isArray(body) ? body : [body];
     console.log(`📊 Processing ${events.length} event(s)`);
+    console.log(`📊 Event structure:`, events.map((e: any, idx: number) => ({
+      index: idx,
+      hasEventType: !!e.event_type,
+      eventType: e.event_type || 'N/A',
+      hasCampaignId: !!e.campaign_id,
+      campaignId: e.campaign_id || 'N/A',
+      keys: Object.keys(e)
+    })));
 
     const results = [];
     for (let i = 0; i < events.length; i++) {
+      const eventStartTime = Date.now();
       console.log(`\n--- Processing Event ${i + 1}/${events.length} ---`);
-      const result = await processSmartleadEvent(events[i]);
-      results.push(result);
-      console.log(`Result:`, result.success ? '✅ SUCCESS' : '❌ FAILED', result);
+      console.log(`Event ${i + 1} start time:`, new Date().toISOString());
+      
+      try {
+        const result = await processSmartleadEvent(events[i], requestId);
+        const eventDuration = Date.now() - eventStartTime;
+        results.push(result);
+        console.log(`Event ${i + 1} result:`, result.success ? '✅ SUCCESS' : '❌ FAILED');
+        console.log(`Event ${i + 1} duration:`, `${eventDuration}ms`);
+        console.log(`Event ${i + 1} details:`, JSON.stringify(result, null, 2));
+      } catch (eventError: any) {
+        const eventDuration = Date.now() - eventStartTime;
+        console.error(`❌ Event ${i + 1} threw exception after ${eventDuration}ms`);
+        console.error('  Error type:', eventError.constructor.name);
+        console.error('  Error message:', eventError.message);
+        console.error('  Stack trace:', eventError.stack);
+        results.push({ 
+          success: false, 
+          error: eventError.message,
+          exception: true 
+        });
+      }
     }
 
     const duration = Date.now() - startTime;
@@ -136,25 +211,53 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
     console.error('============================================');
     console.error('❌ ERROR PROCESSING SMARTLEAD WEBHOOK');
+    console.error('Request ID:', requestId);
     console.error('Error type:', error.constructor.name);
     console.error('Error message:', error.message);
+    console.error('Error name:', error.name);
     console.error('Stack trace:', error.stack);
     console.error(`⏱️ Failed after: ${duration}ms`);
+    
+    // Log additional error details if available
+    if (error.cause) {
+      console.error('Error cause:', error.cause);
+    }
+    if (error.code) {
+      console.error('Error code:', error.code);
+    }
+    
     console.error('============================================\n');
     
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { 
+        error: 'Internal server error', 
+        details: error.message,
+        requestId,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
 }
 
-async function processSmartleadEvent(event: any) {
+async function processSmartleadEvent(event: any, requestId?: string) {
+  const eventStartTime = Date.now();
+  const eventId = `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
+    console.log(`\n🔍 [${eventId}] Starting event processing`);
+    console.log(`🔍 [${eventId}] Request ID:`, requestId || 'N/A');
+    console.log(`🔍 [${eventId}] Full event object keys:`, Object.keys(event));
+    console.log(`🔍 [${eventId}] Full event object:`, JSON.stringify(event, null, 2));
+    
     // Smartlead webhook payload structure based on official guide:
     // https://help.smartlead.ai/Webhook-Guide-Updated-4d0ae6b2fa6a4db1b4c1ead824a86866
     const eventType = event.event_type; // Official field name
     const smartleadCampaignId = event.campaign_id; // Always present in payload
+    
+    console.log(`🔍 [${eventId}] Extracted fields:`);
+    console.log(`  event_type:`, eventType);
+    console.log(`  campaign_id:`, smartleadCampaignId, `(type: ${typeof smartleadCampaignId})`);
     const leadEmail = event.to_email; // Official field name for recipient
     const fromEmail = event.from_email;
     const toName = event.to_name;
@@ -174,6 +277,24 @@ async function processSmartleadEvent(event: any) {
     const sentMessage = event.sent_message; // Object with message_id, html, text
     const clientId = event.client_id;
     const smartleadMetadata = event.metadata || {};
+    
+    console.log(`  to_email:`, leadEmail);
+    console.log(`  from_email:`, fromEmail);
+    console.log(`  to_name:`, toName);
+    console.log(`  stats_id:`, statsId);
+    console.log(`  message_id:`, messageId);
+    console.log(`  timestamp:`, timestamp);
+    console.log(`  link:`, link);
+    console.log(`  reply_text:`, replyText ? `${replyText.substring(0, 100)}...` : null);
+    console.log(`  reply_subject:`, replySubject);
+    console.log(`  bounce_reason:`, bounceReason);
+    console.log(`  bounce_type:`, bounceType);
+    console.log(`  campaign_status:`, newCampaignStatus);
+    console.log(`  campaign_name:`, campaignName);
+    console.log(`  sequence_number:`, sequenceNumber);
+    console.log(`  subject:`, subject);
+    console.log(`  client_id:`, clientId);
+    console.log(`  metadata:`, JSON.stringify(smartleadMetadata, null, 2));
     
     // Capture any additional fields for metadata
     const rest = { ...event };
@@ -212,12 +333,13 @@ async function processSmartleadEvent(event: any) {
     delete rest.ui_master_inbox_link;
     delete rest.description;
 
-    console.log(`📧 Event Type: ${eventType}`);
-    console.log(`👤 Lead Email: ${leadEmail || 'N/A'}`);
-    console.log(`📧 From Email: ${fromEmail || 'N/A'}`);
-    console.log(`🎯 Smartlead Campaign ID: ${smartleadCampaignId || 'N/A'}`);
-    console.log(`📬 Stats ID: ${statsId || 'N/A'}`);
-    console.log(`📅 Timestamp: ${timestamp || 'N/A'}`);
+    console.log(`\n📋 [${eventId}] Event Summary:`);
+    console.log(`  Event Type: ${eventType}`);
+    console.log(`  Lead Email: ${leadEmail || 'N/A'}`);
+    console.log(`  From Email: ${fromEmail || 'N/A'}`);
+    console.log(`  Smartlead Campaign ID: ${smartleadCampaignId || 'N/A'}`);
+    console.log(`  Stats ID: ${statsId || 'N/A'}`);
+    console.log(`  Timestamp: ${timestamp || 'N/A'}`);
 
     // Check if this is a campaign-level event
     const isCampaignEvent = eventType && (
@@ -226,74 +348,126 @@ async function processSmartleadEvent(event: any) {
       eventType === 'CAMPAIGN_DELETED' || 
       eventType === 'CAMPAIGN_UPDATED'
     );
+    
+    console.log(`  Is Campaign Event: ${isCampaignEvent}`);
 
     // Validate required fields based on event type
     if (!eventType) {
-      console.error('❌ Missing event_type. Available fields:', Object.keys(event));
-      return { success: false, error: 'Missing required event_type' };
+      console.error(`❌ [${eventId}] Missing event_type`);
+      console.error(`❌ [${eventId}] Available fields:`, Object.keys(event));
+      console.error(`❌ [${eventId}] Full event:`, JSON.stringify(event, null, 2));
+      return { success: false, error: 'Missing required event_type', eventId };
     }
 
     // According to Smartlead webhook guide, campaign_id is always present
     if (!smartleadCampaignId) {
-      console.error('❌ Missing campaign_id. Available fields:', Object.keys(event));
-      console.error('❌ Event payload:', JSON.stringify(event, null, 2));
-      return { success: false, error: 'Missing required campaign_id' };
+      console.error(`❌ [${eventId}] Missing campaign_id`);
+      console.error(`❌ [${eventId}] Available fields:`, Object.keys(event));
+      console.error(`❌ [${eventId}] Event payload:`, JSON.stringify(event, null, 2));
+      return { success: false, error: 'Missing required campaign_id', eventId };
     }
 
     // For lead-level events, require to_email (recipient)
     if (!isCampaignEvent && !leadEmail) {
-      console.error('❌ Missing to_email for lead-level event:', { eventType, smartleadCampaignId });
-      return { success: false, error: 'Missing to_email for lead-level event' };
+      console.error(`❌ [${eventId}] Missing to_email for lead-level event`);
+      console.error(`❌ [${eventId}] Event type:`, eventType);
+      console.error(`❌ [${eventId}] Campaign ID:`, smartleadCampaignId);
+      console.error(`❌ [${eventId}] Full event:`, JSON.stringify(event, null, 2));
+      return { success: false, error: 'Missing to_email for lead-level event', eventId };
     }
 
     // Handle campaign-level events
     if (isCampaignEvent) {
-      return await handleCampaignEvent(eventType, smartleadCampaignId.toString(), {
+      console.log(`🎯 [${eventId}] Handling campaign-level event`);
+      const campaignEventResult = await handleCampaignEvent(eventType, smartleadCampaignId.toString(), {
         status: newCampaignStatus,
         name: campaignName,
         timestamp,
         ...rest
-      });
+      }, eventId);
+      console.log(`✅ [${eventId}] Campaign event handled:`, campaignEventResult);
+      return campaignEventResult;
     }
 
     // Map Smartlead event type to our internal type
     const ourEventType = EVENT_TYPE_MAPPING[eventType] || eventType.toLowerCase().replace(/_/g, '_');
-    console.log(`🔄 Mapped event type: ${eventType} → ${ourEventType}`);
+    console.log(`🔄 [${eventId}] Mapped event type: ${eventType} → ${ourEventType}`);
 
     // Find our campaign by smartlead_campaign_id
     // Convert to string to handle both numeric and string IDs from Smartlead
+    console.log(`🔍 [${eventId}] Looking up campaign in database...`);
+    console.log(`  Searching for smartlead_campaign_id:`, smartleadCampaignId.toString(), `(type: ${typeof smartleadCampaignId})`);
+    
+    const campaignLookupStart = Date.now();
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
       .select('campaign_id, org_id')
       .eq('smartlead_campaign_id', smartleadCampaignId.toString())
       .single();
+    
+    const campaignLookupTime = Date.now() - campaignLookupStart;
+    console.log(`  Campaign lookup took ${campaignLookupTime}ms`);
+    console.log(`  Campaign data:`, campaign ? JSON.stringify(campaign, null, 2) : 'null');
+    console.log(`  Campaign error:`, campaignError ? JSON.stringify(campaignError, null, 2) : 'null');
 
     if (campaignError || !campaign) {
-      console.error('❌ Campaign not found for Smartlead ID:', smartleadCampaignId);
-      console.error('❌ Attempted lookup with:', smartleadCampaignId.toString());
-      console.error('❌ Database error:', campaignError);
-      // Log available campaigns for debugging (first 5)
-      const { data: sampleCampaigns } = await supabaseAdmin
+      console.error(`❌ [${eventId}] Campaign not found for Smartlead ID:`, smartleadCampaignId);
+      console.error(`❌ [${eventId}] Attempted lookup with:`, smartleadCampaignId.toString());
+      console.error(`❌ [${eventId}] Database error:`, campaignError);
+      
+      // Log available campaigns for debugging (first 10)
+      console.log(`🔍 [${eventId}] Fetching sample campaigns for debugging...`);
+      const sampleStart = Date.now();
+      const { data: sampleCampaigns, error: sampleError } = await supabaseAdmin
         .from('campaigns')
         .select('campaign_id, smartlead_campaign_id, campaign_name')
         .not('smartlead_campaign_id', 'is', null)
-        .limit(5);
-      console.log('📋 Sample campaigns with smartlead_campaign_id:', sampleCampaigns);
-      return { success: false, error: 'Campaign not found' };
+        .limit(10);
+      const sampleTime = Date.now() - sampleStart;
+      console.log(`  Sample query took ${sampleTime}ms`);
+      console.log(`  Sample error:`, sampleError);
+      console.log(`📋 [${eventId}] Sample campaigns with smartlead_campaign_id:`, JSON.stringify(sampleCampaigns, null, 2));
+      
+      // Also try to find campaigns with similar IDs (in case of type mismatch)
+      if (typeof smartleadCampaignId === 'string') {
+        const numericId = parseInt(smartleadCampaignId, 10);
+        if (!isNaN(numericId)) {
+          console.log(`🔍 [${eventId}] Trying numeric lookup:`, numericId);
+          const { data: numericCampaign } = await supabaseAdmin
+            .from('campaigns')
+            .select('campaign_id, smartlead_campaign_id, campaign_name')
+            .eq('smartlead_campaign_id', numericId.toString())
+            .limit(1);
+          console.log(`  Numeric lookup result:`, JSON.stringify(numericCampaign, null, 2));
+        }
+      }
+      
+      return { success: false, error: 'Campaign not found', eventId, smartleadCampaignId };
     }
 
     const campaignId = campaign.campaign_id;
-    console.log(`✅ Found campaign: ${campaignId}`);
+    console.log(`✅ [${eventId}] Found campaign: ${campaignId} (org_id: ${campaign.org_id})`);
 
     // Find lead in our database (if exists)
-    const { data: lead } = await supabaseAdmin
+    console.log(`🔍 [${eventId}] Looking up lead in database...`);
+    console.log(`  Campaign ID:`, campaignId);
+    console.log(`  Lead Email:`, leadEmail);
+    
+    const leadLookupStart = Date.now();
+    const { data: lead, error: leadError } = await supabaseAdmin
       .from('campaign_leads')
       .select('lead_id')
       .eq('campaign_id', campaignId)
       .eq('email', leadEmail)
       .single();
+    
+    const leadLookupTime = Date.now() - leadLookupStart;
+    console.log(`  Lead lookup took ${leadLookupTime}ms`);
+    console.log(`  Lead data:`, lead ? JSON.stringify(lead, null, 2) : 'null');
+    console.log(`  Lead error:`, leadError ? JSON.stringify(leadError, null, 2) : 'null (not found is OK)');
 
     const leadId = lead?.lead_id;
+    console.log(`  Lead ID:`, leadId || 'Not found (will create event without lead_id)');
 
     // Prepare metadata from Smartlead payload
     const metadata: any = {
@@ -318,127 +492,194 @@ async function processSmartleadEvent(event: any) {
     if (bounceType) metadata.bounce_type = bounceType;
 
     // Insert event into smartlead_email_events table
-    console.log(`💾 Inserting Smartlead email event...`);
-    const { error: insertError } = await supabaseAdmin
+    console.log(`💾 [${eventId}] Inserting Smartlead email event...`);
+    const insertData = {
+      campaign_id: campaignId,
+      lead_id: leadId,
+      smartlead_campaign_id: smartleadCampaignId.toString(), // Ensure string format
+      smartlead_lead_id: null, // Smartlead doesn't provide lead_id in webhook payload
+      lead_email: leadEmail,
+      event_type: ourEventType,
+      event_timestamp: timestamp || new Date().toISOString(),
+      metadata
+    };
+    console.log(`  Insert data:`, JSON.stringify(insertData, null, 2));
+    
+    const insertStart = Date.now();
+    const { data: insertResult, error: insertError } = await supabaseAdmin
       .from('smartlead_email_events')
-      .insert({
-        campaign_id: campaignId,
-        lead_id: leadId,
-        smartlead_campaign_id: smartleadCampaignId.toString(), // Ensure string format
-        smartlead_lead_id: null, // Smartlead doesn't provide lead_id in webhook payload
-        lead_email: leadEmail,
-        event_type: ourEventType,
-        event_timestamp: timestamp || new Date().toISOString(),
-        metadata
-      });
+      .insert(insertData)
+      .select();
+    
+    const insertTime = Date.now() - insertStart;
+    console.log(`  Insert took ${insertTime}ms`);
+    console.log(`  Insert result:`, insertResult ? JSON.stringify(insertResult, null, 2) : 'null');
+    console.log(`  Insert error:`, insertError ? JSON.stringify(insertError, null, 2) : 'null');
 
     if (insertError) {
-      console.error(`❌ Error inserting email event:`, insertError);
-      return { success: false, error: 'Failed to insert event' };
+      console.error(`❌ [${eventId}] Error inserting email event:`, insertError);
+      console.error(`❌ [${eventId}] Insert data was:`, JSON.stringify(insertData, null, 2));
+      return { success: false, error: 'Failed to insert event', eventId, insertError };
     }
 
-    console.log(`✅ Email event recorded successfully`);
+    console.log(`✅ [${eventId}] Email event recorded successfully`);
 
     // Also insert into lead_events for detailed tracking
     if (leadId) {
-      await supabaseAdmin
+      console.log(`💾 [${eventId}] Inserting lead event...`);
+      const leadEventData = {
+        lead_id: leadId,
+        campaign_id: campaignId,
+        event_type: ourEventType,
+        event_timestamp: timestamp || new Date().toISOString(),
+        metadata
+      };
+      console.log(`  Lead event data:`, JSON.stringify(leadEventData, null, 2));
+      
+      const leadEventStart = Date.now();
+      const { data: leadEventResult, error: leadEventError } = await supabaseAdmin
         .from('lead_events')
-        .insert({
-          lead_id: leadId,
-          campaign_id: campaignId,
-          event_type: ourEventType,
-          event_timestamp: timestamp || new Date().toISOString(),
-          metadata
-        })
-        .then(({ error }) => {
-          if (error) {
-            console.error('❌ Error inserting lead event:', error);
-          } else {
-            console.log('✅ Lead event recorded');
-          }
-        });
+        .insert(leadEventData)
+        .select();
+      
+      const leadEventTime = Date.now() - leadEventStart;
+      console.log(`  Lead event insert took ${leadEventTime}ms`);
+      console.log(`  Lead event result:`, leadEventResult ? JSON.stringify(leadEventResult, null, 2) : 'null');
+      console.log(`  Lead event error:`, leadEventError ? JSON.stringify(leadEventError, null, 2) : 'null');
+      
+      if (leadEventError) {
+        console.error(`❌ [${eventId}] Error inserting lead event:`, leadEventError);
+      } else {
+        console.log(`✅ [${eventId}] Lead event recorded`);
+      }
+    } else {
+      console.log(`⏭️ [${eventId}] Skipping lead event (no lead_id)`);
     }
 
     // Create campaign activity for UI display (critical for user dashboard)
-    console.log(`💾 Creating campaign activity for UI display...`);
+    console.log(`💾 [${eventId}] Creating campaign activity for UI display...`);
     const activityType = mapEventToActivityType(ourEventType);
-    const { error: activityError } = await supabaseAdmin
+    console.log(`  Activity type: ${activityType} (from ${ourEventType})`);
+    
+    const activityData = {
+      campaign_id: campaignId,
+      activity_type: activityType,
+      contact_email: leadEmail,
+      buyer_company: metadata.to_name || null,
+      metadata: {
+        event: ourEventType,
+        event_type: eventType, // Original Smartlead event type
+        timestamp: timestamp || new Date().toISOString(),
+        name: toName,
+        from_email: fromEmail,
+        subject: subject,
+        sequence_number: sequenceNumber,
+        stats_id: statsId,
+        message_id: messageId,
+        link: link,
+        reply_text: replyText,
+        reply_subject: replySubject,
+        bounce_reason: bounceReason,
+        bounce_type: bounceType,
+        user_agent: smartleadMetadata.user_agent,
+        ip_address: smartleadMetadata.ip_address,
+        device_used: smartleadMetadata.device_used,
+        ...rest
+      }
+    };
+    console.log(`  Activity data:`, JSON.stringify(activityData, null, 2));
+    
+    const activityStart = Date.now();
+    const { data: activityResult, error: activityError } = await supabaseAdmin
       .from('campaign_activities')
-      .insert({
-        campaign_id: campaignId,
-        activity_type: activityType,
-        contact_email: leadEmail,
-        buyer_company: metadata.to_name || null,
-        metadata: {
-          event: ourEventType,
-          event_type: eventType, // Original Smartlead event type
-          timestamp: timestamp || new Date().toISOString(),
-          name: toName,
-          from_email: fromEmail,
-          subject: subject,
-          sequence_number: sequenceNumber,
-          stats_id: statsId,
-          message_id: messageId,
-          link: link,
-          reply_text: replyText,
-          reply_subject: replySubject,
-          bounce_reason: bounceReason,
-          bounce_type: bounceType,
-          user_agent: smartleadMetadata.user_agent,
-          ip_address: smartleadMetadata.ip_address,
-          device_used: smartleadMetadata.device_used,
-          ...rest
-        }
-      });
+      .insert(activityData)
+      .select();
+    
+    const activityTime = Date.now() - activityStart;
+    console.log(`  Activity insert took ${activityTime}ms`);
+    console.log(`  Activity result:`, activityResult ? JSON.stringify(activityResult, null, 2) : 'null');
+    console.log(`  Activity error:`, activityError ? JSON.stringify(activityError, null, 2) : 'null');
 
     if (activityError) {
-      console.error('❌ Error inserting campaign activity:', activityError);
+      console.error(`❌ [${eventId}] Error inserting campaign activity:`, activityError);
     } else {
-      console.log('✅ Campaign activity created for UI display');
+      console.log(`✅ [${eventId}] Campaign activity created for UI display`);
     }
 
     // Update campaign metrics
-    console.log(`📊 Updating campaign metrics...`);
-    await updateCampaignMetricsFromSmartlead(campaignId, ourEventType);
+    console.log(`📊 [${eventId}] Updating campaign metrics...`);
+    const metricsStart = Date.now();
+    await updateCampaignMetricsFromSmartlead(campaignId, ourEventType, eventId);
+    const metricsTime = Date.now() - metricsStart;
+    console.log(`  Metrics update took ${metricsTime}ms`);
 
     // Update lead status if exists
     if (leadId) {
-      console.log(`👤 Updating lead status...`);
-      await updateLeadStatus(leadId, ourEventType);
+      console.log(`👤 [${eventId}] Updating lead status...`);
+      const statusStart = Date.now();
+      await updateLeadStatus(leadId, ourEventType, eventId);
+      const statusTime = Date.now() - statusStart;
+      console.log(`  Status update took ${statusTime}ms`);
+    } else {
+      console.log(`⏭️ [${eventId}] Skipping lead status update (no lead_id)`);
     }
 
     // Handle special events
     if (eventType === 'EMAIL_REPLY' || ourEventType === 'replied') {
-      console.log(`💬 REPLY RECEIVED - Creating reply record`);
-      await handleReply(campaignId, leadId, leadEmail, replyText, replySubject || subject, timestamp);
+      console.log(`💬 [${eventId}] REPLY RECEIVED - Creating reply record`);
+      const replyStart = Date.now();
+      await handleReply(campaignId, leadId, leadEmail, replyText, replySubject || subject, timestamp, eventId);
+      const replyTime = Date.now() - replyStart;
+      console.log(`  Reply handling took ${replyTime}ms`);
     }
 
     if (eventType === 'LEAD_UNSUBSCRIBED' || ourEventType === 'unsubscribed') {
-      console.log(`🚫 UNSUBSCRIBE - Marking lead as unsubscribed`);
-      await handleUnsubscribe(campaignId, leadId, leadEmail);
+      console.log(`🚫 [${eventId}] UNSUBSCRIBE - Marking lead as unsubscribed`);
+      const unsubscribeStart = Date.now();
+      await handleUnsubscribe(campaignId, leadId, leadEmail, eventId);
+      const unsubscribeTime = Date.now() - unsubscribeStart;
+      console.log(`  Unsubscribe handling took ${unsubscribeTime}ms`);
     }
 
-    console.log(`✅ Event processed successfully`);
+    const totalEventTime = Date.now() - eventStartTime;
+    console.log(`✅ [${eventId}] Event processed successfully in ${totalEventTime}ms`);
     return { 
       success: true, 
       campaignId,
       smartleadCampaignId,
       eventType: ourEventType, 
       leadEmail: leadEmail,
+      eventId,
+      processingTimeMs: totalEventTime
     };
 
-  } catch (error) {
-    console.error('❌ Error processing individual event');
-    console.error('Error:', error);
+  } catch (error: any) {
+    const totalEventTime = Date.now() - eventStartTime;
+    console.error(`❌ [${eventId}] Error processing individual event after ${totalEventTime}ms`);
+    console.error(`❌ [${eventId}] Error type:`, error.constructor.name);
+    console.error(`❌ [${eventId}] Error message:`, error.message);
+    console.error(`❌ [${eventId}] Error name:`, error.name);
+    console.error(`❌ [${eventId}] Stack trace:`, error.stack);
+    if (error.cause) {
+      console.error(`❌ [${eventId}] Error cause:`, error.cause);
+    }
+    if (error.code) {
+      console.error(`❌ [${eventId}] Error code:`, error.code);
+    }
+    console.error(`❌ [${eventId}] Event that failed:`, JSON.stringify(event, null, 2));
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error',
+      eventId,
+      processingTimeMs: totalEventTime
     };
   }
 }
 
-async function updateCampaignMetricsFromSmartlead(campaignId: string, eventType: string) {
+async function updateCampaignMetricsFromSmartlead(campaignId: string, eventType: string, eventId?: string) {
+  const logPrefix = eventId ? `[${eventId}]` : '';
   try {
+    console.log(`  ${logPrefix} Mapping event type to metric column...`);
     // Map event types to metric columns
     let metricColumn: string | null = null;
 
@@ -467,27 +708,42 @@ async function updateCampaignMetricsFromSmartlead(campaignId: string, eventType:
         break;
     }
 
+    console.log(`  ${logPrefix} Event type: ${eventType} → Metric: ${metricColumn || 'none'}`);
+
     if (metricColumn) {
+      console.log(`  ${logPrefix} Calling RPC to increment ${metricColumn}...`);
       // Use RPC function to safely increment
-      const { error } = await supabaseAdmin.rpc('increment_campaign_metric', {
+      const rpcStart = Date.now();
+      const { data: rpcResult, error } = await supabaseAdmin.rpc('increment_campaign_metric', {
         p_campaign_id: campaignId,
         p_metric_name: metricColumn,
         p_increment_by: 1
       });
+      const rpcTime = Date.now() - rpcStart;
+      console.log(`  ${logPrefix} RPC call took ${rpcTime}ms`);
+      console.log(`  ${logPrefix} RPC result:`, rpcResult);
+      console.log(`  ${logPrefix} RPC error:`, error ? JSON.stringify(error, null, 2) : 'null');
 
       if (error) {
-        console.error(`❌ Error incrementing ${metricColumn}:`, error);
+        console.error(`❌ ${logPrefix} Error incrementing ${metricColumn}:`, error);
       } else {
-        console.log(`✅ ${metricColumn} incremented`);
+        console.log(`✅ ${logPrefix} ${metricColumn} incremented`);
       }
+    } else {
+      console.log(`⏭️ ${logPrefix} No metric column for event type: ${eventType}`);
     }
-  } catch (error) {
-    console.error('❌ Error updating campaign metrics:', error);
+  } catch (error: any) {
+    console.error(`❌ ${logPrefix} Error updating campaign metrics:`, error);
+    console.error(`❌ ${logPrefix} Error type:`, error.constructor.name);
+    console.error(`❌ ${logPrefix} Error message:`, error.message);
+    console.error(`❌ ${logPrefix} Stack trace:`, error.stack);
   }
 }
 
-async function updateLeadStatus(leadId: string, eventType: string) {
+async function updateLeadStatus(leadId: string, eventType: string, eventId?: string) {
+  const logPrefix = eventId ? `[${eventId}]` : '';
   try {
+    console.log(`  ${logPrefix} Preparing lead status updates...`);
     const updates: any = {
       updated_at: new Date().toISOString()
     };
@@ -504,27 +760,45 @@ async function updateLeadStatus(leadId: string, eventType: string) {
       case 'opened':
         updates.last_contacted = new Date().toISOString();
         // Increment open_count using Postgres function
-        await supabaseAdmin.rpc('increment_lead_counter', {
+        console.log(`  ${logPrefix} Incrementing open_count...`);
+        const openRpcStart = Date.now();
+        const { data: openRpcResult, error: openRpcError } = await supabaseAdmin.rpc('increment_lead_counter', {
           lead_id_param: leadId,
           counter_name: 'open_count'
         });
+        const openRpcTime = Date.now() - openRpcStart;
+        console.log(`  ${logPrefix} Open count RPC took ${openRpcTime}ms`);
+        console.log(`  ${logPrefix} Open count RPC result:`, openRpcResult);
+        console.log(`  ${logPrefix} Open count RPC error:`, openRpcError);
         break;
       case 'clicked':
         updates.last_contacted = new Date().toISOString();
         // Increment click_count
-        await supabaseAdmin.rpc('increment_lead_counter', {
+        console.log(`  ${logPrefix} Incrementing click_count...`);
+        const clickRpcStart = Date.now();
+        const { data: clickRpcResult, error: clickRpcError } = await supabaseAdmin.rpc('increment_lead_counter', {
           lead_id_param: leadId,
           counter_name: 'click_count'
         });
+        const clickRpcTime = Date.now() - clickRpcStart;
+        console.log(`  ${logPrefix} Click count RPC took ${clickRpcTime}ms`);
+        console.log(`  ${logPrefix} Click count RPC result:`, clickRpcResult);
+        console.log(`  ${logPrefix} Click count RPC error:`, clickRpcError);
         break;
       case 'replied':
       case 'threaded_reply':
         updates.last_contacted = new Date().toISOString();
         // Increment reply_count
-        await supabaseAdmin.rpc('increment_lead_counter', {
+        console.log(`  ${logPrefix} Incrementing reply_count...`);
+        const replyRpcStart = Date.now();
+        const { data: replyRpcResult, error: replyRpcError } = await supabaseAdmin.rpc('increment_lead_counter', {
           lead_id_param: leadId,
           counter_name: 'reply_count'
         });
+        const replyRpcTime = Date.now() - replyRpcStart;
+        console.log(`  ${logPrefix} Reply count RPC took ${replyRpcTime}ms`);
+        console.log(`  ${logPrefix} Reply count RPC result:`, replyRpcResult);
+        console.log(`  ${logPrefix} Reply count RPC error:`, replyRpcError);
         break;
       case 'bounced':
         updates.status = 'bounced';
@@ -534,18 +808,28 @@ async function updateLeadStatus(leadId: string, eventType: string) {
         break;
     }
 
-    const { error } = await supabaseAdmin
+    console.log(`  ${logPrefix} Updates to apply:`, JSON.stringify(updates, null, 2));
+    const updateStart = Date.now();
+    const { data: updateResult, error } = await supabaseAdmin
       .from('campaign_leads')
       .update(updates)
-      .eq('lead_id', leadId);
+      .eq('lead_id', leadId)
+      .select();
+    const updateTime = Date.now() - updateStart;
+    console.log(`  ${logPrefix} Lead update took ${updateTime}ms`);
+    console.log(`  ${logPrefix} Lead update result:`, updateResult ? JSON.stringify(updateResult, null, 2) : 'null');
+    console.log(`  ${logPrefix} Lead update error:`, error ? JSON.stringify(error, null, 2) : 'null');
 
     if (error) {
-      console.error('❌ Error updating lead status:', error);
+      console.error(`❌ ${logPrefix} Error updating lead status:`, error);
     } else {
-      console.log('✅ Lead status updated');
+      console.log(`✅ ${logPrefix} Lead status updated`);
     }
-  } catch (error) {
-    console.error('❌ Error in updateLeadStatus:', error);
+  } catch (error: any) {
+    console.error(`❌ ${logPrefix} Error in updateLeadStatus:`, error);
+    console.error(`❌ ${logPrefix} Error type:`, error.constructor.name);
+    console.error(`❌ ${logPrefix} Error message:`, error.message);
+    console.error(`❌ ${logPrefix} Stack trace:`, error.stack);
   }
 }
 
@@ -555,30 +839,44 @@ async function handleReply(
   leadEmail: string, 
   replyText: string, 
   replySubject: string, 
-  timestamp: string
+  timestamp: string,
+  eventId?: string
 ) {
+  const logPrefix = eventId ? `[${eventId}]` : '';
   try {
-    // Store reply in campaign_replies table
-    const { error } = await supabaseAdmin
+    console.log(`  ${logPrefix} Storing reply in campaign_replies table...`);
+    const replyData = {
+      campaign_id: campaignId,
+      lead_id: leadId,
+      lead_email: leadEmail,
+      reply_subject: replySubject,
+      reply_text: replyText,
+      replied_at: timestamp || new Date().toISOString(),
+      sentiment: null, // Can be analyzed later
+      is_read: false
+    };
+    console.log(`  ${logPrefix} Reply data:`, JSON.stringify(replyData, null, 2));
+    
+    const replyStart = Date.now();
+    const { data: replyResult, error } = await supabaseAdmin
       .from('campaign_replies')
-      .insert({
-        campaign_id: campaignId,
-        lead_id: leadId,
-        lead_email: leadEmail,
-        reply_subject: replySubject,
-        reply_text: replyText,
-        replied_at: timestamp || new Date().toISOString(),
-        sentiment: null, // Can be analyzed later
-        is_read: false
-      });
+      .insert(replyData)
+      .select();
+    const replyTime = Date.now() - replyStart;
+    console.log(`  ${logPrefix} Reply insert took ${replyTime}ms`);
+    console.log(`  ${logPrefix} Reply result:`, replyResult ? JSON.stringify(replyResult, null, 2) : 'null');
+    console.log(`  ${logPrefix} Reply error:`, error ? JSON.stringify(error, null, 2) : 'null');
 
     if (error) {
-      console.error('❌ Error storing reply:', error);
+      console.error(`❌ ${logPrefix} Error storing reply:`, error);
     } else {
-      console.log('✅ Reply stored successfully');
+      console.log(`✅ ${logPrefix} Reply stored successfully`);
     }
-  } catch (error) {
-    console.error('❌ Error in handleReply:', error);
+  } catch (error: any) {
+    console.error(`❌ ${logPrefix} Error in handleReply:`, error);
+    console.error(`❌ ${logPrefix} Error type:`, error.constructor.name);
+    console.error(`❌ ${logPrefix} Error message:`, error.message);
+    console.error(`❌ ${logPrefix} Stack trace:`, error.stack);
   }
 }
 
@@ -595,108 +893,173 @@ async function handleCampaignEvent(
     data?: any;
     timestamp?: string;
     [key: string]: any;
-  }
+  },
+  eventId?: string
 ) {
+  const logPrefix = eventId ? `[${eventId}]` : '';
   try {
-    console.log(`🎯 Handling campaign event: ${eventType} for campaign ${smartleadCampaignId}`);
+    console.log(`🎯 ${logPrefix} Handling campaign event: ${eventType} for campaign ${smartleadCampaignId}`);
+    console.log(`  ${logPrefix} Event data:`, JSON.stringify(eventData, null, 2));
 
     // Find our campaign by smartlead_campaign_id
     // Convert to string to handle both numeric and string IDs from Smartlead
+    console.log(`  ${logPrefix} Looking up campaign...`);
+    console.log(`  ${logPrefix} Searching for smartlead_campaign_id:`, smartleadCampaignId.toString());
+    
+    const campaignLookupStart = Date.now();
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
       .select('campaign_id, campaign_name, status')
       .eq('smartlead_campaign_id', smartleadCampaignId.toString())
       .single();
+    const campaignLookupTime = Date.now() - campaignLookupStart;
+    console.log(`  ${logPrefix} Campaign lookup took ${campaignLookupTime}ms`);
+    console.log(`  ${logPrefix} Campaign data:`, campaign ? JSON.stringify(campaign, null, 2) : 'null');
+    console.log(`  ${logPrefix} Campaign error:`, campaignError ? JSON.stringify(campaignError, null, 2) : 'null');
 
     if (campaignError || !campaign) {
-      console.error('❌ Campaign not found for Smartlead ID:', smartleadCampaignId);
-      return { success: false, error: 'Campaign not found' };
+      console.error(`❌ ${logPrefix} Campaign not found for Smartlead ID:`, smartleadCampaignId);
+      return { success: false, error: 'Campaign not found', eventId };
     }
 
     const campaignId = campaign.campaign_id;
-    console.log(`✅ Found campaign: ${campaignId} (${campaign.campaign_name})`);
+    console.log(`✅ ${logPrefix} Found campaign: ${campaignId} (${campaign.campaign_name})`);
 
     // Handle different campaign event types
     switch (eventType) {
       case 'CAMPAIGN_DELETED':
-        console.log(`🗑️ Campaign deleted in Smartlead, marking as deleted in our DB`);
-        // Soft delete or mark as deleted
-        await supabaseAdmin
+        console.log(`🗑️ ${logPrefix} Campaign deleted in Smartlead, marking as deleted in our DB`);
+        const deleteStart = Date.now();
+        const { data: deleteResult, error: deleteError } = await supabaseAdmin
           .from('campaigns')
           .update({
             status: 'deleted',
             updated_at: new Date().toISOString(),
           })
-          .eq('campaign_id', campaignId);
+          .eq('campaign_id', campaignId)
+          .select();
+        const deleteTime = Date.now() - deleteStart;
+        console.log(`  ${logPrefix} Delete update took ${deleteTime}ms`);
+        console.log(`  ${logPrefix} Delete result:`, deleteResult ? JSON.stringify(deleteResult, null, 2) : 'null');
+        console.log(`  ${logPrefix} Delete error:`, deleteError ? JSON.stringify(deleteError, null, 2) : 'null');
         
-        console.log(`✅ Campaign marked as deleted in our database`);
+        if (deleteError) {
+          console.error(`❌ ${logPrefix} Error deleting campaign:`, deleteError);
+        } else {
+          console.log(`✅ ${logPrefix} Campaign marked as deleted in our database`);
+        }
         break;
 
       case 'CAMPAIGN_STATUS_CHANGE':
-        console.log(`📊 Campaign status changed to: ${eventData.status}`);
+        console.log(`📊 ${logPrefix} Campaign status changed to: ${eventData.status}`);
         // Use Smartlead status directly (convert to lowercase for database)
         const normalizedStatus = normalizeSmartleadStatus(eventData.status || '');
-        await supabaseAdmin
+        console.log(`  ${logPrefix} Normalized status: ${normalizedStatus}`);
+        
+        const statusStart = Date.now();
+        const { data: statusResult, error: statusError } = await supabaseAdmin
           .from('campaigns')
           .update({
             status: normalizedStatus,
             updated_at: new Date().toISOString(),
           })
-          .eq('campaign_id', campaignId);
+          .eq('campaign_id', campaignId)
+          .select();
+        const statusTime = Date.now() - statusStart;
+        console.log(`  ${logPrefix} Status update took ${statusTime}ms`);
+        console.log(`  ${logPrefix} Status result:`, statusResult ? JSON.stringify(statusResult, null, 2) : 'null');
+        console.log(`  ${logPrefix} Status error:`, statusError ? JSON.stringify(statusError, null, 2) : 'null');
         
-        console.log(`✅ Campaign status updated to: ${normalizedStatus}`);
+        if (statusError) {
+          console.error(`❌ ${logPrefix} Error updating campaign status:`, statusError);
+        } else {
+          console.log(`✅ ${logPrefix} Campaign status updated to: ${normalizedStatus}`);
+        }
         break;
 
       case 'CAMPAIGN_UPDATED':
-        console.log(`✏️ Campaign settings updated in Smartlead`);
+        console.log(`✏️ ${logPrefix} Campaign settings updated in Smartlead`);
         const updates: any = {
           updated_at: new Date().toISOString(),
         };
         
         if (eventData.name && eventData.name !== campaign.campaign_name) {
           updates.campaign_name = eventData.name;
+          console.log(`  ${logPrefix} Updating campaign name: ${campaign.campaign_name} → ${eventData.name}`);
         }
         
-        await supabaseAdmin
+        console.log(`  ${logPrefix} Updates to apply:`, JSON.stringify(updates, null, 2));
+        const updateStart = Date.now();
+        const { data: updateResult, error: updateError } = await supabaseAdmin
           .from('campaigns')
           .update(updates)
-          .eq('campaign_id', campaignId);
+          .eq('campaign_id', campaignId)
+          .select();
+        const updateTime = Date.now() - updateStart;
+        console.log(`  ${logPrefix} Update took ${updateTime}ms`);
+        console.log(`  ${logPrefix} Update result:`, updateResult ? JSON.stringify(updateResult, null, 2) : 'null');
+        console.log(`  ${logPrefix} Update error:`, updateError ? JSON.stringify(updateError, null, 2) : 'null');
         
-        console.log(`✅ Campaign updated in our database`);
+        if (updateError) {
+          console.error(`❌ ${logPrefix} Error updating campaign:`, updateError);
+        } else {
+          console.log(`✅ ${logPrefix} Campaign updated in our database`);
+        }
         break;
 
       default:
-        console.log(`⚠️ Unknown campaign event type: ${eventType}`);
+        console.log(`⚠️ ${logPrefix} Unknown campaign event type: ${eventType}`);
     }
 
-    return { success: true };
-  } catch (error) {
-    console.error('❌ Error handling campaign event:', error);
-    return { success: false, error: 'Failed to handle campaign event' };
+    return { success: true, eventId };
+  } catch (error: any) {
+    console.error(`❌ ${logPrefix} Error handling campaign event:`, error);
+    console.error(`❌ ${logPrefix} Error type:`, error.constructor.name);
+    console.error(`❌ ${logPrefix} Error message:`, error.message);
+    console.error(`❌ ${logPrefix} Stack trace:`, error.stack);
+    return { success: false, error: 'Failed to handle campaign event', eventId };
   }
 }
 
 import { normalizeSmartleadStatus } from '@/lib/smartlead/utils';
 
-async function handleUnsubscribe(campaignId: string, leadId: string | undefined, leadEmail: string) {
+async function handleUnsubscribe(campaignId: string, leadId: string | undefined, leadEmail: string, eventId?: string) {
+  const logPrefix = eventId ? `[${eventId}]` : '';
   try {
+    console.log(`  ${logPrefix} Handling unsubscribe...`);
     // Update lead status
     if (leadId) {
-      await supabaseAdmin
+      console.log(`  ${logPrefix} Updating lead status to unsubscribed...`);
+      const unsubscribeStart = Date.now();
+      const { data: unsubscribeResult, error: unsubscribeError } = await supabaseAdmin
         .from('campaign_leads')
         .update({ 
           status: 'unsubscribed',
           updated_at: new Date().toISOString()
         })
-        .eq('lead_id', leadId);
+        .eq('lead_id', leadId)
+        .select();
+      const unsubscribeTime = Date.now() - unsubscribeStart;
+      console.log(`  ${logPrefix} Unsubscribe update took ${unsubscribeTime}ms`);
+      console.log(`  ${logPrefix} Unsubscribe result:`, unsubscribeResult ? JSON.stringify(unsubscribeResult, null, 2) : 'null');
+      console.log(`  ${logPrefix} Unsubscribe error:`, unsubscribeError ? JSON.stringify(unsubscribeError, null, 2) : 'null');
+      
+      if (unsubscribeError) {
+        console.error(`❌ ${logPrefix} Error updating lead unsubscribe status:`, unsubscribeError);
+      }
+    } else {
+      console.log(`  ${logPrefix} No lead_id, skipping lead status update`);
     }
 
     // Add to global suppression list (optional)
     // await addToSuppressionList(leadEmail)
 
-    console.log('✅ Unsubscribe handled');
-  } catch (error) {
-    console.error('❌ Error in handleUnsubscribe:', error);
+    console.log(`✅ ${logPrefix} Unsubscribe handled`);
+  } catch (error: any) {
+    console.error(`❌ ${logPrefix} Error in handleUnsubscribe:`, error);
+    console.error(`❌ ${logPrefix} Error type:`, error.constructor.name);
+    console.error(`❌ ${logPrefix} Error message:`, error.message);
+    console.error(`❌ ${logPrefix} Stack trace:`, error.stack);
   }
 }
 
