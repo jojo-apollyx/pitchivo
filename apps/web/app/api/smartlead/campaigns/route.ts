@@ -399,6 +399,33 @@ export async function POST(request: NextRequest) {
       console.error('[Smartlead Campaign API] Error adding mock leads:', mockLeadsError);
     }
 
+    // Start the campaign automatically after all setup is complete
+    // This completes the 4-step setup: Import leads ✅, Sequences ✅, Setup ✅, Final review ✅
+    try {
+      console.log(`[Smartlead Campaign API] Starting campaign automatically after setup completion`);
+      
+      const startResult = await smartlead.resumeCampaign(result.data.id.toString());
+
+      if (startResult.success) {
+        console.log(`[Smartlead Campaign API] ✅ Successfully started campaign`);
+        
+        // Update database status to 'active'
+        await supabase
+          .from('campaigns')
+          .update({ 
+            status: 'active',
+            updated_at: new Date().toISOString()
+          })
+          .eq('campaign_id', campaign_id);
+      } else {
+        console.error(`[Smartlead Campaign API] ⚠️ Failed to start campaign:`, startResult.error);
+        // Don't fail campaign creation if starting fails - campaign is still created
+      }
+    } catch (startError) {
+      // Don't fail campaign creation if starting fails
+      console.error('[Smartlead Campaign API] Error starting campaign:', startError);
+    }
+
     return NextResponse.json({
       success: true,
       smartlead_campaign_id: result.data.id,
