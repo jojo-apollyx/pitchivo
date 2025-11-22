@@ -384,7 +384,9 @@ export default function CampaignsPage() {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error exporting campaign data:', error)
-      alert('Failed to export campaign data. Please try again.')
+      toast.error('Failed to export campaign data', {
+        description: error instanceof Error ? error.message : 'Please try again.'
+      })
     }
   }
 

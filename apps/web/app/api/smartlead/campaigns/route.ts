@@ -94,6 +94,21 @@ export async function POST(request: NextRequest) {
       normalized_status: normalizedStatus,
     });
 
+    // Fetch campaign data to get email_count, duration_days, and start_date for schedule calculation
+    const { data: campaignData, error: campaignFetchError } = await supabase
+      .from('campaigns')
+      .select('email_count, duration_days, start_date, timezone, sending_days, sending_hours, min_time_between_emails')
+      .eq('campaign_id', campaign_id)
+      .single();
+
+    if (campaignFetchError) {
+      console.error('Failed to fetch campaign data:', campaignFetchError);
+      return NextResponse.json(
+        { error: 'Failed to fetch campaign data' },
+        { status: 500 }
+      );
+    }
+
     // Update campaign in database with Smartlead ID and synced status
     const { error: updateError } = await supabase
       .from('campaigns')
@@ -112,6 +127,86 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to update campaign with Smartlead ID' },
         { status: 500 }
       );
+    }
+
+    // Auto-configure campaign schedule based on duration_days
+    try {
+      const emailCount = campaignData?.email_count || 0;
+      const durationDays = campaignData?.duration_days || 1;
+      
+      // Calculate max_new_leads_per_day: distribute emails evenly over duration
+      // Round up to ensure all emails are sent within the duration
+      const maxNewLeadsPerDay = durationDays > 0 
+        ? Math.ceil(emailCount / durationDays)
+        : emailCount; // If duration is 0 or invalid, use email count
+
+      // Use campaign settings or defaults
+      const timezone = campaignData?.timezone || 'America/New_York';
+      const sendingDays = campaignData?.sending_days || [1, 2, 3, 4, 5]; // Mon-Fri default
+      const sendingHours = campaignData?.sending_hours || { start: '09:00', end: '17:00' };
+      const minTimeBetweenEmails = campaignData?.min_time_between_emails || 30;
+      
+      // Use start_date if provided, otherwise use current date/time
+      // If start_date is in the past, use current date/time instead
+      let scheduleStartTime: string | undefined;
+      if (campaignData?.start_date) {
+        const startDate = new Date(campaignData.start_date);
+        const now = new Date();
+        // Only use start_date if it's in the future
+        if (startDate > now) {
+          scheduleStartTime = startDate.toISOString();
+        } else {
+          // If start_date is in the past, use current date/time
+          scheduleStartTime = now.toISOString();
+        }
+      }
+
+      console.log(`[Smartlead Campaign API] Auto-configuring schedule:`, {
+        email_count: emailCount,
+        duration_days: durationDays,
+        max_new_leads_per_day: maxNewLeadsPerDay,
+        timezone,
+        sending_days: sendingDays,
+        sending_hours: sendingHours,
+        min_time_between_emails: minTimeBetweenEmails,
+        schedule_start_time: scheduleStartTime,
+      });
+
+      const scheduleResult = await smartlead.updateCampaignSchedule(
+        result.data.id.toString(),
+        {
+          timezone,
+          days_of_the_week: sendingDays,
+          start_hour: typeof sendingHours === 'object' && 'start' in sendingHours 
+            ? sendingHours.start 
+            : '09:00',
+          end_hour: typeof sendingHours === 'object' && 'end' in sendingHours 
+            ? sendingHours.end 
+            : '17:00',
+          min_time_btw_emails: minTimeBetweenEmails,
+          max_new_leads_per_day: maxNewLeadsPerDay,
+          ...(scheduleStartTime && { schedule_start_time: scheduleStartTime }),
+        }
+      );
+
+      if (scheduleResult.success) {
+        console.log(`[Smartlead Campaign API] ✅ Successfully configured campaign schedule with max ${maxNewLeadsPerDay} leads/day`);
+        
+        // Update database with calculated max_leads_per_day
+        await supabase
+          .from('campaigns')
+          .update({ 
+            max_leads_per_day: maxNewLeadsPerDay,
+            updated_at: new Date().toISOString()
+          })
+          .eq('campaign_id', campaign_id);
+      } else {
+        console.error(`[Smartlead Campaign API] ⚠️ Failed to configure schedule:`, scheduleResult.error);
+        // Don't fail campaign creation if schedule update fails
+      }
+    } catch (scheduleError) {
+      // Don't fail campaign creation if schedule configuration fails
+      console.error('[Smartlead Campaign API] Error configuring schedule:', scheduleError);
     }
 
     // Auto-populate sequences from admin's default sequences if configured
@@ -136,7 +231,7 @@ export async function POST(request: NextRequest) {
 
         // Sort templates by the order in template_ids
         const templateSequences = templateIds
-          .map(id => allTemplates?.find(t => t.template_id === id))
+          .map((id: string) => allTemplates?.find(t => t.template_id === id))
           .filter(Boolean);
 
         if (templateSequences && templateSequences.length > 0) {
@@ -223,6 +318,42 @@ export async function POST(request: NextRequest) {
     } catch (autoPopulateError) {
       // Don't fail campaign creation if auto-populate fails
       console.error('[Smartlead Campaign API] Error auto-populating sequences:', autoPopulateError);
+    }
+
+    // Auto-add all connected email accounts to the campaign
+    try {
+      console.log(`[Smartlead Campaign API] Fetching all email accounts to auto-add to campaign`);
+      
+      const emailAccountsResult = await smartlead.getAllEmailAccounts();
+      
+      if (emailAccountsResult.success && emailAccountsResult.data && emailAccountsResult.data.length > 0) {
+        // Extract email account IDs
+        const emailAccountIds = emailAccountsResult.data
+          .map((account: any) => account.id)
+          .filter((id: any): id is number => typeof id === 'number');
+        
+        if (emailAccountIds.length > 0) {
+          console.log(`[Smartlead Campaign API] Auto-adding ${emailAccountIds.length} email accounts to campaign`);
+          
+          const addAccountsResult = await smartlead.addEmailAccountsToCampaign(
+            result.data.id.toString(),
+            emailAccountIds
+          );
+          
+          if (addAccountsResult.success) {
+            console.log(`[Smartlead Campaign API] ✅ Successfully added ${emailAccountIds.length} email accounts to campaign`);
+          } else {
+            console.error(`[Smartlead Campaign API] ⚠️ Failed to add email accounts:`, addAccountsResult.error);
+          }
+        } else {
+          console.log(`[Smartlead Campaign API] No valid email account IDs found`);
+        }
+      } else {
+        console.log(`[Smartlead Campaign API] No email accounts found or failed to fetch:`, emailAccountsResult.error);
+      }
+    } catch (emailAccountError) {
+      // Don't fail campaign creation if auto-adding email accounts fails
+      console.error('[Smartlead Campaign API] Error auto-adding email accounts:', emailAccountError);
     }
 
     return NextResponse.json({

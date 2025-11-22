@@ -44,6 +44,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 interface RFQ {
   rfq_id: string
@@ -220,10 +221,12 @@ export default function AdminRFQsPage() {
       setNewStatus('')
       setResponseMessage('')
 
-      alert('RFQ status updated successfully!')
+      toast.success('RFQ status updated successfully!')
     } catch (error) {
       console.error('Error updating RFQ:', error)
-      alert('Failed to update RFQ status')
+      toast.error('Failed to update RFQ status', {
+        description: error instanceof Error ? error.message : 'Please try again.'
+      })
     } finally {
       setUpdatingStatus(false)
     }

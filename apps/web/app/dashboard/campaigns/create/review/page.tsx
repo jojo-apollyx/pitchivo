@@ -168,7 +168,7 @@ export default function ReviewLaunchPage() {
           // Get user and org info for naming
           const { data: profile } = await supabase
             .from('user_profiles')
-            .select('full_name, first_name, email')
+            .select('full_name, email')
             .eq('id', currentUser?.id || '')
             .single()
           
@@ -179,7 +179,7 @@ export default function ReviewLaunchPage() {
             .single()
           
           // Generate Smartlead campaign name with org/user context
-          const userName = profile?.full_name || profile?.first_name || profile?.email?.split('@')[0] || 'User'
+          const userName = profile?.full_name || profile?.email?.split('@')[0] || 'User'
           const orgName = org?.name || 'Organization'
           const displayName = `${draft.productName} Campaign`
           const smartleadName = `[${orgName}] ${userName} - ${displayName}`
@@ -261,7 +261,9 @@ export default function ReviewLaunchPage() {
       router.push('/dashboard/campaigns')
     } catch (error) {
       console.error('Error launching campaign:', error)
-      alert('Failed to launch campaign. Please try again.')
+      toast.error('Failed to launch campaign', {
+        description: error instanceof Error ? error.message : 'Please try again.'
+      })
     } finally {
       setLaunching(false)
     }

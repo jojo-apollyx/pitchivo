@@ -207,6 +207,6 @@ export function getQRLinksQuota(tier: PricingTier | string): number {
 }
 
 // Minimum campaign size (for validation)
-export const CAMPAIGN_MIN_EMAILS = 5
+export const CAMPAIGN_MIN_EMAILS = 1
 export const CAMPAIGN_MIN_EMAILS_RECOMMENDED = 50 // Recommended minimum for better results
 

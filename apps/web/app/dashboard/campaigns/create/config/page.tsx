@@ -197,7 +197,7 @@ export default function ConfigureSendingPage() {
                       <Slider
                         min={CAMPAIGN_MIN_EMAILS}
                         max={mounted ? planQuota : defaultQuota}
-                        step={CAMPAIGN_MIN_EMAILS}
+                        step={1}
                         value={mounted ? [emailCount] : [draft.emailCount || CAMPAIGN_MIN_EMAILS]}
                         onValueChange={(values) => {
                           const value = values[0]
