@@ -40,6 +40,7 @@ export class SmartleadClient {
   ): Promise<SmartleadApiResponse<T>> {
     const method = options.method || 'GET';
     const requestBody = options.body ? (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)) : undefined;
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
       // Add API key as query parameter
@@ -48,11 +49,24 @@ export class SmartleadClient {
 
       // Log request details (mask API key in logs)
       const logUrl = url.toString().replace(/api_key=[^&]+/, 'api_key=***');
-      console.log(`[Smartlead API] ${method} ${logUrl}`);
+      console.log(`[Smartlead API] ============================================`);
+      console.log(`[Smartlead API] 🚀 REQUEST [${requestId}]`);
+      console.log(`[Smartlead API] Method: ${method}`);
+      console.log(`[Smartlead API] Endpoint: ${endpoint}`);
+      console.log(`[Smartlead API] URL: ${logUrl}`);
+      console.log(`[Smartlead API] Timestamp: ${new Date().toISOString()}`);
+      
       if (requestBody) {
-        console.log(`[Smartlead API] Request body:`, requestBody);
+        try {
+          const bodyObj = typeof requestBody === 'string' ? JSON.parse(requestBody) : requestBody;
+          console.log(`[Smartlead API] Request body:`, JSON.stringify(bodyObj, null, 2));
+        } catch {
+          console.log(`[Smartlead API] Request body (raw):`, requestBody.substring(0, 1000));
+        }
       }
+      console.log(`[Smartlead API] ============================================`);
 
+      const startTime = Date.now();
       const response = await fetch(url.toString(), {
         ...options,
         headers: {
@@ -60,22 +74,30 @@ export class SmartleadClient {
           ...options.headers,
         },
       });
+      const duration = Date.now() - startTime;
 
       // Log response status and headers
-      console.log(`[Smartlead API] Response status: ${response.status} ${response.statusText}`);
+      console.log(`[Smartlead API] ============================================`);
+      console.log(`[Smartlead API] 📥 RESPONSE [${requestId}]`);
+      console.log(`[Smartlead API] Status: ${response.status} ${response.statusText}`);
+      console.log(`[Smartlead API] Duration: ${duration}ms`);
       console.log(`[Smartlead API] Response headers:`, Object.fromEntries(response.headers.entries()));
 
       // Get raw response text first
       const responseText = await response.text();
-      console.log(`[Smartlead API] Response body (raw):`, responseText.substring(0, 1000)); // Log first 1000 chars
+      const responsePreview = responseText.length > 1000 
+        ? responseText.substring(0, 1000) + '... (truncated)'
+        : responseText;
+      console.log(`[Smartlead API] Response body (raw, ${responseText.length} chars):`, responsePreview);
 
       // Check content type
       const contentType = response.headers.get('content-type') || '';
       const isJson = contentType.includes('application/json');
 
       if (!isJson) {
-        console.error(`[Smartlead API] Expected JSON but received: ${contentType}`);
+        console.error(`[Smartlead API] ❌ Expected JSON but received: ${contentType}`);
         console.error(`[Smartlead API] Full response body:`, responseText);
+        console.log(`[Smartlead API] ============================================`);
         return {
           success: false,
           error: {
@@ -90,9 +112,11 @@ export class SmartleadClient {
       let data;
       try {
         data = JSON.parse(responseText);
+        console.log(`[Smartlead API] Parsed JSON successfully`);
       } catch (parseError) {
-        console.error(`[Smartlead API] Failed to parse JSON response:`, parseError);
+        console.error(`[Smartlead API] ❌ Failed to parse JSON response:`, parseError);
         console.error(`[Smartlead API] Response text that failed to parse:`, responseText);
+        console.log(`[Smartlead API] ============================================`);
         return {
           success: false,
           error: {
@@ -104,7 +128,8 @@ export class SmartleadClient {
       }
 
       if (!response.ok) {
-        console.error(`[Smartlead API] API returned error:`, data);
+        console.error(`[Smartlead API] ❌ API returned error:`, JSON.stringify(data, null, 2));
+        console.log(`[Smartlead API] ============================================`);
         return {
           success: false,
           error: {
@@ -115,13 +140,20 @@ export class SmartleadClient {
         };
       }
 
-      console.log(`[Smartlead API] Success:`, JSON.stringify(data).substring(0, 500));
+      console.log(`[Smartlead API] ✅ Success:`, JSON.stringify(data, null, 2).substring(0, 2000));
+      console.log(`[Smartlead API] ============================================`);
       return {
         success: true,
         data,
       };
     } catch (error) {
-      console.error(`[Smartlead API] Network/Request error:`, error);
+      console.error(`[Smartlead API] ============================================`);
+      console.error(`[Smartlead API] ❌ Network/Request error [${requestId}]:`, {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      console.log(`[Smartlead API] ============================================`);
       return {
         success: false,
         error: {
@@ -394,6 +426,14 @@ export class SmartleadClient {
    * Response: { "ok": true }
    */
   async addLead(campaignId: string, lead: AddLeadData): Promise<SmartleadApiResponse<{ ok: boolean }>> {
+    console.log(`[Smartlead Client] addLead called:`, {
+      campaignId,
+      lead_email: lead.email,
+      lead_first_name: lead.first_name,
+      lead_last_name: lead.last_name,
+      lead_company: lead.company_name,
+    });
+
     // Smartlead expects specific field names - map our format to theirs
     const smartleadLead = {
       first_name: lead.first_name || '',
@@ -424,6 +464,11 @@ export class SmartleadClient {
       body: JSON.stringify(requestBody),
     });
 
+    console.log(`[Smartlead Client] addLead result:`, {
+      success: result.success,
+      error: result.error,
+    });
+
     return result;
   }
 
@@ -437,30 +482,51 @@ export class SmartleadClient {
    * @param leads Array of leads to add
    */
   async addLeads(campaignId: string, leads: AddLeadData[]): Promise<SmartleadApiResponse<{ added: number }>> {
+    console.log(`[Smartlead Client] addLeads called:`, {
+      campaignId,
+      leads_count: leads.length,
+      sample_emails: leads.slice(0, 3).map(l => l.email),
+    });
+
     // Smartlead supports bulk adding via lead_list array (max 100 leads)
     // If more than 100, we'll need to batch them
     const MAX_LEADS_PER_REQUEST = 100;
     
     if (leads.length > MAX_LEADS_PER_REQUEST) {
+      console.log(`[Smartlead Client] Batching ${leads.length} leads into chunks of ${MAX_LEADS_PER_REQUEST}`);
       // Batch leads into chunks of 100
       let totalAdded = 0;
       const errors: string[] = [];
+      const totalBatches = Math.ceil(leads.length / MAX_LEADS_PER_REQUEST);
       
       for (let i = 0; i < leads.length; i += MAX_LEADS_PER_REQUEST) {
         const batch = leads.slice(i, i + MAX_LEADS_PER_REQUEST);
+        const batchNumber = Math.floor(i / MAX_LEADS_PER_REQUEST) + 1;
+        console.log(`[Smartlead Client] Processing batch ${batchNumber}/${totalBatches} (${batch.length} leads)`);
+        
         const result = await this.addLeadsBatch(campaignId, batch);
         
         if (result.success && result.data) {
           totalAdded += result.data.added || batch.length;
+          console.log(`[Smartlead Client] Batch ${batchNumber} succeeded: ${result.data.added || batch.length} leads added`);
         } else {
-          errors.push(`Batch ${Math.floor(i / MAX_LEADS_PER_REQUEST) + 1}: ${result.error?.message || 'Unknown error'}`);
+          const errorMsg = `Batch ${batchNumber}: ${result.error?.message || 'Unknown error'}`;
+          errors.push(errorMsg);
+          console.error(`[Smartlead Client] Batch ${batchNumber} failed:`, result.error);
         }
         
         // Respect rate limit between batches
         if (i + MAX_LEADS_PER_REQUEST < leads.length) {
+          console.log(`[Smartlead Client] Waiting 200ms before next batch (rate limit)`);
           await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
+      
+      console.log(`[Smartlead Client] addLeads batch processing complete:`, {
+        total_leads: leads.length,
+        total_added: totalAdded,
+        errors_count: errors.length,
+      });
       
       if (errors.length > 0) {
         return {
@@ -480,13 +546,25 @@ export class SmartleadClient {
     }
     
     // Single batch request
-    return this.addLeadsBatch(campaignId, leads);
+    console.log(`[Smartlead Client] Adding ${leads.length} leads in single batch`);
+    const result = await this.addLeadsBatch(campaignId, leads);
+    console.log(`[Smartlead Client] addLeads result:`, {
+      success: result.success,
+      added: result.data?.added,
+      error: result.error,
+    });
+    return result;
   }
 
   /**
    * Internal method to add a batch of leads (up to 100)
    */
   private async addLeadsBatch(campaignId: string, leads: AddLeadData[]): Promise<SmartleadApiResponse<{ added: number }>> {
+    console.log(`[Smartlead Client] addLeadsBatch:`, {
+      campaignId,
+      batch_size: leads.length,
+    });
+
     const smartleadLeads = leads.map(lead => ({
       first_name: lead.first_name || '',
       last_name: lead.last_name || '',
@@ -523,14 +601,23 @@ export class SmartleadClient {
     });
 
     if (result.success && result.data) {
+      const added = result.data.upload_count || result.data.total_leads || leads.length;
+      console.log(`[Smartlead Client] addLeadsBatch success:`, {
+        added,
+        upload_count: result.data.upload_count,
+        total_leads: result.data.total_leads,
+        already_added: result.data.already_added_to_campaign,
+        duplicates: result.data.duplicate_count,
+        invalid: result.data.invalid_email_count,
+        unsubscribed: result.data.unsubscribed_leads,
+      });
       return {
         success: true,
-        data: { 
-          added: result.data.upload_count || result.data.total_leads || leads.length 
-        },
+        data: { added },
       };
     }
 
+    console.error(`[Smartlead Client] addLeadsBatch failed:`, result.error);
     // Return error response with proper type
     return {
       success: false,
