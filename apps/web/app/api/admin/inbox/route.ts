@@ -127,6 +127,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(messages)
     }
     
+    // For 'ALL' or other statuses, use fetchInboxReplies
+    // According to Smartlead API docs, fetchInboxReplies returns all leads with replies
+    // The has_new_unread_email flag indicates if the lead has unread emails, but doesn't specify which messages
+    // We'll determine read status based on whether the message is the most recent reply and if the lead has unread emails
     const result = await smartlead.fetchInboxReplies({
       offset,
       limit,
@@ -153,16 +157,37 @@ export async function GET(request: NextRequest) {
     leads.forEach((lead: any) => {
       const emailHistory = lead.email_history || []
       
+      // Sort email history by time to find the most recent reply
+      const sortedHistory = [...emailHistory].sort((a, b) => 
+        new Date(b.time || 0).getTime() - new Date(a.time || 0).getTime()
+      )
+      const mostRecentReply = sortedHistory.find((email: any) => email.type === 'REPLY')
+      const mostRecentReplyTime = mostRecentReply?.time
+      
       emailHistory.forEach((email: any) => {
-        // Include both SENT and REPLY messages for full thread context
-        // Filter replies by status if requested
+        // Determine read status for REPLY messages:
+        // - If lead has unread emails (has_new_unread_email = true), mark the most recent reply as unread
+        // - If lead doesn't have unread emails, all replies are read
+        // - SENT messages are always considered read
+        let isRead = true
         if (email.type === 'REPLY') {
-          const isRead = !lead.has_new_unread_email
-          
-          // Filter by status if requested (client-side filtering since API doesn't support it)
-          if (status === 'UNREAD' && isRead) return
-          if (status === 'READ' && !isRead) return
-          if (status === 'SNOOZED' && !lead.is_snoozed) return
+          if (lead.has_new_unread_email) {
+            // If this is the most recent reply and lead has unread emails, it's unread
+            isRead = email.time !== mostRecentReplyTime
+          } else {
+            // If lead has no unread emails, all replies are read
+            isRead = true
+          }
+        }
+        
+        // Filter by status if requested (only filter when status is explicitly set)
+        // When status is undefined (for 'ALL'), include all messages
+        // Note: 'UNREAD' status is handled earlier by fetchUnreadReplies, so status here can only be 'READ' or 'SNOOZED'
+        if (status) {
+          if (email.type === 'REPLY') {
+            if (status === 'READ' && !isRead) return
+            if (status === 'SNOOZED' && !lead.is_snoozed) return
+          }
         }
         
         messages.push({
@@ -178,7 +203,7 @@ export async function GET(request: NextRequest) {
           email_body: email.email_body,
           time: email.time,
           received_at: email.time, // Alias for received_at
-          is_read: email.type === 'REPLY' ? !lead.has_new_unread_email : true,
+          is_read: isRead,
           type: email.type,
           stats_id: email.stats_id,
           email_stats_id: email.stats_id, // Alias for email_stats_id
