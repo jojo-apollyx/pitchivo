@@ -350,7 +350,9 @@ export async function POST(request: NextRequest) {
             return {
               seq_number: template.seq_number,
               seq_delay_details: { delay_in_days: template.delay_days || 1 },
-              subject: subject || undefined,
+              // According to Smartlead API docs: blank subject makes follow-up in same thread
+              // Use empty string, not undefined, for same-thread follow-ups
+              subject: subject !== null ? (subject || '') : undefined,
               email_body: emailBody,
             };
           });

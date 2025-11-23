@@ -94,12 +94,21 @@ export function replacePlaceholders(
       // Pattern matches: <a href="{{product_url}}"> or <a ...>{{product_url}}</a>
       const alreadyInAnchorPattern = /<a\s+[^>]*href\s*=\s*["'][^"']*\{\{product_url\}\}[^"']*["'][^>]*>|<\s*a\s+[^>]*>\s*\{\{product_url\}\}\s*<\/a>/i;
       
-      if (alreadyInAnchorPattern.test(result)) {
+      const isAlreadyInAnchor = alreadyInAnchorPattern.test(result);
+      console.log('[Placeholder Replacement] Processing {{product_url}}:', {
+        isHtml,
+        isAlreadyInAnchor,
+        placeholderFound: regex.test(result),
+        value: value?.substring(0, 50),
+      });
+      
+      if (isAlreadyInAnchor) {
         // Already in an anchor tag, just replace the placeholder
         // URL-encode first, then HTML-escape for safe use in href attribute
         const encodedUrl = encodeUrl(value);
         const htmlEscapedUrl = escapeHtml(encodedUrl);
         result = result.replace(regex, htmlEscapedUrl);
+        console.log('[Placeholder Replacement] Replaced {{product_url}} in existing anchor tag');
       } else {
         // Not in an anchor tag - wrap it in one for Smartlead tracking
         // URL-encode for href attribute, then HTML-escape for safe HTML
@@ -110,7 +119,15 @@ export function replacePlaceholders(
         
         // Wrap the URL in an anchor tag so Smartlead can track it
         const wrappedValue = `<a href="${htmlEscapedHref}">${htmlEscapedText}</a>`;
+        const beforeReplace = result.substring(0, 200);
         result = result.replace(regex, wrappedValue);
+        const afterReplace = result.substring(0, 200);
+        
+        console.log('[Placeholder Replacement] Wrapped {{product_url}} in anchor tag:', {
+          before: beforeReplace,
+          after: afterReplace,
+          wrappedValue: wrappedValue.substring(0, 100),
+        });
       }
     } else if (isHtml) {
       // For HTML content, escape text placeholders to prevent XSS and broken HTML
@@ -134,11 +151,57 @@ export function replacePlaceholdersInSequence(
   emailBody: string,
   context: PlaceholderContext
 ): { subject: string | null; emailBody: string } {
+  // Replace placeholders in email body (treat as HTML)
+  let processedBody = replacePlaceholders(emailBody, context, true);
+  
+  // Smartlead requires email bodies to be properly formatted HTML with paragraph tags
+  // This is critical for link tracking to work correctly
+  // Examples from Smartlead API docs show: "<p>Email content</p>"
+  
+  const trimmedBody = processedBody.trim();
+  
+  // Check if body already starts with a block-level HTML tag
+  const startsWithBlockTag = /^<(p|div|html|body|h[1-6]|ul|ol|li|blockquote)/i.test(trimmedBody);
+  
+  if (!startsWithBlockTag && trimmedBody) {
+    // Check if the body contains HTML tags (like anchor tags) but isn't wrapped
+    const hasHtmlTags = /<[a-z][\s\S]*>/i.test(trimmedBody);
+    
+    if (hasHtmlTags) {
+      // Body has HTML tags (like <a>) but isn't wrapped in a block element
+      // Wrap the entire content in <p> tags so Smartlead can properly process it
+      processedBody = `<p>${trimmedBody}</p>`;
+    } else {
+      // Plain text - split by lines and wrap each line in <p> tags
+      processedBody = trimmedBody
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => `<p>${line}</p>`)
+        .join('\n');
+    }
+  }
+  
+  // Debug logging to verify product_url is wrapped in anchor tag
+  if (context.productUrl && processedBody.includes(context.productUrl)) {
+    const hasAnchorTag = processedBody.includes('<a href') && processedBody.includes('</a>');
+    console.log('[Placeholder Replacement] Product URL replacement check:', {
+      productUrl: context.productUrl,
+      hasAnchorTag,
+      sample: processedBody.substring(0, 300),
+    });
+    
+    if (!hasAnchorTag) {
+      console.warn('[Placeholder Replacement] ⚠️ WARNING: Product URL found in email body but NOT wrapped in anchor tag!');
+      console.warn('[Placeholder Replacement] This will prevent Smartlead from tracking the link.');
+    }
+  }
+  
   return {
     // Subject is plain text, no HTML wrapping
     subject: subject ? replacePlaceholders(subject, context, false) : null,
     // Email body is HTML, wrap product_url in anchor tags for Smartlead tracking
-    emailBody: replacePlaceholders(emailBody, context, true),
+    emailBody: processedBody,
   };
 }
 

@@ -319,11 +319,24 @@ export async function POST(
     // Process sequences: replace placeholders before sending to Smartlead
     console.log(`[Smartlead Sequences API] Processing ${sequences.length} sequences...`);
     const processedSequences = sequences.map((seq: any) => {
+      console.log(`[Smartlead Sequences API] Processing sequence ${seq.seq_number}:`, {
+        original_subject: seq.subject?.substring(0, 50),
+        original_email_body: seq.email_body?.substring(0, 100),
+        has_product_url_placeholder: seq.email_body?.includes('{{product_url}}'),
+      });
+      
       const { subject, emailBody } = replacePlaceholdersInSequence(
         seq.subject,
         seq.email_body,
         placeholderContext
       );
+
+      console.log(`[Smartlead Sequences API] After placeholder replacement:`, {
+        processed_subject: subject?.substring(0, 50),
+        processed_email_body: emailBody?.substring(0, 200),
+        has_anchor_tag: emailBody?.includes('<a href'),
+        product_url_in_body: emailBody?.includes(placeholderContext.productUrl || ''),
+      });
 
       // Smartlead API uses 'seq_variants' in POST but returns 'sequence_variants' in GET
       // Handle both field names for compatibility
@@ -333,7 +346,9 @@ export async function POST(
         id: seq.id, // Include when updating existing sequence
         seq_number: seq.seq_number,
         seq_delay_details: { delay_in_days: seq.delay_days || seq.seq_delay_details?.delay_in_days || 1 },
-        subject: subject || undefined, // Empty string becomes undefined for same-thread follow-ups
+        // According to Smartlead API docs: blank subject makes follow-up in same thread
+        // Use empty string, not undefined, for same-thread follow-ups
+        subject: subject !== null ? (subject || '') : undefined,
         email_body: emailBody,
         seq_variants: variants?.map((variant: any) => ({
           subject: replacePlaceholders(variant.subject || '', placeholderContext, false), // Subject is plain text
