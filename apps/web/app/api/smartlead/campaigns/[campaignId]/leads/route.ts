@@ -303,10 +303,13 @@ export async function POST(
 
 /**
  * DELETE - Remove lead from campaign
+ * Supports two formats:
+ * 1. DELETE /api/smartlead/campaigns/[campaignId]/leads/[leadId] - Direct lead_id
+ * 2. DELETE /api/smartlead/campaigns/[campaignId]/leads?email=xxx - Email lookup
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ campaignId: string }> }
+  { params }: { params: Promise<{ campaignId: string; leadId?: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -320,13 +323,14 @@ export async function DELETE(
       );
     }
 
-    const { campaignId } = await params;
+    const { campaignId, leadId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const email = searchParams.get('email');
 
-    if (!email) {
+    // Must have either leadId in path or email in query
+    if (!leadId && !email) {
       return NextResponse.json(
-        { error: 'Missing email parameter' },
+        { error: 'Missing lead_id in path or email parameter' },
         { status: 400 }
       );
     }
@@ -369,22 +373,93 @@ export async function DELETE(
       );
     }
 
-    // Remove lead from Smartlead
+    const smartlead = createSmartleadClient();
+    let smartleadLeadId: string | null = null;
+
+    // If we have leadId in path, use it directly
+    if (leadId) {
+      smartleadLeadId = leadId;
+      console.log(`[Smartlead Leads API] Removing lead using lead_id:`, {
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+        lead_id: leadId,
+      });
+    } else if (email) {
+      // Need to look up lead_id from email
+      console.log(`[Smartlead Leads API] Looking up lead_id for email:`, {
+        campaign_id: campaignId,
+        smartlead_campaign_id: campaign.smartlead_campaign_id,
+        email,
+      });
+
+      // List leads and find the one with matching email
+      const listResult = await smartlead.listLeads(campaign.smartlead_campaign_id.toString(), {
+        offset: 0,
+        limit: 1000, // Get enough leads to find the match
+      });
+
+      if (!listResult.success || !listResult.data?.data) {
+        console.error('[Smartlead Leads API] Failed to list leads for lookup:', listResult.error);
+        return NextResponse.json(
+          { 
+            error: 'Failed to lookup lead',
+            details: listResult.error?.message || listResult.error?.error || 'Unknown error',
+          },
+          { status: 500 }
+        );
+      }
+
+      // Find lead with matching email
+      const leads = listResult.data.data;
+      const matchingLead = leads.find((item: any) => {
+        const lead = item.lead || item;
+        return lead.email?.toLowerCase() === email.toLowerCase();
+      });
+
+      if (!matchingLead) {
+        return NextResponse.json(
+          { error: 'Lead not found in campaign' },
+          { status: 404 }
+        );
+      }
+
+      const lead = matchingLead.lead || matchingLead;
+      smartleadLeadId = lead.id?.toString() || matchingLead.campaign_lead_map_id?.toString();
+
+      if (!smartleadLeadId) {
+        return NextResponse.json(
+          { error: 'Could not determine lead_id from Smartlead response' },
+          { status: 500 }
+        );
+      }
+
+      console.log(`[Smartlead Leads API] Found lead_id ${smartleadLeadId} for email ${email}`);
+    }
+
+    // Remove lead from Smartlead using the lead_id
+    if (!smartleadLeadId) {
+      return NextResponse.json(
+        { error: 'Could not determine lead_id' },
+        { status: 400 }
+      );
+    }
+
     console.log(`[Smartlead Leads API] Removing lead from campaign:`, {
       campaign_id: campaignId,
       smartlead_campaign_id: campaign.smartlead_campaign_id,
-      email,
+      smartlead_lead_id: smartleadLeadId,
+      email: email || 'N/A',
     });
 
-    const smartlead = createSmartleadClient();
-    const result = await smartlead.removeLead(campaign.smartlead_campaign_id, email);
+    const result = await smartlead.removeLead(campaign.smartlead_campaign_id.toString(), smartleadLeadId);
 
     if (!result.success) {
       console.error('[Smartlead Leads API] Failed to remove lead:', {
         error: result.error,
         campaign_id: campaignId,
         smartlead_campaign_id: campaign.smartlead_campaign_id,
-        email,
+        smartlead_lead_id: smartleadLeadId,
+        email: email || 'N/A',
       });
       return NextResponse.json(
         { 

@@ -21,6 +21,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AddLeadDialog } from '@/components/admin/add-lead-dialog'
@@ -54,6 +64,8 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
   const [statusFilter, setStatusFilter] = useState('all')
   const [addLeadOpen, setAddLeadOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [leadToDelete, setLeadToDelete] = useState<{ leadId: string; email: string; smartleadLeadId?: string } | null>(null)
   
   // Pagination
   const [page, setPage] = useState(0)
@@ -132,7 +144,7 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
     onRefresh()
   }
 
-  async function handleLeadAction(leadId: string, leadEmail: string, action: 'pause' | 'resume' | 'unsubscribe' | 'delete') {
+  async function handleLeadAction(leadId: string, leadEmail: string, action: 'pause' | 'resume' | 'unsubscribe' | 'delete', smartleadLeadId?: string) {
     if (!campaign.smartlead_campaign_id) {
       toast.error('Campaign not configured')
       return
@@ -154,24 +166,56 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
           endpoint = `/api/admin/campaigns/${campaign.campaign_id}/leads/${leadId}/unsubscribe`
           break
         case 'delete':
-          endpoint = `/api/smartlead/campaigns/${campaign.campaign_id}/leads?email=${encodeURIComponent(leadEmail)}`
-          method = 'DELETE'
+          // Use smartlead_lead_id if available, otherwise use email (API will look it up)
+          if (smartleadLeadId) {
+            endpoint = `/api/smartlead/campaigns/${campaign.campaign_id}/leads/${smartleadLeadId}`
+            method = 'DELETE'
+          } else {
+            // Fallback to email lookup if we don't have smartlead_lead_id
+            endpoint = `/api/smartlead/campaigns/${campaign.campaign_id}/leads?email=${encodeURIComponent(leadEmail)}`
+            method = 'DELETE'
+          }
           break
       }
 
       const response = await fetch(endpoint, { method })
       
-      if (!response.ok) throw new Error(`Failed to ${action} lead`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.details || errorData.error || `Failed to ${action} lead`)
+      }
 
       toast.success(`Lead ${action}d successfully`)
       loadLeads()
       onRefresh()
     } catch (error) {
       console.error(`Error ${action}ing lead:`, error)
-      toast.error(`Failed to ${action} lead`)
+      toast.error(error instanceof Error ? error.message : `Failed to ${action} lead`)
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  function handleDeleteClick(lead: Lead) {
+    setLeadToDelete({
+      leadId: lead.lead_id,
+      email: lead.email,
+      smartleadLeadId: lead.smartlead_lead_id
+    })
+    setDeleteConfirmOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (!leadToDelete) return
+    
+    setDeleteConfirmOpen(false)
+    await handleLeadAction(
+      leadToDelete.leadId,
+      leadToDelete.email,
+      'delete',
+      leadToDelete.smartleadLeadId
+    )
+    setLeadToDelete(null)
   }
 
   async function handleBulkAction(action: 'pause' | 'resume' | 'export') {
@@ -469,11 +513,7 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
                         variant="ghost"
                         size="sm"
                         className="text-destructive"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this lead?')) {
-                            handleLeadAction(lead.lead_id, lead.email, 'delete')
-                          }
-                        }}
+                        onClick={() => handleDeleteClick(lead)}
                         disabled={isProcessing}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -522,6 +562,28 @@ export function LeadsTab({ campaign, onRefresh }: LeadsTabProps) {
         campaignId={campaign.campaign_id}
         onLeadsAdded={handleLeadsAdded}
       />
+
+      {/* Delete Lead Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this lead? This will remove the lead from the campaign in Smartlead.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setLeadToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Lead
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
