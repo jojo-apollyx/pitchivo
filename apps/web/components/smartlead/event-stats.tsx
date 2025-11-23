@@ -164,10 +164,9 @@ export function SmartleadEventStats({
   const bounced = stats.bounced || 0
   const unsubscribed = stats.unsubscribed || 0
 
-  // Calculate rates
-  const deliveryRate = totalSent > 0 ? (delivered / totalSent) * 100 : 0
-  const openRate = delivered > 0 ? (opened / delivered) * 100 : 0
-  const clickRate = delivered > 0 ? (clicked / delivered) * 100 : 0
+  // Calculate rates based on sent count (Smartlead doesn't send delivery events)
+  const openRate = totalSent > 0 ? (opened / totalSent) * 100 : 0
+  const clickRate = totalSent > 0 ? (clicked / totalSent) * 100 : 0
   const replyRate = totalSent > 0 ? (replied / totalSent) * 100 : 0
   const bounceRate = totalSent > 0 ? (bounced / totalSent) * 100 : 0
 
@@ -225,25 +224,8 @@ export function SmartleadEventStats({
           </div>
           
           <div className="space-y-4">
-            {/* Delivery Rate */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="font-medium">Delivery Rate</span>
-                </div>
-                <span className="font-semibold">
-                  {deliveryRate.toFixed(1)}% 
-                  <span className="text-muted-foreground ml-1">
-                    ({delivered}/{totalSent})
-                  </span>
-                </span>
-              </div>
-              <Progress value={deliveryRate} className="h-2" />
-            </div>
-
             {/* Open Rate */}
-            {delivered > 0 && (
+            {opened > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
@@ -253,7 +235,7 @@ export function SmartleadEventStats({
                   <span className="font-semibold">
                     {openRate.toFixed(1)}% 
                     <span className="text-muted-foreground ml-1">
-                      ({opened}/{delivered})
+                      ({opened}/{totalSent})
                     </span>
                   </span>
                 </div>
@@ -262,7 +244,7 @@ export function SmartleadEventStats({
             )}
 
             {/* Click Rate */}
-            {delivered > 0 && clicked > 0 && (
+            {clicked > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
@@ -272,7 +254,7 @@ export function SmartleadEventStats({
                   <span className="font-semibold">
                     {clickRate.toFixed(1)}% 
                     <span className="text-muted-foreground ml-1">
-                      ({clicked}/{delivered})
+                      ({clicked}/{totalSent})
                     </span>
                   </span>
                 </div>

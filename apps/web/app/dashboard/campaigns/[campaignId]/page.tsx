@@ -28,6 +28,7 @@ import { SmartleadEventTimeline } from '@/components/smartlead/event-timeline'
 const chartColors = {
   delivered: 'hsl(var(--primary))',
   opened: 'hsl(var(--accent))',
+  clicked: 'hsl(var(--primary-dark))',
   rfq: 'hsl(var(--primary-dark))',
   bounced: 'hsl(var(--destructive))'
 } as const
@@ -496,6 +497,7 @@ export default function CampaignDetailPage() {
       {
         sent: number
         opened: number
+        clicked: number
         rfq: number
         bounced: number
       }
@@ -509,6 +511,7 @@ export default function CampaignDetailPage() {
         buckets.set(key, {
           sent: 0,
           opened: 0,
+          clicked: 0,
           rfq: 0,
           bounced: 0
         })
@@ -525,6 +528,9 @@ export default function CampaignDetailPage() {
             break
           case 'opened':
             bucket.opened += 1
+            break
+          case 'clicked':
+            bucket.clicked += 1
             break
           case 'rfq':
             bucket.rfq += 1
@@ -544,6 +550,7 @@ export default function CampaignDetailPage() {
     const cumulative = {
       sent: 0,
       opened: 0,
+      clicked: 0,
       rfq: 0,
       bounced: 0
     }
@@ -552,6 +559,7 @@ export default function CampaignDetailPage() {
       const bucket = buckets.get(key)!
       cumulative.sent += bucket.sent
       cumulative.opened += bucket.opened
+      cumulative.clicked += bucket.clicked
       cumulative.rfq += bucket.rfq
       cumulative.bounced += bucket.bounced
 
@@ -561,10 +569,12 @@ export default function CampaignDetailPage() {
         date: format(date, 'MMM d'),
         dailySent: bucket.sent,
         dailyOpened: bucket.opened,
+        dailyClicked: bucket.clicked,
         dailyRfq: bucket.rfq,
         dailyBounced: bucket.bounced,
         sent: cumulative.sent,
         opened: cumulative.opened,
+        clicked: cumulative.clicked,
         rfq: cumulative.rfq,
         bounced: cumulative.bounced
       }
@@ -893,6 +903,7 @@ export default function CampaignDetailPage() {
     : {
         sent: campaign.emails_delivered || campaign.emails_sent,
         opened: campaign.emails_opened,
+        clicked: campaign.emails_clicked || 0,
         rfq: campaign.rfqs_received,
         bounced: campaign.emails_bounced
       }
@@ -907,6 +918,7 @@ export default function CampaignDetailPage() {
   const performanceSummary = [
     { label: 'Delivered', value: timelineTotals.sent, color: chartColors.delivered },
     { label: 'Opened', value: timelineTotals.opened, color: chartColors.opened },
+    { label: 'Clicked', value: timelineTotals.clicked || 0, color: chartColors.clicked },
     { label: 'RFQs', value: timelineTotals.rfq, color: chartColors.rfq },
     { label: 'Bounced', value: timelineTotals.bounced, color: chartColors.bounced }
   ]
@@ -1042,7 +1054,7 @@ export default function CampaignDetailPage() {
                 )}
               </div>
 
-              <div className="grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              <div className="grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-4">
                 {performanceSummary.map((item) => (
                   <div key={item.label} className="rounded-lg border border-border/20 bg-background/70 p-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1108,6 +1120,15 @@ export default function CampaignDetailPage() {
                       dataKey="opened"
                       name="Opened"
                       stroke={chartColors.opened}
+                      strokeWidth={2.4}
+                      dot={{ r: 4, strokeWidth: 2 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="clicked"
+                      name="Clicked"
+                      stroke={chartColors.clicked}
                       strokeWidth={2.4}
                       dot={{ r: 4, strokeWidth: 2 }}
                       activeDot={{ r: 6 }}
@@ -1238,7 +1259,7 @@ export default function CampaignDetailPage() {
                                       <p className="text-sm leading-relaxed">
                                         <span className="font-medium">{narrative.name}</span> {narrative.action}.
                                       </p>
-                                      {(contextPieces.length > 0 || (narrative.email && activity.activity_type === 'rfq_submitted')) && (
+                                      {(contextPieces.length > 0 || narrative.title || narrative.company) && (
                                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                                           {narrative.title && (
                                             <span>{narrative.title}</span>
@@ -1253,18 +1274,6 @@ export default function CampaignDetailPage() {
                                             <span className="flex items-center gap-1">
                                               <MapPin className="h-3 w-3" />
                                               {narrative.location}
-                                            </span>
-                                          )}
-                                          {narrative.email && activity.activity_type === 'rfq_submitted' && (
-                                            <span className="flex items-center gap-1">
-                                              <Mail className="h-3 w-3" />
-                                              {narrative.email}
-                                            </span>
-                                          )}
-                                          {narrative.email && activity.activity_type !== 'rfq_submitted' && (
-                                            <span className="flex items-center gap-1 text-muted-foreground/50">
-                                              <Mail className="h-3 w-3" />
-                                              <span className="blur-[2px] select-none">••••@••••.com</span>
                                             </span>
                                           )}
                                         </div>
@@ -1345,13 +1354,16 @@ export default function CampaignDetailPage() {
                                           <TooltipComponent>
                                             <TooltipTrigger asChild>
                                               <p className="text-sm font-semibold truncate cursor-help">
-                                                {contact.name || contact.email}
+                                                {contact.name || 'Unknown Contact'}
                                               </p>
                                             </TooltipTrigger>
                                             <TooltipContent>
                                               <div className="space-y-1">
                                                 <p className="font-medium">{contact.currentStatus?.label}</p>
                                                 <p className="text-xs text-muted-foreground">{statusDescription}</p>
+                                                {contact.email && (
+                                                  <p className="text-xs text-muted-foreground mt-1">{contact.email}</p>
+                                                )}
                                               </div>
                                             </TooltipContent>
                                           </TooltipComponent>
@@ -1369,6 +1381,12 @@ export default function CampaignDetailPage() {
                                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                               <Building2 className="h-3 w-3" />
                                               {contact.company}
+                                            </span>
+                                          )}
+                                          {!contact.title && !contact.company && contact.email && (
+                                            <span className="text-xs text-muted-foreground/70 flex items-center gap-1">
+                                              <Mail className="h-3 w-3" />
+                                              {contact.email}
                                             </span>
                                           )}
                                         </div>
