@@ -8,6 +8,16 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -45,6 +55,8 @@ export function GlobalSequenceTemplatesTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showPlaceholders, setShowPlaceholders] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null)
   const [formData, setFormData] = useState<{
     template_name: string
     subject: string
@@ -295,10 +307,17 @@ export function GlobalSequenceTemplatesTab() {
   }
 
   async function handleDelete(template: Template) {
-    if (!confirm(`Are you sure you want to delete this template?`)) {
-      return
-    }
+    setTemplateToDelete(template)
+    setDeleteConfirmOpen(true)
+  }
 
+  async function confirmDelete() {
+    if (!templateToDelete) return
+    
+    setDeleteConfirmOpen(false)
+    const template = templateToDelete
+    setTemplateToDelete(null)
+    
     try {
       const response = await fetch(`/api/admin/sequence-templates/${template.template_id}`, {
         method: 'DELETE',
@@ -717,6 +736,27 @@ export function GlobalSequenceTemplatesTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Template Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this template? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTemplateToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

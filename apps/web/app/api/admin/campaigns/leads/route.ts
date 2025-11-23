@@ -452,10 +452,10 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Get lead info before deleting to find campaign and email
+    // Get lead info before deleting to find campaign, email, and smartlead_lead_id
     const { data: lead, error: fetchError } = await supabaseAdmin
       .from('campaign_leads')
-      .select('campaign_id, email')
+      .select('campaign_id, email, smartlead_lead_id')
       .eq('lead_id', leadId)
       .single()
 
@@ -469,6 +469,7 @@ export async function DELETE(request: NextRequest) {
 
     const leadEmail = email || lead.email;
     const campaignId = lead.campaign_id;
+    const smartleadLeadId = lead.smartlead_lead_id;
 
     console.log(`[Admin Campaign Leads API] Found lead:`, {
       campaign_id: campaignId,
@@ -487,26 +488,64 @@ export async function DELETE(request: NextRequest) {
         console.log(`[Admin Campaign Leads API] 🚀 Removing lead from Smartlead...`);
         console.log(`[Admin Campaign Leads API] Smartlead Campaign ID: ${campaign.smartlead_campaign_id}`);
         console.log(`[Admin Campaign Leads API] Lead Email: ${leadEmail}`);
+        console.log(`[Admin Campaign Leads API] Smartlead Lead ID: ${smartleadLeadId || 'not found, will lookup'}`);
 
         try {
           const smartlead = createSmartleadClient();
-          // Smartlead removeLead can use email or lead ID
-          const result = await smartlead.removeLead(
-            campaign.smartlead_campaign_id.toString(),
-            leadEmail // Use email to identify the lead
-          );
+          let leadIdToUse: string | null = smartleadLeadId;
 
-          if (!result.success) {
-            console.error(`[Admin Campaign Leads API] ❌ Failed to remove lead from Smartlead:`, {
-              error: result.error,
-              campaign_id: campaignId,
-              smartlead_campaign_id: campaign.smartlead_campaign_id,
-              email: leadEmail,
+          // If we don't have smartlead_lead_id, look it up from Smartlead using email
+          if (!leadIdToUse) {
+            console.log(`[Admin Campaign Leads API] Looking up lead_id from Smartlead using email...`);
+            const listResult = await smartlead.listLeads(campaign.smartlead_campaign_id.toString(), {
+              offset: 0,
+              limit: 1000, // Get enough leads to find the match
             });
-            // Don't fail the request - continue with database deletion
-            console.warn(`[Admin Campaign Leads API] ⚠️ Lead will be deleted from database but not from Smartlead`);
+
+            if (listResult.success && listResult.data?.data) {
+              const leads = listResult.data.data;
+              const matchingLead = leads.find((item: any) => {
+                const lead = item.lead || item;
+                return lead.email?.toLowerCase() === leadEmail.toLowerCase();
+              });
+
+              if (matchingLead) {
+                const lead = matchingLead.lead || matchingLead;
+                leadIdToUse = lead.id?.toString() || matchingLead.campaign_lead_map_id?.toString();
+                console.log(`[Admin Campaign Leads API] Found lead_id: ${leadIdToUse}`);
+              } else {
+                console.warn(`[Admin Campaign Leads API] ⚠️ Lead not found in Smartlead campaign, skipping Smartlead deletion`);
+                leadIdToUse = null;
+              }
+            } else {
+              console.error(`[Admin Campaign Leads API] ❌ Failed to list leads for lookup:`, listResult.error);
+              leadIdToUse = null;
+            }
+          }
+
+          if (!leadIdToUse) {
+            console.warn(`[Admin Campaign Leads API] ⚠️ Could not determine lead_id, skipping Smartlead deletion`);
+            // Continue with database deletion even if Smartlead deletion fails
           } else {
-            console.log(`[Admin Campaign Leads API] ✅ Successfully removed lead from Smartlead`);
+            // Use numeric lead_id for deletion (required by Smartlead API)
+            const result = await smartlead.removeLead(
+              campaign.smartlead_campaign_id.toString(),
+              leadIdToUse
+            );
+
+            if (!result.success) {
+              console.error(`[Admin Campaign Leads API] ❌ Failed to remove lead from Smartlead:`, {
+                error: result.error,
+                campaign_id: campaignId,
+                smartlead_campaign_id: campaign.smartlead_campaign_id,
+                smartlead_lead_id: leadIdToUse,
+                email: leadEmail,
+              });
+              // Don't fail the request - continue with database deletion
+              console.warn(`[Admin Campaign Leads API] ⚠️ Lead will be deleted from database but not from Smartlead`);
+            } else {
+              console.log(`[Admin Campaign Leads API] ✅ Successfully removed lead from Smartlead`);
+            }
           }
         } catch (smartleadError: any) {
           console.error(`[Admin Campaign Leads API] ❌ Exception while removing lead from Smartlead:`, {

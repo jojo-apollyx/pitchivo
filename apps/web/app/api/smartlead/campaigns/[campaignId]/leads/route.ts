@@ -305,7 +305,7 @@ export async function POST(
  * DELETE - Remove lead from campaign
  * Supports two formats:
  * 1. DELETE /api/smartlead/campaigns/[campaignId]/leads/[leadId] - Direct lead_id
- * 2. DELETE /api/smartlead/campaigns/[campaignId]/leads?email=xxx - Email lookup
+ * 2. DELETE /api/smartlead/campaigns/[campaignId]/leads?email=xxx - Email lookup (fallback)
  */
 export async function DELETE(
   request: NextRequest,
@@ -385,7 +385,7 @@ export async function DELETE(
         lead_id: leadId,
       });
     } else if (email) {
-      // Need to look up lead_id from email
+      // Need to look up lead_id from email (fallback)
       console.log(`[Smartlead Leads API] Looking up lead_id for email:`, {
         campaign_id: campaignId,
         smartlead_campaign_id: campaign.smartlead_campaign_id,

@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { getDisplayName } from '@/lib/utils/campaign-naming'
@@ -58,6 +68,7 @@ export default function CampaignDetailPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [isUpdating, setIsUpdating] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   useEffect(() => {
     if (campaignId) {
@@ -134,10 +145,7 @@ export default function CampaignDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
-      return
-    }
-
+    setDeleteConfirmOpen(false)
     setIsUpdating(true)
     try {
       // Delete from Smartlead if campaign is synced
@@ -299,7 +307,7 @@ export default function CampaignDetailPage() {
                   variant="outline"
                   size="sm"
                   className="text-destructive hover:text-destructive gap-2"
-                  onClick={handleDelete}
+                  onClick={() => setDeleteConfirmOpen(true)}
                   disabled={isUpdating}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -404,6 +412,28 @@ export default function CampaignDetailPage() {
           </div>
         </section>
       </div>
+
+      {/* Delete Campaign Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this campaign? This action cannot be undone and all associated data will be lost, including all campaign activities and metrics.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isUpdating}
+            >
+              {isUpdating ? 'Deleting...' : 'Delete Campaign'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   )
 }
