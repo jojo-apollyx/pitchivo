@@ -628,9 +628,9 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {String(formData[field.key as keyof typeof formData])}
-                    </p>
+                    <div className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
+                      {renderFieldValue(formData[field.key as keyof typeof formData], field.key, 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -663,9 +663,9 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {String(formData[field.key as keyof typeof formData])}
-                    </p>
+                    <div className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
+                      {renderFieldValue(formData[field.key as keyof typeof formData], field.key, 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -702,9 +702,9 @@ export function RealPagePreview({
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
                     </p>
-                    <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                      {String(formData[field.key as keyof typeof formData])}
-                    </p>
+                    <div className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
+                      {renderFieldValue(formData[field.key as keyof typeof formData], field.key, 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -833,9 +833,9 @@ export function RealPagePreview({
                       <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                         {field.label}
                       </p>
-                      <p className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
-                        {String(formData[field.key as keyof typeof formData])}
-                      </p>
+                      <div className="text-sm sm:text-base lg:text-lg font-semibold text-foreground">
+                        {renderFieldValue(formData[field.key as keyof typeof formData], field.key, 'text-sm sm:text-base lg:text-lg font-semibold text-foreground')}
+                      </div>
                     </motion.div>
                   ))}
                 </div>
