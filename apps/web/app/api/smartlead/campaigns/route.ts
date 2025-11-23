@@ -321,8 +321,9 @@ export async function POST(request: NextRequest) {
             
             if (tokenResult.success && tokenResult.token) {
               // Build full URL with token - this gives customers link access privilege
+              // Format: /products/{token} (single secure token, product ID looked up from DB)
               const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com';
-              productUrl = `${baseUrl}/products/${campaignData.product_id}?token=${tokenResult.token}`;
+              productUrl = `${baseUrl}/products/${tokenResult.token}`;
             } else {
               // Fallback to direct URL if token creation fails (shouldn't happen, but safety)
               console.error('Failed to create email campaign token:', tokenResult.error);

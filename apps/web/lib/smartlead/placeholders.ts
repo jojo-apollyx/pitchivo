@@ -76,9 +76,11 @@ export function replacePlaceholdersInSequence(
 
 /**
  * Get placeholder context from campaign data
+ * Creates email campaign channel token if campaign_id is provided
  */
 export async function getPlaceholderContext(
   campaign: {
+    campaign_id?: string;
     product_id?: string;
     org_id?: string;
     display_name?: string;
@@ -95,11 +97,87 @@ export async function getPlaceholderContext(
   userProfile?: {
     full_name?: string | null;
     email?: string;
-  }
+  },
+  supabase?: any // Optional supabase client for token creation
 ): Promise<PlaceholderContext> {
-  const productUrl = campaign.products?.product_id
-    ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaign.products.product_id}`
-    : undefined;
+  let productUrl: string | undefined;
+  
+  // Create email campaign channel token if we have campaign_id and product_id
+  if (campaign.campaign_id && campaign.products?.product_id && campaign.org_id && supabase) {
+    try {
+      const { createAccessToken } = await import('@/lib/api/access-tokens');
+      const channelId = `email_campaign_${campaign.campaign_id}`;
+      const channelName = campaign.display_name || campaign.campaign_name || 'Email Campaign';
+      
+      // Check if token already exists
+      const { data: existingToken } = await supabase
+        .from('product_access_tokens')
+        .select('token_id, expires_at, is_revoked')
+        .eq('product_id', campaign.products.product_id)
+        .eq('channel_id', channelId)
+        .eq('is_revoked', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      const existingTokenData = existingToken?.[0];
+      const isTokenValid = existingTokenData && 
+        (!existingTokenData.expires_at || new Date(existingTokenData.expires_at) > new Date());
+      
+      if (!isTokenValid) {
+        // Create new token for email campaign channel
+        const tokenResult = await createAccessToken(
+          {
+            productId: campaign.products.product_id,
+            orgId: campaign.org_id,
+            channelId: channelId,
+            channelName: channelName,
+            accessLevel: 'after_click', // Link access privilege, not merchant preview
+            expiresInDays: 90,
+            createdBy: campaign.created_by,
+            notes: `Email campaign channel for campaign: ${campaign.campaign_id}`,
+          },
+          supabase
+        );
+        
+        if (tokenResult.success && tokenResult.token) {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com';
+          productUrl = `${baseUrl}/products/${tokenResult.token}`;
+        }
+      } else {
+        // Token exists but we can't retrieve plain token from hash
+        // We'll need to create a new one (both will work with same access level)
+        const tokenResult = await createAccessToken(
+          {
+            productId: campaign.products.product_id,
+            orgId: campaign.org_id,
+            channelId: channelId,
+            channelName: channelName,
+            accessLevel: 'after_click',
+            expiresInDays: 90,
+            createdBy: campaign.created_by,
+            notes: `Email campaign channel for campaign: ${campaign.campaign_id}`,
+          },
+          supabase
+        );
+        
+        if (tokenResult.success && tokenResult.token) {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com';
+          productUrl = `${baseUrl}/products/${tokenResult.token}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error creating email campaign token:', error);
+      // Fallback to direct URL if token creation fails
+      productUrl = campaign.products?.product_id
+        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaign.products.product_id}`
+        : undefined;
+    }
+  } else {
+    // No campaign_id or supabase client - use direct product URL (fallback)
+    productUrl = campaign.products?.product_id
+      ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaign.products.product_id}`
+      : undefined;
+  }
 
   const productName = campaign.products?.product_name;
   const userOrgName = campaign.products?.organizations?.name;

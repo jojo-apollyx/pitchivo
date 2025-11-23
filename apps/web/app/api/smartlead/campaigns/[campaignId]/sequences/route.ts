@@ -301,9 +301,13 @@ export async function POST(
       userProfile = profile;
     }
 
-    // Get placeholder context
+    // Get placeholder context (will create email campaign channel token if needed)
     console.log(`[Smartlead Sequences API] Getting placeholder context...`);
-    const placeholderContext = await getPlaceholderContext(campaign as any, userProfile || undefined);
+    const placeholderContext = await getPlaceholderContext(
+      { ...campaign, campaign_id: campaignId } as any, 
+      userProfile || undefined,
+      supabase // Pass supabase client to enable token creation
+    );
     console.log(`[Smartlead Sequences API] Placeholder context:`, {
       hasProductUrl: !!placeholderContext.productUrl,
       productName: placeholderContext.productName,

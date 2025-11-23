@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/email'
 import { createClient } from '@supabase/supabase-js'
 import { checkEmailQuota, incrementEmailUsage } from '@/lib/utils/quotas'
 import { getSenderEmail, DEFAULT_SENDER_DOMAIN, type BrevoSenderDomain } from '@/lib/constants/brevo-sender-domains'
+import { createAccessToken } from '@/lib/api/access-tokens'
 
 // Create admin Supabase client (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -144,12 +145,43 @@ export async function POST(request: NextRequest) {
     console.log('[campaigns/send] Processing placeholders')
     const buyerName = to.split('@')[1]?.split('.')[0] || 'Valued Partner'
 
+    // Create or get email campaign channel token for product URL
+    // This gives customers link access privilege (after_click) instead of merchant preview mode
+    let productLink = '';
+    if (campaign.products?.product_id && orgId) {
+      const channelId = `email_campaign_${campaignId}`;
+      const channelName = campaign.campaign_name || campaign.display_name || 'Email Campaign';
+      
+      // Create email campaign channel token
+      const tokenResult = await createAccessToken(
+        {
+          productId: campaign.products.product_id,
+          orgId: orgId,
+          channelId: channelId,
+          channelName: channelName,
+          accessLevel: 'after_click', // Link access privilege, not merchant preview
+          expiresInDays: 90,
+          createdBy: campaign.created_by,
+          notes: `Email campaign channel for campaign: ${campaignId}`,
+        },
+        supabaseAdmin
+      );
+      
+      if (tokenResult.success && tokenResult.token) {
+        // Format: /products/{token} (single secure token, product ID looked up from DB)
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com';
+        productLink = `${baseUrl}/products/${tokenResult.token}`;
+      } else {
+        // Fallback to direct URL if token creation fails (shouldn't happen, but safety)
+        console.error('[campaigns/send] Failed to create email campaign token:', tokenResult.error);
+        productLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaign.products.product_id}`;
+      }
+    }
+
     // Build placeholder values
     const orgName = campaign.products?.organizations?.name || 'Pitchivo'
     const placeholders: Record<string, string> = {
-      '{{product_link}}': campaign.products 
-        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaign.products.product_id}`
-        : '',
+      '{{product_link}}': productLink,
       '{{product_name}}': campaign.products?.product_name || 'Our Product',
       '{{buyer_name}}': buyerName.charAt(0).toUpperCase() + buyerName.slice(1),
       '{{org_name}}': orgName,
