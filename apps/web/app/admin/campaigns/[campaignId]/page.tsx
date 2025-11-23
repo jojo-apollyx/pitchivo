@@ -103,8 +103,8 @@ export default function CampaignDetailPage() {
         stopped: 'STOPPED'
       }[newStatus]
 
-      // Call Smartlead API to update status
-      const response = await fetch(`/api/smartlead/campaigns/${campaign.smartlead_campaign_id}/status`, {
+      // Call Smartlead API to update status (use local campaignId, not smartlead_campaign_id)
+      const response = await fetch(`/api/smartlead/campaigns/${campaignId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: smartleadStatus })

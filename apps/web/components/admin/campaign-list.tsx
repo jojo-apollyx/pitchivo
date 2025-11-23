@@ -108,6 +108,44 @@ export function CampaignList() {
 
   async function handleStatusChange(campaignId: string, newStatus: string) {
     try {
+      // Get campaign to check if it has Smartlead integration
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('smartlead_campaign_id')
+        .eq('campaign_id', campaignId)
+        .single()
+
+      if (campaign?.smartlead_campaign_id) {
+        // Map our status to Smartlead status format
+        const smartleadStatusMap: Record<string, string> = {
+          'active': 'START',
+          'paused': 'PAUSED',
+          'stopped': 'STOPPED',
+          'drafted': 'DRAFTED',
+          'completed': 'COMPLETED'
+        }
+
+        const smartleadStatus = smartleadStatusMap[newStatus]
+        
+        if (smartleadStatus && ['START', 'PAUSED', 'STOPPED'].includes(smartleadStatus)) {
+          // Call Smartlead API to update status
+          const response = await fetch(`/api/smartlead/campaigns/${campaignId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: smartleadStatus })
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Failed to update campaign status in Smartlead')
+          }
+        } else {
+          // Status doesn't need Smartlead update (e.g., 'drafted', 'completed')
+          // Just update local database
+        }
+      }
+
+      // Update local database
       const { error } = await supabase
         .from('campaigns')
         .update({ 
@@ -122,7 +160,9 @@ export function CampaignList() {
       toast.success('Campaign status updated successfully!')
     } catch (error) {
       console.error('Error updating campaign status:', error)
-      toast.error('Failed to update campaign status.')
+      toast.error('Failed to update campaign status.', {
+        description: error instanceof Error ? error.message : undefined
+      })
     }
   }
 

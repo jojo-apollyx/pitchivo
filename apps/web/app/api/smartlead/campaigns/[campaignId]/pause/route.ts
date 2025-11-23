@@ -47,15 +47,17 @@ export async function POST(
       );
     }
 
-    // Check user has access to this organization
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('org_id', campaign.org_id)
-      .eq('user_id', user.id)
+    // Check if user is admin or has access to this organization
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('is_pitchivo_admin, organization_id')
+      .eq('id', user.id)
       .single();
 
-    if (!membership) {
+    const isAdmin = profile?.is_pitchivo_admin || false;
+    const hasOrgAccess = profile?.organization_id === campaign.org_id;
+
+    if (!isAdmin && !hasOrgAccess) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }

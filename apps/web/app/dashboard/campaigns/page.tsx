@@ -179,10 +179,37 @@ export default function CampaignsPage() {
 
     setCancellingCampaign(campaignToAction)
     try {
+      // Check if campaign has Smartlead integration
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('smartlead_campaign_id')
+        .eq('campaign_id', campaignToAction)
+        .single()
+
+      if (campaign?.smartlead_campaign_id) {
+        // Call Smartlead API to stop campaign (Smartlead uses 'stopped' not 'cancelled')
+        const response = await fetch(`/api/smartlead/campaigns/${campaignToAction}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'STOPPED' })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to stop campaign in Smartlead')
+        }
+
+        toast.success('Campaign stopped successfully')
+      } else {
+        // Campaign not synced with Smartlead, just update local status
+        // Use 'stopped' instead of 'cancelled' for consistency
+      }
+
+      // Update local database (use 'stopped' instead of 'cancelled' for consistency with Smartlead)
       const { error } = await supabase
         .from('campaigns')
         .update({ 
-          status: 'cancelled',
+          status: 'stopped',
           updated_at: new Date().toISOString()
         })
         .eq('campaign_id', campaignToAction)
@@ -195,7 +222,9 @@ export default function CampaignsPage() {
       setCampaignToAction(null)
     } catch (error) {
       console.error('Error cancelling campaign:', error)
-      toast.error('Failed to cancel campaign. Please try again.')
+      toast.error('Failed to cancel campaign. Please try again.', {
+        description: error instanceof Error ? error.message : undefined
+      })
     } finally {
       setCancellingCampaign(null)
     }
