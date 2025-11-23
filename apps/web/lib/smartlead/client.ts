@@ -1265,6 +1265,82 @@ export class SmartleadClient {
       error: result.error,
     };
   }
+  /**
+   * Fetch Inbox Replies from Master Inbox
+   * 
+   * API Reference: POST /api/v1/master-inbox/replies
+   * 
+   * @param filters Filter options
+   */
+  async fetchInboxReplies(filters: {
+    status?: 'UNREAD' | 'READ' | 'SNOOZED';
+    category_id?: number;
+    campaign_id?: number;
+    client_id?: number;
+    email_account_id?: number;
+    limit?: number;
+    offset?: number;
+    search?: string;
+  } = {}): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/master-inbox/replies`, {
+      method: 'POST',
+      body: JSON.stringify(filters),
+    });
+  }
+
+  /**
+   * Reply to a lead from Master Inbox
+   * 
+   * API Reference: POST /api/v1/master-inbox/reply-to-lead
+   */
+  async replyToLeadFromMasterInbox(data: {
+    lead_id: string;
+    email_stats_id: string;
+    reply_email_body: string;
+    reply_message_id: string;
+    cc?: string;
+    bcc?: string;
+    add_signature?: boolean;
+  }): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/master-inbox/reply-to-lead`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Mark message as read/unread
+   * 
+   * API Reference: PATCH /api/v1/master-inbox/read-status
+   */
+  async updateReadStatus(data: {
+    lead_id: string;
+    email_stats_id: string;
+    is_read: boolean;
+  }): Promise<SmartleadApiResponse<void>> {
+    return this.request<{ ok: boolean }>(`/master-inbox/read-status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }).then(result => {
+      if (result.success) {
+        return { success: true } as SmartleadApiResponse<void>;
+      }
+      return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Fetch lead message history for Master Inbox
+   * Note: This might be different from campaign message history
+   */
+  async getMasterInboxLead(leadId: string): Promise<SmartleadApiResponse<any>> {
+    return this.request<any>(`/master-inbox/lead/${leadId}`);
+  }
 }
 
 /**

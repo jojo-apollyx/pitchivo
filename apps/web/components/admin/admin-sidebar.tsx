@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
   LayoutDashboard, 
+  Inbox,
   Users, 
   Mail, 
   Send,
@@ -21,6 +22,11 @@ const menuItems = [
     label: 'Dashboard',
     href: '/admin',
     icon: LayoutDashboard,
+  },
+  {
+    label: 'Master Inbox',
+    href: '/admin/inbox',
+    icon: Inbox,
   },
   {
     label: 'Users / Organizations',
