@@ -12,13 +12,12 @@ import { ProductStructuredData } from '@/components/products/ProductStructuredDa
 
 export default function PublicProductPage() {
   const params = useParams()
-  const searchParams = useSearchParams()
   const slug = params.slug as string
-  const token = searchParams.get('token') || undefined
   
-  // For now, we'll use slug as productId. In production, you'd query by slug
-  // This assumes slug is the productId for simplicity
-  const productId = slug
+  // Slug might be either:
+  // 1. A product ID (UUID format)
+  // 2. A token (looks like UUID, product ID is looked up from database)
+  // The API endpoint handles determining which one it is
 
   // Fetch from PUBLIC API endpoint that handles access control filtering
   const [productData, setProductData] = useState<any>(null)
@@ -32,10 +31,10 @@ export default function PublicProductPage() {
     const fetchProduct = async () => {
       try {
         setIsLoading(true)
-        const url = new URL(`/api/products/public/${slug}`, window.location.origin)
-        if (token) url.searchParams.set('token', token)
+        // Slug is passed directly - API will determine if it's a token or product ID
+        const url = `/api/products/public/${slug}`
         
-        const response = await fetch(url.toString())
+        const response = await fetch(url)
         if (!response.ok) {
           console.error('Failed to fetch product:', response.statusText)
           return
@@ -50,7 +49,7 @@ export default function PublicProductPage() {
         setIsMerchant(data._access_info?.source === 'merchant' || newAccessLevel === 'after_rfq')
         
         // Log access level for debugging
-        if (token) {
+        if (data._access_info?.source === 'token') {
           console.log('📧 Access level after token validation:', newAccessLevel)
         }
       } catch (error) {
@@ -61,7 +60,7 @@ export default function PublicProductPage() {
     }
     
     fetchProduct()
-  }, [slug, token])
+  }, [slug])
   
   // Fetch organization data for SEO
   useEffect(() => {
@@ -84,6 +83,9 @@ export default function PublicProductPage() {
     
     fetchOrg()
   }, [productData?.org_id])
+  
+  // Get product ID from product data (if available)
+  const productId = productData?.product_id || slug
   
   // Extract product form data (already filtered by server)
   const formData: FoodSupplementProductData | null = useMemo(() => {

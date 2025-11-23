@@ -4,6 +4,14 @@
 
 Smartlead webhooks provide real-time notifications about events in your cold email campaigns. This guide covers all available webhook events, their payload structures, and test cases to help you integrate Smartlead with your applications.
 
+**Important Field Notes:**
+- `sl_lead_email`: The original lead email (target recipient in campaign) - use this as the primary identifier
+- `to_email`: The recipient email (could be same or different, e.g., forwarded replies)
+- Both fields may be present in webhook payloads; prefer `sl_lead_email` when available
+- `leadCorrespondence`: Enhanced object for EMAIL_REPLY events (see EMAIL_REPLY section for details)
+
+**Official API Reference:** [Smartlead API Documentation](https://api.smartlead.ai/reference/email-reply-webhooks)
+
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
@@ -295,6 +303,40 @@ Triggered when a lead replies to your email.
 - Route replies to sales team
 - Auto-categorize reply sentiment
 - Trigger conversation workflows
+- Track replies from different contacts within the same organization (enhanced webhook)
+
+**Important Field Notes:**
+- `sl_lead_email`: The original lead email (target recipient in campaign) - **This is who you sent the email TO in your campaign**
+- `to_email`: The recipient email (could be same or different) - **This is who actually received/replied to the email**
+- `leadCorrespondence`: Enhanced object (available in newer webhook versions) containing:
+  - `targetLeadEmail`: Original recipient who was targeted
+  - `replyReceivedFrom`: Actual person who replied
+  - `repliedCompanyDomain`: Relationship indicator ("SameCompany", "DifferentCompany", or "Unknown")
+
+**Why are they different?** Here are common scenarios:
+
+1. **Direct Reply (Same)**: You send to `[email protected]`, they reply directly
+   - `sl_lead_email` = `[email protected]`
+   - `to_email` = `[email protected]`
+   - ✅ Both are the same
+
+2. **Colleague Reply (Same Company)**: You send to `[email protected]`, but their colleague `[email protected]` replies
+   - `sl_lead_email` = `[email protected]` (original target)
+   - `to_email` = `[email protected]` (actual responder)
+   - `repliedCompanyDomain` = "SameCompany"
+   - 💡 Useful for account-based marketing - track all stakeholders who engage
+
+3. **Forwarded Reply (Different Company)**: Email gets forwarded to someone at a different company
+   - `sl_lead_email` = `[email protected]` (original target)
+   - `to_email` = `[email protected]` (forwarded recipient)
+   - `repliedCompanyDomain` = "DifferentCompany"
+   - ⚠️ May indicate the original lead forwarded to a partner/vendor
+
+4. **Email Aliases/Shared Mailboxes**: Original target uses an alias, reply comes from different address
+   - `sl_lead_email` = `[email protected]` (alias you targeted)
+   - `to_email` = `[email protected]` (actual mailbox that replied)
+
+**Reference:** [Official Smartlead API Documentation](https://api.smartlead.ai/reference/email-reply-webhooks)
 
 **Example Payload:**
 
@@ -327,11 +369,9 @@ Triggered when a lead replies to your email.
     "webhook_created_at": "2025-03-28T08:14:40.843Z"
   },
   "leadCorrespondence": {
-    "repliedEmail": "[email protected]",
-    "repliedName": "John Doe",
-    "repliedCompanyDomain": "acmecorp.com",
-    "originalRecipientEmail": "[email protected]",
-    "originalRecipientName": "Sarah Smith"
+    "targetLeadEmail": "[email protected]",
+    "replyReceivedFrom": "[email protected]",
+    "repliedCompanyDomain": "SameCompany"
   }
 }
 ```
@@ -669,11 +709,11 @@ from jsonschema import validate, ValidationError
 
 webhook_schema = {
     "type": "object",
-    "required": ["event_type", "campaign_id", "sl_lead_email"],
+    "required": ["event_type", "campaign_id", "to_email"],
     "properties": {
         "event_type": {"type": "string"},
         "campaign_id": {"type": "integer"},
-        "sl_lead_email": {"type": "string", "format": "email"}
+        "to_email": {"type": "string", "format": "email"}
     }
 }
 

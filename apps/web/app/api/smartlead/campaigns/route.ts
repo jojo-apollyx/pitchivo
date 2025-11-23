@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createSmartleadClient } from '@/lib/smartlead';
 import { normalizeSmartleadStatus } from '@/lib/smartlead/utils';
+import { createAccessToken } from '@/lib/api/access-tokens';
 
 /**
  * POST /api/smartlead/campaigns
@@ -273,10 +274,61 @@ export async function POST(request: NextRequest) {
           // Import placeholder utilities
           const { replacePlaceholdersInSequence } = await import('@/lib/smartlead/placeholders');
           
-          // Build placeholder context
-          const productUrl = campaignData?.product_id
-            ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaignData.product_id}`
-            : undefined;
+          // Create or get email campaign channel token for product URL
+          // This gives customers link access privilege (after_click) instead of merchant preview mode
+          let productUrl: string | undefined;
+          if (campaignData?.product_id && campaignData?.org_id) {
+            const channelId = `email_campaign_${campaign_id}`;
+            const channelName = campaignData?.display_name || campaignData?.campaign_name || 'Email Campaign';
+            
+            // Check if a valid token already exists for this campaign channel
+            const { data: existingTokens } = await supabase
+              .from('product_access_tokens')
+              .select('token_id, expires_at, is_revoked')
+              .eq('product_id', campaignData.product_id)
+              .eq('channel_id', channelId)
+              .eq('is_revoked', false)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            
+            const existingToken = existingTokens?.[0];
+            const isTokenValid = existingToken && 
+              (!existingToken.expires_at || new Date(existingToken.expires_at) > new Date());
+            
+            if (isTokenValid) {
+              // Token exists and is valid, but we can't retrieve the plain token from hash
+              // Check if we stored the URL in campaign metadata or create a new token
+              // For now, we'll create a new token (both will work with same access level)
+              // TODO: Store token URL in campaigns table for reuse
+            }
+            
+            // Create new token for email campaign channel
+            // Access level: 'after_click' - gives customers link access privilege (not full merchant access)
+            // Expires in 90 days (standard for email campaigns per CHANNEL_PRESETS)
+            const tokenResult = await createAccessToken(
+              {
+                productId: campaignData.product_id,
+                orgId: campaignData.org_id,
+                channelId: channelId,
+                channelName: channelName,
+                accessLevel: 'after_click', // Link access privilege, not merchant preview
+                expiresInDays: 90, // Standard email campaign duration
+                createdBy: campaignData.created_by,
+                notes: `Email campaign channel for campaign: ${campaign_id}`,
+              },
+              supabase
+            );
+            
+            if (tokenResult.success && tokenResult.token) {
+              // Build full URL with token - this gives customers link access privilege
+              const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com';
+              productUrl = `${baseUrl}/products/${campaignData.product_id}?token=${tokenResult.token}`;
+            } else {
+              // Fallback to direct URL if token creation fails (shouldn't happen, but safety)
+              console.error('Failed to create email campaign token:', tokenResult.error);
+              productUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://pitchivo.com'}/products/${campaignData.product_id}`;
+            }
+          }
           
           const placeholderContext = {
             productUrl,

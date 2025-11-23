@@ -202,12 +202,14 @@ export async function createAccessToken(
       }
     }
 
-    // Generate URL (will be completed by caller with proper domain)
-    const url = `/products/${params.productId}?token=${token}`
+    // Generate URL with single secure token (looks like UUID, can't be guessed or manipulated)
+    // Format: /products/{token} - product ID is looked up from database during validation
+    // This is more secure than composite tokens since product ID isn't visible in URL
+    const url = `/products/${token}`
 
     return {
       success: true,
-      token, // ⚠️ This is the ONLY time we return the plain token
+      token: token, // Return just the secure token (product ID stored in DB)
       tokenId: tokenData.token_id,
       url,
     }
@@ -286,40 +288,83 @@ export async function getProductTokens(
 
 /**
  * Determine access level from request
- * Priority: token > merchant flag > default (public)
+ * Priority: token in slug > token in cookie > merchant flag > default (public)
  * 
- * @param searchParams - URL search parameters
+ * SECURITY: Once a user accesses with a valid token, we store it in a cookie
+ * to prevent them from removing the token from URL and refreshing to get higher access
+ * 
  * @param supabase - Supabase client
  * @param isMerchant - Whether user is authenticated merchant
- * @param productId - Product ID for validation
+ * @param productId - Product ID for validation (optional, can be looked up from token)
+ * @param cookieStore - Optional cookie store to read token cookies
+ * @param slug - Slug from URL (might be a token in format /products/{token})
  * @returns Access level and token info
  */
 export async function determineAccessLevel(
-  searchParams: URLSearchParams,
   supabase: any,
   isMerchant: boolean = false,
-  productId?: string
+  productId: string | undefined,
+  cookieStore: any | undefined,
+  slug: string
 ): Promise<{
   accessLevel: AccessLevel
   tokenId?: string
   channelId?: string
+  productId?: string // Product ID from token lookup (when slug is a token)
   source: 'token' | 'merchant' | 'public'
+  shouldSetCookie?: boolean // Indicates if we should set a cookie for this access
+  cookieToken?: string // The token to store in cookie (only if from URL)
 }> {
-  // Priority 1: Check for access token
-  const token = searchParams.get('token')
-  if (token) {
-    const validation = await validateAccessToken(token, supabase, productId)
-    if (validation.valid) {
+  // Priority 1: Check if slug is a token (format: /products/{token})
+  // Token looks like a UUID - we look up product_id from database
+  if (slug) {
+    const validation = await validateAccessToken(slug, supabase)
+    if (validation.valid && validation.productId) {
+      // Valid token - product ID retrieved from database
       return {
         accessLevel: validation.accessLevel!,
         tokenId: validation.tokenId,
         channelId: validation.channelId,
+        productId: validation.productId, // Product ID from database
         source: 'token',
+        shouldSetCookie: true,
+        cookieToken: slug,
       }
     }
   }
 
-  // Priority 2: Merchant access (full access)
+  // Priority 2: Check for token in cookie (if productId matches)
+  // This prevents users from removing the token from URL and refreshing to get higher access
+  if (cookieStore && productId) {
+    try {
+      const cookieName = `product_token_${productId}`
+      const cookieToken = cookieStore.get(cookieName)?.value
+      
+      if (cookieToken) {
+        const validation = await validateAccessToken(cookieToken, supabase, productId)
+        if (validation.valid) {
+          // Valid token in cookie - user previously accessed with token
+          // Continue to grant the same access level even without token in URL
+          return {
+            accessLevel: validation.accessLevel!,
+            tokenId: validation.tokenId,
+            channelId: validation.channelId,
+            productId: validation.productId,
+            source: 'token',
+            shouldSetCookie: false, // Already have cookie, no need to set again
+          }
+        } else {
+          // Cookie token is invalid/expired - clear the cookie
+          cookieStore.delete(cookieName)
+        }
+      }
+    } catch (error) {
+      // Cookie access failed, continue to other checks
+      console.error('Error reading token cookie:', error)
+    }
+  }
+
+  // Priority 3: Merchant access (full access)
   if (isMerchant) {
     return {
       accessLevel: 'after_rfq', // Merchants see everything
@@ -327,7 +372,7 @@ export async function determineAccessLevel(
     }
   }
 
-  // Priority 3: Default public access
+  // Priority 4: Default public access
   return {
     accessLevel: 'public',
     source: 'public',
@@ -384,11 +429,12 @@ export async function createRfqUpgradeToken(
  * }, supabase)
  * 
  * // Share this URL: result.url
- * // URL: /products/abc-123?token=64_character_hex_string
+ * // URL: /products/64_character_hex_string (token looks like UUID, product ID is in database)
  * 
  * // When user visits, validate token:
- * const validation = await validateAccessToken(token, supabase, productId)
- * if (validation.valid) {
+ * // The slug is the token - we look up product_id from database
+ * const validation = await validateAccessToken(slug, supabase)
+ * if (validation.valid && validation.productId) {
  *   // Filter product data based on validation.accessLevel
  *   const filtered = filterProductObject(product, validation.accessLevel)
  *   return NextResponse.json(filtered)

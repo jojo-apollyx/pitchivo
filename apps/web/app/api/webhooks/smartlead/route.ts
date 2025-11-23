@@ -258,9 +258,21 @@ async function processSmartleadEvent(event: any, requestId?: string) {
     console.log(`🔍 [${eventId}] Extracted fields:`);
     console.log(`  event_type:`, eventType);
     console.log(`  campaign_id:`, smartleadCampaignId, `(type: ${typeof smartleadCampaignId})`);
-    const leadEmail = event.to_email; // Official field name for recipient
+    // According to official Smartlead API docs:
+    // - sl_lead_email: Original lead email (target recipient in campaign) - WHO YOU SENT TO
+    // - to_email: Recipient email (could be same or different) - WHO ACTUALLY RECEIVED/REPLIED
+    // 
+    // Why they differ:
+    // 1. Direct reply: Both same (original recipient replies)
+    // 2. Colleague reply: Different person from same company replies (e.g., you email CEO, CTO replies)
+    // 3. Forwarded: Email forwarded to someone at different company
+    // 4. Aliases: Original target uses alias, reply from different address
+    //
+    // Prefer sl_lead_email as it's the original target, fall back to to_email
+    const leadEmail = event.sl_lead_email || event.to_email; // Official field names per https://api.smartlead.ai/reference/email-reply-webhooks
     const fromEmail = event.from_email;
     const toName = event.to_name;
+    const leadCorrespondence = event.leadCorrespondence; // Enhanced correspondence info (targetLeadEmail, replyReceivedFrom, repliedCompanyDomain)
     const statsId = event.stats_id; // Message/statistics ID
     const messageId = event.sent_message?.message_id || statsId; // From sent_message object or stats_id
     const timestamp = event.time_opened || event.time_clicked || event.time_replied || event.event_timestamp || event.timestamp;
@@ -269,7 +281,9 @@ async function processSmartleadEvent(event: any, requestId?: string) {
     const replySubject = event.subject || event.reply_subject;
     const bounceReason = event.bounce_reason;
     const bounceType = event.bounce_type;
-    const newCampaignStatus = event.campaign_status;
+    // For CAMPAIGN_STATUS_CHANGED events, use current_status; otherwise use campaign_status
+    const newCampaignStatus = event.current_status || event.campaign_status;
+    const previousCampaignStatus = event.previous_status;
     const campaignName = event.campaign_name;
     const sequenceNumber = event.sequence_number;
     const subject = event.subject;
@@ -278,9 +292,12 @@ async function processSmartleadEvent(event: any, requestId?: string) {
     const clientId = event.client_id;
     const smartleadMetadata = event.metadata || {};
     
-    console.log(`  to_email:`, leadEmail);
+    console.log(`  sl_lead_email:`, event.sl_lead_email || 'N/A');
+    console.log(`  to_email:`, event.to_email || 'N/A');
+    console.log(`  lead_email (using):`, leadEmail);
     console.log(`  from_email:`, fromEmail);
     console.log(`  to_name:`, toName);
+    console.log(`  leadCorrespondence:`, leadCorrespondence ? JSON.stringify(leadCorrespondence, null, 2) : 'N/A');
     console.log(`  stats_id:`, statsId);
     console.log(`  message_id:`, messageId);
     console.log(`  timestamp:`, timestamp);
@@ -301,9 +318,11 @@ async function processSmartleadEvent(event: any, requestId?: string) {
     // Remove fields we've explicitly extracted
     delete rest.event_type;
     delete rest.campaign_id;
+    delete rest.sl_lead_email;
     delete rest.to_email;
     delete rest.from_email;
     delete rest.to_name;
+    delete rest.leadCorrespondence;
     delete rest.stats_id;
     delete rest.sent_message;
     delete rest.time_opened;
@@ -345,6 +364,7 @@ async function processSmartleadEvent(event: any, requestId?: string) {
     const isCampaignEvent = eventType && (
       eventType.includes('CAMPAIGN') || 
       eventType === 'CAMPAIGN_STATUS_CHANGE' || 
+      eventType === 'CAMPAIGN_STATUS_CHANGED' || // Smartlead sends both variants
       eventType === 'CAMPAIGN_DELETED' || 
       eventType === 'CAMPAIGN_UPDATED'
     );
@@ -367,13 +387,13 @@ async function processSmartleadEvent(event: any, requestId?: string) {
       return { success: false, error: 'Missing required campaign_id', eventId };
     }
 
-    // For lead-level events, require to_email (recipient)
+    // For lead-level events, require either sl_lead_email or to_email (recipient)
     if (!isCampaignEvent && !leadEmail) {
-      console.error(`❌ [${eventId}] Missing to_email for lead-level event`);
+      console.error(`❌ [${eventId}] Missing sl_lead_email or to_email for lead-level event`);
       console.error(`❌ [${eventId}] Event type:`, eventType);
       console.error(`❌ [${eventId}] Campaign ID:`, smartleadCampaignId);
       console.error(`❌ [${eventId}] Full event:`, JSON.stringify(event, null, 2));
-      return { success: false, error: 'Missing to_email for lead-level event', eventId };
+      return { success: false, error: 'Missing sl_lead_email or to_email for lead-level event', eventId };
     }
 
     // Handle campaign-level events
@@ -381,6 +401,8 @@ async function processSmartleadEvent(event: any, requestId?: string) {
       console.log(`🎯 [${eventId}] Handling campaign-level event`);
       const campaignEventResult = await handleCampaignEvent(eventType, smartleadCampaignId.toString(), {
         status: newCampaignStatus,
+        previous_status: previousCampaignStatus,
+        current_status: event.current_status,
         name: campaignName,
         timestamp,
         ...rest
@@ -480,6 +502,9 @@ async function processSmartleadEvent(event: any, requestId?: string) {
       sent_message: sentMessage,
       client_id: clientId,
       original_event_type: eventType,
+      sl_lead_email: event.sl_lead_email, // Original target lead email
+      to_email: event.to_email, // Actual recipient email
+      leadCorrespondence: leadCorrespondence, // Enhanced correspondence info
       ...smartleadMetadata, // Include metadata from Smartlead
       ...rest // Include any additional fields
     };
@@ -716,8 +741,8 @@ async function updateCampaignMetricsFromSmartlead(campaignId: string, eventType:
       const rpcStart = Date.now();
       const { data: rpcResult, error } = await supabaseAdmin.rpc('increment_campaign_metric', {
         p_campaign_id: campaignId,
-        p_metric_name: metricColumn,
-        p_increment_by: 1
+        p_metric: metricColumn,
+        p_increment: 1
       });
       const rpcTime = Date.now() - rpcStart;
       console.log(`  ${logPrefix} RPC call took ${rpcTime}ms`);
@@ -951,9 +976,12 @@ async function handleCampaignEvent(
         break;
 
       case 'CAMPAIGN_STATUS_CHANGE':
-        console.log(`📊 ${logPrefix} Campaign status changed to: ${eventData.status}`);
+      case 'CAMPAIGN_STATUS_CHANGED': // Handle both variants
+        const previousStatus = eventData.previous_status;
+        const currentStatus = eventData.current_status || eventData.status;
+        console.log(`📊 ${logPrefix} Campaign status changed from ${previousStatus || 'unknown'} to ${currentStatus || 'unknown'}`);
         // Use Smartlead status directly (convert to lowercase for database)
-        const normalizedStatus = normalizeSmartleadStatus(eventData.status || '');
+        const normalizedStatus = normalizeSmartleadStatus(currentStatus || '');
         console.log(`  ${logPrefix} Normalized status: ${normalizedStatus}`);
         
         const statusStart = Date.now();
