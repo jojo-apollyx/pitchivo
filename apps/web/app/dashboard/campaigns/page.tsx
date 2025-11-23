@@ -206,21 +206,46 @@ export default function CampaignsPage() {
     
     setCancellingCampaign(campaignId)
     try {
-      const { error } = await supabase
+      // Check if campaign has Smartlead integration
+      const { data: campaign } = await supabase
         .from('campaigns')
-        .update({ 
-          status: 'paused',
-          updated_at: new Date().toISOString()
-        })
+        .select('smartlead_campaign_id')
         .eq('campaign_id', campaignId)
+        .single()
 
-      if (error) throw error
+      if (campaign?.smartlead_campaign_id) {
+        // Call Smartlead API to pause campaign
+        const response = await fetch(`/api/smartlead/campaigns/${campaignId}/pause`, {
+          method: 'POST'
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to pause campaign in Smartlead')
+        }
+
+        toast.success('Campaign paused successfully')
+      } else {
+        // Campaign not synced with Smartlead, just update local status
+        const { error } = await supabase
+          .from('campaigns')
+          .update({ 
+            status: 'paused',
+            updated_at: new Date().toISOString()
+          })
+          .eq('campaign_id', campaignId)
+
+        if (error) throw error
+        toast.success('Campaign paused successfully')
+      }
 
       // Reload campaigns
       await loadCampaigns()
     } catch (error) {
       console.error('Error pausing campaign:', error)
-      toast.error('Failed to pause campaign. Please try again.')
+      toast.error('Failed to pause campaign. Please try again.', {
+        description: error instanceof Error ? error.message : undefined
+      })
     } finally {
       setCancellingCampaign(null)
     }
@@ -231,21 +256,46 @@ export default function CampaignsPage() {
     
     setCancellingCampaign(campaignId)
     try {
-      const { error } = await supabase
+      // Check if campaign has Smartlead integration
+      const { data: campaign } = await supabase
         .from('campaigns')
-        .update({ 
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
+        .select('smartlead_campaign_id')
         .eq('campaign_id', campaignId)
+        .single()
 
-      if (error) throw error
+      if (campaign?.smartlead_campaign_id) {
+        // Call Smartlead API to resume campaign
+        const response = await fetch(`/api/smartlead/campaigns/${campaignId}/resume`, {
+          method: 'POST'
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to resume campaign in Smartlead')
+        }
+
+        toast.success('Campaign resumed successfully')
+      } else {
+        // Campaign not synced with Smartlead, just update local status
+        const { error } = await supabase
+          .from('campaigns')
+          .update({ 
+            status: 'active',
+            updated_at: new Date().toISOString()
+          })
+          .eq('campaign_id', campaignId)
+
+        if (error) throw error
+        toast.success('Campaign resumed successfully')
+      }
 
       // Reload campaigns
       await loadCampaigns()
     } catch (error) {
       console.error('Error resuming campaign:', error)
-      toast.error('Failed to resume campaign. Please try again.')
+      toast.error('Failed to resume campaign. Please try again.', {
+        description: error instanceof Error ? error.message : undefined
+      })
     } finally {
       setCancellingCampaign(null)
     }
