@@ -29,11 +29,42 @@ export interface PlaceholderContext {
 }
 
 /**
+ * HTML-escape a string to prevent XSS and broken HTML
+ */
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+/**
+ * URL-encode a string for use in href attributes
+ */
+function encodeUrl(url: string): string {
+  try {
+    // Use encodeURI to preserve valid URL structure, but encode special chars
+    return encodeURI(url);
+  } catch {
+    // Fallback to encodeURIComponent if URL is malformed
+    return encodeURIComponent(url);
+  }
+}
+
+/**
  * Replace placeholders in text with actual values
+ * @param text - The text to process
+ * @param context - Placeholder values
+ * @param isHtml - Whether the text is HTML content (default: false). When true, product_url will be wrapped in anchor tags for Smartlead tracking, and text values will be HTML-escaped.
  */
 export function replacePlaceholders(
   text: string,
-  context: PlaceholderContext
+  context: PlaceholderContext,
+  isHtml: boolean = false
 ): string {
   if (!text) return text;
 
@@ -51,10 +82,44 @@ export function replacePlaceholders(
 
   // Replace each placeholder
   Object.entries(placeholders).forEach(([placeholder, value]) => {
+    if (!value) return; // Skip empty values
+    
     // Escape special regex characters in placeholder
     const escapedPlaceholder = placeholder.replace(/[{}]/g, '\\$&');
     const regex = new RegExp(escapedPlaceholder, 'g');
-    result = result.replace(regex, value);
+    
+    // Special handling for product_url in HTML content
+    if (placeholder === '{{product_url}}' && isHtml) {
+      // Check if placeholder is already inside an anchor tag
+      // Pattern matches: <a href="{{product_url}}"> or <a ...>{{product_url}}</a>
+      const alreadyInAnchorPattern = /<a\s+[^>]*href\s*=\s*["'][^"']*\{\{product_url\}\}[^"']*["'][^>]*>|<\s*a\s+[^>]*>\s*\{\{product_url\}\}\s*<\/a>/i;
+      
+      if (alreadyInAnchorPattern.test(result)) {
+        // Already in an anchor tag, just replace the placeholder
+        // URL-encode first, then HTML-escape for safe use in href attribute
+        const encodedUrl = encodeUrl(value);
+        const htmlEscapedUrl = escapeHtml(encodedUrl);
+        result = result.replace(regex, htmlEscapedUrl);
+      } else {
+        // Not in an anchor tag - wrap it in one for Smartlead tracking
+        // URL-encode for href attribute, then HTML-escape for safe HTML
+        // HTML-escape the link text separately
+        const encodedUrl = encodeUrl(value);
+        const htmlEscapedHref = escapeHtml(encodedUrl);
+        const htmlEscapedText = escapeHtml(value);
+        
+        // Wrap the URL in an anchor tag so Smartlead can track it
+        const wrappedValue = `<a href="${htmlEscapedHref}">${htmlEscapedText}</a>`;
+        result = result.replace(regex, wrappedValue);
+      }
+    } else if (isHtml) {
+      // For HTML content, escape text placeholders to prevent XSS and broken HTML
+      const escapedValue = escapeHtml(value);
+      result = result.replace(regex, escapedValue);
+    } else {
+      // Plain text replacement (no escaping needed)
+      result = result.replace(regex, value);
+    }
   });
 
   return result;
@@ -62,6 +127,7 @@ export function replacePlaceholders(
 
 /**
  * Replace placeholders in both subject and email body
+ * Email body is treated as HTML to ensure product_url is wrapped in anchor tags for Smartlead tracking
  */
 export function replacePlaceholdersInSequence(
   subject: string | null | undefined,
@@ -69,8 +135,10 @@ export function replacePlaceholdersInSequence(
   context: PlaceholderContext
 ): { subject: string | null; emailBody: string } {
   return {
-    subject: subject ? replacePlaceholders(subject, context) : null,
-    emailBody: replacePlaceholders(emailBody, context),
+    // Subject is plain text, no HTML wrapping
+    subject: subject ? replacePlaceholders(subject, context, false) : null,
+    // Email body is HTML, wrap product_url in anchor tags for Smartlead tracking
+    emailBody: replacePlaceholders(emailBody, context, true),
   };
 }
 

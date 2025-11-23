@@ -336,8 +336,8 @@ export async function POST(
         subject: subject || undefined, // Empty string becomes undefined for same-thread follow-ups
         email_body: emailBody,
         seq_variants: variants?.map((variant: any) => ({
-          subject: replacePlaceholders(variant.subject || '', placeholderContext),
-          email_body: replacePlaceholders(variant.email_body || '', placeholderContext),
+          subject: replacePlaceholders(variant.subject || '', placeholderContext, false), // Subject is plain text
+          email_body: replacePlaceholders(variant.email_body || '', placeholderContext, true), // Email body is HTML
           variant_label: variant.variant_label,
         })),
       };
