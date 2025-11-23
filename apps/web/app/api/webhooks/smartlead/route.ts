@@ -942,44 +942,30 @@ async function handleCampaignEvent(
     console.log(`  ${logPrefix} Campaign data:`, campaign ? JSON.stringify(campaign, null, 2) : 'null');
     console.log(`  ${logPrefix} Campaign error:`, campaignError ? JSON.stringify(campaignError, null, 2) : 'null');
 
-    if (campaignError || !campaign) {
-      console.error(`❌ ${logPrefix} Campaign not found for Smartlead ID:`, smartleadCampaignId);
-      return { success: false, error: 'Campaign not found', eventId };
-    }
-
-    const campaignId = campaign.campaign_id;
-    console.log(`✅ ${logPrefix} Found campaign: ${campaignId} (${campaign.campaign_name})`);
-
     // Handle different campaign event types
+    // Note: For CAMPAIGN_STATUS_CHANGED, we log the status change even if campaign is not found
+    // (e.g., when paused from local environment)
     switch (eventType) {
-      case 'CAMPAIGN_DELETED':
-        console.log(`🗑️ ${logPrefix} Campaign deleted in Smartlead, marking as deleted in our DB`);
-        const deleteStart = Date.now();
-        const { data: deleteResult, error: deleteError } = await supabaseAdmin
-          .from('campaigns')
-          .update({
-            status: 'deleted',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('campaign_id', campaignId)
-          .select();
-        const deleteTime = Date.now() - deleteStart;
-        console.log(`  ${logPrefix} Delete update took ${deleteTime}ms`);
-        console.log(`  ${logPrefix} Delete result:`, deleteResult ? JSON.stringify(deleteResult, null, 2) : 'null');
-        console.log(`  ${logPrefix} Delete error:`, deleteError ? JSON.stringify(deleteError, null, 2) : 'null');
-        
-        if (deleteError) {
-          console.error(`❌ ${logPrefix} Error deleting campaign:`, deleteError);
-        } else {
-          console.log(`✅ ${logPrefix} Campaign marked as deleted in our database`);
-        }
-        break;
-
       case 'CAMPAIGN_STATUS_CHANGE':
       case 'CAMPAIGN_STATUS_CHANGED': // Handle both variants
         const previousStatus = eventData.previous_status;
         const currentStatus = eventData.current_status || eventData.status;
         console.log(`📊 ${logPrefix} Campaign status changed from ${previousStatus || 'unknown'} to ${currentStatus || 'unknown'}`);
+        console.log(`  ${logPrefix} Previous status: ${previousStatus || 'N/A'}`);
+        console.log(`  ${logPrefix} Current status: ${currentStatus || 'N/A'}`);
+        console.log(`  ${logPrefix} Campaign name: ${eventData.name || 'N/A'}`);
+        
+        if (campaignError || !campaign) {
+          console.log(`ℹ️ ${logPrefix} Campaign not found in database (Smartlead ID: ${smartleadCampaignId})`);
+          console.log(`  ${logPrefix} This is expected if campaign was paused/updated from local environment or external system`);
+          console.log(`  ${logPrefix} Webhook payload was correctly parsed: previous_status="${previousStatus}", current_status="${currentStatus}"`);
+          // Return success since payload was handled correctly, even if campaign doesn't exist
+          return { success: true, error: null, eventId, message: 'Campaign not found in database, but payload handled correctly' };
+        }
+
+        const campaignId = campaign.campaign_id;
+        console.log(`✅ ${logPrefix} Found campaign: ${campaignId} (${campaign.campaign_name})`);
+        
         // Use Smartlead status directly (convert to lowercase for database)
         const normalizedStatus = normalizeSmartleadStatus(currentStatus || '');
         console.log(`  ${logPrefix} Normalized status: ${normalizedStatus}`);
@@ -1005,8 +991,48 @@ async function handleCampaignEvent(
         }
         break;
 
+      case 'CAMPAIGN_DELETED':
+        if (campaignError || !campaign) {
+          console.log(`ℹ️ ${logPrefix} Campaign not found in database (Smartlead ID: ${smartleadCampaignId})`);
+          console.log(`  ${logPrefix} Campaign may have already been deleted or doesn't exist in our system`);
+          return { success: true, error: null, eventId, message: 'Campaign not found, but payload handled correctly' };
+        }
+
+        const campaignIdForDelete = campaign.campaign_id;
+        console.log(`🗑️ ${logPrefix} Campaign deleted in Smartlead, marking as deleted in our DB`);
+        const deleteStart = Date.now();
+        const { data: deleteResult, error: deleteError } = await supabaseAdmin
+          .from('campaigns')
+          .update({
+            status: 'deleted',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('campaign_id', campaignIdForDelete)
+          .select();
+        const deleteTime = Date.now() - deleteStart;
+        console.log(`  ${logPrefix} Delete update took ${deleteTime}ms`);
+        console.log(`  ${logPrefix} Delete result:`, deleteResult ? JSON.stringify(deleteResult, null, 2) : 'null');
+        console.log(`  ${logPrefix} Delete error:`, deleteError ? JSON.stringify(deleteError, null, 2) : 'null');
+        
+        if (deleteError) {
+          console.error(`❌ ${logPrefix} Error deleting campaign:`, deleteError);
+        } else {
+          console.log(`✅ ${logPrefix} Campaign marked as deleted in our database`);
+        }
+        break;
+
       case 'CAMPAIGN_UPDATED':
         console.log(`✏️ ${logPrefix} Campaign settings updated in Smartlead`);
+        console.log(`  ${logPrefix} Campaign name in payload: ${eventData.name || 'N/A'}`);
+        
+        if (campaignError || !campaign) {
+          console.log(`ℹ️ ${logPrefix} Campaign not found in database (Smartlead ID: ${smartleadCampaignId})`);
+          console.log(`  ${logPrefix} This is expected if campaign was updated from local environment or external system`);
+          console.log(`  ${logPrefix} Webhook payload was correctly parsed: campaign_name="${eventData.name || 'N/A'}"`);
+          return { success: true, error: null, eventId, message: 'Campaign not found in database, but payload handled correctly' };
+        }
+
+        const campaignIdForUpdate = campaign.campaign_id;
         const updates: any = {
           updated_at: new Date().toISOString(),
         };
@@ -1021,7 +1047,7 @@ async function handleCampaignEvent(
         const { data: updateResult, error: updateError } = await supabaseAdmin
           .from('campaigns')
           .update(updates)
-          .eq('campaign_id', campaignId)
+          .eq('campaign_id', campaignIdForUpdate)
           .select();
         const updateTime = Date.now() - updateStart;
         console.log(`  ${logPrefix} Update took ${updateTime}ms`);
