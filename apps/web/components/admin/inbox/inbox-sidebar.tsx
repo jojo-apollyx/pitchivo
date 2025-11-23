@@ -48,6 +48,7 @@ export function InboxSidebar({
       <div className="space-y-1 px-2">
         <Button
           variant="ghost"
+          size="sm"
           className={cn(
             "w-full justify-start",
             currentFilter === 'ALL' && "bg-primary/10 text-primary font-medium"
@@ -59,6 +60,7 @@ export function InboxSidebar({
         </Button>
         <Button
           variant="ghost"
+          size="sm"
           className={cn(
             "w-full justify-start",
             currentFilter === 'UNREAD' && "bg-primary/10 text-primary font-medium"
@@ -79,8 +81,9 @@ export function InboxSidebar({
           <div className="space-y-1">
             <Button
               variant="ghost"
+              size="sm"
               className={cn(
-                "w-full justify-start text-sm h-8",
+                "w-full justify-start h-8",
                 selectedClientId === null && "bg-primary/10 text-primary font-medium"
               )}
               onClick={() => onClientChange(null)}
@@ -91,8 +94,9 @@ export function InboxSidebar({
               <Button
                 key={client.id}
                 variant="ghost"
+                size="sm"
                 className={cn(
-                  "w-full justify-start text-sm h-8 truncate",
+                  "w-full justify-start h-8 truncate",
                   selectedClientId === client.id && "bg-primary/10 text-primary font-medium"
                 )}
                 onClick={() => onClientChange(client.id)}

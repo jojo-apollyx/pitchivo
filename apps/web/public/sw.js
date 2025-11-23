@@ -22,6 +22,7 @@ const NEVER_CACHE = [
   '/dashboard/', // All dashboard pages (dynamic, user-specific data)
   '/api/', // All API routes (dynamic data)
   '/products/', // Product pages (dynamic access levels, tokens)
+  '/admin/inbox', // Admin inbox (real-time data, should never be cached)
 ]
 
 // Check if URL should never be cached
@@ -167,8 +168,10 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
   const url = new URL(request.url)
   
-  // For dashboard and API routes, always fetch fresh and never cache
-  if (url.pathname.startsWith('/dashboard/') || url.pathname.startsWith('/api/')) {
+  // For dashboard, API, and admin inbox routes, always fetch fresh and never cache
+  if (url.pathname.startsWith('/dashboard/') || 
+      url.pathname.startsWith('/api/') ||
+      url.pathname.startsWith('/admin/inbox')) {
     try {
       const networkResponse = await fetch(request, {
         cache: 'no-store', // Force no caching
@@ -190,21 +193,23 @@ async function networkFirst(request) {
       cache: 'no-store', // Force fresh fetch for product pages
     })
     
-    // Only cache successful responses (but not dashboard/API/products)
+    // Only cache successful responses (but not dashboard/API/products/admin inbox)
     if (networkResponse.ok && 
         !url.pathname.startsWith('/dashboard/') && 
         !url.pathname.startsWith('/api/') &&
-        !url.pathname.startsWith('/products/')) {
+        !url.pathname.startsWith('/products/') &&
+        !url.pathname.startsWith('/admin/inbox')) {
       const cache = await caches.open(DYNAMIC_CACHE)
       cache.put(request, networkResponse.clone())
     }
     return networkResponse
   } catch (error) {
     // Fallback to cache only for non-dynamic navigation requests
-    // Never fallback for dashboard/API/products pages
+    // Never fallback for dashboard/API/products/admin inbox pages
     if (!url.pathname.startsWith('/dashboard/') && 
         !url.pathname.startsWith('/api/') &&
-        !url.pathname.startsWith('/products/')) {
+        !url.pathname.startsWith('/products/') &&
+        !url.pathname.startsWith('/admin/inbox')) {
       const cachedResponse = await caches.match(request)
       if (cachedResponse) {
         return cachedResponse

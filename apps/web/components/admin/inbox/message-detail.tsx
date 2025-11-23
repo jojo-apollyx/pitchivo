@@ -13,9 +13,10 @@ import { Button } from '@/components/ui/button'
 interface MessageDetailProps {
   thread: InboxThread | null
   onRefresh: () => void
+  onSentMessage?: (body: string) => void
 }
 
-export function MessageDetail({ thread, onRefresh }: MessageDetailProps) {
+export function MessageDetail({ thread, onRefresh, onSentMessage }: MessageDetailProps) {
   if (!thread) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -150,9 +151,14 @@ export function MessageDetail({ thread, onRefresh }: MessageDetailProps) {
             campaignId={lastReplyMessage.campaign_id}
             emailStatsId={lastSentMessage.email_stats_id || lastSentMessage.stats_id || ''}
             replyMessageId={lastReplyMessage.message_id || lastReplyMessage.id || ''}
-            replyEmailTime={lastReplyMessage.received_at || lastReplyMessage.time || ''}
+            replyEmailTime={lastReplyMessage.received_at || lastReplyMessage.time || lastReplyMessage.received_at}
             replyEmailBody={lastReplyMessage.email_body || ''}
-            onSent={onRefresh}
+            onSent={(sentMessage) => {
+              if (sentMessage && onSentMessage) {
+                onSentMessage(sentMessage.body)
+              }
+              onRefresh()
+            }}
           />
         ) : (
           <div className="text-sm text-muted-foreground text-center py-4">

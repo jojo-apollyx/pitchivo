@@ -12,7 +12,7 @@ interface ReplyComposerProps {
   replyMessageId: string
   replyEmailTime: string
   replyEmailBody: string
-  onSent: () => void
+  onSent: (sentMessage?: { body: string; timestamp: string }) => void | (() => void)
 }
 
 export function ReplyComposer({ 
@@ -50,13 +50,24 @@ export function ReplyComposer({
         throw new Error(error.message || 'Failed to send reply')
       }
 
+      const sentBody = body.trim()
       toast.success('Reply sent successfully')
       setBody('')
       
-      // Wait a moment for Smartlead to process, then refresh
+      // Optimistically add the sent message to the UI immediately
+      const now = new Date().toISOString()
+      onSent({ body: sentBody, timestamp: now })
+      
+      // Wait longer for Smartlead to process and add to email_history
+      // Smartlead queues the email, so we need to wait for it to appear in history
       setTimeout(() => {
-        onSent()
-      }, 1500)
+        onSent() // Refresh from API
+      }, 3000) // Increased to 3 seconds
+      
+      // Also refresh again after a longer delay to catch delayed updates
+      setTimeout(() => {
+        onSent() // Refresh from API again
+      }, 8000) // Refresh again after 8 seconds
     } catch (error: any) {
       console.error('Send error:', error)
       toast.error(error.message || 'Failed to send reply')

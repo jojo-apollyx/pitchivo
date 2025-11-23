@@ -93,8 +93,20 @@ export class SmartleadClient {
       // Check content type
       const contentType = response.headers.get('content-type') || '';
       const isJson = contentType.includes('application/json');
+      const isHtml = contentType.includes('text/html');
 
-      if (!isJson) {
+      // Some Smartlead endpoints return HTML text instead of JSON (e.g., reply-email-thread)
+      if (isHtml && response.ok) {
+        console.log(`[Smartlead API] ⚠️ Received HTML response (this is OK for some endpoints):`, responseText.substring(0, 200));
+        console.log(`[Smartlead API] ============================================`);
+        // Return success for HTML responses that are OK (like "Email added to the queue")
+        return {
+          success: true,
+          data: { message: responseText } as T,
+        };
+      }
+
+      if (!isJson && !isHtml) {
         console.error(`[Smartlead API] ❌ Expected JSON but received: ${contentType}`);
         console.error(`[Smartlead API] Full response body:`, responseText);
         console.log(`[Smartlead API] ============================================`);
@@ -1383,15 +1395,17 @@ export class SmartleadClient {
   /**
    * Mark message as read/unread
    * 
-   * API Reference: PATCH /api/v1/master-inbox/read-status
+   * Note: Smartlead API may not have a dedicated endpoint for this.
+   * This method attempts POST, but if it fails, the frontend should handle it optimistically.
    */
   async updateReadStatus(data: {
     lead_id: string;
     email_stats_id: string;
     is_read: boolean;
   }): Promise<SmartleadApiResponse<void>> {
+    // Try POST first (PATCH doesn't seem to be supported)
     return this.request<{ ok: boolean }>(`/master-inbox/read-status`, {
-      method: 'PATCH',
+      method: 'POST',
       body: JSON.stringify(data),
     }).then(result => {
       if (result.success) {

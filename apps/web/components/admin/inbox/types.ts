@@ -21,6 +21,10 @@ export interface InboxMessage {
   is_read: boolean
   type: 'SENT' | 'REPLY'
   lead: InboxLead
+  // Optional fields from API that may be present
+  message_id?: string
+  stats_id?: string
+  time?: string
 }
 
 export interface InboxThread {
