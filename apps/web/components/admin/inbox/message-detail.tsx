@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { format } from 'date-fns'
 import { ReplyComposer } from './reply-composer'
 import { Badge } from '@/components/ui/badge'
-import { Building2, User } from 'lucide-react'
+import { Building2, User, Mail, RefreshCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface MessageDetailProps {
   thread: InboxThread | null
@@ -25,77 +26,139 @@ export function MessageDetail({ thread, onRefresh }: MessageDetailProps) {
     )
   }
 
+  // Find the last REPLY message (the one we're replying to)
+  const lastReplyMessage = thread.messages
+    .filter(m => m.type === 'REPLY')
+    .sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime())[0]
+  
+  // Find the last SENT message (to get the original email_stats_id for the thread)
+  const lastSentMessage = thread.messages
+    .filter(m => m.type === 'SENT')
+    .sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime())[0]
+  
   const lastMessage = thread.messages[thread.messages.length - 1]
 
+  // Sort messages by time (oldest first for conversation view)
+  const sortedMessages = [...thread.messages].sort((a, b) => 
+    new Date(a.received_at).getTime() - new Date(b.received_at).getTime()
+  )
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="p-6 border-b bg-card">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold tracking-tight">
-              {lastMessage?.subject || '(No Subject)'}
-            </h2>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline" className="gap-1">
+      <div className="px-6 py-4 border-b border-border/50 bg-card">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold tracking-tight">
+                {lastMessage?.subject || '(No Subject)'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="gap-1.5 text-xs">
                 <User className="h-3 w-3" />
-                {thread.lead.first_name} {thread.lead.last_name}
+                {thread.lead.first_name} {thread.lead.last_name || 'Unknown'}
               </Badge>
-              <Badge variant="outline" className="gap-1">
-                <Building2 className="h-3 w-3" />
-                {thread.lead.company_name}
-              </Badge>
-              <span>&bull;</span>
-              <span className="text-xs">{thread.lead.email}</span>
+              {thread.lead.company_name && (
+                <Badge variant="outline" className="gap-1.5 text-xs">
+                  <Building2 className="h-3 w-3" />
+                  {thread.lead.company_name}
+                </Badge>
+              )}
+              <span className="text-xs text-muted-foreground">{thread.lead.email}</span>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Client: <span className="font-medium text-foreground">{thread.lead.client_id}</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              className="h-8 gap-2"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-6">
-        <div className="space-y-8">
-          {thread.messages.map((message) => (
-            <div 
-              key={message.id} 
-              className={`flex flex-col gap-2 max-w-3xl ${
-                message.type === 'SENT' ? 'ml-auto items-end' : 'items-start'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-medium">
-                  {message.type === 'SENT' ? 'You' : thread.lead.first_name}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(message.received_at), 'MMM d, h:mm a')}
-                </span>
-              </div>
-              
+      <ScrollArea className="flex-1">
+        <div className="p-6 space-y-6">
+          {sortedMessages.map((message, index) => {
+            const isSent = message.type === 'SENT'
+            const isLast = index === sortedMessages.length - 1
+            const prevMessage = index > 0 ? sortedMessages[index - 1] : null
+            const showSender = !prevMessage || prevMessage.type !== message.type
+            
+            return (
               <div 
-                className={`rounded-lg p-4 text-sm shadow-sm border ${
-                  message.type === 'SENT' 
-                    ? 'bg-primary text-primary-foreground border-primary' 
-                    : 'bg-card border-border'
-                }`}
+                key={`${message.id}-${index}`}
+                className={`flex gap-3 ${isSent ? 'justify-end' : 'justify-start'}`}
               >
-                <div dangerouslySetInnerHTML={{ __html: message.email_body }} />
+                {!isSent && (
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {thread.lead.first_name?.[0]?.toUpperCase() || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                
+                <div className={`flex flex-col gap-1.5 ${isSent ? 'items-end' : 'items-start'} flex-1 ${isSent ? 'max-w-[75%]' : 'max-w-[75%]'}`}>
+                  {showSender && (
+                    <div className={`flex items-center gap-2 ${isSent ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <span className="text-xs font-medium text-foreground">
+                        {isSent ? 'You' : `${thread.lead.first_name} ${thread.lead.last_name || ''}`.trim()}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(message.received_at), 'MMM d, h:mm a')}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div 
+                    className={`rounded-lg px-4 py-2.5 text-sm shadow-sm border ${
+                      isSent 
+                        ? 'bg-primary text-primary-foreground border-primary/20' 
+                        : 'bg-card border-border/50'
+                    }`}
+                  >
+                    <div 
+                      className={isSent ? 'text-primary-foreground' : 'text-foreground'}
+                      dangerouslySetInnerHTML={{ __html: message.email_body }} 
+                    />
+                  </div>
+                </div>
+                
+                {isSent && (
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      Y
+                    </AvatarFallback>
+                  </Avatar>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </ScrollArea>
 
       {/* Composer */}
-      <div className="p-4 border-t bg-background">
-        <ReplyComposer 
-          leadId={thread.lead_id} 
-          emailStatsId={lastMessage?.email_stats_id || ''}
-          replyMessageId={lastMessage?.id || ''}
-          onSent={onRefresh}
-        />
+      <div className="px-6 py-4 border-t border-border/50 bg-card">
+        {lastReplyMessage && lastSentMessage ? (
+          <ReplyComposer 
+            campaignId={lastReplyMessage.campaign_id}
+            emailStatsId={lastSentMessage.email_stats_id || lastSentMessage.stats_id || ''}
+            replyMessageId={lastReplyMessage.message_id || lastReplyMessage.id || ''}
+            replyEmailTime={lastReplyMessage.received_at || lastReplyMessage.time || ''}
+            replyEmailBody={lastReplyMessage.email_body || ''}
+            onSent={onRefresh}
+          />
+        ) : (
+          <div className="text-sm text-muted-foreground text-center py-4">
+            No reply available for this thread
+          </div>
+        )}
       </div>
     </div>
   )

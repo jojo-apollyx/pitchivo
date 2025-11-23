@@ -7,16 +7,20 @@ import { Send, Paperclip, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ReplyComposerProps {
-  leadId: string
+  campaignId: string | number
   emailStatsId: string
   replyMessageId: string
+  replyEmailTime: string
+  replyEmailBody: string
   onSent: () => void
 }
 
 export function ReplyComposer({ 
-  leadId, 
+  campaignId,
   emailStatsId, 
   replyMessageId,
+  replyEmailTime,
+  replyEmailBody,
   onSent 
 }: ReplyComposerProps) {
   const [body, setBody] = useState('')
@@ -31,10 +35,12 @@ export function ReplyComposer({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lead_id: leadId,
+          campaign_id: campaignId,
           email_stats_id: emailStatsId,
-          reply_email_body: body,
+          email_body: body, // The reply content
           reply_message_id: replyMessageId,
+          reply_email_time: replyEmailTime,
+          reply_email_body: replyEmailBody, // The original email body
           add_signature: true
         })
       })
@@ -46,7 +52,11 @@ export function ReplyComposer({
 
       toast.success('Reply sent successfully')
       setBody('')
-      onSent()
+      
+      // Wait a moment for Smartlead to process, then refresh
+      setTimeout(() => {
+        onSent()
+      }, 1500)
     } catch (error: any) {
       console.error('Send error:', error)
       toast.error(error.message || 'Failed to send reply')

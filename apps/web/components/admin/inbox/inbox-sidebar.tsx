@@ -47,16 +47,22 @@ export function InboxSidebar({
 
       <div className="space-y-1 px-2">
         <Button
-          variant={currentFilter === 'ALL' ? 'secondary' : 'ghost'}
-          className="w-full justify-start"
+          variant="ghost"
+          className={cn(
+            "w-full justify-start",
+            currentFilter === 'ALL' && "bg-primary/10 text-primary font-medium"
+          )}
           onClick={() => onFilterChange('ALL')}
         >
           <Inbox className="mr-2 h-4 w-4" />
           All Messages
         </Button>
         <Button
-          variant={currentFilter === 'UNREAD' ? 'secondary' : 'ghost'}
-          className="w-full justify-start"
+          variant="ghost"
+          className={cn(
+            "w-full justify-start",
+            currentFilter === 'UNREAD' && "bg-primary/10 text-primary font-medium"
+          )}
           onClick={() => onFilterChange('UNREAD')}
         >
           <Mail className="mr-2 h-4 w-4" />
@@ -72,8 +78,11 @@ export function InboxSidebar({
         <ScrollArea className="h-[300px]">
           <div className="space-y-1">
             <Button
-              variant={selectedClientId === null ? 'secondary' : 'ghost'}
-              className="w-full justify-start text-sm h-8"
+              variant="ghost"
+              className={cn(
+                "w-full justify-start text-sm h-8",
+                selectedClientId === null && "bg-primary/10 text-primary font-medium"
+              )}
               onClick={() => onClientChange(null)}
             >
               All Clients
@@ -81,8 +90,11 @@ export function InboxSidebar({
             {clients.map(client => (
               <Button
                 key={client.id}
-                variant={selectedClientId === client.id ? 'secondary' : 'ghost'}
-                className="w-full justify-start text-sm h-8 truncate"
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start text-sm h-8 truncate",
+                  selectedClientId === client.id && "bg-primary/10 text-primary font-medium"
+                )}
                 onClick={() => onClientChange(client.id)}
               >
                 {client.name}

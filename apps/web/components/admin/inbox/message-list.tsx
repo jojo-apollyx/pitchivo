@@ -41,41 +41,55 @@ export function MessageList({
 
   return (
     <ScrollArea className="h-full">
-      <div className="flex flex-col divide-y divide-border/50">
+      <div className="flex flex-col">
         {threads.map((thread) => {
           const isSelected = selectedThreadId === thread.lead_id
           const lastMessage = thread.messages[thread.messages.length - 1]
+          const lastReply = thread.messages.filter(m => m.type === 'REPLY').sort((a, b) => 
+            new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
+          )[0]
           
           return (
             <button
               key={thread.lead_id}
               className={cn(
-                "flex flex-col items-start gap-1 p-4 text-left hover:bg-accent/50 transition-colors",
-                isSelected && "bg-accent",
-                !thread.is_read && "bg-primary/5"
+                "flex flex-col items-start gap-2 p-4 text-left hover:bg-accent/30 transition-colors border-b border-border/50",
+                isSelected && "bg-primary/5 border-l-2 border-l-primary",
+                !thread.is_read && !isSelected && "bg-primary/5 border-l-2 border-l-primary"
               )}
               onClick={() => onSelectThread(thread.lead_id)}
             >
-              <div className="flex w-full items-center justify-between">
-                <span className={cn("font-semibold text-sm", !thread.is_read && "text-primary")}>
-                  {thread.lead.first_name} {thread.lead.last_name}
+              <div className="flex w-full items-center justify-between gap-2">
+                <span className={cn("font-semibold text-sm truncate", !thread.is_read && "text-primary")}>
+                  {thread.lead.first_name} {thread.lead.last_name || ''}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {formatDistanceToNow(new Date(thread.last_message_at), { addSuffix: true })}
                 </span>
               </div>
               
-              <div className="text-xs text-muted-foreground truncate w-full">
-                {thread.lead.company_name}
-              </div>
+              {thread.lead.company_name && (
+                <div className="text-xs text-muted-foreground truncate w-full">
+                  {thread.lead.company_name}
+                </div>
+              )}
               
-              <div className="text-sm font-medium truncate w-full mt-1">
+              <div className="text-sm font-medium truncate w-full">
                 {lastMessage?.subject || '(No Subject)'}
               </div>
               
               <div className="text-xs text-muted-foreground line-clamp-2 w-full">
-                {lastMessage?.email_body.replace(/<[^>]*>/g, '') || ''}
+                {lastReply?.email_body.replace(/<[^>]*>/g, '').substring(0, 100) || 
+                 lastMessage?.email_body.replace(/<[^>]*>/g, '').substring(0, 100) || ''}
+                {(lastReply?.email_body.replace(/<[^>]*>/g, '').length || 0) > 100 && '...'}
               </div>
+              
+              {!thread.is_read && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="h-2 w-2 rounded-full bg-primary" />
+                  <span className="text-xs text-primary font-medium">Unread</span>
+                </div>
+              )}
             </button>
           )
         })}

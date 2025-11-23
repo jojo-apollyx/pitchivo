@@ -1268,48 +1268,115 @@ export class SmartleadClient {
   /**
    * Fetch Inbox Replies from Master Inbox
    * 
-   * API Reference: POST /api/v1/master-inbox/replies
+   * API Reference: POST /api/v1/master-inbox/inbox-replies?fetch_message_history=true
+   * Official Docs: https://api.smartlead.ai/reference/fetch-inbox-replies
    * 
-   * @param filters Filter options
+   * @param options Request options including filters, pagination, and sorting
    */
-  async fetchInboxReplies(filters: {
-    status?: 'UNREAD' | 'READ' | 'SNOOZED';
-    category_id?: number;
-    campaign_id?: number;
-    client_id?: number;
-    email_account_id?: number;
-    limit?: number;
+  async fetchInboxReplies(options: {
     offset?: number;
-    search?: string;
+    limit?: number;
+    fetch_message_history?: boolean;
+    filters?: {
+      search?: string;
+      leadCategories?: {
+        unassigned?: boolean;
+        isAssigned?: boolean;
+        categoryIdsNotIn?: number[];
+        categoryIdsIn?: number[];
+      };
+      emailStatus?: string[];
+      campaignId?: number[];
+      emailAccountId?: number[];
+      campaignTeamMemberId?: number[];
+      campaignTagId?: number[];
+      campaignClientId?: number[];
+      replyTimeBetween?: [string, string];
+    };
+    sortBy?: string;
   } = {}): Promise<SmartleadApiResponse<any>> {
-    return this.request<any>(`/master-inbox/replies`, {
+    // Build endpoint with query parameter
+    // The request method will append api_key, so we include query params in the endpoint
+    const endpoint = `/master-inbox/inbox-replies${options.fetch_message_history !== false ? '?fetch_message_history=true' : ''}`;
+    
+    // Build request body according to API spec
+    const requestBody: any = {
+      offset: options.offset || 0,
+      limit: options.limit || 20,
+    };
+    
+    if (options.filters) {
+      requestBody.filters = options.filters;
+    }
+    
+    if (options.sortBy) {
+      requestBody.sortBy = options.sortBy;
+    }
+    
+    return this.request<any>(endpoint, {
       method: 'POST',
-      body: JSON.stringify(filters),
+      body: JSON.stringify(requestBody),
     });
   }
 
   /**
    * Reply to a lead from Master Inbox
    * 
-   * API Reference: POST /api/v1/master-inbox/reply-to-lead
+   * API Reference: POST /api/v1/campaigns/{campaign_id}/reply-email-thread
+   * Official Docs: https://api.smartlead.ai/reference/reply-to-lead-from-master-inbox-via-api
+   * 
+   * Note: This endpoint requires campaign_id in the path, not in the body
    */
   async replyToLeadFromMasterInbox(data: {
-    lead_id: string;
+    campaign_id: number | string;
     email_stats_id: string;
-    reply_email_body: string;
+    email_body: string;
     reply_message_id: string;
+    reply_email_time: string;
+    reply_email_body: string;
     cc?: string;
     bcc?: string;
     add_signature?: boolean;
+    attachments?: Array<{
+      file_name: string;
+      file_url: string;
+      file_type: string;
+    }>;
   }): Promise<SmartleadApiResponse<void>> {
-    return this.request<{ ok: boolean }>(`/master-inbox/reply-to-lead`, {
+    const { campaign_id, ...requestBody } = data;
+    
+    return this.request<{ ok: boolean }>(`/campaigns/${campaign_id}/reply-email-thread`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(requestBody),
     }).then(result => {
       if (result.success) {
         return { success: true } as SmartleadApiResponse<void>;
       }
       return result as SmartleadApiResponse<void>;
+    });
+  }
+
+  /**
+   * Fetch Unread Replies from Master Inbox
+   * 
+   * API Reference: POST /api/v1/master-inbox/unread-replies
+   * Official Docs: https://api.smartlead.ai/reference/fetch-unread-replies
+   */
+  async fetchUnreadReplies(options: {
+    offset?: number;
+    limit?: number;
+    fetch_message_history?: boolean;
+  } = {}): Promise<SmartleadApiResponse<any>> {
+    const endpoint = `/master-inbox/unread-replies${options.fetch_message_history !== false ? '?fetch_message_history=true' : ''}`;
+    
+    const requestBody: any = {
+      offset: options.offset || 0,
+      limit: options.limit || 20,
+    };
+    
+    return this.request<any>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
     });
   }
 

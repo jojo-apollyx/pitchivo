@@ -45,48 +45,67 @@ export function MasterInbox() {
   }
 
   function groupMessagesByLead(messages: any[]): InboxThread[] {
-    // Mock implementation - replace with actual grouping logic
-    // This assumes API returns flat list of messages
     const threadsMap = new Map<string, InboxThread>()
     
     if (!Array.isArray(messages)) return []
 
     messages.forEach(msg => {
-      const leadId = msg.lead_id
+      const leadId = msg.lead_id || msg.lead_email // Fallback to email if no lead_id
       if (!threadsMap.has(leadId)) {
         threadsMap.set(leadId, {
           lead_id: leadId,
           lead: {
             id: leadId,
-            first_name: msg.first_name,
-            last_name: msg.last_name,
-            email: msg.email,
-            company_name: msg.company_name,
-            campaign_id: msg.campaign_id,
-            client_id: msg.client_id
+            first_name: msg.first_name || '',
+            last_name: msg.last_name || '',
+            email: msg.email || msg.lead_email || '',
+            company_name: msg.company_name || null,
+            campaign_id: parseInt(msg.campaign_id) || 0,
+            client_id: msg.client_id || null
           },
           messages: [],
-          last_message_at: msg.time,
-          is_read: msg.is_read,
-          unread_count: msg.is_read ? 0 : 1
+          last_message_at: msg.time || msg.received_at || new Date().toISOString(),
+          is_read: msg.is_read !== false, // Default to read if not specified
+          unread_count: msg.is_read === false ? 1 : 0
         })
       }
       const thread = threadsMap.get(leadId)!
-      thread.messages.push({
-        id: msg.message_id,
-        lead_id: leadId,
-        email_stats_id: msg.stats_id,
-        campaign_id: msg.campaign_id,
-        subject: msg.subject,
-        email_body: msg.email_body,
-        received_at: msg.time,
-        is_read: msg.is_read,
-        type: msg.type,
-        lead: thread.lead
-      })
-      // Update thread metadata based on latest message
-      if (new Date(msg.time) > new Date(thread.last_message_at)) {
-        thread.last_message_at = msg.time
+      
+      // Check if message already exists (avoid duplicates)
+      const messageExists = thread.messages.some(m => 
+        m.id === msg.message_id || 
+        (m.stats_id === msg.stats_id && m.received_at === (msg.time || msg.received_at))
+      )
+      
+      if (!messageExists) {
+        thread.messages.push({
+          id: msg.message_id || msg.stats_id || `msg-${Date.now()}`,
+          lead_id: leadId,
+          email_stats_id: msg.email_stats_id || msg.stats_id,
+          stats_id: msg.stats_id, // Add stats_id for compatibility
+          campaign_id: parseInt(msg.campaign_id) || 0,
+          subject: msg.subject || '',
+          email_body: msg.email_body || '',
+          received_at: msg.time || msg.received_at || new Date().toISOString(),
+          time: msg.time || msg.received_at, // Add time alias
+          is_read: msg.is_read !== false,
+          type: msg.type || 'REPLY',
+          message_id: msg.message_id, // Add message_id
+          lead: thread.lead
+        })
+        
+        // Update thread metadata based on latest message
+        const messageTime = new Date(msg.time || msg.received_at || thread.last_message_at)
+        const threadTime = new Date(thread.last_message_at)
+        if (messageTime > threadTime) {
+          thread.last_message_at = msg.time || msg.received_at || thread.last_message_at
+        }
+        
+        // Update unread count
+        if (msg.is_read === false && msg.type === 'REPLY') {
+          thread.unread_count = Math.max(thread.unread_count, 1)
+          thread.is_read = false
+        }
       }
     })
 

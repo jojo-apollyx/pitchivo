@@ -9,18 +9,21 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { 
-      lead_id, 
+      campaign_id,
       email_stats_id, 
-      reply_email_body, 
-      reply_message_id, 
+      email_body,
+      reply_message_id,
+      reply_email_time,
+      reply_email_body,
       cc, 
       bcc, 
-      add_signature 
+      add_signature,
+      attachments
     } = body
 
-    if (!lead_id || !email_stats_id || !reply_email_body || !reply_message_id) {
+    if (!campaign_id || !email_stats_id || !email_body || !reply_message_id || !reply_email_time || !reply_email_body) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: campaign_id, email_stats_id, email_body, reply_message_id, reply_email_time, reply_email_body' },
         { status: 400 }
       )
     }
@@ -28,13 +31,16 @@ export async function POST(request: NextRequest) {
     const smartlead = createSmartleadClient()
 
     const result = await smartlead.replyToLeadFromMasterInbox({
-      lead_id,
+      campaign_id,
       email_stats_id,
-      reply_email_body,
+      email_body,
       reply_message_id,
+      reply_email_time,
+      reply_email_body,
       cc,
       bcc,
-      add_signature
+      add_signature,
+      attachments
     })
 
     if (!result.success) {
