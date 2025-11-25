@@ -21,7 +21,11 @@
 // Parse command line arguments first to get env file
 function parseArgs() {
   const args = process.argv.slice(2);
-  const envFile = args.find(arg => arg.startsWith('--env-file='))?.split('=')[1] || '.env.local';
+  // Support both --env-file= and --env= flags (--env-file might conflict with Node/tsx)
+  const envFileArg = args.find(arg => arg.startsWith('--env-file=') || arg.startsWith('--env='));
+  const envFile = envFileArg 
+    ? (envFileArg.split('=')[1] || '.env.local')
+    : '.env.local';
   return { envFile };
 }
 
@@ -29,13 +33,30 @@ function parseArgs() {
 import { config as loadEnv } from 'dotenv';
 import { resolve } from 'path';
 
+import { existsSync } from 'fs';
+
 const { envFile } = parseArgs();
 const envPath = envFile.startsWith('/') 
   ? envFile 
   : resolve(process.cwd(), 'apps/web', envFile);
 
 console.log(`📄 Loading environment from: ${envPath}`);
-loadEnv({ path: envPath });
+
+if (!existsSync(envPath)) {
+  console.error(`❌ Error: Environment file not found: ${envPath}`);
+  console.error(`   Please create the file or check the path.`);
+  process.exit(1);
+}
+
+const envResult = loadEnv({ path: envPath });
+
+if (envResult.error) {
+  console.warn(`⚠️  Warning: Could not load env file: ${envPath}`);
+  console.warn(`   Error: ${envResult.error.message}`);
+  console.warn(`   Falling back to system environment variables`);
+} else {
+  console.log(`✓ Environment loaded from: ${envPath}`);
+}
 
 import { MongoClient } from 'mongodb';
 import { getSupabaseClient } from '../shared/supabase-client';

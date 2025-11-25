@@ -6,7 +6,56 @@
  * Usage:
  *   npm run enrich:organizations
  *   npm run enrich:contacts
+ *   npm run enrich:organizations -- --env=.env.prod
+ *   npm run enrich:contacts -- --env=.env.prod
+ * 
+ * Note: Loads environment variables from .env.local file by default
+ *       Can specify different file with --env=.env.prod
  */
+
+// Parse command line arguments first to get env file
+// Note: First arg is entity type (organizations/contacts), --env flag comes after
+function parseArgs() {
+  const args = process.argv.slice(2);
+  // Support both --env-file= and --env= flags (--env-file might conflict with Node/tsx)
+  // Filter out entity type arguments (organizations, contacts, item)
+  const envFileArg = args.find(arg => 
+    (arg.startsWith('--env-file=') || arg.startsWith('--env=')) &&
+    !['organizations', 'contacts', 'item'].includes(arg)
+  );
+  const envFile = envFileArg 
+    ? (envFileArg.split('=')[1] || '.env.local')
+    : '.env.local';
+  return { envFile };
+}
+
+// Load environment variables from specified file (defaults to .env.local)
+import { config as loadEnv } from 'dotenv';
+import { resolve } from 'path';
+import { existsSync } from 'fs';
+
+const { envFile } = parseArgs();
+const envPath = envFile.startsWith('/') 
+  ? envFile 
+  : resolve(process.cwd(), 'apps/web', envFile);
+
+console.log(`📄 Loading environment from: ${envPath}`);
+
+if (!existsSync(envPath)) {
+  console.error(`❌ Error: Environment file not found: ${envPath}`);
+  console.error(`   Please create the file or check the path.`);
+  process.exit(1);
+}
+
+const envResult = loadEnv({ path: envPath });
+
+if (envResult.error) {
+  console.warn(`⚠️  Warning: Could not load env file: ${envPath}`);
+  console.warn(`   Error: ${envResult.error.message}`);
+  console.warn(`   Falling back to system environment variables`);
+} else {
+  console.log(`✓ Environment loaded from: ${envPath}\n`);
+}
 
 import { createClient } from '@supabase/supabase-js';
 import { getEnrichmentSteps, getAvailableApiKey, checkFreeTierAvailable, recordApiUsage, createExecution, updateExecution } from './utils';
@@ -16,7 +65,7 @@ import { enrichWithNeverBounce } from './providers/neverbounce';
 import { enrichWithOpenAI } from './providers/openai';
 
 // Load environment variables
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -58,10 +107,11 @@ async function executeEnrichmentPipeline(
       // Get available API key
       const apiKeyInfo = await getAvailableApiKey(supabase, step.provider_id);
       if (!apiKeyInfo) {
-        console.log(`    ⚠️  No available API key for ${step.provider.name}`);
+        console.log(`    ⚠️  No available API key for ${step.provider.name} - skipping step (can be run later)`);
         if (step.is_required) {
           throw new Error(`Required step ${step.step_name} cannot proceed without API key`);
         }
+        // Skip this step but continue with next steps
         continue;
       }
 
@@ -257,6 +307,87 @@ async function applyEnrichmentResults(
     if (Object.keys(updateData).length > 0) {
       await supabaseClient
         .from('leads_contacts')
+        .update(updateData)
+        .eq('id', entityId);
+    }
+  } else if (entityType === 'item') {
+    // Update market item with enrichment data
+    const updateData: any = {};
+
+    if (stepName === 'categorize_market_item') {
+      const { data: item } = await supabaseClient
+        .from('leads_market_items')
+        .select('attributes')
+        .eq('id', entityId)
+        .single();
+
+      if (item) {
+        updateData.attributes = {
+          ...item.attributes,
+          categories: results.categories || [],
+          tags: results.tags || [],
+          subcategory: results.subcategory || null,
+          categorized_at: results.categorized_at,
+        };
+      }
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await supabaseClient
+        .from('leads_market_items')
+        .update(updateData)
+        .eq('id', entityId);
+    }
+  }
+
+  // Handle AI classification and location inference for organizations
+  if (entityType === 'organization') {
+    const updateData: any = {};
+
+    if (stepName === 'classify_organization') {
+      // Update industry_categories and business_type directly (not in profile_data)
+      if (results.industry_categories) {
+        updateData.industry_categories = results.industry_categories;
+      }
+      if (results.business_type) {
+        updateData.business_type = results.business_type;
+      }
+      
+      // Store tags in profile_data
+      const { data: org } = await supabaseClient
+        .from('leads_organizations')
+        .select('profile_data')
+        .eq('id', entityId)
+        .single();
+
+      if (org) {
+        updateData.profile_data = {
+          ...org.profile_data,
+          tags: results.tags || [],
+          classified_at: results.classified_at,
+        };
+      }
+    }
+
+    if (stepName === 'infer_location' && results.inferred_location) {
+      const { data: org } = await supabaseClient
+        .from('leads_organizations')
+        .select('profile_data')
+        .eq('id', entityId)
+        .single();
+
+      if (org) {
+        updateData.profile_data = {
+          ...org.profile_data,
+          inferred_location: results.inferred_location,
+          inferred_at: results.inferred_at,
+        };
+      }
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await supabaseClient
+        .from('leads_organizations')
         .update(updateData)
         .eq('id', entityId);
     }
