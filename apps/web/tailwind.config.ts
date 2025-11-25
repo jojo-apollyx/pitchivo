@@ -19,7 +19,7 @@ const config: Config = {
   				'sans-serif',
   			],
   			display: [
-  				'Outfit',
+  				'Inter',
   				'-apple-system',
   				'BlinkMacSystemFont',
   				'"Segoe UI"',
@@ -29,6 +29,7 @@ const config: Config = {
   		},
   		colors: {
   			background: 'hsl(var(--background))',
+  			'background-secondary': 'hsl(var(--background-secondary))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
   				DEFAULT: 'hsl(var(--card))',
@@ -55,7 +56,8 @@ const config: Config = {
   			},
   			accent: {
   				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
+  				foreground: 'hsl(var(--accent-foreground))',
+  				surface: 'hsl(var(--accent-surface))'
   			},
   			'accent-color': {
   				DEFAULT: 'hsl(var(--accent-color))',
@@ -68,7 +70,10 @@ const config: Config = {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
-  			border: 'hsl(var(--border))',
+  			border: {
+  				DEFAULT: 'hsl(var(--border))',
+  				hover: 'hsl(var(--border-hover))'
+  			},
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
   			chart: {
@@ -84,6 +89,10 @@ const config: Config = {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+  		spacing: {
+  			'18': '4.5rem',
+  			'22': '5.5rem',
+  		},
       animation: {
         "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
         "slide-down-reveal": "slide-down-reveal 0.5s forwards",
@@ -91,6 +100,8 @@ const config: Config = {
         "marquee-reverse": "marquee-reverse var(--duration) linear infinite",
         "marquee-vertical": "marquee-vertical var(--duration) linear infinite",
         "marquee-vertical-reverse": "marquee-vertical-reverse var(--duration) linear infinite",
+        "fade-in": "fadeIn 0.3s ease-out",
+        "slide-up": "slideUp 0.4s ease-out",
       },
       keyframes: {
         "border-beam": {
@@ -118,10 +129,17 @@ const config: Config = {
           "0%": { transform: "translateY(calc(-100% - var(--gap)))" },
           "100%": { transform: "translateY(0)" },
         },
+        "fadeIn": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "slideUp": {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
   	}
   },
   plugins: [require("tailwindcss-animate")],
 };
 export default config;
-
