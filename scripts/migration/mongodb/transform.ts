@@ -6,6 +6,18 @@ import { MongoCompanyLead, MongoProductLead, MongoPersonLead, MongoPurchaseLead,
 import { extractDomain, normalizeName } from '../shared/utils';
 
 /**
+ * Generate a URL-friendly slug from a name
+ */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
+/**
  * Transform MongoDB company to Supabase organization
  */
 export function transformCompany(mongoDoc: MongoCompanyLead) {
@@ -18,8 +30,13 @@ export function transformCompany(mongoDoc: MongoCompanyLead) {
     location_state: mongoDoc.address?.state || null,
     business_type: determineBusinessType(mongoDoc),
     industry_categories: mongoDoc.industries || [],
+    // New columns: slug, description, logo_url, lead_source
+    slug: mongoDoc.slug || generateSlug(mongoDoc.name || ''),
+    description: mongoDoc.description || null,
+    logo_url: (mongoDoc as any).logo_url || null,
+    lead_source: mongoDoc.lead_source || null,
+    // Keep other fields in profile_data
     profile_data: {
-      description: mongoDoc.description,
       company_type: mongoDoc.company_type,
       categories: mongoDoc.categories || [],
       phone: mongoDoc.phone,
@@ -31,8 +48,6 @@ export function transformCompany(mongoDoc: MongoCompanyLead) {
       regulatory_compliance: mongoDoc.regulatory_compliance || [],
       linkedin_url: mongoDoc.linkedin_url,
       social_media: mongoDoc.social_media || [],
-      logo_url: (mongoDoc as any).logo_url,
-      slug: mongoDoc.slug,
       mongo_id: mongoDoc._id.toString(),
       original_company_id: mongoDoc.metadata?.original_company_id,
     },
@@ -85,12 +100,14 @@ export function transformProduct(mongoDoc: MongoProductLead | MongoIngredient) {
     category: mongoDoc.categories?.[0] || null,
     item_type: isIngredient ? 'ingredient' : 'product',
     aliases: mongoDoc.name_aliases || [],
+    // New column: description (for full-text search)
+    description: mongoDoc.description || null,
+    // Keep form, grade, concentration, processing_method in attributes
     attributes: {
-      description: mongoDoc.description,
       form: mongoDoc.form,
+      grade: mongoDoc.grade,
       concentration: mongoDoc.concentration,
       processing_method: mongoDoc.processing_method,
-      grade: mongoDoc.grade,
       categories: mongoDoc.categories || [],
       applications: mongoDoc.applications || [],
       end_uses: mongoDoc.end_uses || [],
@@ -119,13 +136,15 @@ export function transformContact(
     title: mongoDoc.title || null,
     email_status: mapEmailStatus(mongoDoc.email_status),
     is_current: mongoDoc.is_active !== false,
+    // New columns: lead_source, phone, department
+    lead_source: mongoDoc.lead_source || null,
+    phone: mongoDoc.phone || null,
+    department: mongoDoc.department || null,
+    // Keep role, seniority_level in attributes
     attributes: {
-      phone: mongoDoc.phone,
-      department: mongoDoc.department,
       role: mongoDoc.role,
       seniority_level: mongoDoc.seniority_level,
       twitter_url: mongoDoc.twitter_url,
-      lead_source: mongoDoc.lead_source,
       source_url: mongoDoc.source_url,
       is_likely_to_engage: mongoDoc.is_likely_to_engage,
       mongo_id: mongoDoc._id.toString(),
@@ -153,7 +172,8 @@ function mapEmailStatus(status?: string): string {
 export function transformPurchase(
   mongoDoc: MongoPurchaseLead,
   orgId: string | null,
-  itemId: string | null
+  itemId: string | null,
+  sourceId: string | null = null
 ) {
   return {
     org_id: orgId,
@@ -163,7 +183,8 @@ export function transformPurchase(
     event_date: mongoDoc.purchase_date?.$date 
       ? new Date(mongoDoc.purchase_date.$date).toISOString().split('T')[0]
       : null,
-    source: 'MongoDB Migration',
+    source_id: sourceId, // Reference to leads_sources table
+    source: 'MongoDB Migration', // Human-readable source name
     metadata: {
       product_name: mongoDoc.product_name,
       product_description: mongoDoc.product_description,

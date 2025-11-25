@@ -216,17 +216,27 @@ WHERE c.email IS NOT NULL
 ORDER BY c.created_at DESC;
 
 -- Index for better performance on enrichment views
+-- Note: Cannot use NOW() in index predicate (must be immutable), so we index on
+-- the basic conditions and let the time-based filtering happen at query time
 CREATE INDEX IF NOT EXISTS idx_leads_organizations_enrichment_check 
     ON leads_organizations(domain) 
     WHERE domain IS NOT NULL 
-    AND (profile_data->>'enriched_at' IS NULL 
-         OR (profile_data->>'enriched_at')::TIMESTAMPTZ < NOW() - INTERVAL '90 days');
+    AND profile_data->>'enriched_at' IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_leads_organizations_enrichment_stale 
+    ON leads_organizations((profile_data->>'enriched_at'))
+    WHERE domain IS NOT NULL 
+    AND profile_data->>'enriched_at' IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_leads_contacts_enrichment_check 
     ON leads_contacts(email) 
     WHERE email IS NOT NULL 
-    AND (attributes->>'enriched_at' IS NULL 
-         OR (attributes->>'enriched_at')::TIMESTAMPTZ < NOW() - INTERVAL '90 days');
+    AND attributes->>'enriched_at' IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_leads_contacts_enrichment_stale 
+    ON leads_contacts((attributes->>'enriched_at'))
+    WHERE email IS NOT NULL 
+    AND attributes->>'enriched_at' IS NOT NULL;
 
 -- ============================================================================
 -- COMMENTS

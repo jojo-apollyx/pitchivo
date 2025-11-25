@@ -5,18 +5,28 @@
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import { AzureStorageConfig } from './types';
 
-let containerClient: ContainerClient | null = null;
+// Cache clients by container name to support multiple containers
+const containerClients = new Map<string, ContainerClient>();
+let blobServiceClient: BlobServiceClient | null = null;
 
 export function getAzureContainerClient(config: AzureStorageConfig): ContainerClient {
-  if (!containerClient) {
+  // Get or create blob service client (shared across containers)
+  if (!blobServiceClient) {
     const connectionString = `DefaultEndpointsProtocol=https;AccountName=${config.accountName};AccountKey=${config.accountKey};EndpointSuffix=core.windows.net`;
-    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-    containerClient = blobServiceClient.getContainerClient(config.containerName);
+    blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
   }
-  return containerClient;
+  
+  // Get or create container client for this specific container name
+  if (!containerClients.has(config.containerName)) {
+    const client = blobServiceClient.getContainerClient(config.containerName);
+    containerClients.set(config.containerName, client);
+  }
+  
+  return containerClients.get(config.containerName)!;
 }
 
 export function resetAzureClient(): void {
-  containerClient = null;
+  containerClients.clear();
+  blobServiceClient = null;
 }
 

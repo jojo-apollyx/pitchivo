@@ -111,13 +111,16 @@ export async function migrateCompanyLogo(
       return null;
     }
     
-    // Skip if already an Azure blob URL
-    if (url.hostname.includes('blob.core.windows.net')) {
-      // Already in Azure, return as-is
-      return logoUrl;
-    }
+    // Generate a deterministic blob name based on company ID and URL hash for deduplication
+    const urlHash = Buffer.from(logoUrl).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    const urlHashShort = urlHash.substring(0, 12); // Use shorter hash for filename
     
-    // Download image
+    // Check if logo already exists in our container (deduplication)
+    // Try to find existing blob by checking metadata or by naming pattern
+    // We'll use a consistent naming: {companyMongoId}-{urlHash}.{ext}
+    // First, download to detect extension, then check if exists
+    
+    // Download image (even if it's already in Azure, we want it in OUR container)
     console.log(`      Downloading logo from ${logoUrl}...`);
     const imageBuffer = await downloadImage(logoUrl);
     
@@ -131,13 +134,24 @@ export async function migrateCompanyLogo(
     const contentType = getContentType(logoUrl, imageBuffer);
     const extension = getExtensionFromContentType(contentType);
     
-    // Generate blob name: company-logos/{mongo_id}.{ext}
-    // Use hash of URL + timestamp to avoid collisions
-    const urlHash = Buffer.from(logoUrl).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
-    const blobName = `${companyMongoId}-${urlHash}-${Date.now()}.${extension}`;
+    // Generate deterministic blob name for deduplication: {companyMongoId}-{urlHash}.{ext}
+    const blobName = `${companyMongoId}-${urlHashShort}.${extension}`;
+    
+    // Check if blob already exists (deduplication)
+    const blockBlobClient: BlockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const exists = await blockBlobClient.exists();
+    
+    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || '';
+    const containerName = containerClient.containerName;
+    const publicUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}`;
+    
+    if (exists) {
+      console.log(`      ✓ Logo already exists in container "${containerName}", skipping upload: ${blobName}`);
+      return publicUrl;
+    }
     
     // Upload to Azure Blob Storage
-    const blockBlobClient: BlockBlobClient = containerClient.getBlockBlobClient(blobName);
+    console.log(`      Uploading logo to container "${containerName}": ${blobName}`);
     
     await blockBlobClient.upload(imageBuffer, imageBuffer.length, {
       blobHTTPHeaders: {
@@ -152,10 +166,7 @@ export async function migrateCompanyLogo(
     });
     
     // Return public URL
-    // Azure blob URLs are: https://{account}.blob.core.windows.net/{container}/{blob}
-    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || '';
-    const publicUrl = `https://${accountName}.blob.core.windows.net/${containerClient.containerName}/${blobName}`;
-    
+    console.log(`      ✓ Logo uploaded successfully: ${publicUrl}`);
     return publicUrl;
     
   } catch (error: any) {

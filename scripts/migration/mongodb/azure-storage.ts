@@ -7,6 +7,7 @@ import { BatchMetadata } from '../shared/types';
 
 /**
  * Upload batch data to Azure Blob Storage as JSONL
+ * Idempotent: checks if blob exists before uploading
  */
 export async function uploadBatchToAzure(
   containerClient: ContainerClient,
@@ -17,6 +18,13 @@ export async function uploadBatchToAzure(
   // Create blob name: collection/batch-0001.jsonl
   const blobName = `${collectionName}/batch-${String(batchNumber).padStart(4, '0')}.jsonl`;
   const blockBlobClient: BlockBlobClient = containerClient.getBlockBlobClient(blobName);
+  
+  // Check if blob already exists (for idempotency)
+  const exists = await blockBlobClient.exists();
+  if (exists) {
+    console.log(`    ℹ️  Blob already exists: ${blobName} (skipping upload)`);
+    return blockBlobClient.url;
+  }
   
   // Convert batch to JSONL format (one JSON object per line)
   const jsonlContent = batchData
@@ -39,16 +47,17 @@ export async function uploadBatchToAzure(
  */
 export async function ensureContainerExists(
   containerClient: ContainerClient,
-  publicAccess: PublicAccessType = 'none' as PublicAccessType
+  publicAccess?: PublicAccessType
 ): Promise<void> {
   const exists = await containerClient.exists();
   
   if (!exists) {
-    await containerClient.create({
-      access: publicAccess,
-    });
-  } else {
-    // Ensure access policy is set correctly
+    // If publicAccess is provided, use it; otherwise create private container
+    const createOptions = publicAccess ? { access: publicAccess } : {};
+    await containerClient.create(createOptions);
+  } else if (publicAccess) {
+    // Only update access policy if publicAccess is specified
+    // For private containers, don't call setAccessPolicy
     await containerClient.setAccessPolicy(publicAccess);
   }
 }
