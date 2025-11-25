@@ -549,7 +549,7 @@ async function processSmartleadEvent(event: any, requestId?: string) {
 
     console.log(`✅ [${eventId}] Email event recorded successfully`);
 
-    // Also insert into lead_events for detailed tracking
+    // Also insert into campaign_lead_events for detailed tracking
     if (leadId) {
       console.log(`💾 [${eventId}] Inserting lead event...`);
       const leadEventData = {
@@ -563,7 +563,7 @@ async function processSmartleadEvent(event: any, requestId?: string) {
       
       const leadEventStart = Date.now();
       const { data: leadEventResult, error: leadEventError } = await supabaseAdmin
-        .from('lead_events')
+        .from('campaign_lead_events')
         .insert(leadEventData)
         .select();
       

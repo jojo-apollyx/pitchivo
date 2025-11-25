@@ -88,12 +88,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 COMMENT ON FUNCTION increment_lead_counter IS 'Safely increment lead event counters (open_count, click_count, reply_count)';
 COMMENT ON FUNCTION increment_campaign_counter IS 'Safely increment campaign metric counters';
 
--- Create indexes for better performance on lead_events queries
-CREATE INDEX IF NOT EXISTS idx_lead_events_lead_type ON lead_events(lead_id, event_type);
-CREATE INDEX IF NOT EXISTS idx_lead_events_campaign_type ON lead_events(campaign_id, event_type);
+-- Create indexes for better performance on campaign_lead_events queries
+CREATE INDEX IF NOT EXISTS idx_campaign_lead_events_lead_type ON campaign_lead_events(lead_id, event_type);
+CREATE INDEX IF NOT EXISTS idx_campaign_lead_events_campaign_type ON campaign_lead_events(campaign_id, event_type);
 
--- Create view for lead statistics
-CREATE OR REPLACE VIEW lead_statistics AS
+-- Create view for campaign lead statistics
+CREATE OR REPLACE VIEW campaign_lead_statistics AS
 SELECT 
   cl.lead_id,
   cl.campaign_id,
@@ -108,13 +108,13 @@ SELECT
   COUNT(CASE WHEN le.event_type = 'replied' THEN 1 END) as emails_replied,
   MAX(le.event_timestamp) as last_activity
 FROM campaign_leads cl
-LEFT JOIN lead_events le ON cl.lead_id = le.lead_id
+LEFT JOIN campaign_lead_events le ON cl.lead_id = le.lead_id
 GROUP BY cl.lead_id, cl.campaign_id, cl.email, cl.name, cl.status, cl.last_contacted;
 
-COMMENT ON VIEW lead_statistics IS 'Aggregated statistics for each lead';
+COMMENT ON VIEW campaign_lead_statistics IS 'Aggregated statistics for each lead';
 
 -- Grant necessary permissions
 GRANT EXECUTE ON FUNCTION increment_lead_counter TO authenticated;
 GRANT EXECUTE ON FUNCTION increment_campaign_counter TO authenticated;
-GRANT SELECT ON lead_statistics TO authenticated;
+GRANT SELECT ON campaign_lead_statistics TO authenticated;
 

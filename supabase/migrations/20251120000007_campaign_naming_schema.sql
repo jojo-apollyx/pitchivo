@@ -21,8 +21,8 @@ COMMENT ON COLUMN campaigns.created_by IS 'User who created the campaign';
 CREATE INDEX IF NOT EXISTS idx_campaigns_created_by ON campaigns(created_by);
 CREATE INDEX IF NOT EXISTS idx_campaigns_display_name ON campaigns(display_name);
 
--- Add lead_events table for tracking individual email events per lead
-CREATE TABLE IF NOT EXISTS lead_events (
+-- Add campaign_lead_events table for tracking individual email events per lead
+CREATE TABLE IF NOT EXISTS campaign_lead_events (
   event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lead_id UUID REFERENCES campaign_leads(lead_id) ON DELETE CASCADE,
   campaign_id UUID REFERENCES campaigns(campaign_id) ON DELETE CASCADE,
@@ -32,15 +32,15 @@ CREATE TABLE IF NOT EXISTS lead_events (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for lead_events
-CREATE INDEX IF NOT EXISTS idx_lead_events_lead ON lead_events(lead_id);
-CREATE INDEX IF NOT EXISTS idx_lead_events_campaign ON lead_events(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_lead_events_type ON lead_events(event_type);
-CREATE INDEX IF NOT EXISTS idx_lead_events_timestamp ON lead_events(event_timestamp DESC);
+-- Indexes for campaign_lead_events
+CREATE INDEX IF NOT EXISTS idx_campaign_lead_events_lead ON campaign_lead_events(lead_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_lead_events_campaign ON campaign_lead_events(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_lead_events_type ON campaign_lead_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_campaign_lead_events_timestamp ON campaign_lead_events(event_timestamp DESC);
 
 -- Add comments
-COMMENT ON TABLE lead_events IS 'Individual email events per lead for detailed tracking';
-COMMENT ON COLUMN lead_events.metadata IS 'Additional event data (message_id, link_url, etc.)';
+COMMENT ON TABLE campaign_lead_events IS 'Individual email events per lead for detailed tracking';
+COMMENT ON COLUMN campaign_lead_events.metadata IS 'Additional event data (message_id, link_url, etc.)';
 
 -- Create email_accounts table if it doesn't exist
 CREATE TABLE IF NOT EXISTS email_accounts (
@@ -128,28 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_campaign_leads_smartlead ON campaign_leads(smartl
 
 COMMENT ON COLUMN campaign_leads.smartlead_lead_id IS 'Lead ID from Smartlead system';
 COMMENT ON COLUMN campaign_leads.current_sequence IS 'Current email sequence number the lead is on';
-COMMENT ON COLUMN campaign_leads.category_id IS 'Smartlead category ID (Interested, Not Interested, etc.)';
-
--- Create lead_categories table (standard Smartlead categories)
-CREATE TABLE IF NOT EXISTS lead_categories (
-  category_id INTEGER PRIMARY KEY,
-  category_name TEXT NOT NULL UNIQUE,
-  description TEXT,
-  color TEXT DEFAULT '#6b7280'
-);
-
--- Insert standard Smartlead categories
-INSERT INTO lead_categories (category_id, category_name, color) VALUES
-  (1, 'Interested', '#10b981'),
-  (2, 'Meeting Request', '#3b82f6'),
-  (3, 'Not Interested', '#ef4444'),
-  (4, 'Do Not Contact', '#dc2626'),
-  (5, 'Information Request', '#f59e0b'),
-  (6, 'Out Of Office', '#6b7280'),
-  (7, 'Wrong Person', '#9ca3af')
-ON CONFLICT (category_id) DO NOTHING;
-
-COMMENT ON TABLE lead_categories IS 'Standard Smartlead lead categories';
+COMMENT ON COLUMN campaign_leads.category_id IS 'Smartlead category ID (Interested, Not Interested, etc.). Categories are defined in code constants, not in database.';
 
 -- Update campaigns table with additional settings
 ALTER TABLE campaigns
