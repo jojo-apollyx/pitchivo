@@ -2,30 +2,15 @@ import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Inter, Outfit } from 'next/font/google';
 import JsonLd from "./json-ld";
 import { GlobalThemeLoader } from "@/components/global-theme-loader";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { MotionProvider } from "@/components/providers/motion-provider";
 import "./../globals.css";
 
-// Configure Google Fonts with fallbacks
-// next/font/google self-hosts fonts at build time, so no external requests are needed
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-  fallback: ['system-ui', 'arial'],
-  adjustFontFallback: true,
-});
-
-const outfit = Outfit({
-  subsets: ['latin'],
-  variable: '--font-outfit',
-  display: 'swap',
-  fallback: ['system-ui', 'arial'],
-  adjustFontFallback: true,
-});
+// Import Google Fonts from local packages (no network required)
+import "@fontsource/inter/latin.css";
+import "@fontsource/outfit/latin.css";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -142,7 +127,7 @@ export default function RootLayout({
         <meta name="msapplication-TileImage" content="/web-app-manifest-192x192.png" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
-      <body className={`${inter.variable} ${outfit.variable} font-sans`}>
+      <body className="font-sans antialiased">
         <MotionProvider>
           <ThemeProvider
             attribute="class"

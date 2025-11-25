@@ -26,6 +26,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { PRICING_TIERS, formatPrice, formatQuota } from "@/lib/constants/pricing";
+import { ScrollAnimation } from "@/components/ui/scroll-animation";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
+
+import { Marquee } from "@/components/ui/marquee";
+import { HeroEmailForm } from "@/components/hero-email-form";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -277,9 +284,8 @@ async function addToWaitlist(data: {
 }
 
 export default function Home() {
-  const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
   const pricingRef = useRef<HTMLElement>(null);
   const { theme, setTheme } = useTheme();
 
@@ -351,78 +357,10 @@ export default function Home() {
     pricingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email.trim()) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Check email domain status in database
-      const domainStatus = await checkEmailDomainStatus(email);
-      
-      if (domainStatus === 'public') {
-        toast.error("Company Email Required", {
-          description: "Please use your company email address. Public email domains (Gmail, Yahoo, etc.) are not accepted.",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      if (domainStatus === 'blocked') {
-        toast.error("Domain Blocked", {
-          description: "This email domain has been blocked and cannot be used to sign up.",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      const invited = await isInvitedEmail(email);
-              if (!invited) {
-                toast(
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-primary-dark" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-foreground mb-1">Invite-Only Access</div>
-                      <p className="text-sm text-foreground/70 mb-3">
-                        We are invitation only. Join our waitlist to get notified when we open up.
-                      </p>
-                      <button
-                        onClick={() => {
-                          reset({ email, fullName: "", company: "", role: "", note: "" });
-                          setWaitlistOpen(true);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-accent text-white text-sm font-medium rounded-lg hover:shadow-lg transition-shadow"
-                      >
-                        Join Waitlist
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>,
-                  { duration: 6000 }
-                );
-                setIsLoading(false);
-                return;
-              }
-
-      await sendMagicLink(email);
-      setEmail("");
-    } catch (_error) {
-      // Error already handled in sendMagicLink
-    } finally {
-      setIsLoading(false);
-    }
+  const handleOpenWaitlist = (email: string) => {
+    setWaitlistEmail(email);
+    reset({ email, fullName: "", company: "", role: "", note: "" });
+    setWaitlistOpen(true);
   };
 
   const handleWaitlistSubmit = async (data: WaitlistFormData) => {
@@ -459,7 +397,7 @@ export default function Home() {
     if (success) {
       setWaitlistOpen(false);
       reset();
-      setEmail("");
+      setWaitlistEmail("");
     }
   };
 
@@ -487,10 +425,11 @@ export default function Home() {
                 id="nav-pricing-button"
                 variant="ghost" 
                 size="sm" 
-                className="hidden sm:flex hover:bg-primary/10 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 font-medium"
+                className="hidden sm:flex hover:bg-primary/10 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 font-medium group relative overflow-hidden rounded-full"
                 onClick={scrollToPricing}
               >
-                Pricing
+                <span className="relative z-10">Pricing</span>
+                <BorderBeam size={40} duration={3} delay={0} className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Button>
               <Button
                 id="nav-theme-toggle-button"
@@ -517,70 +456,63 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left Column - Hero Content */}
-            <div className="space-y-8 animate-fadeIn">
+            <ScrollAnimation container className="space-y-8">
               {/* Badge */}
-              <Badge variant="premium" className="text-sm px-4 py-1.5 bg-background/90 backdrop-blur-sm border-primary-dark/40 shadow-sm text-primary-dark font-semibold">
-                AI-Powered B2B Outreach Platform
-              </Badge>
+              <ScrollAnimation>
+                <Badge variant="premium" className="text-sm px-4 py-1.5 bg-background/90 backdrop-blur-sm border-primary-dark/40 shadow-sm text-primary-dark font-semibold">
+                  AI-Powered B2B Outreach Platform
+                </Badge>
+              </ScrollAnimation>
               
               {/* Headline - ONLY h1 on page */}
-              <h1 id="hero-main-heading" className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
-                <span className="text-foreground">AI-Powered Outreach</span>
-                <span className="block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-primary-dark via-primary to-primary-dark">
-                  That Actually Converts
-                </span>
-              </h1>
+              <ScrollAnimation>
+                <h1 id="hero-main-heading" className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight leading-tight">
+                  <span className="text-foreground block">
+                    <VerticalCutReveal splitBy="characters" staggerDuration={0.03} transition={{ delay: 0 }}>
+                      AI-Powered Outreach
+                    </VerticalCutReveal>
+                  </span>
+                  <span className="block mt-2 text-primary-dark">
+                    <VerticalCutReveal splitBy="characters" staggerDuration={0.03} transition={{ delay: 0.5 }}>
+                      That Actually Converts
+                    </VerticalCutReveal>
+                  </span>
+                </h1>
+              </ScrollAnimation>
 
               {/* Description */}
-              <p className="text-xl sm:text-2xl text-foreground/80 dark:text-foreground/90 leading-relaxed font-medium">
-                Transform product specifications into stunning pages. Launch targeted campaigns to buyers with real purchase intent. Track engagement. Close deals faster.
-              </p>
+              <ScrollAnimation>
+                <p className="text-xl sm:text-2xl text-foreground/80 dark:text-foreground/90 leading-relaxed font-medium">
+                  Transform product specifications into stunning pages. Launch targeted campaigns to buyers with real purchase intent. Track engagement. Close deals faster.
+                </p>
+              </ScrollAnimation>
 
               {/* CTA Form */}
-              <form id="hero-cta-form" onSubmit={handleMagicLinkSubmit} className="mt-10">
-                <div className="flex max-w-lg flex-col gap-3 sm:flex-row">
-                  <Input
-                    id="hero-email-input"
-                    type="email"
-                    placeholder="Enter your company email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="!h-16 sm:!h-14 flex-1 text-base bg-background/95 backdrop-blur-sm border-border/50 shadow-sm px-4 py-3"
-                    disabled={isLoading}
-                    aria-label="Company email address"
-                  />
-                  <Button
-                    id="hero-get-started-button"
-                    type="submit"
-                    size="lg"
-                    className="h-12 sm:h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20 shadow-lg"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Sending..." : "Get Started"}
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </div>
-              </form>
+              <ScrollAnimation>
+                <HeroEmailForm onOpenWaitlist={handleOpenWaitlist} />
+              </ScrollAnimation>
 
               {/* Social Proof */}
-              <div className="flex flex-wrap items-start gap-6 text-sm text-foreground/80 pt-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary-dark" />
-                  <span className="font-medium">No credit card required</span>
+              <ScrollAnimation>
+                <div className="flex flex-wrap items-start gap-6 text-sm text-foreground/80 pt-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary-dark" />
+                    <span className="font-medium">No credit card required</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary-dark" />
+                    <span className="font-medium">Free trial available</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary-dark" />
+                    <span className="font-medium">Cancel anytime</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary-dark" />
-                  <span className="font-medium">Free trial available</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary-dark" />
-                  <span className="font-medium">Cancel anytime</span>
-                </div>
-              </div>
-            </div>
+              </ScrollAnimation>
+            </ScrollAnimation>
 
             {/* Right Column - UI Showcase */}
-            <div className="relative mt-8 lg:mt-0 animate-fadeIn hidden lg:block" style={{ animationDelay: '200ms' }}>
+            <ScrollAnimation animateIn delay={0.2} className="relative mt-8 lg:mt-0 hidden lg:block">
               {/* Background Card - Campaign Analytics Dashboard */}
               <div className="absolute -top-6 right-6 w-full max-w-md bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl transform rotate-2 overflow-hidden">
                 <div className="p-4 space-y-3">
@@ -775,7 +707,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
+            </ScrollAnimation>
           </div>
         </div>
       </section>
@@ -787,15 +719,19 @@ export default function Home() {
             <Badge variant="premium" className="mb-4">
               How It Works
             </Badge>
-            <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              Simple Process, Powerful Results
-            </h2>
+            <ScrollAnimation>
+              <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
+                <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                  Simple Process, Powerful Results
+                </VerticalCutReveal>
+              </h2>
+            </ScrollAnimation>
             <p className="text-lg text-muted-foreground">
               From upload to buyer engagement — all in five easy steps
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto">
+          <ScrollAnimation container className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto">
             {[
               {
                 step: "01",
@@ -828,16 +764,15 @@ export default function Home() {
                 description: "Get instant notifications when buyers fill out your RFQ form. No manual follow-up needed.",
               },
             ].map((step, index) => (
-              <div
+              <ScrollAnimation
                 key={index}
                 className={cn(
                   "relative",
                   index < 2 ? "lg:col-span-1" : index === 2 ? "lg:col-span-1" : "lg:col-span-1"
                 )}
               >
-                <Card 
-                  variant="premium" 
-                  className="h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
+                <SpotlightCard 
+                  className="h-full border-border/50 shadow-premium hover:shadow-premium-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
                 >
                   <CardHeader>
                     <div className="flex items-start gap-4 mb-4">
@@ -853,15 +788,15 @@ export default function Home() {
                       {step.description}
                     </CardDescription>
                   </CardHeader>
-                </Card>
+                </SpotlightCard>
 
                 {/* Connector Arrow */}
                 {index < 2 && (
                   <div className="hidden lg:block absolute top-1/2 -right-6 w-12 h-0.5 bg-gradient-to-r from-primary/50 to-transparent" />
                 )}
-              </div>
+              </ScrollAnimation>
             ))}
-          </div>
+          </ScrollAnimation>
         </div>
       </section>
 
@@ -872,75 +807,94 @@ export default function Home() {
             <Badge variant="premium" className="mb-4">
               Managed Campaign Service
             </Badge>
-            <h2 id="managed-campaigns-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              Professional Email Outreach, Done For You
-            </h2>
+            <ScrollAnimation>
+              <h2 id="managed-campaigns-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
+                <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                  Professional Email Outreach, Done For You
+                </VerticalCutReveal>
+              </h2>
+            </ScrollAnimation>
             <p className="text-lg text-muted-foreground">
               Our team handles the heavy lifting so you can focus on closing deals
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+          <ScrollAnimation container className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
             {/* Automated Email Warmup */}
-            <div id="managed-campaign-warmup-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
-              <div className="mb-6">
-                <div className="inline-flex p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-                  <Zap className="w-7 h-7 text-green-600" />
+            <ScrollAnimation id="managed-campaign-warmup-card">
+              <SpotlightCard className="h-full border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
+                <div className="p-8">
+                  <div className="mb-6">
+                    <div className="inline-flex p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                      <Zap className="w-7 h-7 text-green-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                    Automated Email Warmup
+                  </h3>
+                  <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                    We automatically warm up your email domain to ensure maximum deliverability. No spam folders, no blacklists — just professional outreach that reaches inboxes.
+                  </p>
                 </div>
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
-                Automated Email Warmup
-              </h3>
-              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
-                We automatically warm up your email domain to ensure maximum deliverability. No spam folders, no blacklists — just professional outreach that reaches inboxes.
-              </p>
-            </div>
+              </SpotlightCard>
+            </ScrollAnimation>
 
             {/* Professional Copywriting */}
-            <div id="managed-campaign-copy-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
-              <div className="mb-6">
-                <div className="inline-flex p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-                  <FileText className="w-7 h-7 text-purple-600" />
+            <ScrollAnimation id="managed-campaign-copy-card">
+              <SpotlightCard className="h-full border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
+                <div className="p-8">
+                  <div className="mb-6">
+                    <div className="inline-flex p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                      <FileText className="w-7 h-7 text-purple-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                    Curated Professional Copy
+                  </h3>
+                  <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                    Our expert writers craft compelling, personalized outreach messages that resonate with B2B buyers. Every email is optimized for engagement and conversions.
+                  </p>
                 </div>
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
-                Curated Professional Copy
-              </h3>
-              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
-                Our expert writers craft compelling, personalized outreach messages that resonate with B2B buyers. Every email is optimized for engagement and conversions.
-              </p>
-            </div>
+              </SpotlightCard>
+            </ScrollAnimation>
 
             {/* Strategic Follow-ups */}
-            <div id="managed-campaign-followup-card" className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm p-8 hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
-              <div className="mb-6">
-                <div className="inline-flex p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-                  <Send className="w-7 h-7 text-blue-600" />
+            <ScrollAnimation id="managed-campaign-followup-card">
+              <SpotlightCard className="h-full border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-xl hover:shadow-primary-light/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
+                <div className="p-8">
+                  <div className="mb-6">
+                    <div className="inline-flex p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                      <Send className="w-7 h-7 text-blue-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                    Smart Follow-Up Sequences
+                  </h3>
+                  <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                    Professionally timed follow-up emails crafted by our team. We handle the entire nurture sequence to keep prospects engaged without being pushy.
+                  </p>
                 </div>
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
-                Smart Follow-Up Sequences
-              </h3>
-              <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
-                Professionally timed follow-up emails crafted by our team. We handle the entire nurture sequence to keep prospects engaged without being pushy.
-              </p>
-            </div>
-          </div>
+              </SpotlightCard>
+            </ScrollAnimation>
+          </ScrollAnimation>
 
           {/* CTA */}
           <div className="mt-12 text-center">
             <Button 
               id="managed-campaign-cta-button"
               size="lg" 
-              className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+              className="group relative overflow-hidden rounded-full h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
               onClick={() => {
                 const heroForm = document.getElementById('hero-email-input');
                 heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 setTimeout(() => (heroForm as HTMLInputElement)?.focus(), 500);
               }}
             >
-              Start Your Campaign
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <span className="relative z-10 flex items-center">
+                Start Your Campaign
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </span>
+              <BorderBeam size={70} duration={3} delay={0} className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Button>
           </div>
         </div>
@@ -951,19 +905,34 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
             {/* Left Content */}
-            <div className="space-y-6">
-              <Badge variant="premium" className="mb-2">
-                Smart Targeting
-              </Badge>
+            <ScrollAnimation container className="space-y-6">
+              <ScrollAnimation>
+                <Badge variant="premium" className="mb-2">
+                  Smart Targeting
+                </Badge>
+              </ScrollAnimation>
+              <ScrollAnimation>
               <h2 id="intent-targeting-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight">
-                Reach Buyers With <span className="text-primary">Real Purchase Intent</span>
+                <span className="block">
+                  <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                    Reach Buyers With
+                  </VerticalCutReveal>
+                </span>
+                <span className="text-primary block mt-2">
+                  <VerticalCutReveal splitBy="characters" staggerDuration={0.03} transition={{ delay: 0.8 }}>
+                    Real Purchase Intent
+                  </VerticalCutReveal>
+                </span>
               </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                We don't spam entire industries with generic messages. Our AI analyzes buyer behavior, recent purchases, and market signals to identify companies actively seeking your products.
-              </p>
+              </ScrollAnimation>
+              <ScrollAnimation>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  We don't spam entire industries with generic messages. Our AI analyzes buyer behavior, recent purchases, and market signals to identify companies actively seeking your products.
+                </p>
+              </ScrollAnimation>
               
-              <div className="space-y-4 pt-4">
-                <div id="intent-signal-verified" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20 hover:border-green-500/40 transition-colors">
+              <ScrollAnimation container className="space-y-4 pt-4">
+                <ScrollAnimation id="intent-signal-verified" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20 hover:border-green-500/40 transition-colors">
                   <CheckCircle2 className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Verified Buyer Signals</h4>
@@ -971,9 +940,9 @@ export default function Home() {
                       We track RFQ submissions, product searches, and market activity to find buyers who are actually looking to purchase.
                     </p>
                   </div>
-                </div>
+                </ScrollAnimation>
 
-                <div id="intent-signal-match" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+                <ScrollAnimation id="intent-signal-match" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 hover:border-blue-500/40 transition-colors">
                   <CheckCircle2 className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Perfect Product Match</h4>
@@ -981,9 +950,9 @@ export default function Home() {
                       Our AI matches your products to buyers based on their specific needs, certifications required, and order volumes.
                     </p>
                   </div>
-                </div>
+                </ScrollAnimation>
 
-                <div id="intent-signal-timing" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+                <ScrollAnimation id="intent-signal-timing" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 hover:border-purple-500/40 transition-colors">
                   <CheckCircle2 className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Perfect Timing</h4>
@@ -991,54 +960,56 @@ export default function Home() {
                       Reach buyers at the exact moment they're evaluating suppliers, not months before or after their purchasing window.
                     </p>
                   </div>
-                </div>
-              </div>
-            </div>
+                </ScrollAnimation>
+              </ScrollAnimation>
+            </ScrollAnimation>
 
             {/* Right Visual */}
-            <div className="relative">
-              <div className="relative bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl p-6 overflow-hidden">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-foreground">Buyer Intent Score</h3>
-                  <Badge className="bg-green-500/10 text-green-700 border-green-500/20">
-                    High Intent
-                  </Badge>
-                </div>
+            <ScrollAnimation animateIn className="relative">
+              <SpotlightCard className="bg-background/95 backdrop-blur-sm border-border/50 shadow-2xl">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-foreground">Buyer Intent Score</h3>
+                    <Badge className="bg-green-500/10 text-green-700 border-green-500/20">
+                      High Intent
+                    </Badge>
+                  </div>
 
-                {/* Intent Signals */}
-                <div className="space-y-3">
-                  {[
-                    { label: "Active Product Search", value: 95, color: "green" },
-                    { label: "Recent RFQ Submitted", value: 88, color: "blue" },
-                    { label: "Budget Allocated", value: 82, color: "purple" },
-                    { label: "Decision Timeline", value: 90, color: "orange" },
-                  ].map((signal, idx) => (
-                    <div key={idx} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-foreground/80">{signal.label}</span>
-                        <span className="font-bold text-foreground">{signal.value}%</span>
+                  {/* Intent Signals */}
+                  <div className="space-y-3">
+                    {[
+                      { label: "Active Product Search", value: 95, color: "green" },
+                      { label: "Recent RFQ Submitted", value: 88, color: "blue" },
+                      { label: "Budget Allocated", value: 82, color: "purple" },
+                      { label: "Decision Timeline", value: 90, color: "orange" },
+                    ].map((signal, idx) => (
+                      <div key={idx} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-foreground/80">{signal.label}</span>
+                          <span className="font-bold text-foreground">{signal.value}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full bg-gradient-to-r from-${signal.color}-500 to-${signal.color}-600 rounded-full transition-all duration-1000`}
+                            style={{ width: `${signal.value}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full bg-gradient-to-r from-${signal.color}-500 to-${signal.color}-600 rounded-full transition-all duration-1000`}
-                          style={{ width: `${signal.value}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                  <p className="text-sm text-muted-foreground">
-                    <strong className="text-primary">Recommendation:</strong> High-priority target. Buyer is actively evaluating suppliers for Q1 2025 orders.
-                  </p>
+                  <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                    <p className="text-sm text-muted-foreground">
+                      <strong className="text-primary">Recommendation:</strong> High-priority target. Buyer is actively evaluating suppliers for Q1 2025 orders.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </SpotlightCard>
 
               {/* Decorative elements */}
               <div className="absolute -top-4 -right-4 w-32 h-32 bg-primary/20 rounded-full blur-3xl pointer-events-none -z-10" />
               <div className="absolute -bottom-4 -left-4 w-40 h-40 bg-accent/20 rounded-full blur-3xl pointer-events-none -z-10" />
-            </div>
+            </ScrollAnimation>
           </div>
         </div>
       </section>
@@ -1051,14 +1022,16 @@ export default function Home() {
               Core Features
             </Badge>
             <h2 id="features-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              Everything You Need to Scale
+              <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                Everything You Need to Scale
+              </VerticalCutReveal>
             </h2>
             <p className="text-lg text-muted-foreground">
               Powerful tools to automate your B2B outreach and close more deals
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+          <ScrollAnimation container className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
             {[
               {
                 icon: Sparkles,
@@ -1115,32 +1088,34 @@ export default function Home() {
                   "Sync with your existing CRM and keep all buyer data in one place.",
               },
             ].map((feature, index) => (
-              <div
+              <ScrollAnimation
                 key={index}
-                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-sm hover:border-primary/30 hover:from-primary/10 hover:via-card/80 hover:to-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98]"
+                className="h-full"
               >
-                {/* Content */}
-                <div className="relative p-8">
-                  {/* Icon */}
-                  <div className="mb-6">
-                    <div className="inline-flex p-4 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-                      <feature.icon className="w-7 h-7 text-primary" />
+                <SpotlightCard className="h-full border-border/50 bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group">
+                  {/* Content */}
+                  <div className="relative p-8">
+                    {/* Icon */}
+                    <div className="mb-6">
+                      <div className="inline-flex p-4 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                        <feature.icon className="w-7 h-7 text-primary" />
+                      </div>
                     </div>
+                    
+                    {/* Title */}
+                    <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                      {feature.title}
+                    </h3>
+                    
+                    {/* Description */}
+                    <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
+                      {feature.description}
+                    </p>
                   </div>
-                  
-                  {/* Title */}
-                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
-                    {feature.title}
-                  </h3>
-                  
-                  {/* Description */}
-                  <p className="text-muted-foreground dark:text-foreground/80 leading-relaxed text-sm">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
+                </SpotlightCard>
+              </ScrollAnimation>
             ))}
-          </div>
+          </ScrollAnimation>
         </div>
       </section>
 
@@ -1152,7 +1127,9 @@ export default function Home() {
               Real Results
             </Badge>
             <h2 id="case-study-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              See The Difference Pitchivo Makes
+              <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                See The Difference Pitchivo Makes
+              </VerticalCutReveal>
             </h2>
             <p className="text-lg text-muted-foreground">
               Real companies, real campaigns, real results
@@ -1161,135 +1138,139 @@ export default function Home() {
 
           {/* Before/After Comparison */}
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            <ScrollAnimation container className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
               {/* BEFORE */}
-              <div id="case-study-before-card" className="relative">
-                <div className="absolute -top-4 left-4 z-10">
+              <ScrollAnimation id="case-study-before-card" className="relative">
+                <div className="absolute -top-4 left-4 z-20">
                   <Badge className="bg-destructive text-destructive-foreground border-destructive/50 shadow-lg">
                     ❌ Before Pitchivo
                   </Badge>
                 </div>
-                <div className="bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-2 border-border/50 rounded-2xl p-8 h-full">
-                  <h3 className="text-2xl font-bold text-foreground/80 mb-6">Traditional Outreach</h3>
-                  
-                  <div className="space-y-6">
-                    {/* Metrics - Before */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
-                        <div className="text-3xl font-bold text-destructive mb-1">2-3%</div>
-                        <div className="text-sm text-muted-foreground">Email Open Rate</div>
+                <SpotlightCard spotlightColor="rgba(239, 68, 68, 0.1)" className="bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border-2 border-border/50 h-full">
+                  <div className="p-8">
+                    <h3 className="text-2xl font-bold text-foreground/80 mb-6">Traditional Outreach</h3>
+                    
+                    <div className="space-y-6">
+                      {/* Metrics - Before */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                          <div className="text-3xl font-bold text-destructive mb-1">2-3%</div>
+                          <div className="text-sm text-muted-foreground">Email Open Rate</div>
+                        </div>
+                        <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                          <div className="text-3xl font-bold text-destructive mb-1">0.5%</div>
+                          <div className="text-sm text-muted-foreground">Response Rate</div>
+                        </div>
+                        <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                          <div className="text-3xl font-bold text-destructive mb-1">5-6</div>
+                          <div className="text-sm text-muted-foreground">RFQs/month</div>
+                        </div>
+                        <div className="p-4 bg-background/50 rounded-xl border border-border/30">
+                          <div className="text-3xl font-bold text-destructive mb-1">4-6 mo</div>
+                          <div className="text-sm text-muted-foreground">Sales Cycle</div>
+                        </div>
                       </div>
-                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
-                        <div className="text-3xl font-bold text-destructive mb-1">0.5%</div>
-                        <div className="text-sm text-muted-foreground">Response Rate</div>
-                      </div>
-                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
-                        <div className="text-3xl font-bold text-destructive mb-1">5-6</div>
-                        <div className="text-sm text-muted-foreground">RFQs/month</div>
-                      </div>
-                      <div className="p-4 bg-background/50 rounded-xl border border-border/30">
-                        <div className="text-3xl font-bold text-destructive mb-1">4-6 mo</div>
-                        <div className="text-sm text-muted-foreground">Sales Cycle</div>
-                      </div>
-                    </div>
 
-                    {/* Pain Points */}
-                    <div className="space-y-3 pt-4">
-                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
-                        <span className="text-destructive">✗</span>
-                        <span>Manual email list building from scratch</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
-                        <span className="text-destructive">✗</span>
-                        <span>Generic mass emails to broad industries</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
-                        <span className="text-destructive">✗</span>
-                        <span>No tracking, no insights on engagement</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
-                        <span className="text-destructive">✗</span>
-                        <span>Time-consuming follow-ups and no automation</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-muted-foreground">
-                        <span className="text-destructive">✗</span>
-                        <span>Inconsistent branding and product presentation</span>
+                      {/* Pain Points */}
+                      <div className="space-y-3 pt-4">
+                        <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                          <span className="text-destructive">✗</span>
+                          <span>Manual email list building from scratch</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                          <span className="text-destructive">✗</span>
+                          <span>Generic mass emails to broad industries</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                          <span className="text-destructive">✗</span>
+                          <span>No tracking, no insights on engagement</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                          <span className="text-destructive">✗</span>
+                          <span>Time-consuming follow-ups and no automation</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                          <span className="text-destructive">✗</span>
+                          <span>Inconsistent branding and product presentation</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </SpotlightCard>
+              </ScrollAnimation>
 
               {/* AFTER */}
-              <div id="case-study-after-card" className="relative">
-                <div className="absolute -top-4 left-4 z-10">
+              <ScrollAnimation id="case-study-after-card" className="relative">
+                <div className="absolute -top-4 left-4 z-20">
                   <Badge className="bg-primary text-primary-foreground border-primary/50 shadow-lg">
                     ✅ After Pitchivo
                   </Badge>
                 </div>
-                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 backdrop-blur-sm border-2 border-primary/30 rounded-2xl p-8 h-full shadow-xl shadow-primary/10">
-                  <h3 className="text-2xl font-bold text-foreground mb-6">AI-Powered Results</h3>
-                  
-                  <div className="space-y-6">
-                    {/* Metrics - After */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-xl border border-green-500/30">
-                        <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-green-700">45-68%</div>
-                          <span className="text-green-600 text-sm font-semibold">↑ 20x</span>
+                <SpotlightCard className="bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 backdrop-blur-sm border-2 border-primary/30 h-full shadow-xl shadow-primary/10">
+                  <div className="p-8">
+                    <h3 className="text-2xl font-bold text-foreground mb-6">AI-Powered Results</h3>
+                    
+                    <div className="space-y-6">
+                      {/* Metrics - After */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-xl border border-green-500/30">
+                          <div className="flex items-baseline gap-1">
+                            <div className="text-3xl font-bold text-green-700">45-68%</div>
+                            <span className="text-green-600 text-sm font-semibold">↑ 20x</span>
+                          </div>
+                          <div className="text-sm text-foreground/80 font-medium">Email Open Rate</div>
                         </div>
-                        <div className="text-sm text-foreground/80 font-medium">Email Open Rate</div>
-                      </div>
-                      <div className="p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-xl border border-blue-500/30">
-                        <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-blue-700">12-18%</div>
-                          <span className="text-blue-600 text-sm font-semibold">↑ 30x</span>
+                        <div className="p-4 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-xl border border-blue-500/30">
+                          <div className="flex items-baseline gap-1">
+                            <div className="text-3xl font-bold text-blue-700">12-18%</div>
+                            <span className="text-blue-600 text-sm font-semibold">↑ 30x</span>
+                          </div>
+                          <div className="text-sm text-foreground/80 font-medium">Response Rate</div>
                         </div>
-                        <div className="text-sm text-foreground/80 font-medium">Response Rate</div>
-                      </div>
-                      <div className="p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-xl border border-purple-500/30">
-                        <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-purple-700">50-80</div>
-                          <span className="text-purple-600 text-sm font-semibold">↑ 12x</span>
+                        <div className="p-4 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-xl border border-purple-500/30">
+                          <div className="flex items-baseline gap-1">
+                            <div className="text-3xl font-bold text-purple-700">50-80</div>
+                            <span className="text-purple-600 text-sm font-semibold">↑ 12x</span>
+                          </div>
+                          <div className="text-sm text-foreground/80 font-medium">RFQs/month</div>
                         </div>
-                        <div className="text-sm text-foreground/80 font-medium">RFQs/month</div>
-                      </div>
-                      <div className="p-4 bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-xl border border-orange-500/30">
-                        <div className="flex items-baseline gap-1">
-                          <div className="text-3xl font-bold text-orange-700">6-8 wk</div>
-                          <span className="text-orange-600 text-sm font-semibold">↓ 75%</span>
+                        <div className="p-4 bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-xl border border-orange-500/30">
+                          <div className="flex items-baseline gap-1">
+                            <div className="text-3xl font-bold text-orange-700">6-8 wk</div>
+                            <span className="text-orange-600 text-sm font-semibold">↓ 75%</span>
+                          </div>
+                          <div className="text-sm text-foreground/80 font-medium">Sales Cycle</div>
                         </div>
-                        <div className="text-sm text-foreground/80 font-medium">Sales Cycle</div>
                       </div>
-                    </div>
 
-                    {/* Benefits */}
-                    <div className="space-y-3 pt-4">
-                      <div className="flex items-start gap-3 text-sm text-foreground">
-                        <span className="text-primary">✓</span>
-                        <span className="font-medium">AI-curated buyers with verified purchase intent</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-foreground">
-                        <span className="text-primary">✓</span>
-                        <span className="font-medium">Personalized campaigns to targeted decision-makers</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-foreground">
-                        <span className="text-primary">✓</span>
-                        <span className="font-medium">Real-time analytics on every interaction</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-foreground">
-                        <span className="text-primary">✓</span>
-                        <span className="font-medium">Automated follow-ups by our professional team</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm text-foreground">
-                        <span className="text-primary">✓</span>
-                        <span className="font-medium">Beautiful AI-generated product pages & storefronts</span>
+                      {/* Benefits */}
+                      <div className="space-y-3 pt-4">
+                        <div className="flex items-start gap-3 text-sm text-foreground">
+                          <span className="text-primary">✓</span>
+                          <span className="font-medium">AI-curated buyers with verified purchase intent</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-foreground">
+                          <span className="text-primary">✓</span>
+                          <span className="font-medium">Personalized campaigns to targeted decision-makers</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-foreground">
+                          <span className="text-primary">✓</span>
+                          <span className="font-medium">Real-time analytics on every interaction</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-foreground">
+                          <span className="text-primary">✓</span>
+                          <span className="font-medium">Automated follow-ups by our professional team</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm text-foreground">
+                          <span className="text-primary">✓</span>
+                          <span className="font-medium">Beautiful AI-generated product pages & storefronts</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                </SpotlightCard>
+              </ScrollAnimation>
+            </ScrollAnimation>
 
             {/* CTA */}
             <div className="mt-12 text-center">
@@ -1299,15 +1280,18 @@ export default function Home() {
               <Button 
                 id="case-study-cta-button"
                 size="lg" 
-                className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+                className="group relative overflow-hidden rounded-full h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
                 onClick={() => {
                   const heroForm = document.getElementById('hero-email-input');
                   heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   setTimeout(() => (heroForm as HTMLInputElement)?.focus(), 500);
                 }}
               >
-                Get These Results
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <span className="relative z-10 flex items-center">
+                  Get These Results
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </span>
+                <BorderBeam size={70} duration={3} delay={0} className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Button>
             </div>
           </div>
@@ -1322,7 +1306,9 @@ export default function Home() {
               Two-Way Sales Engine
             </Badge>
             <h2 id="sales-automation-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              We Find Buyers For You & Route Buyers To You
+              <VerticalCutReveal splitBy="characters" staggerDuration={0.025}>
+                We Find Buyers For You & Route Buyers To You
+              </VerticalCutReveal>
             </h2>
             <p className="text-lg text-muted-foreground">
               Outbound campaigns to reach buyers + inbound lead routing when buyers find you
@@ -1330,9 +1316,9 @@ export default function Home() {
           </div>
 
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            <ScrollAnimation container className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
               {/* Outbound Sales Automation */}
-              <div id="outbound-sales-card" className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300">
+              <ScrollAnimation id="outbound-sales-card" className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 transition-all duration-300">
                 <div className="mb-6">
                   <div className="inline-flex p-4 bg-gradient-to-br from-primary/30 to-primary/20 rounded-2xl shadow-lg">
                     <Send className="w-8 h-8 text-primary" />
@@ -1358,10 +1344,10 @@ export default function Home() {
                     <span className="text-sm text-foreground">Real-time notifications when buyers respond</span>
                   </div>
                 </div>
-              </div>
+              </ScrollAnimation>
 
               {/* Inbound Lead Routing */}
-              <div id="inbound-routing-card" className="group relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 transition-all duration-300">
+              <ScrollAnimation id="inbound-routing-card" className="group relative overflow-hidden rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-accent/10 via-card/80 to-card/60 backdrop-blur-sm p-8 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 transition-all duration-300">
                 <div className="mb-6">
                   <div className="inline-flex p-4 bg-gradient-to-br from-accent/30 to-accent/20 rounded-2xl shadow-lg">
                     <Database className="w-8 h-8 text-accent" />
@@ -1387,11 +1373,11 @@ export default function Home() {
                     <span className="text-sm text-foreground">Pre-qualified leads delivered to your inbox</span>
                   </div>
                 </div>
-              </div>
-            </div>
+              </ScrollAnimation>
+            </ScrollAnimation>
 
             {/* Visual Flow Diagram */}
-            <div className="mt-12 p-8 bg-gradient-to-br from-muted/30 to-muted/10 backdrop-blur-sm rounded-2xl border border-border/50">
+            <ScrollAnimation animateIn className="mt-12 p-8 bg-gradient-to-br from-muted/30 to-muted/10 backdrop-blur-sm rounded-2xl border border-border/50">
               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
                 <div className="text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground font-bold text-xl mb-2">
@@ -1426,7 +1412,7 @@ export default function Home() {
                   <p className="text-sm font-semibold text-foreground">Buyers</p>
                 </div>
               </div>
-            </div>
+            </ScrollAnimation>
           </div>
         </div>
       </section>
@@ -1435,9 +1421,9 @@ export default function Home() {
       <section id="storefront-section" className="py-20 sm:py-24 lg:py-32 bg-gradient-to-br from-background via-primary/5 to-background" aria-labelledby="storefront-heading">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <ScrollAnimation container className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Left Visual */}
-              <div className="relative order-2 lg:order-1">
+              <ScrollAnimation className="relative order-2 lg:order-1">
                 <div className="relative bg-gradient-to-br from-background/95 via-background/90 to-background/85 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
                   {/* Browser Header */}
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
@@ -1512,22 +1498,30 @@ export default function Home() {
                     AEO Ready
                   </Badge>
                 </div>
-              </div>
+              </ScrollAnimation>
 
               {/* Right Content */}
-              <div className="space-y-6 order-1 lg:order-2">
-                <Badge variant="premium" className="mb-2">
-                  AI-Generated Storefronts
-                </Badge>
-                <h2 id="storefront-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight">
-                  Beautiful Websites That <span className="text-primary">Drive Traffic</span>
-                </h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  We automatically generate professional storefronts and product pages that rank on Google and answer AI assistants. Drive organic traffic without hiring developers or SEO experts.
-                </p>
+              <ScrollAnimation container className="space-y-6 order-1 lg:order-2">
+                <ScrollAnimation>
+                  <Badge variant="premium" className="mb-2">
+                    AI-Generated Storefronts
+                  </Badge>
+                </ScrollAnimation>
+                <ScrollAnimation>
+                  <h2 id="storefront-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight">
+                    <VerticalCutReveal splitBy="characters" staggerDuration={0.025}>
+                      Beautiful Websites That Drive Traffic
+                    </VerticalCutReveal>
+                  </h2>
+                </ScrollAnimation>
+                <ScrollAnimation>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    We automatically generate professional storefronts and product pages that rank on Google and answer AI assistants. Drive organic traffic without hiring developers or SEO experts.
+                  </p>
+                </ScrollAnimation>
 
-                <div className="space-y-4 pt-4">
-                  <div id="storefront-benefit-seo" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20">
+                <ScrollAnimation container className="space-y-4 pt-4">
+                  <ScrollAnimation id="storefront-benefit-seo" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20">
                     <CheckCircle2 className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-foreground mb-1">SEO-Friendly Architecture</h4>
@@ -1535,9 +1529,9 @@ export default function Home() {
                         Optimized meta tags, structured data, and semantic HTML ensure your products rank high on search engines.
                       </p>
                     </div>
-                  </div>
+                  </ScrollAnimation>
 
-                  <div id="storefront-benefit-aeo" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
+                  <ScrollAnimation id="storefront-benefit-aeo" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
                     <CheckCircle2 className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-foreground mb-1">AEO-Ready Content</h4>
@@ -1545,9 +1539,9 @@ export default function Home() {
                         Optimized for AI search engines (ChatGPT, Perplexity). Your products appear when buyers ask AI for recommendations.
                       </p>
                     </div>
-                  </div>
+                  </ScrollAnimation>
 
-                  <div id="storefront-benefit-traffic" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20">
+                  <ScrollAnimation id="storefront-benefit-traffic" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20">
                     <CheckCircle2 className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-foreground mb-1">Organic Traffic Growth</h4>
@@ -1555,9 +1549,9 @@ export default function Home() {
                         Watch as qualified leads find you organically through search engines and AI assistants, reducing your outreach costs.
                       </p>
                     </div>
-                  </div>
+                  </ScrollAnimation>
 
-                  <div id="storefront-benefit-analytics" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20">
+                  <ScrollAnimation id="storefront-benefit-analytics" className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20">
                     <CheckCircle2 className="w-6 h-6 text-orange-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-foreground mb-1">Built-In Analytics</h4>
@@ -1565,24 +1559,29 @@ export default function Home() {
                         Track page views, visitor behavior, and conversion rates. Understand which products generate the most interest.
                       </p>
                     </div>
-                  </div>
-                </div>
+                  </ScrollAnimation>
+                </ScrollAnimation>
 
-                <Button 
-                  id="storefront-cta-button"
-                  size="lg" 
-                  className="h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
-                  onClick={() => {
-                    const heroForm = document.getElementById('hero-email-input');
-                    heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setTimeout(() => (heroForm as HTMLInputElement)?.focus(), 500);
-                  }}
-                >
-                  Create Your Storefront
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-            </div>
+                <ScrollAnimation>
+                  <Button 
+                    id="storefront-cta-button"
+                    size="lg" 
+                    className="group relative overflow-hidden rounded-full h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+                    onClick={() => {
+                      const heroForm = document.getElementById('hero-email-input');
+                      heroForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      setTimeout(() => (heroForm as HTMLInputElement)?.focus(), 500);
+                    }}
+                  >
+                    <span className="relative z-10 flex items-center">
+                      Create Your Storefront
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </span>
+                    <BorderBeam size={70} duration={3} delay={0} className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </Button>
+                </ScrollAnimation>
+              </ScrollAnimation>
+            </ScrollAnimation>
           </div>
         </div>
       </section>
@@ -1595,7 +1594,9 @@ export default function Home() {
               Security & Compliance
             </Badge>
             <h2 id="security-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              Enterprise-Grade Security
+              <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                Enterprise-Grade Security
+              </VerticalCutReveal>
             </h2>
             <p className="text-lg text-muted-foreground">
               Your data security and privacy are our top priorities
@@ -1603,7 +1604,7 @@ export default function Home() {
           </div>
 
           <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
+            <ScrollAnimation container className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
               {[
                 {
                   icon: "🔒",
@@ -1626,26 +1627,30 @@ export default function Home() {
                   description: "Certified",
                 },
               ].map((item, index) => (
-                <Card
+                <ScrollAnimation
                   key={index}
-                  variant="premium"
                   className="text-center p-6 hover-lift group"
                 >
+                  <Card
+                    variant="premium"
+                    className="h-full border-none shadow-none bg-transparent"
+                  >
                   <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
                     {item.icon}
                   </div>
                   <h3 className="font-bold text-foreground mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground">{item.description}</p>
-                </Card>
+                  </Card>
+                </ScrollAnimation>
               ))}
-            </div>
+            </ScrollAnimation>
             
-            <div className="mt-12 text-center">
+            <ScrollAnimation animateIn className="mt-12 text-center">
               <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
                 We use industry-standard encryption and security practices to protect your data. 
                 All communications are encrypted, and we're fully compliant with international data protection regulations.
               </p>
-            </div>
+            </ScrollAnimation>
           </div>
         </div>
       </section>
@@ -1658,14 +1663,16 @@ export default function Home() {
               Testimonials
             </Badge>
             <h2 id="testimonials-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              Trusted by Industry Leaders
+              <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                Trusted by Industry Leaders
+              </VerticalCutReveal>
             </h2>
             <p className="text-lg text-muted-foreground">
               See what our customers say about Pitchivo
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+          <Marquee pauseOnHover duration={35} gap={24} className="py-4">
             {[
               {
                 name: "Sarah Chen",
@@ -1688,12 +1695,32 @@ export default function Home() {
                 content: "Setting up used to take weeks. With Pitchivo, we launched our first campaign in hours. The platform handles everything from product pages to buyer matching. Absolutely worth it.",
                 rating: 5,
               },
+              {
+                name: "David Park",
+                role: "CEO",
+                company: "GreenLeaf Extracts",
+                content: "We've tried many B2B platforms, but Pitchivo's AI-powered targeting is unmatched. The quality of leads we receive is exceptional - these are real buyers ready to purchase.",
+                rating: 5,
+              },
+              {
+                name: "Lisa Wang",
+                role: "Marketing Director",
+                company: "PureNature Labs",
+                content: "The automated follow-up sequences have saved us countless hours. Our team can now focus on closing deals instead of chasing leads. Revenue is up 60% this quarter.",
+                rating: 5,
+              },
+              {
+                name: "James Miller",
+                role: "VP of Sales",
+                company: "Botanical Solutions",
+                content: "From product pages to email campaigns, everything just works. The ROI we've seen with Pitchivo is incredible. It's become essential to our sales process.",
+                rating: 5,
+              },
             ].map((testimonial, index) => (
-                <Card
-                  key={index}
-                  variant="premium"
-                  className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98]"
-                >
+              <SpotlightCard
+                key={index}
+                className="w-[350px] sm:w-[400px] flex-shrink-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 border-border/50 shadow-premium"
+              >
                 <CardContent className="p-6">
                   {/* Rating */}
                   <div className="flex items-center gap-1 mb-4">
@@ -1720,9 +1747,9 @@ export default function Home() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </SpotlightCard>
             ))}
-          </div>
+          </Marquee>
         </div>
       </section>
 
@@ -1734,14 +1761,16 @@ export default function Home() {
               Pricing
             </Badge>
             <h2 id="pricing-heading" className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
-              Plans That Scale With You
+              <VerticalCutReveal splitBy="characters" staggerDuration={0.03}>
+                Plans That Scale With You
+              </VerticalCutReveal>
             </h2>
             <p className="text-lg text-muted-foreground">
               Try free. Upgrade anytime. Cancel anytime.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
+          <ScrollAnimation container className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-6xl mx-auto">
             {Object.entries(PRICING_TIERS).map(([key, tierConfig]) => {
               const features = [
                 `${tierConfig.features.productListing} product listings`,
@@ -1773,16 +1802,15 @@ export default function Home() {
                 cta: tierConfig.cta
               }
             }).map((plan, index) => (
-                <Card
-                  key={index}
-                  variant={plan.popular ? "premium" : "default"}
+              <ScrollAnimation key={index} className="h-full">
+                <SpotlightCard
                   className={cn(
-                    "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] flex flex-col relative",
-                    plan.popular && "border-primary/50 ring-2 ring-primary/20"
+                    "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] flex flex-col relative h-full",
+                    plan.popular ? "border-primary/50 ring-2 ring-primary/20 shadow-premium" : "border-border/50"
                   )}
                 >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
                     <Badge variant="default" className="shadow-lg">
                       Most Popular
                     </Badge>
@@ -1805,9 +1833,10 @@ export default function Home() {
                     ))}
                   </ul>
                 </CardContent>
-              </Card>
+              </SpotlightCard>
+              </ScrollAnimation>
             ))}
-          </div>
+          </ScrollAnimation>
         </div>
       </section>
 

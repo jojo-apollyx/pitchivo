@@ -10,8 +10,22 @@ const config: Config = {
   theme: {
   	extend: {
   		fontFamily: {
-  			sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-  			display: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
+  			sans: [
+  				'Inter',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'"Segoe UI"',
+  				'Roboto',
+  				'sans-serif',
+  			],
+  			display: [
+  				'Outfit',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'"Segoe UI"',
+  				'Roboto',
+  				'sans-serif',
+  			],
   		},
   		colors: {
   			background: 'hsl(var(--background))',
@@ -69,7 +83,42 @@ const config: Config = {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
-  		}
+  		},
+      animation: {
+        "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
+        "slide-down-reveal": "slide-down-reveal 0.5s forwards",
+        "marquee": "marquee var(--duration) linear infinite",
+        "marquee-reverse": "marquee-reverse var(--duration) linear infinite",
+        "marquee-vertical": "marquee-vertical var(--duration) linear infinite",
+        "marquee-vertical-reverse": "marquee-vertical-reverse var(--duration) linear infinite",
+      },
+      keyframes: {
+        "border-beam": {
+          "100%": {
+            "offset-distance": "100%",
+          },
+        },
+        "slide-down-reveal": {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        "marquee": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(calc(-100% - var(--gap)))" },
+        },
+        "marquee-reverse": {
+          "0%": { transform: "translateX(calc(-100% - var(--gap)))" },
+          "100%": { transform: "translateX(0)" },
+        },
+        "marquee-vertical": {
+          "0%": { transform: "translateY(0)" },
+          "100%": { transform: "translateY(calc(-100% - var(--gap)))" },
+        },
+        "marquee-vertical-reverse": {
+          "0%": { transform: "translateY(calc(-100% - var(--gap)))" },
+          "100%": { transform: "translateY(0)" },
+        },
+      },
   	}
   },
   plugins: [require("tailwindcss-animate")],
