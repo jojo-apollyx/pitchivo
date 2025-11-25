@@ -32,7 +32,8 @@ export async function* extractCompanies(
     }
     
     const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
-    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
+    // Sort by _id for deterministic ordering (ensures skip counts are consistent across runs)
+    const query = collection.find({}).sort({ _id: 1 }).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -72,7 +73,8 @@ export async function* extractProducts(
     }
     
     const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
-    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
+    // Sort by _id for deterministic ordering (ensures skip counts are consistent across runs)
+    const query = collection.find({}).sort({ _id: 1 }).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -112,7 +114,8 @@ export async function* extractContacts(
     }
     
     const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
-    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
+    // Sort by _id for deterministic ordering (ensures skip counts are consistent across runs)
+    const query = collection.find({}).sort({ _id: 1 }).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -152,7 +155,8 @@ export async function* extractPurchases(
     }
     
     const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
-    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
+    // Sort by _id for deterministic ordering (ensures skip counts are consistent across runs)
+    const query = collection.find({}).sort({ _id: 1 }).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -192,7 +196,8 @@ export async function* extractIngredients(
     }
     
     const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
-    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
+    // Sort by _id for deterministic ordering (ensures skip counts are consistent across runs)
+    const query = collection.find({}).sort({ _id: 1 }).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
