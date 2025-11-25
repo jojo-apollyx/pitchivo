@@ -581,6 +581,7 @@ RULES:
 
 2. **Generate & Infer (CONSERVATIVE)**:
    - Generate ONLY: description, applications, category (if you have sufficient product data)
+   - For CAS number: Use your knowledge to infer the CAS number based on product information (product_name, chemical name, botanical_name, etc.). If you can confidently determine the CAS number from the product information, include it. If you cannot determine it with confidence, leave the cas_number field empty (do not include it in the output).
    - For certificates: Check the "document_type" field in NEW EXTRACTED FIELDS and add certificates accordingly:
      - If document_type = "Prop65_Statement" in NEW EXTRACTED FIELDS → ALWAYS add "California Prop 65 Compliant" to certificates array
      - If document_type = "Vegan_Certificate" in NEW EXTRACTED FIELDS → ALWAYS add "Vegan" to certificates array
