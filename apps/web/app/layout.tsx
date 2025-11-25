@@ -9,8 +9,8 @@ import { MotionProvider } from "@/components/providers/motion-provider";
 import "./../globals.css";
 
 // Import Google Fonts from local packages (no network required)
-import "@fontsource/inter/latin.css";
-import "@fontsource/outfit/latin.css";
+import "@fontsource/inter";
+import "@fontsource/outfit";
 
 export const viewport: Viewport = {
   width: "device-width",
