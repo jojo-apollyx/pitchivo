@@ -200,7 +200,7 @@ After migration, you can enrich the data using the enrichment framework:
 - **Hunter.io**: Domain validation, company enrichment, email finder
 - **Clearbit**: Detailed company and contact enrichment
 - **NeverBounce**: Email validation
-- **OpenAI**: Job title normalization
+- **Azure OpenAI**: Job title normalization (via Vercel AI SDK)
 
 ### Enrichment Pipeline
 

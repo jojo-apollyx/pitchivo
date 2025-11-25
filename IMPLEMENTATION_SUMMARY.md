@@ -68,10 +68,12 @@ scripts/migration/
 **Features:**
 - Streaming batch processing (no full JSON dumps)
 - Azure Blob Storage integration for raw data backup
+- **Company logo migration**: Downloads logos from URLs and uploads to Azure Blob Storage with public access
 - Automatic deduplication (domain, normalized name, email)
 - ID mapping for resolving references
 - Error handling and progress tracking
 - Verification script to check migration results
+- Test migration script for small datasets
 
 ### Phase 3: Enrichment Framework ✅
 
@@ -112,9 +114,11 @@ scripts/migration/
 ### Package Configuration ✅
 
 **Updated `package.json`:**
-- Added dependencies: `@azure/storage-blob`, `mongodb`, `openai`, `tsx`
+- Added dependencies: `@azure/storage-blob`, `mongodb`, `@ai-sdk/azure`, `ai` (Vercel AI SDK), `tsx`
+- Removed: `openai` (replaced with Vercel AI SDK + Azure OpenAI)
 - Added scripts:
-  - `migrate:mongodb` - Run MongoDB migration
+  - `migrate:mongodb` - Run full MongoDB migration
+  - `migrate:mongodb:test` - Run test migration with limited records
   - `migrate:verify` - Verify migration results
   - `enrich:organizations` - Enrich organizations
   - `enrich:contacts` - Enrich contacts
@@ -132,7 +136,8 @@ npm install
 This will install:
 - `@azure/storage-blob` - Azure Blob Storage client
 - `mongodb` - MongoDB driver
-- `openai` - OpenAI SDK
+- `@ai-sdk/azure` - Azure OpenAI integration for Vercel AI SDK
+- `ai` - Vercel AI SDK
 - `tsx` - TypeScript execution
 - `@types/node` - Node.js types
 
@@ -148,10 +153,16 @@ MONGODB_CONNECTION_STRING=mongodb://user:pass@host:27017/dbname
 AZURE_STORAGE_ACCOUNT_NAME=yourstorageaccount
 AZURE_STORAGE_ACCOUNT_KEY=yourstoragekey
 AZURE_STORAGE_CONTAINER_NAME=mongodb-raw-data
+AZURE_STORAGE_LOGO_CONTAINER_NAME=company-logos  # Optional, defaults to 'company-logos'
 
 # Supabase (if not already set)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Azure OpenAI (for enrichment)
+AZURE_OPENAI_RESOURCE_NAME=your-resource-name
+AZURE_OPENAI_DEPLOYMENT=gpt-4
+AZURE_OPENAI_API_KEY=your-api-key
 
 # Optional
 BATCH_SIZE=1000
@@ -232,17 +243,48 @@ FROM leads_enrichment_providers
 WHERE name = 'hunter_io';
 ```
 
+**For Azure OpenAI:**
+```sql
+-- Example: Add Azure OpenAI API key
+INSERT INTO leads_enrichment_api_keys (
+  provider_id, 
+  key_name, 
+  api_key, 
+  is_active, 
+  priority, 
+  free_tier_limit, 
+  free_tier_reset_date,
+  config
+)
+SELECT 
+  id, 
+  'Primary Key', 
+  'your-azure-openai-api-key-here', 
+  true, 
+  0, 
+  1000, 
+  DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month',
+  '{"resourceName": "your-resource-name", "deployment": "gpt-4"}'::jsonb
+FROM leads_enrichment_providers 
+WHERE name = 'openai';
+```
+
 Repeat for other providers as needed.
 
 ### Step 6: Test MongoDB Migration (Optional - Small Dataset First)
 
 **Before running full migration, test with a small dataset:**
 
-1. **Create a test script** (optional):
-   ```typescript
-   // Test with limit
-   // Modify scripts/migration/mongodb/index.ts temporarily
-   // Add limit to extract functions: extractCompanies(db, { batchSize: 100, limit: 10 })
+1. **Run test migration with limited records:**
+   ```bash
+   # Migrate 10 organizations (default)
+   npm run migrate:mongodb:test
+   
+   # Migrate specific number of records
+   npm run migrate:mongodb:test -- --limit=50
+   
+   # Skip first N records and migrate next batch
+   npm run migrate:mongodb:test -- --limit=20 --skip=10
    ```
 
 2. **Run verification after test:**
@@ -252,6 +294,7 @@ Repeat for other providers as needed.
 
 3. **Check results:**
    - Organizations migrated correctly
+   - Company logos migrated to Azure Blob Storage (public access)
    - Contacts linked to organizations
    - Signals created properly
    - Roles cached correctly

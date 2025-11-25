@@ -2,7 +2,7 @@
  * Azure Blob Storage helpers for storing raw MongoDB data
  */
 
-import { ContainerClient, BlockBlobClient } from '@azure/storage-blob';
+import { ContainerClient, BlockBlobClient, PublicAccessType } from '@azure/storage-blob';
 import { BatchMetadata } from '../shared/types';
 
 /**
@@ -38,14 +38,18 @@ export async function uploadBatchToAzure(
  * Create container if it doesn't exist
  */
 export async function ensureContainerExists(
-  containerClient: ContainerClient
+  containerClient: ContainerClient,
+  publicAccess: PublicAccessType = 'none' as PublicAccessType
 ): Promise<void> {
   const exists = await containerClient.exists();
   
   if (!exists) {
     await containerClient.create({
-      access: 'private', // or 'blob' for public read access
+      access: publicAccess,
     });
+  } else {
+    // Ensure access policy is set correctly
+    await containerClient.setAccessPolicy(publicAccess);
   }
 }
 

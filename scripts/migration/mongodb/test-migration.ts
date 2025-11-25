@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Main MongoDB migration script
+ * Test MongoDB migration script - migrates a limited number of records
  * 
  * Usage:
- *   npm run migrate:mongodb
+ *   npm run migrate:mongodb:test
+ *   npm run migrate:mongodb:test -- --limit 10
+ *   npm run migrate:mongodb:test -- --limit 50 --skip 0
  * 
  * Environment variables required:
  *   MONGODB_CONNECTION_STRING
  *   AZURE_STORAGE_ACCOUNT_NAME
  *   AZURE_STORAGE_ACCOUNT_KEY
- *   AZURE_STORAGE_CONTAINER_NAME
+ *   AZURE_STORAGE_CONTAINER_NAME (for raw data)
+ *   AZURE_STORAGE_LOGO_CONTAINER_NAME (for logos, defaults to 'company-logos')
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  */
@@ -24,12 +27,21 @@ import { extractCompanies, extractProducts, extractContacts, extractPurchases, e
 import { transformCompany, transformProduct, transformContact, transformPurchase } from './transform';
 import { deduplicateOrganization, deduplicateMarketItem, deduplicateContact } from './deduplicate';
 import { uploadOrganizations, uploadMarketItems, uploadContacts, uploadSignals } from './upload';
-import { migrateCompanyLogo } from './logo-migration';
 import { sleep } from '../shared/utils';
+import { migrateCompanyLogo } from './logo-migration';
 import type { MigrationConfig } from '../shared/types';
-import type { MongoCompanyLead, MongoProductLead, MongoPersonLead, MongoPurchaseLead } from './types';
+import type { MongoCompanyLead } from './types';
+
+// Parse command line arguments
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const limit = parseInt(args.find(arg => arg.startsWith('--limit='))?.split('=')[1] || '10', 10);
+  const skip = parseInt(args.find(arg => arg.startsWith('--skip='))?.split('=')[1] || '0', 10);
+  return { limit, skip };
+}
 
 // Load environment variables
+const { limit, skip } = parseArgs();
 const config: MigrationConfig = {
   mongo: {
     connectionString: process.env.MONGODB_CONNECTION_STRING || '',
@@ -43,7 +55,7 @@ const config: MigrationConfig = {
     url: process.env.SUPABASE_URL || '',
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
-  batchSize: parseInt(process.env.BATCH_SIZE || '1000', 10),
+  batchSize: Math.min(parseInt(process.env.BATCH_SIZE || '1000', 10), limit), // Don't exceed limit
 };
 
 // Validate configuration
@@ -60,7 +72,7 @@ function validateConfig() {
 }
 
 async function main() {
-  console.log('🚀 Starting MongoDB migration...\n');
+  console.log(`🧪 Starting TEST MongoDB migration (limit: ${limit}, skip: ${skip})...\n`);
   
   validateConfig();
   
@@ -94,12 +106,16 @@ async function main() {
     const itemIdMapping = new Map<string, string>();
     const contactIdMapping = new Map<string, string>();
     
-    // Step 1: Migrate Organizations
+    // Step 1: Migrate Organizations (with logo migration)
     console.log('📦 Step 1: Migrating organizations...');
     let orgBatchNum = 0;
     let totalOrgs = 0;
     
-    for await (const batch of extractCompanies(db, { batchSize: config.batchSize })) {
+    for await (const batch of extractCompanies(db, { 
+      batchSize: config.batchSize, 
+      limit, 
+      skip 
+    })) {
       orgBatchNum++;
       console.log(`  Processing batch ${orgBatchNum} (${batch.length} organizations)...`);
       
@@ -119,6 +135,7 @@ async function main() {
         let logoUrl = (mongoDoc as any).logo_url;
         if (logoUrl && typeof logoUrl === 'string') {
           try {
+            console.log(`    Migrating logo for ${mongoDoc.name}: ${logoUrl}`);
             const migratedLogoUrl = await migrateCompanyLogo(
               logoUrl,
               mongoDoc._id.toString(),
@@ -126,9 +143,10 @@ async function main() {
             );
             if (migratedLogoUrl) {
               logoUrl = migratedLogoUrl;
+              console.log(`    ✓ Logo migrated: ${migratedLogoUrl}`);
             }
           } catch (error: any) {
-            console.warn(`  ⚠️  Failed to migrate logo for ${mongoDoc.name}: ${error.message}`);
+            console.warn(`    ⚠️  Failed to migrate logo: ${error.message}`);
             // Continue with original URL if migration fails
           }
         }
@@ -163,15 +181,24 @@ async function main() {
       
       // Rate limiting
       await sleep(100);
+      
+      // Stop if we've reached the limit
+      if (totalOrgs >= limit) {
+        break;
+      }
     }
     
     // Step 2: Migrate Market Items (Products + Ingredients)
     console.log('📦 Step 2: Migrating market items...');
     let itemBatchNum = 0;
     let totalItems = 0;
+    const itemLimit = Math.floor(limit * 0.5); // Migrate fewer items for test
     
     // Migrate products
-    for await (const batch of extractProducts(db, { batchSize: config.batchSize })) {
+    for await (const batch of extractProducts(db, { 
+      batchSize: config.batchSize, 
+      limit: itemLimit 
+    })) {
       itemBatchNum++;
       console.log(`  Processing product batch ${itemBatchNum} (${batch.length} products)...`);
       
@@ -199,10 +226,15 @@ async function main() {
       
       totalItems += batch.length;
       await sleep(100);
+      
+      if (totalItems >= itemLimit) break;
     }
     
     // Migrate ingredients
-    for await (const batch of extractIngredients(db, { batchSize: config.batchSize })) {
+    for await (const batch of extractIngredients(db, { 
+      batchSize: config.batchSize, 
+      limit: itemLimit - totalItems 
+    })) {
       itemBatchNum++;
       console.log(`  Processing ingredient batch ${itemBatchNum} (${batch.length} ingredients)...`);
       
@@ -230,6 +262,8 @@ async function main() {
       
       totalItems += batch.length;
       await sleep(100);
+      
+      if (totalItems >= itemLimit) break;
     }
     
     console.log(`  Total items processed: ${totalItems}\n`);
@@ -238,8 +272,12 @@ async function main() {
     console.log('📦 Step 3: Migrating contacts...');
     let contactBatchNum = 0;
     let totalContacts = 0;
+    const contactLimit = Math.floor(limit * 0.3); // Migrate fewer contacts for test
     
-    for await (const batch of extractContacts(db, { batchSize: config.batchSize })) {
+    for await (const batch of extractContacts(db, { 
+      batchSize: config.batchSize, 
+      limit: contactLimit 
+    })) {
       contactBatchNum++;
       console.log(`  Processing batch ${contactBatchNum} (${batch.length} contacts)...`);
       
@@ -273,14 +311,20 @@ async function main() {
       console.log(`  Total contacts processed: ${totalContacts}\n`);
       
       await sleep(100);
+      
+      if (totalContacts >= contactLimit) break;
     }
     
-    // Step 4: Migrate Purchases (Signals)
+    // Step 4: Migrate Purchases (Signals) - skip for test or use very small limit
     console.log('📦 Step 4: Migrating purchases (signals)...');
     let purchaseBatchNum = 0;
     let totalPurchases = 0;
+    const purchaseLimit = Math.floor(limit * 0.2);
     
-    for await (const batch of extractPurchases(db, { batchSize: config.batchSize })) {
+    for await (const batch of extractPurchases(db, { 
+      batchSize: config.batchSize, 
+      limit: purchaseLimit 
+    })) {
       purchaseBatchNum++;
       console.log(`  Processing batch ${purchaseBatchNum} (${batch.length} purchases)...`);
       
@@ -325,14 +369,17 @@ async function main() {
       console.log(`  Total purchases processed: ${totalPurchases}\n`);
       
       await sleep(100);
+      
+      if (totalPurchases >= purchaseLimit) break;
     }
     
-    console.log('✅ Migration completed successfully!');
+    console.log('✅ Test migration completed successfully!');
     console.log(`\nSummary:`);
     console.log(`  - Organizations: ${totalOrgs}`);
     console.log(`  - Market Items: ${totalItems}`);
     console.log(`  - Contacts: ${totalContacts}`);
     console.log(`  - Signals: ${totalPurchases}`);
+    console.log(`\n💡 To run full migration, use: npm run migrate:mongodb`);
     
   } catch (error) {
     console.error('❌ Migration failed:', error);

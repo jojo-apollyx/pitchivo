@@ -19,6 +19,7 @@
     "@ai-sdk/react": "^2.0.87",
     "@ai-sdk/ui-utils": "^1.2.11",
     "@azure/openai": "^2.0.0",
+    "@azure/storage-blob": "^12.17.0",
     "@hookform/resolvers": "^3.10.0",
     "@napi-rs/canvas": "^0.1.82",
     "@radix-ui/react-alert-dialog": "^1.1.15",

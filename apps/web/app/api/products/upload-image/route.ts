@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { uploadProductImageToAzure } from '@/lib/azure-storage/product-images'
 
 /**
  * POST /api/products/upload-image
  * 
- * Upload product image to Supabase storage
+ * Upload product image to Azure Blob Storage
  */
 export async function POST(request: NextRequest) {
   try {
@@ -50,43 +51,47 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const fileExt = file.name.split('.').pop() || 'png'
     const filename = `product-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-    const storagePath = `${user.id}/products/${filename}`
 
     // Convert File to ArrayBuffer then to Buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Upload to Supabase storage
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(storagePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      })
+    // Upload to Azure Blob Storage
+    try {
+      const publicUrl = await uploadProductImageToAzure(
+        buffer,
+        filename,
+        file.type,
+        user.id
+      )
 
-    if (uploadError) {
-      console.error('[Upload Image] Upload error:', uploadError)
+      console.log('[Upload Image] Image uploaded to Azure Blob Storage:', publicUrl)
+
+      return NextResponse.json({
+        success: true,
+        image: {
+          url: publicUrl,
+          filename,
+          size: file.size,
+          type: file.type,
+        }
+      })
+    } catch (uploadError: any) {
+      console.error('[Upload Image] Azure upload error:', uploadError)
+      
+      // If Azure storage is not configured, return error
+      if (uploadError.message?.includes('Azure Storage credentials')) {
+        return NextResponse.json(
+          { error: 'Azure Storage is not configured. Please set AZURE_STORAGE_ACCOUNT_NAME and AZURE_STORAGE_ACCOUNT_KEY' },
+          { status: 500 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to upload image' },
+        { error: 'Failed to upload image to Azure Storage', details: uploadError.message },
         { status: 500 }
       )
     }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(storagePath)
-
-    return NextResponse.json({
-      success: true,
-      image: {
-        url: publicUrl,
-        filename,
-        storagePath,
-        size: file.size,
-        type: file.type,
-      }
-    })
   } catch (error) {
     console.error('[Upload Image] Error:', error)
     return NextResponse.json(

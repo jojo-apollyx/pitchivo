@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateProductImage, base64ToFile } from '@/lib/image-generation/service'
+import { generateProductImage } from '@/lib/image-generation/service'
 import { generateFoodSupplementImagePrompt, canGenerateProductImage } from '@/lib/industries/food-supplement/image-prompts'
+import { uploadBase64ProductImageToAzure } from '@/lib/azure-storage/product-images'
 
 /**
  * POST /api/products/generate-image
@@ -81,26 +82,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Convert base64 to File and upload to Supabase storage
+    // Upload to Azure Blob Storage
     const filename = `product-${Date.now()}-${Math.random().toString(36).substring(7)}.png`
-    const imageFile = base64ToFile(result.data.b64_json, filename, 'image/png')
-
-    // Upload to Supabase storage
-    const storagePath = `${user.id}/products/${filename}`
     
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(storagePath, imageFile, {
-        contentType: 'image/png',
-        upsert: false,
-      })
+    try {
+      const publicUrl = await uploadBase64ProductImageToAzure(
+        result.data.b64_json,
+        filename,
+        'image/png',
+        user.id
+      )
 
-    if (uploadError) {
-      console.error('[Generate Image] Upload error:', uploadError)
+      console.log('[Generate Image] Image generated and uploaded to Azure Blob Storage:', publicUrl)
+
+      return NextResponse.json({
+        success: true,
+        image: {
+          url: publicUrl,
+          filename,
+          revised_prompt: result.data.revised_prompt,
+        }
+      })
+    } catch (uploadError: any) {
+      console.error('[Generate Image] Azure upload error:', uploadError)
       
-      // If bucket doesn't exist, return base64 data for frontend to handle
-      if (uploadError.message?.includes('not found')) {
-        console.log('[Generate Image] Storage bucket not found, returning base64 data')
+      // If Azure storage is not configured, return base64 data for frontend to handle
+      if (uploadError.message?.includes('Azure Storage credentials')) {
+        console.log('[Generate Image] Azure Storage not configured, returning base64 data')
         return NextResponse.json({
           success: true,
           image: {
@@ -108,32 +116,15 @@ export async function POST(request: NextRequest) {
             filename,
             revised_prompt: result.data.revised_prompt,
           },
-          message: 'Image generated successfully (storage not configured)'
+          message: 'Image generated successfully (Azure Storage not configured)'
         })
       }
       
       return NextResponse.json(
-        { error: 'Failed to upload image' },
+        { error: 'Failed to upload image to Azure Storage', details: uploadError.message },
         { status: 500 }
       )
     }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(storagePath)
-
-    console.log('[Generate Image] Image generated and uploaded successfully:', publicUrl)
-
-    return NextResponse.json({
-      success: true,
-      image: {
-        url: publicUrl,
-        filename,
-        storagePath,
-        revised_prompt: result.data.revised_prompt,
-      }
-    })
   } catch (error) {
     console.error('[Generate Image] Error:', error)
     return NextResponse.json(

@@ -52,7 +52,7 @@
 - [x] Implemented Hunter.io provider
 - [x] Implemented Clearbit provider
 - [x] Implemented NeverBounce provider
-- [x] Implemented OpenAI provider
+- [x] Implemented Azure OpenAI provider (via Vercel AI SDK)
 
 **Files Created:**
 - `scripts/migration/enrichment/providers/hunter-io.ts`
@@ -65,7 +65,8 @@
 ### Dependencies Added
 - `@azure/storage-blob`: ^12.17.0
 - `mongodb`: ^6.3.0
-- `openai`: ^6.8.1
+- `@ai-sdk/azure`: ^2.0.60
+- `ai`: ^5.0.87 (Vercel AI SDK)
 - `tsx`: ^4.7.0 (dev)
 - `@types/node`: ^20 (dev)
 
