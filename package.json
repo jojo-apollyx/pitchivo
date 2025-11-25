@@ -27,6 +27,8 @@
     "supabase:functions:serve:send-email": "supabase functions serve send-email --env-file .env.local",
     "migrate:mongodb": "tsx scripts/migration/mongodb/index.ts",
     "migrate:mongodb:test": "tsx scripts/migration/mongodb/test-migration.ts",
+    "migrate:mongodb:prod": "tsx scripts/migration/mongodb/index.ts --env=.env.prod",
+    "migrate:mongodb:test:prod": "tsx scripts/migration/mongodb/test-migration.ts --env=.env.prod",
     "migrate:verify": "tsx scripts/migration/mongodb/verify.ts",
     "enrich:organizations": "tsx scripts/migration/enrichment/pipeline.ts organizations",
     "enrich:contacts": "tsx scripts/migration/enrichment/pipeline.ts contacts"
@@ -43,6 +45,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "dotenv": "^17.2.3",
     "supabase": "^2.51.0",
     "tsx": "^4.7.0",
     "turbo": "^2.0.3"

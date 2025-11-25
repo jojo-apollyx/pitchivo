@@ -13,7 +13,29 @@
  *   AZURE_STORAGE_CONTAINER_NAME
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
+ * 
+ * Note: Loads environment variables from .env.local file by default
+ *       Can specify different file with --env-file=.env.prod
  */
+
+// Parse command line arguments first to get env file
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const envFile = args.find(arg => arg.startsWith('--env-file='))?.split('=')[1] || '.env.local';
+  return { envFile };
+}
+
+// Load environment variables from specified file (defaults to .env.local)
+import { config as loadEnv } from 'dotenv';
+import { resolve } from 'path';
+
+const { envFile } = parseArgs();
+const envPath = envFile.startsWith('/') 
+  ? envFile 
+  : resolve(process.cwd(), 'apps/web', envFile);
+
+console.log(`📄 Loading environment from: ${envPath}`);
+loadEnv({ path: envPath });
 
 import { MongoClient } from 'mongodb';
 import { getSupabaseClient } from '../shared/supabase-client';
@@ -33,6 +55,7 @@ import type { MongoCompanyLead, MongoProductLead, MongoPersonLead, MongoPurchase
 const config: MigrationConfig = {
   mongo: {
     connectionString: process.env.MONGODB_CONNECTION_STRING || '',
+    databaseName: process.env.MONGODB_DATABASE_NAME || 'flash', // Default to 'flash'
   },
   azure: {
     accountName: process.env.AZURE_STORAGE_ACCOUNT_NAME || '',
@@ -40,7 +63,7 @@ const config: MigrationConfig = {
     containerName: process.env.AZURE_STORAGE_CONTAINER_NAME || 'mongodb-raw-data',
   },
   supabase: {
-    url: process.env.SUPABASE_URL || '',
+    url: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   batchSize: parseInt(process.env.BATCH_SIZE || '1000', 10),
@@ -69,23 +92,34 @@ async function main() {
   const supabase = getSupabaseClient(config.supabase);
   const containerClient = getAzureContainerClient(config.azure);
   
-  // Logo container (public access)
+  // Logo container (public access) - MUST be 'company-logos', not the raw data container
   const logoContainerName = process.env.AZURE_STORAGE_LOGO_CONTAINER_NAME || 'company-logos';
+  // Ensure we're using the logo container, not the raw data container
   const logoContainerClient = getAzureContainerClient({
-    ...config.azure,
-    containerName: logoContainerName,
+    accountName: config.azure.accountName,
+    accountKey: config.azure.accountKey,
+    containerName: logoContainerName, // Explicitly use logo container name
   });
+  
+  // Verify container names are different
+  if (config.azure.containerName === logoContainerName) {
+    console.warn(`⚠️  WARNING: Logo container name matches raw data container name: ${logoContainerName}`);
+    console.warn(`    Logos should go to 'company-logos', not '${config.azure.containerName}'`);
+  }
   
   try {
     // Connect to MongoDB
     console.log('📡 Connecting to MongoDB...');
     await mongoClient.connect();
-    const db = mongoClient.db();
+    
+    // Use specified database name or extract from connection string
+    const dbName = config.mongo.databaseName || 'flash';
+    const db = mongoClient.db(dbName);
     console.log('✓ Connected to MongoDB\n');
     
     // Ensure Azure containers exist
     console.log('☁️  Setting up Azure Blob Storage...');
-    await ensureContainerExists(containerClient, 'none' as PublicAccessType); // Raw data is private
+    await ensureContainerExists(containerClient); // Raw data is private (no access parameter)
     await ensureContainerExists(logoContainerClient, 'blob' as PublicAccessType); // Logos are public
     console.log('✓ Azure containers ready (logos container is public)\n');
     
@@ -134,9 +168,9 @@ async function main() {
         }
         
         const transformed = transformCompany(mongoDoc);
-        // Update logo URL in profile_data
+        // Update logo URL in column (not profile_data)
         if (logoUrl) {
-          transformed.profile_data.logo_url = logoUrl;
+          transformed.logo_url = logoUrl;
         }
         
         const existingId = await deduplicateOrganization(supabase, transformed);
@@ -277,6 +311,23 @@ async function main() {
     
     // Step 4: Migrate Purchases (Signals)
     console.log('📦 Step 4: Migrating purchases (signals)...');
+    
+    // Get or create MongoDB Migration source
+    let sourceId: string | null = null;
+    const { data: source } = await supabase
+      .from('leads_sources')
+      .select('id')
+      .eq('name', 'MongoDB Migration')
+      .single();
+    
+    if (source) {
+      sourceId = source.id;
+      console.log(`  Using source: MongoDB Migration (${sourceId})`);
+    } else {
+      console.warn('  ⚠️  MongoDB Migration source not found in leads_sources table');
+      console.warn('  Run migration 20251126000006_seed_leads_sources.sql to create it');
+    }
+    
     let purchaseBatchNum = 0;
     let totalPurchases = 0;
     
@@ -287,17 +338,40 @@ async function main() {
       await uploadBatchToAzure(containerClient, 'PurchaseLead', purchaseBatchNum, batch);
       
       const transformedSignals = [];
+      let skippedNoOrg = 0;
+      let skippedNoItem = 0;
+      let skippedNoName = 0;
+      
       for (const mongoDoc of batch) {
         // Resolve buyer company
         const buyerMongoId = mongoDoc.buyer_company?.$id?.$oid;
         const orgId = buyerMongoId ? orgIdMapping.get(buyerMongoId) || null : null;
         
+        if (!orgId) {
+          skippedNoOrg++;
+          continue;
+        }
+        
         // Resolve item (by ingredient_base_name)
         const itemName = mongoDoc.ingredient_base_name;
         let itemId: string | null = null;
-        if (itemName) {
-          // Try to find item by normalized name
-          const normalizedName = itemName.toLowerCase().trim();
+        
+        if (!itemName) {
+          skippedNoName++;
+          continue;
+        }
+        
+        // Try to find item using resolve_market_item function (checks name and aliases)
+        const normalizedName = itemName.toLowerCase().trim();
+        const { data: resolvedItemId, error: rpcError } = await supabase.rpc('resolve_market_item', {
+          p_name: itemName,
+          p_aliases: null
+        });
+        
+        if (resolvedItemId && !rpcError) {
+          itemId = resolvedItemId;
+        } else {
+          // Fallback: Try direct normalized name match
           const { data: item } = await supabase
             .from('leads_market_items')
             .select('id')
@@ -310,19 +384,30 @@ async function main() {
           }
         }
         
-        if (orgId && itemId) {
-          const transformed = transformPurchase(mongoDoc, orgId, itemId);
-          transformedSignals.push(transformed);
+        if (!itemId) {
+          skippedNoItem++;
+          continue;
         }
+        
+        // Create signal
+        const transformed = transformPurchase(mongoDoc, orgId, itemId, sourceId);
+        transformedSignals.push(transformed);
+      }
+      
+      // Log statistics
+      if (skippedNoOrg > 0 || skippedNoItem > 0 || skippedNoName > 0) {
+        console.log(`    Skipped: ${skippedNoOrg} (no org), ${skippedNoItem} (no item), ${skippedNoName} (no name)`);
       }
       
       if (transformedSignals.length > 0) {
         await uploadSignals(supabase, transformedSignals);
         console.log(`  ✓ Uploaded ${transformedSignals.length} signals`);
+      } else {
+        console.log(`  ⚠️  No signals created from this batch (check org/item resolution)`);
       }
       
       totalPurchases += batch.length;
-      console.log(`  Total purchases processed: ${totalPurchases}\n`);
+      console.log(`  Total purchases processed: ${totalPurchases} (${transformedSignals.length} signals created)\n`);
       
       await sleep(100);
     }

@@ -25,11 +25,14 @@ export async function* extractCompanies(
   let totalProcessed = 0;
   
   while (true) {
-    const query = collection.find({}).skip(currentSkip).limit(batchSize);
-    
-    if (limit && totalProcessed >= limit) {
+    // Calculate how many to fetch in this batch (respect limit)
+    const remaining = limit ? Math.max(0, limit - totalProcessed) : batchSize;
+    if (limit && remaining <= 0) {
       break;
     }
+    
+    const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
+    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -62,11 +65,14 @@ export async function* extractProducts(
   let totalProcessed = 0;
   
   while (true) {
-    const query = collection.find({}).skip(currentSkip).limit(batchSize);
-    
-    if (limit && totalProcessed >= limit) {
+    // Calculate how many to fetch in this batch (respect limit)
+    const remaining = limit ? Math.max(0, limit - totalProcessed) : batchSize;
+    if (limit && remaining <= 0) {
       break;
     }
+    
+    const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
+    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -99,11 +105,14 @@ export async function* extractContacts(
   let totalProcessed = 0;
   
   while (true) {
-    const query = collection.find({}).skip(currentSkip).limit(batchSize);
-    
-    if (limit && totalProcessed >= limit) {
+    // Calculate how many to fetch in this batch (respect limit)
+    const remaining = limit ? Math.max(0, limit - totalProcessed) : batchSize;
+    if (limit && remaining <= 0) {
       break;
     }
+    
+    const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
+    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -136,11 +145,14 @@ export async function* extractPurchases(
   let totalProcessed = 0;
   
   while (true) {
-    const query = collection.find({}).skip(currentSkip).limit(batchSize);
-    
-    if (limit && totalProcessed >= limit) {
+    // Calculate how many to fetch in this batch (respect limit)
+    const remaining = limit ? Math.max(0, limit - totalProcessed) : batchSize;
+    if (limit && remaining <= 0) {
       break;
     }
+    
+    const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
+    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
@@ -173,11 +185,14 @@ export async function* extractIngredients(
   let totalProcessed = 0;
   
   while (true) {
-    const query = collection.find({}).skip(currentSkip).limit(batchSize);
-    
-    if (limit && totalProcessed >= limit) {
+    // Calculate how many to fetch in this batch (respect limit)
+    const remaining = limit ? Math.max(0, limit - totalProcessed) : batchSize;
+    if (limit && remaining <= 0) {
       break;
     }
+    
+    const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
+    const query = collection.find({}).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     
