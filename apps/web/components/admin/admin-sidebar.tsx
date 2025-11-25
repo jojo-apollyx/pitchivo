@@ -13,7 +13,8 @@ import {
   Shield,
   BarChart3,
   TestTube2,
-  ArrowLeft
+  ArrowLeft,
+  Database
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -57,6 +58,11 @@ const menuItems = [
     label: 'Domain Control',
     href: '/admin/domains',
     icon: Shield,
+  },
+  {
+    label: 'Leads Management',
+    href: '/admin/leads',
+    icon: Database,
   },
   {
     label: 'System Metrics',

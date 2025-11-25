@@ -24,16 +24,25 @@
     "supabase:dump-schema": "node scripts/dump-schema.js",
     "supabase:deploy": "supabase functions deploy",
     "supabase:functions:serve": "supabase functions serve --env-file .env.local",
-    "supabase:functions:serve:send-email": "supabase functions serve send-email --env-file .env.local"
+    "supabase:functions:serve:send-email": "supabase functions serve send-email --env-file .env.local",
+    "migrate:mongodb": "tsx scripts/migration/mongodb/index.ts",
+    "migrate:verify": "tsx scripts/migration/mongodb/verify.ts",
+    "enrich:organizations": "tsx scripts/migration/enrichment/pipeline.ts organizations",
+    "enrich:contacts": "tsx scripts/migration/enrichment/pipeline.ts contacts"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.17.0",
     "@supabase/supabase-js": "^2.45.4",
+    "mongodb": "^6.3.0",
+    "openai": "^6.8.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@types/node": "^20",
     "supabase": "^2.51.0",
+    "tsx": "^4.7.0",
     "turbo": "^2.0.3"
   }
 }
