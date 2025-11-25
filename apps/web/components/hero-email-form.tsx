@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BorderBeam } from "@/components/ui/border-beam";
 import { createClient } from "@/lib/supabase/client";
 
 // Email validation
@@ -101,11 +100,11 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
       if (!invited) {
         toast(
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-accent-surface flex items-center justify-center">
               <span className="text-lg">🎉</span>
             </div>
             <div>
-              <p className="font-semibold text-foreground">Join Our Waitlist!</p>
+              <p className="font-medium text-foreground">Join Our Waitlist!</p>
               <p className="text-sm text-muted-foreground mt-1">
                 We&apos;re currently in private beta. Join the waitlist to get early access when we launch.
               </p>
@@ -150,7 +149,7 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
   };
 
   return (
-    <form id="hero-cta-form" onSubmit={handleMagicLinkSubmit} className="mt-10">
+    <form id="hero-cta-form" onSubmit={handleMagicLinkSubmit} className="mt-8">
       <div className="flex max-w-lg flex-col gap-3 sm:flex-row">
         <Input
           id="hero-email-input"
@@ -158,7 +157,7 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
           placeholder="Enter your company email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="!h-16 sm:!h-14 flex-1 text-base bg-background/95 backdrop-blur-sm border-border/50 shadow-sm px-4 py-3"
+          className="h-12 sm:h-12 flex-1 text-base bg-background border-border rounded-md px-4 focus:border-primary-dark focus:ring-2 focus:ring-primary/20"
           disabled={isLoading}
           aria-label="Company email address"
         />
@@ -166,17 +165,13 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
           id="hero-get-started-button"
           type="submit"
           size="lg"
-          className="group relative overflow-hidden rounded-full h-12 sm:h-14 px-8 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20 shadow-lg"
+          className="h-12 px-6 text-base font-medium rounded-md bg-primary-dark hover:bg-primary-darker text-white transition-colors duration-200"
           disabled={isLoading}
         >
-          <span className="relative z-10 flex items-center">
-            {isLoading ? "Sending..." : "Get Started"}
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </span>
-          <BorderBeam size={70} duration={3} delay={0} className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {isLoading ? "Sending..." : "Get Started"}
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
     </form>
   );
 }
-

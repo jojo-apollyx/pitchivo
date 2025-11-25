@@ -2,8 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 /* Make toast text selectable - override Sonner's default styles */
-/* Target all possible Sonner toast elements with maximum specificity */
 [data-sonner-toast],
 [data-sonner-toast] *,
 [data-sonner-toast] *::before,
@@ -67,111 +69,125 @@ html body [data-sonner-toast] * {
 
 @layer base {
   :root {
-    /* Premium Light Theme - Mint Blue Palette */
-    --background: 0 0% 100%;           /* white */
-    --foreground: 0 0% 5%;             /* gray-950 */
+    /* ============================================
+       NOTION-INSPIRED LIGHT MINIMALISM PALETTE
+       ============================================ */
     
-    --card: 0 0% 100%;                 /* white */
-    --card-foreground: 0 0% 5%;        /* gray-950 */
+    /* Primary Backgrounds */
+    --background: 0 0% 100%;              /* #FFFFFF - Pure White */
+    --background-secondary: 0 0% 97%;     /* #F7F7F7 - Light Gray for sections */
+    --foreground: 0 0% 20%;               /* #333333 - Dark Charcoal (never pure black) */
     
-    --popover: 0 0% 100%;              /* white */
-    --popover-foreground: 0 0% 5%;     /* gray-950 */
+    /* Card & Popover - Same as background for unified feel */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 20%;
     
-    /* Primary: Mint Green #ADEBB3 (default) */
-    --primary: 126 61% 80%;              /* #ADEBB3 - default mint green */
-    --primary-foreground: 0 0% 5%;       /* gray-950 - dark text on light primary */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 20%;
+    
+    /* Brand Accent: Soft Pastel Blue #AEC6CF */
+    --primary: 192 30% 75%;               /* #AEC6CF - Pastel Blue */
+    --primary-foreground: 0 0% 100%;      /* White text on primary */
     
     /* Primary Variants */
-    --primary-light: 126 61% 90%;        /* lighter mint green */
-    --primary-dark: 126 61% 70%;        /* darker mint green */
-    --primary-darker: 126 61% 60%;       /* darkest mint green */
+    --primary-light: 192 30% 85%;         /* Lighter pastel blue */
+    --primary-dark: 192 35% 55%;          /* Darker for hover states */
+    --primary-darker: 192 40% 45%;        /* Darkest for emphasis */
     
-    /* Accent Colors - for selected states, highlights */
-    --accent-color: 126 61% 80%;         /* #ADEBB3 - use primary as accent */
-    --accent-color-foreground: 0 0% 5%;  /* gray-950 - dark text on accent */
+    /* Accent Surface - 10% opacity tint for secondary buttons */
+    --accent-surface: 192 30% 95%;        /* Very light pastel blue tint */
     
-    /* Additional Accent Variants */
-    --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
-    --accent-pink: 343 100% 88%;        /* #ffc0d1 - pink */
-    --accent-mint-light: 162 60% 78%;   /* #a6e9d7 - light mint */
+    /* Additional Accent Colors for variety */
+    --accent-color: 192 30% 75%;          /* Same as primary */
+    --accent-color-foreground: 0 0% 100%;
+    --accent-beige: 20 25% 67%;           /* #bea698 - beige/tan */
+    --accent-pink: 343 100% 88%;          /* #ffc0d1 - pink */
+    --accent-mint-light: 162 60% 78%;     /* #a6e9d7 - light mint */
     
-    --secondary: 0 0% 96%;             /* gray-100 */
-    --secondary-foreground: 0 0% 9%;   /* gray-900 */
+    /* Secondary & Muted */
+    --secondary: 0 0% 97%;                /* #F7F7F7 */
+    --secondary-foreground: 0 0% 20%;     /* #333333 */
     
-    --muted: 0 0% 96%;                 /* gray-100 */
-    --muted-foreground: 0 0% 45%;      /* gray-500 */
+    --muted: 0 0% 97%;                    /* #F7F7F7 */
+    --muted-foreground: 0 0% 40%;         /* #666666 - Medium Gray */
     
-    --accent: 0 0% 96%;                /* gray-100 */
-    --accent-foreground: 0 0% 9%;      /* gray-900 */
+    --accent: 0 0% 97%;
+    --accent-foreground: 0 0% 20%;
     
-    --destructive: 0 84% 60%;          /* red-500 */
-    --destructive-foreground: 0 0% 100%; /* white */
+    /* Destructive */
+    --destructive: 0 65% 55%;             /* Softer red */
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 0 0% 90%;                /* gray-200 */
-    --input: 0 0% 90%;                 /* gray-200 */
-    --ring: 126 61% 80%;                /* primary mint green */
+    /* Borders & Inputs - Very subtle */
+    --border: 0 0% 90%;                   /* #E5E5E5 - Subtle borders */
+    --border-hover: 0 0% 80%;             /* Slightly darker on hover */
+    --input: 0 0% 90%;
+    --ring: 192 35% 55%;                  /* Primary dark for focus rings */
     
-    --radius: 0.75rem;                 /* 12px - premium rounded */
+    /* Border Radius - Soft rounded (4-6px) */
+    --radius: 0.375rem;                   /* 6px - Not pill-shaped, not sharp */
     
     /* Chart Colors */
-    --chart-1: 126 61% 80%;             /* primary mint green */
-    --chart-2: 126 61% 90%;             /* primary light */
-    --chart-3: 126 61% 70%;             /* primary dark */
-    --chart-4: 126 61% 60%;             /* primary darker */
-    --chart-5: 35 100% 74%;             /* accent yellow */
+    --chart-1: 192 30% 75%;
+    --chart-2: 192 30% 85%;
+    --chart-3: 192 35% 55%;
+    --chart-4: 192 40% 45%;
+    --chart-5: 35 100% 74%;
   }
   
   .dark {
-    /* Premium Dark Theme - Mint Blue Palette */
-    --background: 0 0% 0%;             /* black */
-    --foreground: 0 0% 100%;           /* white */
+    /* ============================================
+       NOTION-INSPIRED DARK THEME
+       ============================================ */
     
-    --card: 0 0% 7%;                   /* gray-950 */
-    --card-foreground: 0 0% 100%;      /* white */
+    --background: 0 0% 8%;                /* #141414 - Near black */
+    --background-secondary: 0 0% 12%;     /* #1F1F1F */
+    --foreground: 0 0% 93%;               /* #EDEDED - Off-white */
     
-    --popover: 0 0% 7%;                /* gray-950 */
-    --popover-foreground: 0 0% 100%;   /* white */
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 93%;
     
-    /* Primary: Mint Green #ADEBB3 (default) */
-    --primary: 126 61% 80%;            /* #ADEBB3 - default mint green */
-    --primary-foreground: 0 0% 5%;     /* gray-950 - dark text on light primary */
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 93%;
     
-    /* Primary Variants */
-    --primary-light: 126 61% 90%;      /* lighter mint green */
-    --primary-dark: 126 61% 70%;       /* darker mint green */
-    --primary-darker: 126 61% 60%;     /* darkest mint green */
+    /* Primary: Pastel Blue */
+    --primary: 192 35% 65%;
+    --primary-foreground: 0 0% 8%;
     
-    /* Accent Colors - for selected states, highlights */
-    --accent-color: 126 61% 80%;       /* #ADEBB3 - use primary as accent */
-    --accent-color-foreground: 0 0% 5%; /* gray-950 - dark text on accent */
+    --primary-light: 192 30% 75%;
+    --primary-dark: 192 40% 55%;
+    --primary-darker: 192 45% 45%;
     
-    /* Additional Accent Variants */
-    --accent-beige: 20 25% 67%;         /* #bea698 - beige/tan */
-    --accent-pink: 343 100% 88%;        /* #ffc0d1 - pink */
-    --accent-mint-light: 162 60% 78%;   /* #a6e9d7 - light mint */
+    --accent-surface: 192 30% 15%;
     
-    --secondary: 0 0% 15%;             /* gray-900 */
-    --secondary-foreground: 0 0% 100%; /* white */
+    --accent-color: 192 35% 65%;
+    --accent-color-foreground: 0 0% 8%;
+    --accent-beige: 20 25% 50%;
+    --accent-pink: 343 70% 70%;
+    --accent-mint-light: 162 50% 60%;
     
-    --muted: 0 0% 15%;                 /* gray-900 */
-    --muted-foreground: 0 0% 64%;      /* gray-400 */
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 93%;
     
-    --accent: 0 0% 15%;                /* gray-900 */
-    --accent-foreground: 0 0% 100%;    /* white */
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
     
-    --destructive: 0 84% 60%;          /* red-500 */
-    --destructive-foreground: 0 0% 100%; /* white */
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 93%;
     
-    --border: 0 0% 15%;                /* gray-800 */
-    --input: 0 0% 15%;                 /* gray-800 */
-    --ring: 126 61% 80%;                /* primary mint green */
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 100%;
     
-    /* Chart Colors */
-    --chart-1: 126 61% 80%;             /* primary mint green */
-    --chart-2: 126 61% 90%;             /* primary light */
-    --chart-3: 126 61% 70%;             /* primary dark */
-    --chart-4: 126 61% 60%;             /* primary darker */
-    --chart-5: 35 100% 74%;             /* accent yellow */
+    --border: 0 0% 20%;
+    --border-hover: 0 0% 30%;
+    --input: 0 0% 20%;
+    --ring: 192 35% 65%;
+    
+    --chart-1: 192 35% 65%;
+    --chart-2: 192 30% 75%;
+    --chart-3: 192 40% 55%;
+    --chart-4: 192 45% 45%;
+    --chart-5: 35 80% 65%;
   }
 }
 
@@ -182,16 +198,18 @@ html body [data-sonner-toast] * {
   
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden; /* Prevent horizontal scroll */
-    touch-action: pan-x pan-y; /* Allow panning but disable pinch zoom */
-    -webkit-touch-callout: none; /* Disable callout on iOS */
-    -webkit-user-select: none; /* Disable text selection on iOS */
-    user-select: none; /* Disable text selection */
+    overflow-x: hidden;
+    touch-action: pan-x pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    line-height: 1.6; /* Good line height for readability */
   }
   
   /* Enable text selection for specific elements */
@@ -200,20 +218,40 @@ html body [data-sonner-toast] * {
     user-select: text;
   }
   
+  /* Typography Hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600; /* Semi-bold */
+    color: hsl(var(--foreground));
+    letter-spacing: -0.02em; /* Tighter letter spacing */
+    line-height: 1.2;
+  }
+  
+  p {
+    font-weight: 400; /* Regular */
+    color: hsl(var(--foreground));
+    line-height: 1.6;
+  }
+  
+  /* Meta/Labels styling */
+  .text-meta {
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+  }
+  
   /* Ensure no horizontal overflow */
   html {
     overflow-x: hidden;
-    touch-action: pan-x pan-y; /* Disable pinch zoom on html level */
-    -ms-touch-action: pan-x pan-y; /* IE/Edge */
+    touch-action: pan-x pan-y;
+    -ms-touch-action: pan-x pan-y;
   }
   
   /* Additional zoom prevention for PWA */
   * {
-    touch-action: pan-x pan-y; /* Disable pinch zoom on all elements */
-    -ms-touch-action: pan-x pan-y; /* IE/Edge */
-    -webkit-touch-callout: none; /* Disable callout on iOS */
-    -webkit-user-select: none; /* Disable text selection on iOS */
-    user-select: none; /* Disable text selection */
+    touch-action: pan-x pan-y;
+    -ms-touch-action: pan-x pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
   
   /* Re-enable text selection for specific elements */
@@ -236,17 +274,24 @@ html body [data-sonner-toast] * {
   }
 }
 
-/* Premium Animations */
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+/* ============================================
+   GLOBAL TRANSITIONS - Premium Feel
+   ============================================ */
+@layer utilities {
+  /* Apply smooth transitions to all interactive elements */
+  .transition-smooth {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* Links, buttons, inputs should have smooth transitions */
+  a, button, input, textarea, select {
+    transition: all 0.2s ease-in-out;
+  }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
+/* ============================================
+   ANIMATIONS
+   ============================================ */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -303,6 +348,16 @@ html body [data-sonner-toast] * {
   }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 @keyframes greenFlash {
   0% {
     background-color: transparent;
@@ -326,26 +381,16 @@ html body [data-sonner-toast] * {
   }
 }
 
-@keyframes aurora {
+/* Subtle aurora for landing page - simplified */
+@keyframes aurora-subtle {
   0% {
-    background-position: 0% 0%;
-    transform: scale(1.1) rotate(0deg);
-  }
-  25% {
-    background-position: 100% 0%;
-    transform: scale(1.15) rotate(1deg);
+    opacity: 0.15;
   }
   50% {
-    background-position: 100% 100%;
-    transform: scale(1.1) rotate(0deg);
-  }
-  75% {
-    background-position: 0% 100%;
-    transform: scale(1.15) rotate(-1deg);
+    opacity: 0.25;
   }
   100% {
-    background-position: 0% 0%;
-    transform: scale(1.1) rotate(0deg);
+    opacity: 0.15;
   }
 }
 
@@ -359,11 +404,11 @@ html body [data-sonner-toast] * {
   }
   
   .animate-fadeIn {
-    animation: fadeIn 0.5s ease-out;
+    animation: fadeIn 0.3s ease-out;
   }
   
   .animate-slideUp {
-    animation: slideUp 0.5s ease-out;
+    animation: slideUp 0.4s ease-out;
   }
   
   .animate-scaleIn {
@@ -371,15 +416,11 @@ html body [data-sonner-toast] * {
   }
   
   .animate-slideDown {
-    animation: slideDown 0.5s ease-out;
+    animation: slideDown 0.4s ease-out;
   }
 
   .animate-slideDown-reveal {
     animation: slideDownReveal 0.5s ease-out;
-  }
-  
-  .animate-aurora {
-    animation: aurora 8s ease-in-out infinite;
   }
   
   .animate-pulse {
@@ -394,126 +435,236 @@ html body [data-sonner-toast] * {
     animation: slideInFromTop 0.3s ease-out;
   }
   
-  /* Premium Gradients */
+  /* ============================================
+     NOTION-INSPIRED GRADIENTS & BACKGROUNDS
+     ============================================ */
+  
+  /* Subtle white to pale gray gradient for headers */
+  .bg-gradient-subtle {
+    background: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--background-secondary) / 0.5));
+  }
+  
+  /* Premium gradient - very subtle */
   .bg-gradient-premium {
-    background: linear-gradient(to bottom right, hsl(var(--background)), hsl(var(--background)), hsl(var(--primary) / 0.05));
+    background: linear-gradient(to bottom right, hsl(var(--background)), hsl(var(--background)), hsl(var(--primary) / 0.03));
   }
   
   .bg-gradient-premium-dark {
     background: linear-gradient(to bottom right, hsl(var(--background)), hsl(var(--background)), hsl(var(--primary) / 0.05));
   }
   
+  /* Accent gradient for buttons */
   .bg-gradient-accent {
-    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary) / 0.9));
+    background: linear-gradient(to right, hsl(var(--primary-dark)), hsl(var(--primary)));
   }
   
   .bg-gradient-accent-soft {
-    background: linear-gradient(to bottom right, hsl(var(--primary)), hsl(var(--primary)), hsl(var(--primary) / 0.8));
+    background: linear-gradient(to bottom right, hsl(var(--primary)), hsl(var(--primary-light)));
   }
   
+  /* Mesh gradient - subtle radial */
   .bg-gradient-mesh {
-    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.2), hsl(var(--background)), hsl(var(--background)));
+    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.08), hsl(var(--background)), hsl(var(--background)));
   }
   
   .bg-gradient-mesh-dark {
-    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.1), hsl(var(--background)), hsl(var(--background)));
+    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.06), hsl(var(--background)), hsl(var(--background)));
   }
   
+  /* Aurora - subtle and minimal */
   .bg-aurora {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--accent-color)) 0%,
-      hsl(var(--accent-pink)) 15%,
-      hsl(var(--primary)) 30%,
-      hsl(var(--accent-mint-light)) 45%,
-      hsl(var(--accent-beige)) 60%,
-      hsl(var(--primary)) 75%,
-      hsl(var(--accent-color)) 90%,
-      hsl(var(--accent-mint-light)) 100%
-    ) !important;
-    background-size: 300% 300% !important;
-    animation: aurora 8s ease-in-out infinite !important;
-    filter: blur(40px) !important;
-    opacity: 0.25 !important;
-    width: 100% !important;
-    height: 90vh !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: -1 !important;
-    clip-path: polygon(0 0, 100% 0, 100% 55%, 0 85%) !important;
+    background: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      hsl(var(--primary) / 0.15),
+      transparent
+    );
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70vh;
+    z-index: -1;
+    pointer-events: none;
+    animation: aurora-subtle 8s ease-in-out infinite;
   }
   
   .dark .bg-aurora {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--accent-color)) 0%,
-      hsl(var(--accent-pink)) 20%,
-      hsl(var(--primary)) 35%,
-      hsl(var(--accent-mint-light)) 50%,
-      hsl(var(--accent-beige)) 65%,
-      hsl(var(--primary)) 80%,
-      hsl(var(--accent-color)) 95%,
-      hsl(var(--accent-mint-light)) 100%
-    ) !important;
-    opacity: 0.25 !important;
-    filter: blur(35px) saturate(1.2) brightness(1.1) !important;
+    background: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      hsl(var(--primary) / 0.1),
+      transparent
+    );
   }
   
-  /* Glass Morphism */
+  /* ============================================
+     CARD STYLING - Flattened, Minimal
+     ============================================ */
+  
+  /* Remove heavy shadows and borders, use subtle background shifts */
+  .card-flat {
+    background-color: hsl(var(--background));
+    border: none;
+    box-shadow: none;
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  .card-flat:hover {
+    background-color: hsl(var(--background-secondary));
+  }
+  
+  /* Subtle card with very light border */
+  .card-subtle {
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow: none;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .card-subtle:hover {
+    border-color: hsl(var(--primary) / 0.3);
+    background-color: hsl(var(--background-secondary) / 0.5);
+  }
+  
+  /* Glass Morphism - subtle */
   .glass {
-    backdrop-filter: blur(24px);
-    background-color: hsl(var(--background) / 0.8);
-    border: 1px solid;
-    border-color: hsl(var(--border) / 0.5);
+    backdrop-filter: blur(12px);
+    background-color: hsl(var(--background) / 0.9);
+    border: 1px solid hsl(var(--border) / 0.3);
   }
   
-  /* Premium Shadows */
+  /* ============================================
+     SHADOW SYSTEM - Minimal & Subtle
+     ============================================ */
+  
+  .shadow-soft {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+  }
+  
   .shadow-premium {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1), 0 0 0 1px hsl(var(--primary) / 0.1);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
   }
   
   .shadow-premium-lg {
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1), 0 0 0 1px hsl(var(--primary) / 0.2);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
   }
   
   .shadow-premium-xl {
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25), 0 0 0 1px hsl(var(--primary) / 0.25);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.05);
   }
   
-  /* Hover Effects */
+  /* ============================================
+     HOVER EFFECTS - Subtle & Refined
+     ============================================ */
+  
+  /* Background shift on hover (not border) */
+  .hover-bg-shift {
+    transition: background-color 0.2s ease-in-out;
+  }
+  .hover-bg-shift:hover {
+    background-color: hsl(var(--background-secondary));
+  }
+  
+  /* Subtle lift effect */
   .hover-lift {
-    transition: transform 200ms;
+    transition: transform 0.2s ease-in-out;
   }
   .hover-lift:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
   
+  /* Scale effect - very subtle */
   .hover-scale {
-    transition: transform 200ms;
+    transition: transform 0.2s ease-in-out;
   }
   .hover-scale:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
   }
   
+  /* Glow effect - subtle */
   .hover-glow {
-    transition: box-shadow 300ms;
+    transition: box-shadow 0.2s ease-in-out;
   }
   .hover-glow:hover {
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1), 0 0 0 1px hsl(var(--primary) / 0.2);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
   }
   
-  /* Focus States */
+  /* ============================================
+     FOCUS STATES - Accent Color Ring
+     ============================================ */
+  
   .focus-premium {
     outline: none;
   }
   .focus-premium:focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary-dark));
   }
   
-  /* Safe area utilities for mobile devices */
+  /* ============================================
+     BUTTON STYLES - Notion-Inspired
+     ============================================ */
+  
+  /* Primary button - Brand accent background */
+  .btn-primary {
+    background-color: hsl(var(--primary-dark));
+    color: hsl(var(--primary-foreground));
+    border-radius: var(--radius);
+    transition: all 0.2s ease-in-out;
+    font-weight: 500;
+  }
+  .btn-primary:hover {
+    background-color: hsl(var(--primary-darker));
+  }
+  
+  /* Secondary button - Transparent/light gray */
+  .btn-secondary {
+    background-color: hsl(var(--background-secondary));
+    color: hsl(var(--foreground));
+    border-radius: var(--radius);
+    transition: all 0.2s ease-in-out;
+    font-weight: 500;
+  }
+  .btn-secondary:hover {
+    background-color: hsl(var(--accent-surface));
+    color: hsl(var(--primary-dark));
+  }
+  
+  /* Ghost button */
+  .btn-ghost {
+    background-color: transparent;
+    color: hsl(var(--foreground));
+    border-radius: var(--radius);
+    transition: all 0.2s ease-in-out;
+    font-weight: 500;
+  }
+  .btn-ghost:hover {
+    background-color: hsl(var(--background-secondary));
+  }
+  
+  /* ============================================
+     INPUT STYLES - Notion-Inspired
+     ============================================ */
+  
+  .input-notion {
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    color: hsl(var(--foreground));
+    transition: all 0.2s ease-in-out;
+  }
+  .input-notion:focus {
+    border-color: hsl(var(--primary-dark));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+    outline: none;
+  }
+  .input-notion::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+  
+  /* ============================================
+     SAFE AREA UTILITIES
+     ============================================ */
+  
   .safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
@@ -522,13 +673,11 @@ html body [data-sonner-toast] * {
     padding-top: env(safe-area-inset-top, 0);
   }
   
-  /* Bottom navigation with safe area support */
   .bottom-nav-safe {
     padding-bottom: env(safe-area-inset-bottom, 0);
     min-height: calc(4rem + env(safe-area-inset-bottom, 0));
   }
   
-  /* Support for Chrome's dynamic bottom bar on mobile - ensures minimum padding */
   @supports (padding: max(0px)) {
     .bottom-nav-safe {
       padding-bottom: max(env(safe-area-inset-bottom, 0), 8px);
@@ -536,7 +685,10 @@ html body [data-sonner-toast] * {
     }
   }
   
-  /* Custom scrollbar styling - Ultra thin and elegant */
+  /* ============================================
+     SCROLLBAR STYLING - Ultra thin and elegant
+     ============================================ */
+  
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border) / 0.4) transparent;
@@ -568,6 +720,39 @@ html body [data-sonner-toast] * {
   .scrollbar-track-transparent {
     scrollbar-width: thin;
   }
+  
+  /* ============================================
+     SECTION BACKGROUNDS - Unified Flow
+     ============================================ */
+  
+  /* Use background color shifts instead of borders for section separation */
+  .section-white {
+    background-color: hsl(var(--background));
+  }
+  
+  .section-gray {
+    background-color: hsl(var(--background-secondary));
+  }
+  
+  /* Generous margin between sections */
+  .section-spacing {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+  
+  @media (min-width: 640px) {
+    .section-spacing {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .section-spacing {
+      padding-top: 8rem;
+      padding-bottom: 8rem;
+    }
+  }
 }
 
 /* Reduced motion support */
@@ -580,4 +765,3 @@ html body [data-sonner-toast] * {
     transition-duration: 0.01ms !important;
   }
 }
-
