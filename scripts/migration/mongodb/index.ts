@@ -146,7 +146,7 @@ import { ensureContainerExists, uploadBatchToAzure } from './azure-storage';
 import { PublicAccessType } from '@azure/storage-blob';
 import { extractCompanies, extractProducts, extractContacts, extractPurchases, extractIngredients } from './extract';
 import { transformCompany, transformProduct, transformContact, transformPurchase } from './transform';
-import { deduplicateOrganization, deduplicateMarketItem, deduplicateContact } from './deduplicate';
+import { deduplicateOrganization, deduplicateMarketItem, deduplicateContact, batchDeduplicateMarketItems } from './deduplicate';
 import { uploadOrganizations, uploadMarketItems, uploadContacts, uploadSignals } from './upload';
 import { migrateCompanyLogo, migrateIngredientLogo } from './logo-migration';
 import { sleep } from '../shared/utils';
@@ -400,10 +400,19 @@ async function main() {
           console.log(`  ⏭️  Skipped Azure upload for product batch ${itemBatchNum}`);
         }
         
+        // Transform all items first
+        const transformedBatch = batch.map(mongoDoc => ({
+          mongoDoc,
+          transformed: transformProduct(mongoDoc)
+        }));
+        
+        // Batch deduplicate all items at once
+        const normalizedNames = transformedBatch.map(t => t.transformed.normalized_name);
+        const existingItemsMap = await batchDeduplicateMarketItems(supabase, normalizedNames);
+        
         const transformedItems = [];
-        for (const mongoDoc of batch) {
-          const transformed = transformProduct(mongoDoc);
-          const existingId = await deduplicateMarketItem(supabase, transformed);
+        for (const { mongoDoc, transformed } of transformedBatch) {
+          const existingId = existingItemsMap.get(transformed.normalized_name);
           
           if (!existingId) {
             transformedItems.push(transformed);
@@ -417,7 +426,9 @@ async function main() {
           for (const [mongoId, supabaseId] of newMappings.entries()) {
             itemIdMapping.set(mongoId, supabaseId);
           }
-          console.log(`  ✓ Uploaded ${transformedItems.length} new products`);
+          console.log(`  ✓ Uploaded ${transformedItems.length} new products (${batch.length - transformedItems.length} duplicates skipped)`);
+        } else {
+          console.log(`  ✓ All ${batch.length} products already exist (duplicates)`);
         }
         
         totalItems += batch.length;
@@ -437,7 +448,8 @@ async function main() {
           console.log(`  ⏭️  Skipped Azure upload for ingredient batch ${itemBatchNum}`);
         }
         
-        const transformedItems = [];
+        // Transform all items first (with logo migration)
+        const transformedBatch = [];
         for (const mongoDoc of batch) {
           // Migrate logo first if it exists
           let logoUrl = (mongoDoc as any).logo_url;
@@ -465,7 +477,16 @@ async function main() {
             transformed.logo_url = logoUrl;
           }
           
-          const existingId = await deduplicateMarketItem(supabase, transformed);
+          transformedBatch.push({ mongoDoc, transformed });
+        }
+        
+        // Batch deduplicate all items at once
+        const normalizedNames = transformedBatch.map(t => t.transformed.normalized_name);
+        const existingItemsMap = await batchDeduplicateMarketItems(supabase, normalizedNames);
+        
+        const transformedItems = [];
+        for (const { mongoDoc, transformed } of transformedBatch) {
+          const existingId = existingItemsMap.get(transformed.normalized_name);
           
           if (!existingId) {
             transformedItems.push(transformed);
@@ -479,7 +500,9 @@ async function main() {
           for (const [mongoId, supabaseId] of newMappings.entries()) {
             itemIdMapping.set(mongoId, supabaseId);
           }
-          console.log(`  ✓ Uploaded ${transformedItems.length} new ingredients`);
+          console.log(`  ✓ Uploaded ${transformedItems.length} new ingredients (${batch.length - transformedItems.length} duplicates skipped)`);
+        } else {
+          console.log(`  ✓ All ${batch.length} ingredients already exist (duplicates)`);
         }
         
         totalItems += batch.length;
