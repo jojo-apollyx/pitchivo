@@ -79,27 +79,19 @@ BEGIN
   FROM product_rfqs
   WHERE is_test = true;
 
-  -- Count scheduled_emails (cascade from campaigns)
+  -- Count brevo_transactional_emails (cascade from campaigns, formerly scheduled_emails)
   RETURN QUERY
   SELECT 
-    'scheduled_emails'::TEXT as table_name,
+    'brevo_transactional_emails'::TEXT as table_name,
     COUNT(*)::BIGINT as record_count,
-    ARRAY_AGG(scheduled_email_id)::UUID[] as record_ids
-  FROM scheduled_emails
+    ARRAY_AGG(brevo_email_id)::UUID[] as record_ids
+  FROM brevo_transactional_emails
   WHERE campaign_id IN (
     SELECT campaign_id FROM campaigns WHERE is_test = true
   );
 
-  -- Count email_templates (cascade from campaigns)
-  RETURN QUERY
-  SELECT 
-    'email_templates'::TEXT as table_name,
-    COUNT(*)::BIGINT as record_count,
-    ARRAY_AGG(template_id)::UUID[] as record_ids
-  FROM email_templates
-  WHERE campaign_id IN (
-    SELECT campaign_id FROM campaigns WHERE is_test = true
-  );
+  -- Note: brevo_email_templates are global (not campaign-specific)
+  -- Templates are not tied to campaigns, so we don't count them here
 
   -- Count campaign_activities (cascade from campaigns)
   RETURN QUERY
@@ -112,16 +104,7 @@ BEGIN
     SELECT campaign_id FROM campaigns WHERE is_test = true
   );
 
-  -- Count email_quality_scores (cascade from campaigns)
-  RETURN QUERY
-  SELECT 
-    'email_quality_scores'::TEXT as table_name,
-    COUNT(*)::BIGINT as record_count,
-    ARRAY_AGG(score_id)::UUID[] as record_ids
-  FROM email_quality_scores
-  WHERE campaign_id IN (
-    SELECT campaign_id FROM campaigns WHERE is_test = true
-  );
+  -- Note: email_quality_scores table has been removed
 
   -- Count document_extractions (cascade from organizations)
   RETURN QUERY
@@ -151,15 +134,7 @@ DECLARE
 BEGIN
   -- Delete in reverse order of dependencies to avoid foreign key issues
   
-  -- 1. Delete email_quality_scores for test campaigns
-  DELETE FROM email_quality_scores
-  WHERE campaign_id IN (
-    SELECT campaign_id FROM campaigns WHERE is_test = true
-  );
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-  RETURN QUERY SELECT 'email_quality_scores'::TEXT, v_count;
-
-  -- 2. Delete campaign_activities for test campaigns
+  -- 1. Delete campaign_activities for test campaigns
   DELETE FROM campaign_activities
   WHERE campaign_id IN (
     SELECT campaign_id FROM campaigns WHERE is_test = true
@@ -167,21 +142,16 @@ BEGIN
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN QUERY SELECT 'campaign_activities'::TEXT, v_count;
 
-  -- 3. Delete scheduled_emails for test campaigns
-  DELETE FROM scheduled_emails
+  -- 2. Delete brevo_transactional_emails for test campaigns (formerly scheduled_emails)
+  DELETE FROM brevo_transactional_emails
   WHERE campaign_id IN (
     SELECT campaign_id FROM campaigns WHERE is_test = true
   );
   GET DIAGNOSTICS v_count = ROW_COUNT;
-  RETURN QUERY SELECT 'scheduled_emails'::TEXT, v_count;
+  RETURN QUERY SELECT 'brevo_transactional_emails'::TEXT, v_count;
 
-  -- 4. Delete email_templates for test campaigns
-  DELETE FROM email_templates
-  WHERE campaign_id IN (
-    SELECT campaign_id FROM campaigns WHERE is_test = true
-  );
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-  RETURN QUERY SELECT 'email_templates'::TEXT, v_count;
+  -- Note: brevo_email_templates are global (not campaign-specific)
+  -- Templates are not tied to campaigns, so we don't delete them here
 
   -- 5. Delete test RFQs
   DELETE FROM product_rfqs

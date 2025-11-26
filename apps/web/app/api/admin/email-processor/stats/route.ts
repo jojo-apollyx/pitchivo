@@ -28,13 +28,13 @@ export async function GET() {
 
     // Get pending emails count
     const { count: pendingCount } = await supabase
-      .from('scheduled_emails')
+      .from('brevo_transactional_emails')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending')
 
     // Get emails scheduled for today
     const { count: scheduledTodayCount } = await supabase
-      .from('scheduled_emails')
+      .from('brevo_transactional_emails')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending')
       .gte('scheduled_time', todayStart.toISOString())
@@ -42,14 +42,14 @@ export async function GET() {
 
     // Get emails sent today
     const { count: sentTodayCount } = await supabase
-      .from('scheduled_emails')
+      .from('brevo_transactional_emails')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'sent')
       .gte('sent_at', todayStart.toISOString())
 
     // Get emails failed today
     const { count: failedTodayCount } = await supabase
-      .from('scheduled_emails')
+      .from('brevo_transactional_emails')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'failed')
       .gte('updated_at', todayStart.toISOString())
@@ -57,7 +57,7 @@ export async function GET() {
     // Get last processor run info
     // We'll use the most recent sent/failed email to determine last run
     const { data: lastProcessed } = await supabase
-      .from('scheduled_emails')
+      .from('brevo_transactional_emails')
       .select('sent_at, status, updated_at')
       .in('status', ['sent', 'failed'])
       .order('updated_at', { ascending: false })

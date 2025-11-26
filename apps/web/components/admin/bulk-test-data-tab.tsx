@@ -88,7 +88,7 @@ export function BulkTestDataTab() {
     products: 'Products',
     campaigns: 'Campaigns',
     product_rfqs: 'RFQs',
-    scheduled_emails: 'Scheduled Emails',
+    brevo_transactional_emails: 'Brevo Transactional Emails',
     brevo_email_templates: 'Brevo Email Templates',
     campaign_activities: 'Campaign Activities',
     document_extractions: 'Document Extractions',

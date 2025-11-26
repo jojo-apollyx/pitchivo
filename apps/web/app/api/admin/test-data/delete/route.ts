@@ -63,23 +63,17 @@ export async function DELETE(request: NextRequest) {
         deletedTables['campaign_activities'] = activitiesCount || 0
         totalDeleted += activitiesCount || 0
 
-        // Count and delete scheduled emails
+        // Count and delete brevo transactional emails (formerly scheduled_emails)
         const { count: emailsCount } = await supabase
-          .from('scheduled_emails')
+          .from('brevo_transactional_emails')
           .select('*', { count: 'exact', head: true })
           .in('campaign_id', campaignIds)
-        await supabase.from('scheduled_emails').delete().in('campaign_id', campaignIds)
-        deletedTables['scheduled_emails'] = emailsCount || 0
+        await supabase.from('brevo_transactional_emails').delete().in('campaign_id', campaignIds)
+        deletedTables['brevo_transactional_emails'] = emailsCount || 0
         totalDeleted += emailsCount || 0
 
-        // Count and delete email templates
-        const { count: templatesCount } = await supabase
-          .from('brevo_email_templates')
-          .select('*', { count: 'exact', head: true })
-          .in('campaign_id', campaignIds)
-        await supabase.from('brevo_email_templates').delete().in('campaign_id', campaignIds)
-        deletedTables['brevo_email_templates'] = templatesCount || 0
-        totalDeleted += templatesCount || 0
+        // Note: brevo_email_templates are global (not campaign-specific)
+        // Templates are not tied to campaigns, so we don't delete them
 
         // Delete campaigns
         await supabase.from('campaigns').delete().eq('product_id', id)
@@ -149,8 +143,8 @@ export async function DELETE(request: NextRequest) {
 
           // Delete campaign-related data
           await supabase.from('campaign_activities').delete().in('campaign_id', campaignIds)
-          await supabase.from('scheduled_emails').delete().in('campaign_id', campaignIds)
-          await supabase.from('brevo_email_templates').delete().in('campaign_id', campaignIds)
+          await supabase.from('brevo_transactional_emails').delete().in('campaign_id', campaignIds)
+          // Note: brevo_email_templates are global (not campaign-specific), so we don't delete them
 
           // Delete campaigns
           const { error: campaignsError } = await supabase

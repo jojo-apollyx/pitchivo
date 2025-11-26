@@ -85,15 +85,15 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // 3. Scheduled Emails
+        // 3. Brevo Transactional Emails (formerly scheduled_emails)
         const { data: scheduled, count: scheduledCount } = await supabase
-          .from('scheduled_emails')
-          .select('scheduled_email_id, recipient_email, status', { count: 'exact' })
+          .from('brevo_transactional_emails')
+          .select('brevo_email_id, recipient_email, status', { count: 'exact' })
           .in('campaign_id', campaignIds)
           .limit(5)
         
         if (scheduledCount && scheduledCount > 0) {
-          tables['scheduled_emails'] = {
+          tables['brevo_transactional_emails'] = {
             count: scheduledCount,
             sampleIds: scheduled?.map(s => `${s.recipient_email} (${s.status})`) || [],
             description: 'Scheduled and sent emails for campaigns'

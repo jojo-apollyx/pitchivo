@@ -27,11 +27,11 @@ export async function GET(
       )
     }
 
-    // Fetch the scheduled email details
+    // Fetch the brevo transactional email details (formerly scheduled_emails)
     const { data: scheduledEmail, error: emailError } = await supabaseAdmin
-      .from('scheduled_emails')
+      .from('brevo_transactional_emails')
       .select('*')
-      .eq('scheduled_email_id', scheduledEmailId)
+      .eq('brevo_email_id', scheduledEmailId)
       .single()
 
     if (emailError) {
@@ -49,11 +49,11 @@ export async function GET(
       )
     }
 
-    // Fetch all events for this scheduled email, ordered by timestamp
+    // Fetch all events for this brevo transactional email, ordered by timestamp
     const { data: events, error: eventsError } = await supabaseAdmin
       .from('brevo_email_events')
       .select('*')
-      .eq('scheduled_email_id', scheduledEmailId)
+      .eq('brevo_email_id', scheduledEmailId)
       .order('event_timestamp', { ascending: true })
 
     if (eventsError) {

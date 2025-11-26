@@ -200,9 +200,9 @@ export async function POST(request: NextRequest) {
     })
     console.log('[campaigns/send] Placeholders replaced')
 
-    // Create scheduled_emails record first (for tracking)
+    // Create brevo_transactional_emails record first (for tracking)
     // Let the database generate the UUID automatically (DEFAULT gen_random_uuid())
-    console.log('[campaigns/send] Creating scheduled_emails record')
+    console.log('[campaigns/send] Creating brevo_transactional_emails record')
     
     // Get next send sequence number if leadId is provided
     let sendSequenceNumber = 1
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
     }
     
     const scheduledEmailData = {
-      // Don't provide scheduled_email_id - let database generate UUID
+      // Don't provide brevo_email_id - let database generate UUID
       campaign_id: campaignId,
       lead_id: leadId || null,
       recipient_email: to,
@@ -239,9 +239,9 @@ export async function POST(request: NextRequest) {
     
     // Insert and get the generated UUID back
     const { data: insertedData, error: insertError } = await supabaseAdmin
-      .from('scheduled_emails')
+      .from('brevo_transactional_emails')
       .insert(scheduledEmailData)
-      .select('scheduled_email_id')
+      .select('brevo_email_id')
       .single()
 
     if (insertError) {
@@ -253,8 +253,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const scheduledEmailId = insertedData.scheduled_email_id
-    console.log('[campaigns/send] Scheduled email record created with ID:', scheduledEmailId)
+    const brevoEmailId = insertedData.brevo_email_id
+    console.log('[campaigns/send] Brevo transactional email record created with ID:', brevoEmailId)
 
     // Send email via Brevo/Sendinblue with campaign tracking tag
     console.log('[campaigns/send] Preparing to send email via Brevo')
@@ -305,17 +305,17 @@ export async function POST(request: NextRequest) {
       const emailResult = await sendEmail(emailPayload)
       console.log('[campaigns/send] Email sent successfully. Message ID:', emailResult?.messageId)
 
-      // Update scheduled_emails record to 'sent' status
-      console.log('[campaigns/send] Updating scheduled_emails status to sent')
+      // Update brevo_transactional_emails record to 'sent' status
+      console.log('[campaigns/send] Updating brevo_transactional_emails status to sent')
       const { error: updateError } = await supabaseAdmin
-        .from('scheduled_emails')
+        .from('brevo_transactional_emails')
         .update({
           status: 'sent',
           sent_at: new Date().toISOString(),
           brevo_message_id: emailResult?.messageId || null,
           updated_at: new Date().toISOString()
         })
-        .eq('scheduled_email_id', scheduledEmailId)
+        .eq('brevo_email_id', brevoEmailId)
 
       if (updateError) {
         console.error('[campaigns/send] Error updating scheduled email status:', updateError)
@@ -355,7 +355,7 @@ export async function POST(request: NextRequest) {
         message: 'Email sent successfully',
         campaignId,
         to,
-        scheduledEmailId,
+        brevoEmailId,
         messageId: emailResult?.messageId
       })
     } catch (emailError: any) {
@@ -367,17 +367,17 @@ export async function POST(request: NextRequest) {
         code: emailError?.code
       }))
       
-      // Mark scheduled email as failed
-      console.log('[campaigns/send] Marking scheduled email as failed')
+      // Mark brevo transactional email as failed
+      console.log('[campaigns/send] Marking brevo transactional email as failed')
       try {
         await supabaseAdmin
-          .from('scheduled_emails')
+          .from('brevo_transactional_emails')
           .update({
             status: 'failed',
             error: emailError.message,
             updated_at: new Date().toISOString()
           })
-          .eq('scheduled_email_id', scheduledEmailId)
+          .eq('brevo_email_id', brevoEmailId)
         console.log('[campaigns/send] Scheduled email marked as failed')
       } catch (updateErr) {
         console.error('[campaigns/send] Error updating scheduled email to failed status:', updateErr)
