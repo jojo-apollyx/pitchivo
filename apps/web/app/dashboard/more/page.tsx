@@ -62,11 +62,7 @@ export default async function MorePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl animate-float pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl animate-float pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Page Header */}
         <section id="more-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -81,7 +77,7 @@ export default async function MorePage() {
         {/* Menu Items */}
         <section id="more-menu-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="max-w-4xl">
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl divide-y divide-border/30 overflow-hidden shadow-sm">
+            <div className="bg-background-secondary rounded-lg divide-y divide-border/50 overflow-hidden">
               {menuItems.map((item) => {
                 const Icon = item.icon
                 const linkId = item.href.split('/').pop() || 'link'
@@ -90,45 +86,45 @@ export default async function MorePage() {
                     key={item.href}
                     id={`more-${linkId}-link`}
                     href={item.href}
-                    className="flex items-center justify-between p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 touch-manipulation active:scale-[0.98] group"
+                    className="flex items-center justify-between p-4 sm:p-6 hover:bg-muted transition-colors duration-200 touch-manipulation group"
                     aria-label={`Go to ${item.label}`}
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
-                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-accent-surface flex items-center justify-center transition-colors duration-200 group-hover:bg-accent-color/20">
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary-dark" />
                       </div>
                       <div>
-                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary transition-colors duration-300 text-foreground">{item.label}</p>
+                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary-dark transition-colors duration-200 text-foreground">{item.label}</p>
                         <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                           {item.description}
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1 group-hover:text-primary-dark" />
                   </Link>
                 )
               })}
               {isAdmin && (
                 <>
-                  <div className="border-t border-border/30 my-2" />
+                  <div className="border-t border-border/50 my-2" />
                   <Link
                     id="more-admin-panel-link"
                     href={adminMenuItem.href}
-                    className="flex items-center justify-between p-4 sm:p-6 hover:bg-primary/5 transition-all duration-300 touch-manipulation active:scale-[0.98] group"
+                    className="flex items-center justify-between p-4 sm:p-6 hover:bg-muted transition-colors duration-200 touch-manipulation group"
                     aria-label="Go to Admin Panel"
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
-                        <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-accent-surface flex items-center justify-center transition-colors duration-200 group-hover:bg-accent-color/20">
+                        <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary-dark" />
                       </div>
                       <div>
-                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary transition-colors duration-300 text-foreground">{adminMenuItem.label}</p>
+                        <p className="font-semibold text-sm sm:text-base group-hover:text-primary-dark transition-colors duration-200 text-foreground">{adminMenuItem.label}</p>
                         <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                           {adminMenuItem.description}
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1 group-hover:text-primary-dark" />
                   </Link>
                 </>
               )}

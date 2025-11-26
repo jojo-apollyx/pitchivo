@@ -8,25 +8,21 @@ export default function NotFound() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent/10 relative overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="pointer-events-none absolute -right-12 top-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 left-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-      
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-2xl">
           {/* Main Card */}
-          <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 sm:p-12 shadow-xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary-light/20">
+          <div className="rounded-lg border border-border/50 bg-background-secondary p-8 sm:p-12 shadow-soft transition-colors duration-200 hover:bg-muted">
             {/* Icon */}
             <div className="flex justify-center mb-6">
-              <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 p-6">
-                <PackageX className="h-16 w-16 text-primary" />
+              <div className="rounded-lg bg-accent-surface p-6">
+                <PackageX className="h-16 w-16 text-primary-dark" />
               </div>
             </div>
 
             {/* Error Code */}
             <div className="text-center mb-4">
-              <h1 className="text-8xl sm:text-9xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-8xl sm:text-9xl font-bold text-foreground">
                 404
               </h1>
             </div>
@@ -48,7 +44,7 @@ export default function NotFound() {
                 onClick={() => router.back()}
                 variant="outline"
                 size="lg"
-                className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                className="gap-2 transition-colors duration-200"
               >
                 <ArrowLeft className="h-5 w-5" />
                 Go Back
@@ -56,7 +52,7 @@ export default function NotFound() {
               <Button
                 onClick={() => router.push('/dashboard')}
                 size="lg"
-                className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                className="gap-2 transition-colors duration-200"
               >
                 <Home className="h-5 w-5" />
                 Go to Dashboard
@@ -69,7 +65,7 @@ export default function NotFound() {
                 Need help? Here are some suggestions:
               </p>
               <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="p-3 rounded-lg bg-background border border-border/50">
                   <p className="font-medium text-foreground mb-1">📦 Products</p>
                   <p className="text-xs text-muted-foreground">
                     View and manage your products
@@ -83,7 +79,7 @@ export default function NotFound() {
                     Go to Products →
                   </Button>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="p-3 rounded-lg bg-background border border-border/50">
                   <p className="font-medium text-foreground mb-1">🚀 Campaigns</p>
                   <p className="text-xs text-muted-foreground">
                     Check your active campaigns

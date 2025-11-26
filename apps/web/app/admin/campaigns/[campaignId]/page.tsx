@@ -240,11 +240,7 @@ export default function CampaignDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">

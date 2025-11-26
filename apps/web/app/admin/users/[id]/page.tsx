@@ -90,7 +90,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
       </main>
     )
@@ -98,13 +98,13 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
 
   if (!organization) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
-        <div className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center bg-background-secondary rounded-lg p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
           <h2 className="text-xl font-semibold text-foreground mb-2">Organization Not Found</h2>
           <p className="text-muted-foreground mb-4">The organization you're looking for doesn't exist.</p>
           <Button
             onClick={() => router.push('/admin/users')}
-            className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+            className="transition-colors duration-200"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Users
@@ -115,11 +115,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Page Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -129,7 +125,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push('/admin/users')}
-                className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                className="transition-colors duration-200"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
@@ -146,10 +142,10 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
         <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="grid gap-6 max-w-6xl">
             {/* Basic Information */}
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
               <div className="flex items-center gap-2 mb-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
-                  <Building2 className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg bg-accent-surface flex items-center justify-center transition-colors duration-200">
+                  <Building2 className="h-5 w-5 text-primary-dark" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold">Basic Information</h2>
               </div>
@@ -222,14 +218,14 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
             </div>
 
             {/* Theme Colors */}
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">Theme Colors</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Primary Color</label>
                   <div className="flex items-center gap-2 mt-2">
                     <div
-                      className="w-10 h-10 rounded-md border border-border transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20"
+                      className="w-10 h-10 rounded-md border border-border transition-colors duration-200"
                       style={{ backgroundColor: organization.primary_color }}
                     />
                     <span className="text-sm font-mono">{organization.primary_color}</span>
@@ -239,7 +235,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
                   <label className="text-sm font-medium text-muted-foreground">Secondary Color</label>
                   <div className="flex items-center gap-2 mt-2">
                     <div
-                      className="w-10 h-10 rounded-md border border-border transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20"
+                      className="w-10 h-10 rounded-md border border-border transition-colors duration-200"
                       style={{ backgroundColor: organization.secondary_color }}
                     />
                     <span className="text-sm font-mono">{organization.secondary_color}</span>
@@ -249,7 +245,7 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
                   <label className="text-sm font-medium text-muted-foreground">Accent Color</label>
                   <div className="flex items-center gap-2 mt-2">
                     <div
-                      className="w-10 h-10 rounded-md border border-border transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20"
+                      className="w-10 h-10 rounded-md border border-border transition-colors duration-200"
                       style={{ backgroundColor: organization.accent_color }}
                     />
                     <span className="text-sm font-mono">{organization.accent_color}</span>
@@ -259,25 +255,25 @@ export default function OrganizationDetailsPage({ params }: { params: Promise<{ 
             </div>
 
             {/* Organization Members */}
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
               <div className="flex items-center gap-2 mb-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
-                  <Users className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg bg-accent-surface flex items-center justify-center transition-colors duration-200">
+                  <Users className="h-5 w-5 text-primary-dark" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold">Organization Members</h2>
               </div>
               <div className="overflow-x-auto">
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-border/50">
                   {members.length > 0 ? (
                     members.map((member) => (
                       <div
                         key={member.id}
-                        className="py-4 hover:bg-primary/5 transition-all duration-300 group"
+                        className="py-4 hover:bg-muted transition-colors duration-200 group"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-center">
                           <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium group-hover:text-primary transition-colors duration-300">{member.email}</span>
+                            <span className="font-medium group-hover:text-primary-dark transition-colors duration-200">{member.email}</span>
                           </div>
                           <div>{member.full_name || '-'}</div>
                           <div>

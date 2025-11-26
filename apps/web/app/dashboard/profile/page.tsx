@@ -24,11 +24,7 @@ export default async function ProfilePage() {
     .slice(0, 2)
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Page Header */}
         <section id="profile-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -43,9 +39,9 @@ export default async function ProfilePage() {
         {/* Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
           {/* Profile Information */}
-          <section id="profile-personal-info-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section id="profile-personal-info-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
             <div className="flex items-center gap-2 mb-2">
-              <User className="h-4 w-4 text-primary" />
+              <User className="h-4 w-4 text-primary-dark" />
               <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Personal Information</h2>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mb-6 font-normal">
@@ -54,7 +50,7 @@ export default async function ProfilePage() {
             <div className="space-y-6">
               {/* Avatar */}
               <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20 sm:h-24 sm:w-24 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20">
+                <Avatar className="h-20 w-20 sm:h-24 sm:w-24 transition-colors duration-200">
                   <AvatarImage src={avatarUrl} alt={fullName} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                     {initials}
@@ -127,7 +123,7 @@ export default async function ProfilePage() {
           </section>
 
           {/* Notification Preferences */}
-          <section id="profile-notifications-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section id="profile-notifications-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200 hover:bg-muted hover:shadow-soft">
             <div className="text-center w-full">
               <h2 className="text-lg sm:text-xl font-display font-semibold mb-2 text-foreground">Notification Preferences</h2>
               <p className="text-sm text-muted-foreground mb-4 font-normal">
@@ -140,7 +136,7 @@ export default async function ProfilePage() {
           </section>
 
           {/* Language & Region */}
-          <section id="profile-language-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section id="profile-language-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200 hover:bg-muted hover:shadow-soft">
             <div className="text-center w-full">
               <h2 className="text-lg sm:text-xl font-display font-semibold mb-2 text-foreground">Language & Region</h2>
               <p className="text-sm text-muted-foreground mb-4 font-normal">

@@ -51,13 +51,13 @@ export default function BillingPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-600">Active</Badge>
+        return <Badge variant="default">Active</Badge>
       case 'trialing':
-        return <Badge className="bg-blue-600">Trial</Badge>
+        return <Badge variant="secondary">Trial</Badge>
       case 'past_due':
-        return <Badge className="bg-amber-600">Past Due</Badge>
+        return <Badge variant="outline" className="border-destructive/50 text-destructive">Past Due</Badge>
       case 'canceled':
-        return <Badge className="bg-red-600">Canceled</Badge>
+        return <Badge variant="destructive">Canceled</Badge>
       default:
         return <Badge variant="outline">Inactive</Badge>
     }
@@ -85,18 +85,14 @@ export default function BillingPage() {
 
   if (isLoadingOrg || isLoadingSub) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-dark" />
       </div>
     )
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Page Header */}
         <section id="billing-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -111,7 +107,7 @@ export default function BillingPage() {
         {/* Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
           {/* Current Plan */}
-          <section id="billing-current-plan-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section id="billing-current-plan-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Current Plan</h2>
               {getStatusBadge(status)}
@@ -173,7 +169,7 @@ export default function BillingPage() {
 
           {/* Usage Statistics */}
           {quotaUsage && (
-            <section id="billing-usage-statistics-section" className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <section id="billing-usage-statistics-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
               <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground mb-6">Usage Statistics</h2>
               <div className="space-y-6">
                 <QuotaBar
@@ -197,7 +193,7 @@ export default function BillingPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-blue-600" />
+                      <Mail className="h-4 w-4 text-primary-dark" />
                       Emails Sent
                     </CardTitle>
                   </CardHeader>
@@ -214,7 +210,7 @@ export default function BillingPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <LinkIcon className="h-4 w-4 text-purple-600" />
+                      <LinkIcon className="h-4 w-4 text-primary-dark" />
                       QR Links Created
                     </CardTitle>
                   </CardHeader>
@@ -232,10 +228,10 @@ export default function BillingPage() {
           )}
 
           {/* Billing Information */}
-          <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200 hover:bg-muted hover:shadow-soft">
             <div className="text-center">
-              <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
-                <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+              <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
               </div>
               <p className="text-sm text-muted-foreground font-normal">
                 {subscription?.stripe_customer_id 
@@ -257,7 +253,7 @@ export default function BillingPage() {
           </section>
 
           {/* Invoice History */}
-          <section className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+          <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200 hover:bg-muted hover:shadow-soft">
             <p className="text-sm text-muted-foreground text-center font-normal">
               {subscription?.stripe_customer_id 
                 ? 'Invoice history available in Stripe billing portal'

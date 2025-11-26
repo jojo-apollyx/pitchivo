@@ -78,7 +78,7 @@ export default function AdminCampaignAnalyticsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading campaign analytics...</p>
       </main>
     )
@@ -86,7 +86,7 @@ export default function AdminCampaignAnalyticsPage() {
 
   if (!campaign) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Campaign not found</p>
           <Button onClick={() => router.push('/admin/campaigns')}>
@@ -101,13 +101,13 @@ export default function AdminCampaignAnalyticsPage() {
     switch (status) {
       case 'active':
       case 'scheduled':
-        return 'bg-primary/10 text-primary border-primary/30'
+        return 'bg-background-secondary text-primary-dark border-border/50'
       case 'completed':
-        return 'bg-green-100 text-green-700 border-green-300'
+        return 'bg-background-secondary text-foreground border-border/50'
       case 'paused':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300'
+        return 'bg-background-secondary text-muted-foreground border-border/50'
       case 'cancelled':
-        return 'bg-red-100 text-red-700 border-red-300'
+        return 'bg-background-secondary text-muted-foreground border-border/50'
       default:
         return 'bg-muted text-muted-foreground border-border'
     }
@@ -127,11 +127,7 @@ export default function AdminCampaignAnalyticsPage() {
     : 0
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -164,7 +160,7 @@ export default function AdminCampaignAnalyticsPage() {
       <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
           {/* Campaign Info Card */}
-          <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl p-6 border border-border/30">
+          <div className="bg-background-secondary rounded-lg p-6 border border-border/50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground mb-2">Organization</h3>

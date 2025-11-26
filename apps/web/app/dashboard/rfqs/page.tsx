@@ -56,12 +56,12 @@ interface RFQ {
 }
 
 const STATUS_CONFIG: Record<RFQStatus, { label: string; color: string; icon: typeof CheckCircle2 }> = {
-  new: { label: 'New', color: 'bg-primary/10 text-primary border-primary/20', icon: MessageSquare },
-  in_progress: { label: 'In Progress', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: Clock },
-  responded: { label: 'Responded', color: 'bg-green-500/10 text-green-600 border-green-500/20', icon: CheckCircle2 },
-  won: { label: 'Won', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: TrendingUp },
-  lost: { label: 'Lost', color: 'bg-red-500/10 text-red-600 border-red-500/20', icon: TrendingDown },
-  archived: { label: 'Archived', color: 'bg-muted text-muted-foreground border-border/30', icon: Archive },
+  new: { label: 'New', color: 'bg-background-secondary text-primary-dark border-border/50', icon: MessageSquare },
+  in_progress: { label: 'In Progress', color: 'bg-background-secondary text-foreground border-border/50', icon: Clock },
+  responded: { label: 'Responded', color: 'bg-background-secondary text-foreground border-border/50', icon: CheckCircle2 },
+  won: { label: 'Won', color: 'bg-background-secondary text-foreground border-border/50', icon: TrendingUp },
+  lost: { label: 'Lost', color: 'bg-background-secondary text-muted-foreground border-border/50', icon: TrendingDown },
+  archived: { label: 'Archived', color: 'bg-muted text-muted-foreground border-border/50', icon: Archive },
 }
 
 const ITEMS_PER_PAGE = 10
@@ -183,10 +183,7 @@ export default function RFQsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
+    <main className="min-h-screen bg-background relative overflow-hidden">
 
       {/* Page Header */}
       <section id="rfqs-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -310,15 +307,15 @@ export default function RFQsPage() {
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary-dark" />
                 <p className="text-sm text-muted-foreground font-normal">Loading RFQs...</p>
               </div>
             </div>
           ) : rfqs.length === 0 ? (
             <div className="max-w-2xl mx-auto py-12">
               <div className="text-center">
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <MessageSquare className="h-8 w-8 text-primary" />
+                <div className="h-16 w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4">
+                  <MessageSquare className="h-8 w-8 text-primary-dark" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">
                   {hasActiveFilters ? 'No RFQs found' : 'No RFQs received yet'}
@@ -350,7 +347,7 @@ export default function RFQsPage() {
                 return (
                   <div
                     key={rfq.rfq_id}
-                    className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/30 p-4 sm:p-5 hover:border-border/50 hover:shadow-md transition-all duration-300"
+                    className="bg-background-secondary rounded-lg border border-border/50 p-4 sm:p-5 hover:bg-muted hover:shadow-soft transition-colors duration-200"
                   >
                     <div className="flex flex-col lg:flex-row gap-4 sm:gap-5">
                       {/* Left: Product Image & Name */}

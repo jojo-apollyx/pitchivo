@@ -242,17 +242,17 @@ export default function AdminRFQsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new':
-        return 'bg-blue-100 text-blue-700 border-blue-300'
+        return 'bg-background-secondary text-primary-dark border-border/50'
       case 'in_progress':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300'
+        return 'bg-background-secondary text-foreground border-border/50'
       case 'responded':
-        return 'bg-purple-100 text-purple-700 border-purple-300'
+        return 'bg-background-secondary text-foreground border-border/50'
       case 'won':
-        return 'bg-green-100 text-green-700 border-green-300'
+        return 'bg-background-secondary text-foreground border-border/50'
       case 'lost':
-        return 'bg-red-100 text-red-700 border-red-300'
+        return 'bg-background-secondary text-muted-foreground border-border/50'
       case 'archived':
-        return 'bg-gray-100 text-gray-700 border-gray-300'
+        return 'bg-muted text-muted-foreground border-border/50'
       default:
         return 'bg-muted text-muted-foreground border-border'
     }
@@ -317,18 +317,18 @@ export default function AdminRFQsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
             {/* Total RFQs */}
-            <div className="bg-background-secondary rounded-lg p-4 border border-border/30">
+            <div className="bg-background-secondary rounded-lg p-4 border border-border/50">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <MessageSquare className="h-4 w-4" />
                 <span>Total</span>
               </div>
-              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-2xl font-bold text-foreground">{stats.total}</div>
               <div className="text-xs text-muted-foreground mt-1">All RFQs</div>
             </div>
 
             {/* New */}
-            <div className="bg-accent-surface rounded-lg p-4 border border-accent-color/30">
-              <div className="flex items-center gap-2 text-sm text-primary-dark mb-2">
+            <div className="bg-background-secondary rounded-lg p-4 border border-border/50">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <AlertCircle className="h-4 w-4" />
                 <span>New</span>
               </div>
@@ -337,7 +337,7 @@ export default function AdminRFQsPage() {
             </div>
 
             {/* In Progress */}
-            <div className="bg-background-secondary rounded-lg p-4 border border-border/30">
+            <div className="bg-background-secondary rounded-lg p-4 border border-border/50">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <Clock className="h-4 w-4" />
                 <span>In Progress</span>
@@ -347,7 +347,7 @@ export default function AdminRFQsPage() {
             </div>
 
             {/* Responded */}
-            <div className="bg-background-secondary rounded-lg p-4 border border-border/30">
+            <div className="bg-background-secondary rounded-lg p-4 border border-border/50">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <Mail className="h-4 w-4" />
                 <span>Responded</span>
@@ -357,8 +357,8 @@ export default function AdminRFQsPage() {
             </div>
 
             {/* Won */}
-            <div className="bg-background-secondary rounded-lg p-4 border border-border/30">
-              <div className="flex items-center gap-2 text-sm text-primary-dark mb-2">
+            <div className="bg-background-secondary rounded-lg p-4 border border-border/50">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Won</span>
               </div>
@@ -367,8 +367,8 @@ export default function AdminRFQsPage() {
             </div>
 
             {/* Lost */}
-            <div className="bg-background-secondary rounded-lg p-4 border border-border/30">
-              <div className="flex items-center gap-2 text-sm text-destructive mb-2">
+            <div className="bg-background-secondary rounded-lg p-4 border border-border/50">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <AlertCircle className="h-4 w-4" />
                 <span>Lost</span>
               </div>
@@ -377,12 +377,12 @@ export default function AdminRFQsPage() {
             </div>
 
             {/* Conversion Rate */}
-            <div className="bg-accent-surface rounded-lg p-4 border border-accent-color/30">
-              <div className="flex items-center gap-2 text-sm text-primary-dark mb-2">
+            <div className="bg-background-secondary rounded-lg p-4 border border-border/50">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <TrendingUp className="h-4 w-4" />
                 <span>Win Rate</span>
               </div>
-              <div className="text-2xl font-bold text-primary-dark">{stats.conversion_rate}%</div>
+              <div className="text-2xl font-bold text-foreground">{stats.conversion_rate}%</div>
               <div className="text-xs text-muted-foreground mt-1">Conversion</div>
             </div>
           </div>
@@ -485,7 +485,7 @@ export default function AdminRFQsPage() {
                     {filteredRfqs.map((rfq) => (
                       <tr 
                         key={rfq.rfq_id} 
-                        className="hover:bg-accent/5 transition-colors"
+                        className="hover:bg-muted transition-colors"
                       >
                         {/* Contact */}
                         <td className="p-4">
@@ -618,7 +618,7 @@ export default function AdminRFQsPage() {
               </div>
 
               {/* Contact Information */}
-              <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+              <div className="space-y-3 p-4 bg-background-secondary rounded-lg">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   Contact Information
@@ -650,7 +650,7 @@ export default function AdminRFQsPage() {
               </div>
 
               {/* Product & Organization */}
-              <div className="space-y-3 p-4 bg-primary/5 rounded-lg">
+              <div className="space-y-3 p-4 bg-background-secondary rounded-lg">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <Package className="h-4 w-4" />
                   Product & Organization
@@ -685,7 +685,7 @@ export default function AdminRFQsPage() {
                   <FileText className="h-4 w-4" />
                   Message
                 </Label>
-                <div className="p-4 bg-muted/30 rounded-lg text-sm whitespace-pre-wrap">
+                <div className="p-4 bg-background-secondary rounded-lg text-sm whitespace-pre-wrap">
                   {selectedRfq.message}
                 </div>
               </div>
@@ -706,7 +706,7 @@ export default function AdminRFQsPage() {
 
               {/* Response Information */}
               {selectedRfq.responded_at && (
-                <div className="space-y-3 p-4 bg-accent/5 rounded-lg">
+                <div className="space-y-3 p-4 bg-background-secondary rounded-lg">
                   <h3 className="font-semibold text-sm">Response Information</h3>
                   <div>
                     <Label className="text-xs text-muted-foreground">Responded At</Label>

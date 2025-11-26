@@ -55,7 +55,7 @@ export default function CampaignTrackingPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading campaign...</p>
       </main>
     )
@@ -63,7 +63,7 @@ export default function CampaignTrackingPage() {
 
   if (!campaign) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Campaign not found</p>
           <Button onClick={() => router.push('/admin/campaigns')}>
@@ -75,11 +75,7 @@ export default function CampaignTrackingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Header */}
         <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
@@ -121,7 +117,7 @@ export default function CampaignTrackingPage() {
       <section className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Campaign Info */}
-          <div className="bg-card/50 rounded-xl p-6 border border-border/30">
+          <div className="bg-background-secondary rounded-lg p-6 border border-border/50">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Organization</div>
@@ -141,13 +137,13 @@ export default function CampaignTrackingPage() {
           </div>
 
           {/* Detailed Email Event Statistics */}
-          <div className="bg-card/50 rounded-xl p-6 border border-border/30">
+          <div className="bg-background-secondary rounded-lg p-6 border border-border/50">
             <h2 className="text-lg font-semibold mb-4">Email Event Analytics</h2>
             <EmailEventStats campaignId={campaignId} isAdmin={true} />
           </div>
 
           {/* Note: Campaign emails are managed by Smartlead */}
-          <div className="bg-card/50 rounded-xl p-6 border border-border/30">
+          <div className="bg-background-secondary rounded-lg p-6 border border-border/50">
             <h2 className="text-lg font-semibold mb-4">Campaign Email Management</h2>
             <p className="text-sm text-muted-foreground">
               Campaign emails are managed entirely through Smartlead. Email analytics above show data synced from Smartlead webhooks.
