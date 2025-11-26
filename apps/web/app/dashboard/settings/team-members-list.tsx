@@ -3,6 +3,7 @@
 import { Mail, Briefcase } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { EmptyTeamIllustration } from '@/components/ui/illustrations'
 
 interface TeamMember {
   email: string
@@ -35,6 +36,7 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
   if (members.length === 0) {
     return (
       <div className="py-12 text-center">
+        <EmptyTeamIllustration size="md" className="mx-auto mb-4" />
         <p className="text-muted-foreground">
           No team members found
         </p>

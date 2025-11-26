@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { EmptyInboxIllustration, EmptySearchIllustration } from '@/components/ui/illustrations'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -314,8 +315,13 @@ export default function RFQsPage() {
           ) : rfqs.length === 0 ? (
             <div className="max-w-2xl mx-auto py-12">
               <div className="text-center">
-                <div className="h-16 w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4">
-                  <MessageSquare className="h-8 w-8 text-primary-dark" />
+                {/* Minimalist illustration */}
+                <div className="mb-6">
+                  {hasActiveFilters ? (
+                    <EmptySearchIllustration size="lg" className="mx-auto" />
+                  ) : (
+                    <EmptyInboxIllustration size="lg" className="mx-auto" />
+                  )}
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">
                   {hasActiveFilters ? 'No RFQs found' : 'No RFQs received yet'}

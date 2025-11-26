@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { EmptyCampaignsIllustration } from '@/components/ui/illustrations'
 
 interface Campaign {
   campaign_id: string
@@ -519,8 +520,9 @@ export default function CampaignsPage() {
 
           <section id="campaigns-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-16">
             <div className="max-w-md mx-auto text-center">
-              <div className="h-16 w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-6">
-                <Mail className="h-8 w-8 text-primary-dark" />
+              {/* Minimalist rocket illustration */}
+              <div className="mb-8">
+                <EmptyCampaignsIllustration size="lg" className="mx-auto" />
               </div>
               <h2 className="text-xl font-semibold mb-2 text-foreground">No campaigns yet</h2>
               <p className="text-muted-foreground mb-6">

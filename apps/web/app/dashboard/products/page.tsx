@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
+import { EmptyProductsIllustration, EmptySearchIllustration } from '@/components/ui/illustrations'
 import QRCode from 'react-qr-code'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -120,8 +121,9 @@ export default function ProductsPage() {
 
           <section id="products-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-16">
             <div className="max-w-md mx-auto text-center">
-              <div className="h-16 w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-6">
-                <Package className="h-8 w-8 text-primary-dark" />
+              {/* Minimalist illustration */}
+              <div className="mb-8">
+                <EmptyProductsIllustration size="lg" className="mx-auto" />
               </div>
               <h2 className="text-xl font-semibold mb-2 text-foreground">No products yet</h2>
               <p className="text-muted-foreground mb-6">
@@ -239,8 +241,9 @@ export default function ProductsPage() {
       <section className="px-4 sm:px-6 lg:px-8 py-6">
         {products.length === 0 ? (
           <div className="max-w-md mx-auto text-center py-12">
-            <div className="h-14 w-14 rounded-lg bg-background-secondary flex items-center justify-center mx-auto mb-4">
-              <Search className="h-7 w-7 text-muted-foreground" />
+            {/* Minimalist search illustration */}
+            <div className="mb-6">
+              <EmptySearchIllustration size="md" className="mx-auto" />
             </div>
             <h2 className="text-lg font-semibold mb-2 text-foreground">No products found</h2>
             <p className="text-sm text-muted-foreground mb-4">

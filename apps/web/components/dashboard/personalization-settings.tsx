@@ -18,6 +18,78 @@ import { COLOR_SCHEMES, type ColorScheme } from '@/lib/theme'
 import { useThemeStore } from '@/lib/stores/theme-store'
 import { useTheme } from 'next-themes'
 
+// Minimalist SVG illustration for color/palette
+function ColorPaletteIllustration({ colors }: { colors: { primary: string; secondary: string; accent: string } }) {
+  return (
+    <svg
+      width="64"
+      height="64"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="drop-shadow-sm"
+    >
+      {/* Artistic brush stroke shapes */}
+      <ellipse cx="20" cy="28" rx="14" ry="18" fill={colors.primary} opacity="0.9" transform="rotate(-15 20 28)" />
+      <ellipse cx="38" cy="24" rx="12" ry="16" fill={colors.secondary} opacity="0.85" transform="rotate(10 38 24)" />
+      <ellipse cx="44" cy="42" rx="10" ry="14" fill={colors.accent} opacity="0.8" transform="rotate(-5 44 42)" />
+      {/* Subtle highlight */}
+      <circle cx="16" cy="22" r="3" fill="white" opacity="0.4" />
+      <circle cx="36" cy="18" r="2" fill="white" opacity="0.3" />
+    </svg>
+  )
+}
+
+// Minimalist SVG illustration for theme/appearance
+function ThemeIllustration({ isDark }: { isDark: boolean }) {
+  return (
+    <svg
+      width="64"
+      height="64"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="drop-shadow-sm"
+    >
+      {isDark ? (
+        // Moon with stars
+        <>
+          <circle cx="32" cy="32" r="16" fill="hsl(var(--primary-dark))" opacity="0.2" />
+          <path
+            d="M38 20C34.5 20 31.5 21.5 29.5 24C27.5 26.5 27 30 28 33C29 36 31.5 38.5 35 39.5C38.5 40.5 42 40 45 38C43 41.5 39 44 34 44C27 44 21 38 21 31C21 24 27 18 34 18C35.5 18 37 18.3 38 20Z"
+            fill="hsl(var(--primary-dark))"
+            opacity="0.9"
+          />
+          <circle cx="46" cy="18" r="1.5" fill="hsl(var(--primary-dark))" opacity="0.6" />
+          <circle cx="50" cy="26" r="1" fill="hsl(var(--primary-dark))" opacity="0.4" />
+          <circle cx="44" cy="12" r="1" fill="hsl(var(--primary-dark))" opacity="0.5" />
+        </>
+      ) : (
+        // Sun with rays
+        <>
+          <circle cx="32" cy="32" r="20" fill="hsl(var(--primary-dark))" opacity="0.1" />
+          <circle cx="32" cy="32" r="12" fill="hsl(var(--primary-dark))" opacity="0.2" />
+          <circle cx="32" cy="32" r="8" fill="hsl(var(--primary-dark))" opacity="0.9" />
+          {/* Sun rays */}
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+            <line
+              key={i}
+              x1={32 + 14 * Math.cos((angle * Math.PI) / 180)}
+              y1={32 + 14 * Math.sin((angle * Math.PI) / 180)}
+              x2={32 + 20 * Math.cos((angle * Math.PI) / 180)}
+              y2={32 + 20 * Math.sin((angle * Math.PI) / 180)}
+              stroke="hsl(var(--primary-dark))"
+              strokeWidth="2"
+              strokeLinecap="round"
+              opacity={i % 2 === 0 ? 0.6 : 0.3}
+            />
+          ))}
+        </>
+      )}
+    </svg>
+  )
+}
+
 interface PersonalizationSettingsProps {
   organizationId: string
   currentScheme?: {
@@ -147,44 +219,39 @@ export function PersonalizationSettings({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-lg sm:text-xl font-semibold mb-2 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary-dark" />
-          Personalization
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Customize the look and feel of your workspace
-        </p>
+      {/* Header with subtle gradient */}
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-background via-background to-muted/30 p-6 border border-border/30">
+        <div className="relative z-10">
+          <h2 className="text-lg sm:text-xl font-semibold mb-2 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-accent-surface flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-primary-dark" />
+            </div>
+            Personalization
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Customize the look and feel of your workspace
+          </p>
+        </div>
+        {/* Decorative accent dot */}
+        <div 
+          className="absolute -top-4 -right-4 w-24 h-24 rounded-full opacity-[0.07]"
+          style={{ backgroundColor: currentSelectedScheme.primary }}
+        />
       </div>
 
       {/* Theme Color Section */}
-      <div className="bg-background-secondary rounded-lg p-6">
+      <div className="bg-background-secondary rounded-lg p-6 hover:shadow-soft transition-shadow duration-300">
         <div className="flex items-start gap-4">
-          {/* Fancy Color Icon Illustration */}
+          {/* Minimalist Color Illustration */}
           <div className="hidden sm:flex flex-shrink-0">
-            <div className="relative w-16 h-16">
-              {/* Layered color circles */}
-              <div 
-                className="absolute top-0 left-0 w-10 h-10 rounded-full opacity-80 shadow-soft"
-                style={{ backgroundColor: currentSelectedScheme.primary }}
-              />
-              <div 
-                className="absolute top-2 left-4 w-10 h-10 rounded-full opacity-80 shadow-soft"
-                style={{ backgroundColor: currentSelectedScheme.secondary }}
-              />
-              <div 
-                className="absolute top-4 left-2 w-10 h-10 rounded-full opacity-80 shadow-soft"
-                style={{ backgroundColor: currentSelectedScheme.accent }}
-              />
-            </div>
+            <ColorPaletteIllustration colors={currentSelectedScheme} />
           </div>
 
           {/* Content */}
           <div className="flex-1 space-y-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Palette className="h-4 w-4 text-primary-dark" />
+                <Palette className="h-4 w-4 text-primary-dark sm:hidden" />
                 <Label className="text-sm font-medium">Brand Colors</Label>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -264,17 +331,11 @@ export function PersonalizationSettings({
       </div>
 
       {/* Appearance Section */}
-      <div className="bg-background-secondary rounded-lg p-6">
+      <div className="bg-background-secondary rounded-lg p-6 hover:shadow-soft transition-shadow duration-300">
         <div className="flex items-start gap-4">
-          {/* Icon */}
+          {/* Minimalist Theme Illustration */}
           <div className="hidden sm:flex flex-shrink-0">
-            <div className="w-16 h-16 rounded-lg bg-accent-surface flex items-center justify-center">
-              {theme === 'dark' ? (
-                <Moon className="h-8 w-8 text-primary-dark" />
-              ) : (
-                <Sun className="h-8 w-8 text-primary-dark" />
-              )}
-            </div>
+            <ThemeIllustration isDark={theme === 'dark'} />
           </div>
 
           {/* Content */}
