@@ -474,16 +474,16 @@ export default function CampaignsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-      case 'drafted':  // Matches Smartlead DRAFTED
-        return 'bg-primary/10 text-primary border-primary/30'
+      case 'drafted':
+        return 'bg-accent-surface text-primary-dark border-primary-dark/30'
       case 'completed':
-        return 'bg-green-100 text-green-700 border-green-300'
+        return 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400'
       case 'paused':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300'
-      case 'stopped':  // Matches Smartlead STOPPED (replaces cancelled)
-        return 'bg-red-100 text-red-700 border-red-300'
+        return 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400'
+      case 'stopped':
+        return 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400'
       default:
-        return 'bg-muted text-muted-foreground border-border'
+        return 'bg-background-secondary text-muted-foreground border-border'
     }
   }
 
@@ -498,20 +498,18 @@ export default function CampaignsPage() {
 
   if (campaigns.length === 0) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-
+      <main className="min-h-screen bg-background">
         <div className="relative">
-          <section id="campaigns-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <section id="campaigns-header-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
             <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Campaigns</h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Campaigns</h1>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Create and manage your email campaigns
                   </p>
                 </div>
-                <Button id="campaigns-new-campaign-button-empty" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
+                <Button id="campaigns-new-campaign-button-empty" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 h-10 rounded-md">
                   <Plus className="h-4 w-4" />
                   New Campaign
                 </Button>
@@ -519,16 +517,16 @@ export default function CampaignsPage() {
             </div>
           </section>
 
-          <section id="campaigns-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-            <div className="max-w-2xl mx-auto text-center">
-              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <Mail className="h-10 w-10 text-primary" />
+          <section id="campaigns-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-16">
+            <div className="max-w-md mx-auto text-center">
+              <div className="h-16 w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-6">
+                <Mail className="h-8 w-8 text-primary-dark" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-display font-semibold mb-2">No campaigns yet</h2>
-              <p className="text-sm sm:text-base text-muted-foreground mb-6">
+              <h2 className="text-xl font-semibold mb-2 text-foreground">No campaigns yet</h2>
+              <p className="text-muted-foreground mb-6">
                 Start your first email campaign to reach potential buyers
               </p>
-              <Button id="campaigns-create-campaign-button" aria-label="Create first campaign" onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
+              <Button id="campaigns-create-campaign-button" aria-label="Create first campaign" onClick={handleCreateCampaign} className="gap-2 h-10 rounded-md">
                 <Plus className="h-4 w-4" />
                 Create Campaign
               </Button>
@@ -541,16 +539,16 @@ export default function CampaignsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <section id="campaigns-header-with-campaigns-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+      <section id="campaigns-header-with-campaigns-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Campaigns</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Campaigns</h1>
+              <p className="text-sm text-muted-foreground mt-1">
                 Create and manage your email campaigns
               </p>
             </div>
-            <Button id="campaigns-new-campaign-button" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 min-h-[44px]">
+            <Button id="campaigns-new-campaign-button" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 h-10 rounded-md">
               <Plus className="h-4 w-4" />
               New Campaign
             </Button>
@@ -570,11 +568,11 @@ export default function CampaignsPage() {
               return (
                 <div
                   key={campaign.campaign_id}
-                  className="p-4 sm:p-6 hover:bg-accent/5 transition-colors"
+                  className="p-4 sm:p-5 hover:bg-background-secondary transition-colors duration-200"
                 >
                   <div className="flex items-start gap-3">
                     {/* Product Image */}
-                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-md bg-accent-surface flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {campaign.productImageUrl ? (
                         <img 
                           src={campaign.productImageUrl}
@@ -588,7 +586,7 @@ export default function CampaignsPage() {
                           }}
                         />
                       ) : null}
-                      <div className={`text-xl sm:text-2xl font-bold text-primary/50 ${campaign.productImageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                      <div className={`text-xl font-semibold text-primary-dark ${campaign.productImageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
                         {campaign.products?.product_name?.charAt(0) || 'P'}
                       </div>
                     </div>
@@ -597,7 +595,7 @@ export default function CampaignsPage() {
                       {/* Row 1: Campaign Name, Status, Date */}
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-base mb-1">{campaign.campaign_name}</h3>
+                          <h3 className="font-semibold text-base mb-1 text-foreground">{campaign.campaign_name}</h3>
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge variant="outline" className={`text-xs ${getStatusColor(campaign.status)}`}>
                               {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
@@ -620,7 +618,7 @@ export default function CampaignsPage() {
                             variant="default"
                             size="sm"
                             onClick={() => handleViewDetails(campaign.campaign_id)}
-                            className="gap-2"
+                            className="gap-2 h-9"
                           >
                             <BarChart3 className="h-4 w-4" />
                             View Analytics
@@ -633,7 +631,7 @@ export default function CampaignsPage() {
                               size="sm"
                               onClick={(e) => handleResumeCampaign(campaign.campaign_id, e)}
                               disabled={isLoading}
-                              className="gap-2"
+                              className="gap-2 h-9"
                             >
                               <Play className="h-4 w-4" />
                               Resume
@@ -645,7 +643,7 @@ export default function CampaignsPage() {
                               size="sm"
                               onClick={(e) => handlePauseCampaign(campaign.campaign_id, e)}
                               disabled={isLoading}
-                              className="gap-2"
+                              className="gap-2 h-9"
                             >
                               <Pause className="h-4 w-4" />
                               Pause
@@ -660,7 +658,7 @@ export default function CampaignsPage() {
                                 size="sm"
                                 disabled={isLoading}
                                 onClick={(e) => e.stopPropagation()}
-                                className="h-8 w-8 p-0"
+                                className="h-9 w-9 p-0"
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
@@ -709,9 +707,9 @@ export default function CampaignsPage() {
                           <span>Progress</span>
                           <span>{campaign.emails_sent} / {campaign.email_count} sent</span>
                         </div>
-                        <div className="w-full bg-border/30 rounded-full h-2">
+                        <div className="w-full bg-background-secondary rounded-full h-1.5">
                           <div
-                            className="bg-primary rounded-full h-2 transition-all duration-300"
+                            className="bg-primary-dark rounded-full h-1.5 transition-all duration-300"
                             style={{ width: `${campaign.progress || 0}%` }}
                           />
                         </div>
@@ -719,33 +717,33 @@ export default function CampaignsPage() {
 
                       {/* Row 3: Metrics */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-card/50 rounded-lg p-2">
+                        <div className="bg-background-secondary rounded-md p-2.5">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <TrendingUp className="h-3 w-3" />
                             <span>Opens</span>
                           </div>
-                          <div className="text-base font-bold">{campaign.openRate || 0}%</div>
+                          <div className="text-base font-semibold text-foreground">{campaign.openRate || 0}%</div>
                         </div>
-                        <div className="bg-card/50 rounded-lg p-2">
+                        <div className="bg-background-secondary rounded-md p-2.5">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <MousePointerClick className="h-3 w-3" />
                             <span>Clicks</span>
                           </div>
-                          <div className="text-base font-bold">{campaign.clickRate || 0}%</div>
+                          <div className="text-base font-semibold text-foreground">{campaign.clickRate || 0}%</div>
                         </div>
-                        <div className="bg-card/50 rounded-lg p-2">
+                        <div className="bg-background-secondary rounded-md p-2.5">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <MessageSquare className="h-3 w-3" />
                             <span>RFQs</span>
                           </div>
-                          <div className="text-base font-bold text-accent">{campaign.rfqs_received}</div>
+                          <div className="text-base font-semibold text-green-600">{campaign.rfqs_received}</div>
                         </div>
-                        <div className="bg-card/50 rounded-lg p-2">
+                        <div className="bg-background-secondary rounded-md p-2.5">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <Users className="h-3 w-3" />
                             <span>Reached</span>
                           </div>
-                          <div className="text-base font-bold">{campaign.emails_sent}</div>
+                          <div className="text-base font-semibold text-foreground">{campaign.emails_sent}</div>
                         </div>
                       </div>
                     </div>
@@ -781,6 +779,7 @@ export default function CampaignsPage() {
                 setCancelDialogOpen(false)
                 setCampaignToAction(null)
               }}
+              className="h-10"
             >
               Cancel
             </Button>
@@ -788,6 +787,7 @@ export default function CampaignsPage() {
               variant="destructive"
               onClick={handleCancelCampaign}
               disabled={cancellingCampaign !== null}
+              className="h-10"
             >
               {cancellingCampaign ? 'Cancelling...' : 'Cancel Campaign'}
             </Button>
@@ -819,6 +819,7 @@ export default function CampaignsPage() {
                 setDeleteDialogOpen(false)
                 setCampaignToAction(null)
               }}
+              className="h-10"
             >
               Cancel
             </Button>
@@ -826,6 +827,7 @@ export default function CampaignsPage() {
               variant="destructive"
               onClick={handleDeleteCampaign}
               disabled={cancellingCampaign !== null}
+              className="h-10"
             >
               {cancellingCampaign ? 'Deleting...' : 'Delete Permanently'}
             </Button>
@@ -843,8 +845,8 @@ export default function CampaignsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleArchiveCampaign}>Archive</AlertDialogAction>
+            <AlertDialogCancel className="h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchiveCampaign} className="h-10">Archive</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

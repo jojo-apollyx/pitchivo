@@ -20,7 +20,6 @@ import {
 import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
 import QRCode from 'react-qr-code'
 import { useQueryClient } from '@tanstack/react-query'
-// AlertDialog will be created inline for now
 
 export default function ProductsPage() {
   const { data, isLoading, error } = useProducts()
@@ -98,21 +97,19 @@ export default function ProductsPage() {
 
   if (allProducts.length === 0) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-
+      <main className="min-h-screen bg-background">
         <div className="relative">
-          <section id="products-empty-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <section id="products-empty-header-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
             <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Products</h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Products</h1>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Manage your product pages and catalog
                   </p>
                 </div>
                 <Link href="/dashboard/products/create">
-                  <Button className="gap-2 min-h-[44px]">
+                  <Button className="gap-2 h-10 rounded-md">
                     <Plus className="h-4 w-4" />
                     Add Product
                   </Button>
@@ -121,17 +118,17 @@ export default function ProductsPage() {
             </div>
           </section>
 
-          <section id="products-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-            <div className="max-w-2xl mx-auto text-center">
-              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <Package className="h-10 w-10 text-primary" />
+          <section id="products-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-16">
+            <div className="max-w-md mx-auto text-center">
+              <div className="h-16 w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-6">
+                <Package className="h-8 w-8 text-primary-dark" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-display font-semibold mb-2">No products yet</h2>
-              <p className="text-sm sm:text-base text-muted-foreground mb-6">
+              <h2 className="text-xl font-semibold mb-2 text-foreground">No products yet</h2>
+              <p className="text-muted-foreground mb-6">
                 Create your first product page to start showcasing to buyers
               </p>
               <Link href="/dashboard/products/create">
-                <Button id="products-create-first-product-button" aria-label="Create first product" className="gap-2 min-h-[44px]">
+                <Button id="products-create-first-product-button" aria-label="Create first product" className="gap-2 h-10 rounded-md">
                   <Plus className="h-4 w-4" />
                   Create Product
                 </Button>
@@ -146,17 +143,17 @@ export default function ProductsPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Page Header */}
-      <section id="products-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+      <section id="products-header-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">Products</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Products</h1>
+              <p className="text-sm text-muted-foreground mt-1">
                 {allProducts.length} {allProducts.length === 1 ? 'product' : 'products'} created
               </p>
             </div>
             <Link href="/dashboard/products/create">
-              <Button className="gap-2 min-h-[44px]">
+              <Button className="gap-2 h-10 rounded-md">
                 <Plus className="h-4 w-4" />
                 Add Product
               </Button>
@@ -166,7 +163,7 @@ export default function ProductsPage() {
       </section>
 
       {/* Filters */}
-      <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30 bg-background/50">
+      <section className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
             {/* Search */}
@@ -176,7 +173,7 @@ export default function ProductsPage() {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 h-10"
               />
               {searchQuery && (
                 <button
@@ -190,7 +187,7 @@ export default function ProductsPage() {
 
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[160px] h-10">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -203,7 +200,7 @@ export default function ProductsPage() {
             {/* Category Filter */}
             {categories.length > 0 && (
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-[160px] h-10">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -223,7 +220,7 @@ export default function ProductsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="gap-2"
+                className="gap-2 h-10"
               >
                 <X className="h-4 w-4" />
                 Clear
@@ -232,7 +229,7 @@ export default function ProductsPage() {
           </div>
 
           {/* Results count */}
-          <div className="mt-3 text-xs sm:text-sm text-muted-foreground font-normal">
+          <div className="mt-3 text-sm text-muted-foreground">
             Showing {products.length} of {allProducts.length} product{allProducts.length !== 1 ? 's' : ''}
           </div>
         </div>
@@ -241,16 +238,16 @@ export default function ProductsPage() {
       {/* Products List */}
       <section className="px-4 sm:px-6 lg:px-8 py-6">
         {products.length === 0 ? (
-          <div className="max-w-2xl mx-auto text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <Search className="h-8 w-8 text-muted-foreground" />
+          <div className="max-w-md mx-auto text-center py-12">
+            <div className="h-14 w-14 rounded-lg bg-background-secondary flex items-center justify-center mx-auto mb-4">
+              <Search className="h-7 w-7 text-muted-foreground" />
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold mb-2">No products found</h2>
+            <h2 className="text-lg font-semibold mb-2 text-foreground">No products found</h2>
             <p className="text-sm text-muted-foreground mb-4">
               Try adjusting your filters or search query
             </p>
             {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters} className="gap-2" size="sm">
+              <Button variant="outline" onClick={clearFilters} className="gap-2 h-10" size="sm">
                 <X className="h-4 w-4" />
                 Clear Filters
               </Button>
@@ -258,10 +255,10 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="max-w-7xl mx-auto">
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border/30 overflow-hidden">
+            <div className="bg-background rounded-lg border border-border/30 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-muted/30 border-b border-border/30">
+                  <thead className="bg-background-secondary border-b border-border/30">
                     <tr>
                       <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Product Name
@@ -284,19 +281,19 @@ export default function ProductsPage() {
                     {products.map((product) => (
                       <tr
                         key={product.product_id}
-                        className="hover:bg-muted/20 transition-colors"
+                        className="hover:bg-background-secondary transition-colors duration-200"
                       >
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Package className="h-5 w-5 text-primary" />
+                            <div className="h-10 w-10 rounded-md bg-accent-surface flex items-center justify-center">
+                              <Package className="h-5 w-5 text-primary-dark" />
                             </div>
                             <div>
-                              <div className="text-sm sm:text-base font-medium text-foreground">
+                              <div className="text-sm font-medium text-foreground">
                                 {product.product_name || 'Untitled Product'}
                               </div>
                               {product.manufacturer_name && (
-                                <div className="text-xs sm:text-sm text-muted-foreground font-normal">
+                                <div className="text-xs text-muted-foreground">
                                   {product.manufacturer_name}
                                 </div>
                               )}
@@ -306,7 +303,7 @@ export default function ProductsPage() {
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                           <Badge
                             variant={product.status === 'published' ? 'default' : 'secondary'}
-                            className="text-xs sm:text-sm"
+                            className="text-xs"
                           >
                             {product.status === 'draft' ? (
                               <FileText className="h-3 w-3 mr-1" />
@@ -317,12 +314,12 @@ export default function ProductsPage() {
                           </Badge>
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-muted-foreground font-normal">
+                          <div className="text-sm text-muted-foreground">
                             {product.category || '-'}
                           </div>
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-muted-foreground font-normal">
+                          <div className="text-sm text-muted-foreground">
                             {product.created_at
                               ? format(new Date(product.created_at), 'MMM d, yyyy')
                               : '-'}
@@ -331,20 +328,20 @@ export default function ProductsPage() {
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Link href={`/dashboard/products/${product.product_id}/analytics`}>
-                              <Button variant="ghost" size="sm" className="gap-2">
+                              <Button variant="ghost" size="sm" className="gap-2 h-9">
                                 <BarChart3 className="h-4 w-4" />
                                 <span className="hidden sm:inline">Analytics</span>
                               </Button>
                             </Link>
                             <Link href={`/dashboard/products/create?productId=${product.product_id}`}>
-                              <Button variant="ghost" size="sm" className="gap-2">
+                              <Button variant="ghost" size="sm" className="gap-2 h-9">
                                 <Edit className="h-4 w-4" />
                                 <span className="hidden sm:inline">Edit</span>
                               </Button>
                             </Link>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" className="h-9 w-9">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -407,9 +404,9 @@ export default function ProductsPage() {
       {/* Delete Confirmation Dialog */}
       {deleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background border border-border rounded-xl p-6 max-w-md w-full mx-4 shadow-lg">
-            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">Delete Product</h3>
-            <p className="text-sm text-muted-foreground mb-6 font-normal">
+          <div className="bg-background border border-border/50 rounded-lg p-6 max-w-md w-full mx-4 shadow-soft">
+            <h3 className="text-lg font-semibold mb-2 text-foreground">Delete Product</h3>
+            <p className="text-sm text-muted-foreground mb-6">
               Are you sure you want to delete this product? This action cannot be undone and will remove all associated data including access logs and analytics.
             </p>
             <div className="flex gap-3 justify-end">
@@ -419,6 +416,7 @@ export default function ProductsPage() {
                   setDeleteConfirmOpen(false)
                   setProductToDelete(null)
                 }}
+                className="h-10"
               >
                 Cancel
               </Button>
@@ -437,6 +435,7 @@ export default function ProductsPage() {
                   }
                 }}
                 disabled={deleteProduct.isPending}
+                className="h-10"
               >
                 {deleteProduct.isPending ? 'Deleting...' : 'Delete'}
               </Button>
@@ -448,9 +447,9 @@ export default function ProductsPage() {
       {/* Marketing Links Dialog */}
       {showLinksDialog && selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background border border-border rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-background border border-border/50 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-soft flex flex-col">
             {/* Dialog Header */}
-            <div className="px-6 py-4 border-b border-border/30 flex items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5">
+            <div className="px-6 py-4 border-b border-border/30 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Marketing Links</h3>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -464,6 +463,7 @@ export default function ProductsPage() {
                   setShowLinksDialog(false)
                   setSelectedProduct(null)
                 }}
+                className="h-9 w-9"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -475,22 +475,22 @@ export default function ProductsPage() {
                 {/* Public Link Section */}
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-primary/10 p-2 mt-0.5">
-                      <Link2 className="h-4 w-4 text-primary" />
+                    <div className="rounded-md bg-accent-surface p-2 mt-0.5">
+                      <Link2 className="h-4 w-4 text-primary-dark" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold text-sm mb-1">Public Product Link</h4>
+                      <h4 className="font-medium text-sm mb-1 text-foreground">Public Product Link</h4>
                       <p className="text-xs text-muted-foreground mb-3">
                         Basic product information visible to everyone
                       </p>
-                      <div className="p-3 rounded-lg border bg-card">
+                      <div className="p-3 rounded-md border border-border/50 bg-background-secondary">
                         <p className="text-xs text-muted-foreground truncate font-mono mb-2">
                           {typeof window !== 'undefined' && `${window.location.origin}/products/${selectedProduct.product_id}`}
                         </p>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full text-xs"
+                          className="w-full text-xs h-9"
                           onClick={() => {
                             const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
                             const publicUrl = `${baseUrl}/products/${selectedProduct.product_id}`
@@ -506,16 +506,16 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="border-t" />
+                <div className="border-t border-border/30" />
 
                 {/* Marketing Channels Section */}
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-accent/10 p-2 mt-0.5">
-                      <Share2 className="h-4 w-4 text-accent-dark" />
+                    <div className="rounded-md bg-purple-100 dark:bg-purple-900/30 p-2 mt-0.5">
+                      <Share2 className="h-4 w-4 text-purple-600" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold text-sm mb-1">Marketing Channel Links</h4>
+                      <h4 className="font-medium text-sm mb-1 text-foreground">Marketing Channel Links</h4>
                       <p className="text-xs text-muted-foreground mb-3">
                         Create and manage secure links for different marketing channels
                       </p>
@@ -573,13 +573,14 @@ export default function ProductsPage() {
             </div>
 
             {/* Dialog Footer */}
-            <div className="px-6 py-4 border-t border-border/30 bg-muted/30">
+            <div className="px-6 py-4 border-t border-border/30 bg-background-secondary">
               <div className="flex justify-end">
                 <Button
                   onClick={() => {
                     setShowLinksDialog(false)
                     setSelectedProduct(null)
                   }}
+                  className="h-10"
                 >
                   Close
                 </Button>
@@ -592,8 +593,8 @@ export default function ProductsPage() {
       {/* QR Code Dialog */}
       {showQrDialog && qrData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background border border-border rounded-xl max-w-md w-full overflow-hidden shadow-2xl">
-            <div className="px-6 py-4 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+          <div className="bg-background border border-border/50 rounded-lg max-w-md w-full overflow-hidden shadow-soft">
+            <div className="px-6 py-4 border-b border-border/30">
               <h3 className="text-lg font-semibold text-foreground">QR Code - {qrData.name}</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Scan this QR code to open the product page
@@ -612,12 +613,13 @@ export default function ProductsPage() {
                 {qrData.url}
               </p>
             </div>
-            <div className="px-6 py-4 border-t border-border/30 bg-muted/30 flex justify-end">
+            <div className="px-6 py-4 border-t border-border/30 bg-background-secondary flex justify-end">
               <Button
                 onClick={() => {
                   setShowQrDialog(false)
                   setQrData(null)
                 }}
+                className="h-10"
               >
                 Close
               </Button>

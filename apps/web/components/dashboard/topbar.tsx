@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell } from 'lucide-react'
+import { Bell, Sparkles } from 'lucide-react'
 import { UserMenu } from './user-menu'
 import { Button } from '@/components/ui/button'
 
@@ -18,31 +18,31 @@ interface TopbarProps {
 
 export function Topbar({ user, title }: TopbarProps) {
   return (
-    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 bg-background/98 backdrop-blur-sm border-b border-border/30">
+      <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">P</span>
+          <div className="lg:hidden flex items-center gap-3">
+            <div className="h-9 w-9 rounded-md bg-primary-dark flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
           </div>
           {/* Page title */}
           {title && (
-            <h1 className="text-lg sm:text-xl font-semibold">{title}</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-foreground">{title}</h1>
           )}
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Notifications */}
           <Button 
             variant="ghost" 
             size="icon"
-            className="relative min-h-[44px] min-w-[44px] touch-manipulation"
+            className="relative h-10 w-10 rounded-md hover:bg-background-secondary touch-manipulation"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-5 w-5 text-muted-foreground" />
             {/* Notification badge */}
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive" />
+            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
           </Button>
           
           {/* User menu */}
@@ -52,4 +52,3 @@ export function Topbar({ user, title }: TopbarProps) {
     </header>
   )
 }
-

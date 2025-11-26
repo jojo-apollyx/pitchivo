@@ -257,7 +257,7 @@ export default function PublicProductPage() {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary-dark" />
           <p className="text-muted-foreground">Loading product...</p>
         </div>
       </main>
@@ -266,18 +266,14 @@ export default function PublicProductPage() {
 
   if (!formData) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-accent/10 relative overflow-hidden">
-        {/* Background decorative elements */}
-        <div className="pointer-events-none absolute -right-12 top-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 left-10 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        
+      <main className="min-h-screen bg-background relative overflow-hidden">
         <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
           <div className="w-full max-w-2xl">
-            <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 sm:p-12 shadow-xl">
+            <div className="rounded-lg border border-border/50 bg-background-secondary p-8 sm:p-12">
               {/* Icon */}
               <div className="flex justify-center mb-6">
-                <div className="rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6">
-                  <Package2 className="h-16 w-16 text-amber-600 dark:text-amber-500" />
+                <div className="rounded-lg bg-accent-surface p-6">
+                  <Package2 className="h-16 w-16 text-primary-dark" />
                 </div>
               </div>
 
@@ -293,27 +289,27 @@ export default function PublicProductPage() {
                 </p>
                 
                 {/* Possible reasons */}
-                <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-border/30 text-left">
+                <div className="mt-6 p-4 rounded-md bg-background border border-border/50 text-left">
                   <p className="text-sm font-medium text-foreground mb-3">Possible reasons:</p>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
-                      <span className="text-amber-600 mt-0.5">•</span>
+                      <span className="text-primary-dark mt-0.5">•</span>
                       <span>The product hasn't been published yet (still in draft)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-amber-600 mt-0.5">•</span>
+                      <span className="text-primary-dark mt-0.5">•</span>
                       <span>The product link is incorrect or has been changed</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-amber-600 mt-0.5">•</span>
+                      <span className="text-primary-dark mt-0.5">•</span>
                       <span>The product has been removed by the seller</span>
                     </li>
                   </ul>
                 </div>
 
                 {isMerchant && (
-                  <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
-                    <p className="text-sm font-medium text-primary mb-2">
+                  <div className="mt-4 p-4 rounded-md bg-accent-surface border border-accent-color/30">
+                    <p className="text-sm font-medium text-primary-dark mb-2">
                       👋 Product Owner?
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -368,8 +364,8 @@ export default function PublicProductPage() {
 
       <main className="min-h-screen bg-background">
         {isMerchant && (
-          <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
-            <p className="text-xs text-primary font-medium">
+          <div className="bg-accent-surface border-b border-accent-color/30 px-4 py-2 text-center">
+            <p className="text-xs text-primary-dark font-medium">
               Merchant Preview Mode - Full Access Enabled
             </p>
           </div>

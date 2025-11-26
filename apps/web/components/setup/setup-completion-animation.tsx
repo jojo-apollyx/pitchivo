@@ -92,19 +92,12 @@ export function SetupCompletionAnimation({ onComplete, pitchivoDomain }: SetupCo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary-light/10 rounded-full blur-3xl animate-pulse" />
-      </div>
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
       <div className="relative z-10 w-full max-w-2xl px-4 sm:px-6">
-        <div className="bg-card/80 backdrop-blur-xl rounded-2xl p-8 sm:p-12 shadow-premium-xl border border-border/50">
+        <div className="bg-background-secondary rounded-lg p-8 sm:p-12 border border-border/50">
           {/* Header */}
           <div className="text-center mb-12 animate-fadeIn">
-            <div className="inline-flex p-4 bg-gradient-accent rounded-2xl shadow-premium-lg mb-6 animate-scaleIn">
+            <div className="inline-flex p-4 bg-primary-dark rounded-lg mb-6 animate-scaleIn">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 animate-slideUp">
@@ -127,13 +120,13 @@ export function SetupCompletionAnimation({ onComplete, pitchivoDomain }: SetupCo
                 <div
                   key={step.id}
                   className={`
-                    flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-500
+                    flex items-center gap-4 p-4 rounded-md border-2 transition-all duration-500
                     ${
                       isCompleted
-                        ? 'bg-primary/10 border-primary/30 shadow-premium'
+                        ? 'bg-accent-surface border-accent-color/50'
                         : isActive
-                        ? 'bg-primary/5 border-primary/50 shadow-premium animate-pulse'
-                        : 'bg-background/50 border-border/30'
+                        ? 'bg-background border-primary-dark/50 animate-pulse'
+                        : 'bg-background border-border/30'
                     }
                     animate-slideUp
                   `}
@@ -142,13 +135,13 @@ export function SetupCompletionAnimation({ onComplete, pitchivoDomain }: SetupCo
                   {/* Icon */}
                   <div
                     className={`
-                      flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-500
+                      flex-shrink-0 w-12 h-12 rounded-md flex items-center justify-center transition-all duration-500
                       ${
                         isCompleted
-                          ? 'bg-primary text-primary-foreground scale-110'
+                          ? 'bg-primary-dark text-white scale-110'
                           : isActive
-                          ? 'bg-primary/20 text-primary animate-pulse'
-                          : 'bg-muted text-muted-foreground'
+                          ? 'bg-accent-surface text-primary-dark animate-pulse'
+                          : 'bg-background-secondary text-muted-foreground'
                       }
                     `}
                   >
@@ -184,7 +177,7 @@ export function SetupCompletionAnimation({ onComplete, pitchivoDomain }: SetupCo
                   {/* Progress indicator */}
                   {isActive && (
                     <div className="flex-shrink-0">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      <div className="w-2 h-2 rounded-full bg-primary-dark animate-pulse" />
                     </div>
                   )}
                 </div>
@@ -194,9 +187,9 @@ export function SetupCompletionAnimation({ onComplete, pitchivoDomain }: SetupCo
 
           {/* Domain reveal */}
           {showDomain && pitchivoDomain && (
-            <div className="mt-8 p-6 bg-gradient-accent-soft rounded-xl border border-primary/20 animate-scaleIn">
+            <div className="mt-8 p-6 bg-primary-dark rounded-lg animate-scaleIn">
               <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-background/20 rounded-lg mb-3">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-md mb-3">
                   <Globe className="w-5 h-5 text-white" />
                   <span className="text-sm font-medium text-white/90">Your workspace is ready!</span>
                 </div>
@@ -212,9 +205,9 @@ export function SetupCompletionAnimation({ onComplete, pitchivoDomain }: SetupCo
 
           {/* Loading bar */}
           <div className="mt-8">
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-2 bg-border rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-accent rounded-full transition-all duration-500 ease-out"
+                className="h-full bg-primary-dark rounded-full transition-all duration-500 ease-out"
                 style={{
                   width: `${((currentStep + 1) / SETUP_STEPS.length) * 100}%`,
                 }}

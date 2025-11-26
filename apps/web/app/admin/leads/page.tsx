@@ -10,18 +10,14 @@ export default function AdminLeadsPage() {
   const [activeTab, setActiveTab] = useState('suppliers')
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Header */}
-        <section className="px-4 sm:px-6 lg:px-8 py-8 border-b border-border/50 bg-card/50 backdrop-blur-sm">
+        <section className="px-4 sm:px-6 lg:px-8 py-8 border-b border-border/30 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Database className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 rounded-lg bg-accent-surface flex items-center justify-center">
+                <Database className="h-6 w-6 text-primary-dark" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-foreground">Leads Management</h1>

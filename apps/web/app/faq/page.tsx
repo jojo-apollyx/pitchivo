@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // FAQ Structured Data for SEO/AEO
 const faqStructuredData = {
@@ -200,26 +198,22 @@ export default function FAQPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
       />
 
-      <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-        <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+      <main className="min-h-screen bg-background">
         <div className="relative">
           {/* Header */}
-          <nav id="faq-navigation" className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
+          <nav id="faq-navigation" className="sticky top-0 z-50 border-b border-border/30 bg-background/98 backdrop-blur-sm">
+            <div className="container mx-auto px-6 py-5 sm:px-8 lg:px-12">
               <div className="flex items-center justify-between">
                 <Link 
                   id="faq-nav-logo-link"
                   href="/" 
-                  className="flex items-center gap-2 transition-all duration-300 hover:scale-[1.02]"
+                  className="flex items-center gap-3"
                   aria-label="Pitchivo home"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-accent transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-dark transition-colors duration-200 hover:bg-primary-darker">
                     <Sparkles className="h-5 w-5 text-white" />
                   </div>
-                  <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                  <span className="text-xl font-semibold text-foreground tracking-tight">
                     Pitchivo
                   </span>
                 </Link>
@@ -228,7 +222,7 @@ export default function FAQPage() {
                     id="faq-nav-back-button"
                     variant="ghost" 
                     size="sm" 
-                    className="gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                    className="gap-2 h-10 rounded-md hover:bg-background-secondary"
                     aria-label="Go back to home"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -240,13 +234,13 @@ export default function FAQPage() {
           </nav>
 
           {/* Hero Section */}
-          <section id="faq-hero-section" className="py-12 sm:py-16 lg:py-20">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+          <section id="faq-hero-section" className="py-16 sm:py-20 lg:py-24">
+            <div className="container mx-auto px-6 sm:px-8 lg:px-12 max-w-4xl">
               <div className="text-center mb-12">
-                <Badge variant="premium" className="mb-4 transition-all duration-300 hover:scale-[1.02]">
+                <span className="inline-flex items-center text-sm font-medium text-primary-dark px-3 py-1 bg-accent-surface rounded-md mb-6">
                   FAQ
-                </Badge>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight mb-4">
+                </span>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight mb-4 text-foreground">
                   Frequently Asked Questions
                 </h1>
                 <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -257,31 +251,31 @@ export default function FAQPage() {
           </section>
 
           {/* FAQ Section */}
-          <section id="faq-questions-section" className="py-12 sm:py-16 lg:py-20 border-b border-border/30">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+          <section id="faq-questions-section" className="py-16 sm:py-20 lg:py-24 bg-background-secondary">
+            <div className="container mx-auto px-6 sm:px-8 lg:px-12 max-w-4xl">
               <div className="space-y-4">
                 {faqs.map((faq, index) => (
                   <div
                     key={index}
                     id={`faq-item-${index + 1}`}
-                    className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
+                    className="bg-background rounded-lg p-6 hover:bg-accent-surface transition-colors duration-200 group"
                     itemScope
                     itemType="https://schema.org/Question"
                     role="article"
                   >
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
-                        <HelpCircle className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="flex-shrink-0 p-2 rounded-md bg-accent-surface group-hover:bg-primary-dark/10 transition-colors duration-200">
+                        <HelpCircle className="h-5 w-5 text-primary-dark" />
                       </div>
                       <h2
-                        className="text-lg sm:text-xl font-display font-semibold group-hover:text-primary transition-colors duration-300"
+                        className="text-lg font-semibold text-foreground"
                         itemProp="name"
                       >
                         {faq.question}
                       </h2>
                     </div>
                     <div
-                      className="text-base text-muted-foreground leading-relaxed"
+                      className="text-muted-foreground leading-relaxed pl-12"
                       itemScope
                       itemType="https://schema.org/Answer"
                       itemProp="acceptedAnswer"
@@ -293,16 +287,16 @@ export default function FAQPage() {
               </div>
 
               {/* CTA Section */}
-              <div id="faq-cta-section" className="mt-12 text-center">
-                <div className="bg-card/50 backdrop-blur-sm rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
-                  <p className="text-base text-muted-foreground mb-6">
+              <div id="faq-cta-section" className="mt-16 text-center">
+                <div className="bg-accent-surface rounded-lg p-10">
+                  <p className="text-lg text-muted-foreground mb-6">
                     Still have questions? We're here to help.
                   </p>
                   <Link href="/contact">
                     <Button 
                       id="faq-contact-us-button"
                       size="lg" 
-                      className="h-12 sm:h-14 px-8 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                      className="h-12 px-8 rounded-md bg-primary-dark hover:bg-primary-darker text-white transition-colors duration-200"
                       aria-label="Contact us for more information"
                     >
                       Contact Us
@@ -317,4 +311,3 @@ export default function FAQPage() {
     </>
   );
 }
-

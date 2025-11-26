@@ -74,16 +74,16 @@ export function UserMenu({ user }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="outline-none">
-        <Avatar className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity">
+        <Avatar className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity rounded-md">
           <AvatarImage src={avatarUrl} alt={fullName} />
-          <AvatarFallback className="bg-primary text-primary-foreground">
+          <AvatarFallback className="bg-primary-dark text-white rounded-md">
             {initials}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <div className="px-2 py-1.5 text-sm">
-          <p className="font-semibold">{fullName}</p>
+        <div className="px-3 py-2">
+          <p className="font-medium text-sm text-foreground">{fullName}</p>
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
         <DropdownMenuSeparator />
@@ -127,4 +127,3 @@ export function UserMenu({ user }: UserMenuProps) {
     </DropdownMenu>
   )
 }
-

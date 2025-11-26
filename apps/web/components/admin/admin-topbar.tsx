@@ -22,8 +22,8 @@ interface AdminTopbarProps {
 
 export function AdminTopbar({ user, searchPlaceholder = "Search users or organizations...", onSearch }: AdminTopbarProps) {
   return (
-    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6 gap-4">
+    <header className="sticky top-0 z-40 bg-background/98 backdrop-blur-sm border-b border-border/30">
+      <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 gap-4">
         <div className="flex items-center gap-4 flex-1">
           {/* Mobile menu button and logo */}
           <div className="lg:hidden flex items-center gap-3">
@@ -31,22 +31,22 @@ export function AdminTopbar({ user, searchPlaceholder = "Search users or organiz
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-[36px] px-2 -ml-2"
+                className="h-10 w-10 p-0 rounded-md hover:bg-background-secondary"
                 title="Open menu"
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </AdminMobileNav>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">A</span>
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-md bg-primary-dark flex items-center justify-center">
+                <span className="text-white font-semibold text-lg">A</span>
               </div>
-              <span className="font-semibold text-lg">Admin Panel</span>
+              <span className="font-semibold text-lg text-foreground tracking-tight">Admin</span>
             </div>
           </div>
           {/* Desktop title */}
           <div className="hidden lg:block">
-            <h1 className="text-lg sm:text-xl font-semibold">Admin Panel</h1>
+            <h1 className="text-lg font-semibold text-foreground">Admin Panel</h1>
           </div>
           {/* Search box */}
           {onSearch && (
@@ -57,14 +57,14 @@ export function AdminTopbar({ user, searchPlaceholder = "Search users or organiz
                   type="search"
                   placeholder={searchPlaceholder}
                   onChange={(e) => onSearch(e.target.value)}
-                  className="pl-9 h-9"
+                  className="pl-10 h-10"
                 />
               </div>
             </div>
           )}
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* User menu */}
           <UserMenu user={user} />
         </div>
@@ -72,4 +72,3 @@ export function AdminTopbar({ user, searchPlaceholder = "Search users or organiz
     </header>
   )
 }
-

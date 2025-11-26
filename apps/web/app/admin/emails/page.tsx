@@ -66,14 +66,10 @@ export default function BrevoEmailsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Header */}
-        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight">
@@ -114,8 +110,8 @@ export default function BrevoEmailsPage() {
                 <Card className="p-6">
                   <div className="space-y-6">
                     <div className="flex items-start gap-4 pb-4 border-b border-border/30">
-                      <div className="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-                        <Mail className="h-6 w-6 text-primary" />
+                      <div className="h-12 w-12 rounded-lg bg-accent-surface flex items-center justify-center flex-shrink-0">
+                        <Mail className="h-6 w-6 text-primary-dark" />
                       </div>
                       <div>
                         <h2 className="text-lg font-semibold mb-1">Send Transactional Email</h2>
@@ -184,12 +180,12 @@ export default function BrevoEmailsPage() {
                   </div>
                 </Card>
 
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="bg-accent-surface rounded-md p-4 border border-accent-color/30">
                   <div className="flex items-start gap-2">
-                    <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-blue-800">
+                    <Mail className="h-5 w-5 text-primary-dark flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-foreground">
                       <p className="font-semibold mb-1">Transactional Emails via Brevo</p>
-                      <p className="text-xs">
+                      <p className="text-xs text-muted-foreground">
                         These emails are sent immediately through Brevo's API. Use this for:
                         welcome emails, notifications, alerts, password resets, etc.
                         <br />
@@ -211,12 +207,12 @@ export default function BrevoEmailsPage() {
                   />
                 </Card>
 
-                <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                <div className="bg-background-secondary rounded-md p-4 border border-border/30">
                   <div className="flex items-start gap-2">
-                    <Sparkles className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-amber-800">
+                    <Sparkles className="h-5 w-5 text-primary-dark flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-foreground">
                       <p className="font-semibold mb-1">Quality Check Tips</p>
-                      <ul className="space-y-1 text-xs">
+                      <ul className="space-y-1 text-xs text-muted-foreground">
                         <li>• Aim for a score of 80+ for best deliverability</li>
                         <li>• Keep spam risk level "low" to avoid spam folders</li>
                         <li>• Review and fix all high-severity issues before sending</li>
@@ -233,12 +229,12 @@ export default function BrevoEmailsPage() {
                   <EmailTemplateManager onSelectTemplate={handleLoadTemplate} />
                 </Card>
 
-                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                <div className="bg-background-secondary rounded-md p-4 border border-border/30">
                   <div className="flex items-start gap-2">
-                    <FileText className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-purple-800">
+                    <FileText className="h-5 w-5 text-primary-dark flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-foreground">
                       <p className="font-semibold mb-1">Template Management</p>
-                      <ul className="space-y-1 text-xs">
+                      <ul className="space-y-1 text-xs text-muted-foreground">
                         <li>• Save frequently used email templates for reuse</li>
                         <li>• Templates are global and available for all transactional emails</li>
                         <li>• Organize templates by category (welcome, notification, alert, etc.)</li>
@@ -255,12 +251,12 @@ export default function BrevoEmailsPage() {
                   <BrevoEmailHistory />
                 </Card>
 
-                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                <div className="bg-background-secondary rounded-md p-4 border border-border/30">
                   <div className="flex items-start gap-2">
-                    <History className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-green-800">
+                    <History className="h-5 w-5 text-primary-dark flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-foreground">
                       <p className="font-semibold mb-1">Email Tracking</p>
-                      <ul className="space-y-1 text-xs">
+                      <ul className="space-y-1 text-xs text-muted-foreground">
                         <li>• View all emails sent via Brevo with complete event history</li>
                         <li>• Track delivery, opens, clicks, bounces, and spam reports</li>
                         <li>• Click "Details" to see the full event timeline for any email</li>

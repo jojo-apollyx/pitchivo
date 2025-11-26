@@ -303,19 +303,15 @@ export default function AdminWaitlistPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden"
+      className="min-h-screen bg-background relative overflow-hidden"
     >
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
       <div className="relative">
         {/* Page Header - Integral Section */}
         <motion.section
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50"
+          className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30"
         >
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold">Waitlist Management</h1>
@@ -333,14 +329,14 @@ export default function AdminWaitlistPage() {
           className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30"
         >
           <div className="max-w-6xl">
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex gap-2 flex-wrap">
                   <Button
                     variant={filterStatus === 'all' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setFilterStatus('all')}
-                    className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                    className="min-h-[44px] transition-colors duration-200"
                   >
                     All
                   </Button>
@@ -348,7 +344,7 @@ export default function AdminWaitlistPage() {
                     variant={filterStatus === 'pending' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setFilterStatus('pending')}
-                    className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                    className="min-h-[44px] transition-colors duration-200"
                   >
                     Pending
                   </Button>
@@ -356,7 +352,7 @@ export default function AdminWaitlistPage() {
                     variant={filterStatus === 'invited' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setFilterStatus('invited')}
-                    className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                    className="min-h-[44px] transition-colors duration-200"
                   >
                     Invited
                   </Button>
@@ -364,7 +360,7 @@ export default function AdminWaitlistPage() {
                     variant={filterStatus === 'approved' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setFilterStatus('approved')}
-                    className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                    className="min-h-[44px] transition-colors duration-200"
                   >
                     Approved
                   </Button>
@@ -372,7 +368,7 @@ export default function AdminWaitlistPage() {
                     variant={filterStatus === 'rejected' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setFilterStatus('rejected')}
-                    className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                    className="min-h-[44px] transition-colors duration-200"
                   >
                     Rejected
                   </Button>
@@ -390,7 +386,7 @@ export default function AdminWaitlistPage() {
           className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6"
         >
           <div className="max-w-6xl">
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
               <DataTable
                 columns={columns}
                 data={filteredWaitlist}
@@ -420,13 +416,13 @@ export default function AdminWaitlistPage() {
             <Button
               variant="outline"
               onClick={() => closeDialog('invite')}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+              className="transition-colors duration-200"
             >
               Cancel
             </Button>
             <Button
               onClick={confirmInvite}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+              className="transition-colors duration-200"
             >
               Send Invitation
             </Button>
@@ -451,14 +447,14 @@ export default function AdminWaitlistPage() {
             <Button
               variant="outline"
               onClick={() => closeDialog('block')}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+              className="transition-colors duration-200"
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={confirmBlock}
-              className="transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+              className="transition-colors duration-200"
             >
               Block Domain
             </Button>

@@ -238,14 +238,11 @@ export function RealPagePreview({
       itemScope
       itemType="https://schema.org/Product"
     >
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/3 rounded-full blur-3xl -z-10 pointer-events-none" />
 
       {/* Hero Section with Product Name on Left, Image on Right */}
       <motion.section
         variants={itemVariants}
-        className="relative bg-gradient-to-br from-background via-background to-primary/5 px-4 sm:px-6 lg:px-8 py-8 sm:py-12 border-b border-border/30"
+        className="relative bg-background px-4 sm:px-6 lg:px-8 py-8 sm:py-12 border-b border-border/30"
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
@@ -288,7 +285,7 @@ export function RealPagePreview({
               >
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="relative aspect-square rounded-xl overflow-hidden border border-border/30 bg-gradient-to-br from-background to-muted/10 group cursor-pointer"
+                  className="relative aspect-square rounded-lg overflow-hidden border border-border/30 bg-background-secondary group cursor-pointer"
                 >
                   {(() => {
                     const firstImage = formData.product_images[0]
@@ -337,7 +334,7 @@ export function RealPagePreview({
       {shouldShow('product_images') && formData.product_images && Array.isArray(formData.product_images) && formData.product_images.length > 1 && (
         <motion.section
           variants={itemVariants}
-          className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30 bg-gradient-to-b from-background to-muted/20"
+          className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border/30 bg-background-secondary"
         >
           <div className="max-w-7xl mx-auto">
             <h3 className="text-lg sm:text-xl font-semibold mb-4 text-foreground">Additional Images</h3>
@@ -359,7 +356,7 @@ export function RealPagePreview({
                     key={index + 1}
                     variants={itemVariants}
                     whileHover={{ scale: 1.02, y: -4 }}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-border/30 bg-gradient-to-br from-background to-muted/10 group cursor-pointer"
+                    className="relative aspect-square rounded-lg overflow-hidden border border-border/30 bg-background group cursor-pointer"
                   >
                     <img
                       src={imgSrc}
@@ -396,7 +393,7 @@ export function RealPagePreview({
                 <Button
                   onClick={onRfqClick}
                   size="lg"
-                  className="gap-2 min-h-[48px] px-6 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20 w-full sm:w-auto"
+                  className="gap-2 min-h-[48px] px-6 text-base font-semibold transition-colors duration-200 w-full sm:w-auto"
                 >
                   <MessageSquare className="h-5 w-5" />
                   Request More Information
@@ -410,7 +407,7 @@ export function RealPagePreview({
                   <motion.div
                     key={idx}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                     itemScope
                     itemType="https://schema.org/Offer"
                   >
@@ -438,7 +435,7 @@ export function RealPagePreview({
                 ))}
               </div>
             ) : (
-              <div className="p-5 sm:p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+              <div className="p-5 sm:p-6 rounded-lg bg-accent-surface border border-accent-color/30">
                 {renderFieldValue(formData.price_lead_time, 'price_lead_time', 'text-base sm:text-lg text-foreground font-medium')}
               </div>
             )}
@@ -473,7 +470,7 @@ export function RealPagePreview({
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
@@ -546,7 +543,7 @@ export function RealPagePreview({
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
@@ -585,7 +582,7 @@ export function RealPagePreview({
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
@@ -623,7 +620,7 @@ export function RealPagePreview({
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
@@ -658,7 +655,7 @@ export function RealPagePreview({
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
@@ -697,7 +694,7 @@ export function RealPagePreview({
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
@@ -740,7 +737,7 @@ export function RealPagePreview({
                   <motion.div
                     key={field.key}
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       {field.label}
@@ -751,7 +748,7 @@ export function RealPagePreview({
                 {hasStorageConditions && formData.storage_conditions && (
                   <motion.div
                     variants={itemVariants}
-                    className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                    className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                       Storage Conditions
@@ -828,7 +825,7 @@ export function RealPagePreview({
                     <motion.div
                       key={field.key}
                       variants={itemVariants}
-                      className="p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-br from-background to-muted/10 border border-border/30 hover:border-primary/30 transition-all duration-300 hover:shadow-md"
+                      className="p-3 sm:p-4 lg:p-5 rounded-lg bg-background-secondary border border-border/30 hover:border-primary-dark/50 transition-colors duration-200"
                     >
                       <p className="text-xs sm:text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wide">
                         {field.label}
@@ -854,12 +851,12 @@ export function RealPagePreview({
                   key={idx}
                   variants={itemVariants}
                   whileHover={{ scale: 1.02, y: -4 }}
-                  className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-5 sm:p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
+                  className="group relative overflow-hidden rounded-lg border border-border/30 bg-background-secondary p-5 sm:p-6 hover:border-primary-dark/50 transition-colors duration-200"
                 >
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
-                      <div className="rounded-lg bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors duration-300">
-                        <MapPin className="h-5 w-5 text-primary" />
+                      <div className="rounded-lg bg-accent-surface p-3 group-hover:bg-accent-color/20 transition-colors duration-200">
+                        <MapPin className="h-5 w-5 text-primary-dark" />
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -911,12 +908,12 @@ export function RealPagePreview({
                     key={idx}
                     variants={itemVariants}
                     whileHover={{ scale: 1.02, y: -4 }}
-                    className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-background to-muted/20 p-5 sm:p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
+                    className="group relative overflow-hidden rounded-lg border border-border/30 bg-background-secondary p-5 sm:p-6 hover:border-primary-dark/50 transition-colors duration-200"
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0">
-                        <div className="rounded-lg bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors duration-300">
-                          <Package className="h-5 w-5 text-primary" />
+                        <div className="rounded-lg bg-accent-surface p-3 group-hover:bg-accent-color/20 transition-colors duration-200">
+                          <Package className="h-5 w-5 text-primary-dark" />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0 space-y-3">
@@ -987,17 +984,17 @@ export function RealPagePreview({
               <div className="flex items-center gap-3 mb-6">
                 <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Documentation & Files</h2>
                 {isLocked && (
-                  <Badge variant="outline" className="text-xs bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                  <Badge variant="outline" className="text-xs bg-accent-surface text-primary-dark border-accent-color/30">
                     🔒 {requiredLevel === 'after_click' ? 'Request Info' : 'Request Quote to Download'}
                   </Badge>
                 )}
               </div>
               {isLocked && (
-                <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                  <p className="text-sm text-amber-900 dark:text-amber-200 font-medium mb-1">
+                <div className="mb-6 p-4 rounded-md bg-accent-surface border border-accent-color/30">
+                  <p className="text-sm text-foreground font-medium mb-1">
                     📄 Documents Available
                   </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                  <p className="text-xs text-muted-foreground">
                     {requiredLevel === 'after_click' 
                       ? 'Click a marketing link or request information to see document details and download.'
                       : 'Submit a quote request to unlock full document access and downloads.'}
@@ -1013,28 +1010,28 @@ export function RealPagePreview({
                       <motion.div
                         key={`preview-${idx}`}
                         variants={itemVariants}
-                        className="group relative overflow-hidden rounded-xl border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/50 dark:from-amber-950/10 to-background p-4 transition-all duration-300 cursor-not-allowed"
+                        className="group relative overflow-hidden rounded-lg border border-accent-color/30 bg-accent-surface p-4 transition-colors duration-200 cursor-not-allowed"
                       >
                         <div className="flex flex-col h-full">
                           {/* Document Icon and Type */}
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="rounded-lg p-2.5 bg-amber-100 dark:bg-amber-900/20">
-                              <File className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                            <div className="rounded-lg p-2.5 bg-background">
+                              <File className="h-5 w-5 text-primary-dark" />
                             </div>
-                            <Badge variant="outline" className="text-xs font-semibold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                            <Badge variant="outline" className="text-xs font-semibold bg-background text-primary-dark border-accent-color/30">
                               {docPreview.type || 'Document'}
                             </Badge>
                           </div>
                           
                           {/* Locked message */}
                           <div className="flex-1 min-w-0 mb-3">
-                            <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                            <p className="text-sm text-primary-dark font-medium">
                               🔒 Locked - Request access to view
                             </p>
                           </div>
                           
                           {/* Footer */}
-                          <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-500 border-t border-amber-200 dark:border-amber-800 pt-3 mt-auto">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-accent-color/30 pt-3 mt-auto">
                             <span>Requires {requiredLevel === 'after_click' ? 'marketing link' : 'quote request'}</span>
                           </div>
                         </div>
@@ -1053,28 +1050,28 @@ export function RealPagePreview({
                       <motion.div
                         key={`placeholder-${idx}`}
                         variants={itemVariants}
-                        className="group relative overflow-hidden rounded-xl border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/50 dark:from-amber-950/10 to-background p-4 transition-all duration-300 cursor-not-allowed"
+                        className="group relative overflow-hidden rounded-lg border border-accent-color/30 bg-accent-surface p-4 transition-colors duration-200 cursor-not-allowed"
                       >
                         <div className="flex flex-col h-full">
                           {/* Document Icon */}
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="rounded-lg p-2.5 bg-amber-100 dark:bg-amber-900/20">
-                              <File className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                            <div className="rounded-lg p-2.5 bg-background">
+                              <File className="h-5 w-5 text-primary-dark" />
                             </div>
-                            <Badge variant="outline" className="text-xs font-semibold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                            <Badge variant="outline" className="text-xs font-semibold bg-background text-primary-dark border-accent-color/30">
                               Document
                             </Badge>
                           </div>
                           
                           {/* Locked message */}
                           <div className="flex-1 min-w-0 mb-3">
-                            <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                            <p className="text-sm text-primary-dark font-medium">
                               🔒 Locked - Request access to view
                             </p>
                           </div>
                           
                           {/* Footer */}
-                          <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-500 border-t border-amber-200 dark:border-amber-800 pt-3 mt-auto">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-accent-color/30 pt-3 mt-auto">
                             <span>Requires {requiredLevel === 'after_click' ? 'marketing link' : 'quote request'}</span>
                           </div>
                         </div>
@@ -1098,32 +1095,32 @@ export function RealPagePreview({
                       variants={itemVariants}
                       whileHover={!isLocked ? { scale: 1.02, y: -2 } : {}}
                       className={cn(
-                        "group relative overflow-hidden rounded-xl border bg-gradient-to-br p-4 transition-all duration-300",
+                        "group relative overflow-hidden rounded-lg border p-4 transition-colors duration-200",
                         isLocked 
-                          ? "border-amber-200 dark:border-amber-800 from-amber-50/50 dark:from-amber-950/10 to-background cursor-not-allowed"
-                          : "border-border/30 from-background to-muted/20 hover:border-primary/50 hover:shadow-lg"
+                          ? "border-accent-color/30 bg-accent-surface cursor-not-allowed"
+                          : "border-border/30 bg-background-secondary hover:border-primary-dark/50"
                       )}
                     >
                       <div className="flex flex-col h-full">
                         {/* Document Icon and Type Header */}
                         <div className="flex items-center gap-3 mb-3">
                           <div className={cn(
-                            "rounded-lg p-2.5 transition-colors duration-300",
+                            "rounded-lg p-2.5 transition-colors duration-200",
                             isLocked 
-                              ? "bg-amber-100 dark:bg-amber-900/20" 
-                              : "bg-primary/10 group-hover:bg-primary/20"
+                              ? "bg-background" 
+                              : "bg-accent-surface group-hover:bg-accent-color/20"
                           )}>
                             <FileIcon className={cn(
                               "h-5 w-5",
-                              isLocked ? "text-amber-600 dark:text-amber-500" : "text-primary"
+                              isLocked ? "text-primary-dark" : "text-primary-dark"
                             )} />
                           </div>
                           {docType && (
                             <Badge variant="outline" className={cn(
                               "text-xs font-semibold",
                               isLocked 
-                                ? "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
-                                : "bg-primary/10 text-primary border-primary/30"
+                                ? "bg-background text-primary-dark border-accent-color/30"
+                                : "bg-accent-surface text-primary-dark border-accent-color/30"
                             )}>
                               {docType}
                             </Badge>
@@ -1138,7 +1135,7 @@ export function RealPagePreview({
                             </p>
                           )}
                           {isLocked && (
-                            <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1 mt-1">
+                            <p className="text-xs text-primary-dark flex items-center gap-1 mt-1">
                               <span>🔒</span>
                               <span>Locked - Request access to view</span>
                             </p>

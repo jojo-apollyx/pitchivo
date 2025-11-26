@@ -548,10 +548,10 @@ export default function OrganizationSetup() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-0 border-4 border-border rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary-dark border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <p className="text-lg text-foreground/70">Loading...</p>
+          <p className="text-lg text-muted-foreground">Loading...</p>
         </div>
       </div>
     )
@@ -562,27 +562,23 @@ export default function OrganizationSetup() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="relative w-16 h-16 mx-auto">
-            <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-0 border-4 border-border rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary-dark border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <p className="text-lg text-foreground/70">Setting up your workspace...</p>
+          <p className="text-lg text-muted-foreground">Setting up your workspace...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Header */}
-        <section id="organization-setup-header-section" className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50">
+        <section id="organization-setup-header-section" className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/30">
           <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary-light/20">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-dark transition-colors duration-200">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-display font-bold text-foreground">Pitchivo</span>
@@ -595,11 +591,11 @@ export default function OrganizationSetup() {
           <div className="max-w-2xl mx-auto">
             {/* Title Section */}
             <div className="text-center mb-8 sm:mb-12">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 mb-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+              <div className="bg-background-secondary rounded-lg p-6 sm:p-8 mb-6 transition-colors duration-200">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground mb-3">
                   {isSubsequentUser ? 'Complete your profile' : 'Set up your organization'}
                 </h1>
-                <p className="text-base sm:text-lg text-foreground/70">
+                <p className="text-base sm:text-lg text-muted-foreground">
                   {isSubsequentUser 
                     ? 'Update your profile information to get started.'
                     : "Let's personalize your workspace for your company."}
@@ -608,7 +604,7 @@ export default function OrganizationSetup() {
             </div>
 
             {/* Form */}
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
             {/* Company Name - Only show for first user */}
             {!isSubsequentUser && (
@@ -628,9 +624,9 @@ export default function OrganizationSetup() {
                     <p className="text-sm text-destructive">{errors.companyName.message}</p>
                   )}
                   {/* Warning about company name being non-editable */}
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-accent/10 border border-accent/30 text-sm">
-                    <AlertTriangle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
-                    <p className="text-foreground/80">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-accent-surface border border-accent-color/30 text-sm">
+                    <AlertTriangle className="h-4 w-4 text-primary-dark flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">
                       <span className="font-semibold text-foreground">Important:</span> Company name cannot be changed after setup. Please pay attention to capitalization and spelling.
                     </p>
                   </div>
@@ -652,7 +648,7 @@ export default function OrganizationSetup() {
                   {errors.domain && (
                     <p className="text-sm text-destructive">{errors.domain.message}</p>
                   )}
-                  <p className="text-sm text-foreground/60">
+                  <p className="text-sm text-muted-foreground">
                     {userEmail 
                       ? `Automatically detected from your email (${userEmail}). Users with the same domain will automatically join your workspace.`
                       : 'Users with the same domain will automatically join your workspace.'}
@@ -720,14 +716,14 @@ export default function OrganizationSetup() {
                       })
                     }}
                     className={`
-                      min-h-[44px] px-4 py-3 rounded-lg border-2 text-base font-medium
-                      transition-all duration-300 touch-manipulation hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20
+                      min-h-[44px] px-4 py-3 rounded-md border-2 text-base font-medium
+                      transition-colors duration-200 touch-manipulation
                       ${
                         formData.companySize === size.value
-                          ? 'bg-primary text-primary-foreground border-primary shadow-lg'
+                          ? 'bg-primary-dark text-white border-primary-dark'
                           : errors.companySize
                           ? 'border-destructive hover:border-destructive/50'
-                          : 'bg-background text-foreground border-border hover:border-primary/50 hover:bg-primary/5'
+                          : 'bg-background text-foreground border-border hover:border-primary-dark hover:bg-accent-surface'
                       }
                     `}
                   >
@@ -760,7 +756,7 @@ export default function OrganizationSetup() {
                   autoComplete="off"
                 />
                 {showRoleSuggestions && roleSuggestions.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-48 overflow-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-background border border-border/50 rounded-lg shadow-soft max-h-48 overflow-auto">
                     {roleSuggestions.map((suggestion) => (
                       <button
                         key={suggestion}
@@ -769,7 +765,7 @@ export default function OrganizationSetup() {
                           setValue('role', suggestion, { shouldValidate: true })
                           setShowRoleSuggestions(false)
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-accent text-sm"
+                        className="w-full text-left px-4 py-2 hover:bg-background-secondary text-sm transition-colors duration-200"
                       >
                         {suggestion}
                       </button>
@@ -793,10 +789,10 @@ export default function OrganizationSetup() {
                 {...register('description')}
                 rows={4}
                 className={`
-                  w-full px-3 py-2 text-base rounded-xl border
-                  bg-background text-foreground placeholder:text-foreground/40
-                  focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
-                  transition-all duration-300 touch-manipulation resize-none
+                  w-full px-3 py-2 text-base rounded-md border
+                  bg-background text-foreground placeholder:text-muted-foreground
+                  focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary-dark
+                  transition-colors duration-200 touch-manipulation resize-none
                   ${errors.description ? 'border-destructive' : 'border-border'}
                 `}
               />
@@ -811,12 +807,12 @@ export default function OrganizationSetup() {
                 Company Logo {isSubsequentUser || logoPreview ? '' : '*'}
               </Label>
               {logoPreview && (
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-muted-foreground">
                   Logo already uploaded. Upload a new one to replace it.
                 </p>
               )}
               {isSubsequentUser && (
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-muted-foreground">
                   Optional: Upload a new logo to update the company logo.
                 </p>
               )}
@@ -831,8 +827,8 @@ export default function OrganizationSetup() {
                 />
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className={`relative w-24 h-24 rounded-lg border-2 border-dashed overflow-hidden bg-background/50 flex items-center justify-center cursor-pointer transition-colors ${
-                    logoError ? 'border-destructive' : 'border-border hover:border-primary/50'
+                  className={`relative w-24 h-24 rounded-md border-2 border-dashed overflow-hidden bg-background-secondary flex items-center justify-center cursor-pointer transition-colors duration-200 ${
+                    logoError ? 'border-destructive' : 'border-border hover:border-primary-dark'
                   }`}
                 >
                   {logoPreview ? (
@@ -845,13 +841,13 @@ export default function OrganizationSetup() {
                           e.stopPropagation()
                           handleRemoveLogo()
                         }}
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors z-10"
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors duration-200 z-10"
                       >
                         <X className="h-3 w-3" />
                       </button>
                     </>
                   ) : (
-                    <Upload className="h-6 w-6 text-foreground/40" />
+                    <Upload className="h-6 w-6 text-muted-foreground" />
                   )}
                 </div>
                 <div className="flex-1">
@@ -859,12 +855,12 @@ export default function OrganizationSetup() {
                     type="button"
                     variant="outline"
                     size="default"
-                    className="min-h-[44px] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20"
+                    className="min-h-[44px] transition-colors duration-200"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Choose Logo
                   </Button>
-                  <p className="text-xs text-foreground/60 mt-1">PNG, JPG up to 5MB</p>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
                   {logoError && (
                     <p className="text-sm text-destructive mt-1">{logoError}</p>
                   )}
@@ -879,7 +875,7 @@ export default function OrganizationSetup() {
                   aria-label={isSubsequentUser ? "Update your profile" : "Create organization"}
                   type="submit"
                   size="lg"
-                  className="w-full min-h-[52px] text-base font-semibold shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-primary-light/20"
+                  className="w-full min-h-[52px] text-base font-semibold transition-colors duration-200"
                 >
                   {isSubsequentUser ? 'Update Profile' : 'Create Organization'}
                   <CheckCircle2 className="ml-2 h-5 w-5" />

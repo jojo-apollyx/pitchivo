@@ -74,14 +74,10 @@ export default async function AdminDashboard() {
   ]
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-primary-light/20 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-primary-light/15 rounded-full blur-3xl pointer-events-none -z-10" style={{ animationDelay: '2s' }} />
-
+    <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="relative">
         {/* Page Header - Integral Section */}
-        <section id="admin-dashboard-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section id="admin-dashboard-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/30">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">Admin Dashboard</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
@@ -100,17 +96,17 @@ export default async function AdminDashboard() {
                 <div
                   key={card.title}
                   id={`admin-summary-${cardId}-card`}
-                  className="bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary-light/20 active:scale-[0.98] group"
+                  className="bg-background-secondary rounded-lg p-4 sm:p-6 transition-colors duration-200 hover:bg-muted group"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs sm:text-sm font-medium text-muted-foreground">
                       {card.title}
                     </span>
-                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary-light/20">
-                      <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color} transition-transform duration-300 group-hover:scale-110`} />
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-accent-surface flex items-center justify-center transition-colors duration-200 group-hover:bg-accent-color/20">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary-dark" />
                     </div>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-foreground group-hover:text-primary transition-colors duration-300">{card.value}</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground group-hover:text-primary-dark transition-colors duration-200">{card.value}</div>
                 </div>
               )
             })}
@@ -120,10 +116,10 @@ export default async function AdminDashboard() {
         {/* Recent Activity - Integral Section */}
         <section id="admin-dashboard-activity-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="max-w-4xl">
-            <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+            <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
               <div className="flex items-center gap-2 mb-6">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary-light/20">
-                  <Activity className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg bg-accent-surface flex items-center justify-center transition-colors duration-200">
+                  <Activity className="h-5 w-5 text-primary-dark" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Recent Activity</h2>
               </div>
@@ -136,10 +132,10 @@ export default async function AdminDashboard() {
                         <div
                           key={org.id}
                           id={`admin-org-${org.id}`}
-                          className="py-4 hover:bg-primary/5 transition-all duration-300 group"
+                          className="py-4 hover:bg-background transition-colors duration-200 group"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-sm sm:text-base font-medium text-foreground group-hover:text-primary transition-colors duration-300">{org.name}</span>
+                            <span className="text-sm sm:text-base font-medium text-foreground group-hover:text-primary-dark transition-colors duration-200">{org.name}</span>
                             <span className="text-xs sm:text-sm text-muted-foreground font-normal">
                               {new Date(org.created_at).toLocaleDateString()}
                             </span>
