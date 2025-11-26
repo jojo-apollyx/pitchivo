@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Building2, Palette, Users } from 'lucide-react'
+import { Building2, Sparkles, Users } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { OrganizationSettingsForm } from './organization-settings-form'
-import { ThemeColorSettings } from '@/components/dashboard/theme-color-settings'
+import { PersonalizationSettings } from '@/components/dashboard/personalization-settings'
 import { TeamMembersList } from './team-members-list'
 
 interface TeamMember {
@@ -41,9 +41,9 @@ export function SettingsTabs({ organization, userRole, members }: SettingsTabsPr
           <Building2 className="h-4 w-4" />
           <span className="hidden sm:inline">Organization</span>
         </TabsTrigger>
-        <TabsTrigger value="theme" className="gap-2">
-          <Palette className="h-4 w-4" />
-          <span className="hidden sm:inline">Theme</span>
+        <TabsTrigger value="personalization" className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          <span className="hidden sm:inline">Personalization</span>
         </TabsTrigger>
         <TabsTrigger value="team" className="gap-2">
           <Users className="h-4 w-4" />
@@ -55,7 +55,7 @@ export function SettingsTabs({ organization, userRole, members }: SettingsTabsPr
         <div className="space-y-6">
           <div>
             <h2 className="text-lg sm:text-xl font-semibold mb-2 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
+              <Building2 className="h-5 w-5 text-primary-dark" />
               Organization Information
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
@@ -69,24 +69,22 @@ export function SettingsTabs({ organization, userRole, members }: SettingsTabsPr
         </div>
       </TabsContent>
 
-      <TabsContent value="theme" className="mt-0">
-        <div className="space-y-6">
-          <ThemeColorSettings
-            organizationId={organization.id}
-            currentScheme={{
-              primary: organization.primary_color || '#10B981',
-              secondary: organization.secondary_color || '#059669',
-              accent: organization.accent_color || '#F87171',
-            }}
-          />
-        </div>
+      <TabsContent value="personalization" className="mt-0">
+        <PersonalizationSettings
+          organizationId={organization.id}
+          currentScheme={{
+            primary: organization.primary_color || '#10B981',
+            secondary: organization.secondary_color || '#059669',
+            accent: organization.accent_color || '#F87171',
+          }}
+        />
       </TabsContent>
 
       <TabsContent value="team" className="mt-0">
         <div className="space-y-6">
           <div>
             <h2 className="text-lg sm:text-xl font-semibold mb-2 flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
+              <Users className="h-5 w-5 text-primary-dark" />
               Team Members
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
