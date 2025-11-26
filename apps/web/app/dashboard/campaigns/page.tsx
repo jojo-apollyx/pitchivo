@@ -478,11 +478,11 @@ export default function CampaignsPage() {
       case 'drafted':
         return 'bg-accent-surface text-primary-dark border-primary-dark/30'
       case 'completed':
-        return 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400'
+        return 'bg-semantic-success-soft text-semantic-success border-semantic-success'
       case 'paused':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400'
+        return 'bg-semantic-warning-soft text-semantic-warning border-semantic-warning'
       case 'stopped':
-        return 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400'
+        return 'bg-semantic-error-soft text-semantic-error border-semantic-error'
       default:
         return 'bg-background-secondary text-muted-foreground border-border'
     }
@@ -693,7 +693,7 @@ export default function CampaignsPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={(e) => openDeleteDialog(campaign.campaign_id, e)}
-                                className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/20"
+                                className="text-semantic-error focus:text-semantic-error focus:bg-semantic-error-soft"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete Permanently
@@ -738,7 +738,7 @@ export default function CampaignsPage() {
                             <MessageSquare className="h-3 w-3" />
                             <span>RFQs</span>
                           </div>
-                          <div className="text-base font-semibold text-green-600">{campaign.rfqs_received}</div>
+                          <div className="text-base font-semibold text-semantic-success">{campaign.rfqs_received}</div>
                         </div>
                         <div className="bg-background-secondary rounded-md p-2.5">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">

@@ -521,7 +521,7 @@ export default function Home() {
                       <div className="text-xs text-muted-foreground">Sent</div>
                     </div>
                     <div className="p-3 rounded-md bg-background-secondary">
-                      <div className="text-xl font-semibold text-green-600">68%</div>
+                      <div className="text-xl font-semibold text-semantic-success">68%</div>
                       <div className="text-xs text-muted-foreground">Opened</div>
                     </div>
                     <div className="p-3 rounded-md bg-background-secondary">
@@ -534,7 +534,7 @@ export default function Home() {
                   <div className="p-4 rounded-md bg-background-secondary">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-medium text-muted-foreground">Open Rate Trend</span>
-                      <span className="text-xs text-green-600 font-medium">↑ 12%</span>
+                      <span className="text-xs text-semantic-success font-medium">↑ 12%</span>
                     </div>
                     <div className="flex items-end gap-1 h-10">
                       {[40, 52, 48, 65, 58, 68, 72, 68].map((height, i) => (
@@ -549,9 +549,9 @@ export default function Home() {
               <div className="relative z-10 bg-background border border-border/50 rounded-lg shadow-premium overflow-hidden max-w-md">
                 {/* Browser Header */}
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-background-secondary/50">
-                  <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
-                  <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
-                  <div className="w-2.5 h-2.5 bg-green-400 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-dot-red rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-dot-yellow rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-dot-green rounded-full"></div>
                   <span className="ml-2 text-xs text-muted-foreground">pitchivo.com/products/curcumin-95</span>
                 </div>
                 
@@ -601,15 +601,15 @@ export default function Home() {
                   <div className="space-y-2">
                     <h4 className="text-xs font-medium text-foreground">Certifications</h4>
                     <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex items-center text-xs px-2 py-1 bg-green-50 text-green-700 rounded-md dark:bg-green-900/20">
+                      <span className="inline-flex items-center text-xs px-2 py-1 bg-semantic-success-soft text-semantic-success rounded-md">
                         <Shield className="w-3 h-3 mr-1" />
                         USDA Organic
                       </span>
-                      <span className="inline-flex items-center text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-md dark:bg-blue-900/20">
+                      <span className="inline-flex items-center text-xs px-2 py-1 bg-semantic-info-soft text-semantic-info rounded-md">
                         <Shield className="w-3 h-3 mr-1" />
                         ISO 22000
                       </span>
-                      <span className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md dark:bg-purple-900/20">
+                      <span className="text-xs px-2 py-1 bg-semantic-purple-soft text-semantic-purple rounded-md">
                         Kosher
                       </span>
                     </div>
@@ -732,8 +732,8 @@ export default function Home() {
             <ScrollAnimation id="managed-campaign-warmup-card">
               <div className="h-full p-8 bg-background-secondary rounded-lg hover:bg-muted transition-colors duration-200 group">
                 <div className="mb-6">
-                  <div className="inline-flex p-3 bg-green-100 dark:bg-green-900/30 rounded-md">
-                    <Zap className="w-6 h-6 text-green-600" />
+                  <div className="inline-flex p-3 bg-semantic-success-soft rounded-md">
+                    <Zap className="w-6 h-6 text-semantic-success" />
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-3">
@@ -749,8 +749,8 @@ export default function Home() {
             <ScrollAnimation id="managed-campaign-copy-card">
               <div className="h-full p-8 bg-background-secondary rounded-lg hover:bg-muted transition-colors duration-200 group">
                 <div className="mb-6">
-                  <div className="inline-flex p-3 bg-purple-100 dark:bg-purple-900/30 rounded-md">
-                    <FileText className="w-6 h-6 text-purple-600" />
+                  <div className="inline-flex p-3 bg-semantic-purple-soft rounded-md">
+                    <FileText className="w-6 h-6 text-semantic-purple" />
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-3">
@@ -767,7 +767,7 @@ export default function Home() {
               <div className="h-full p-8 bg-background-secondary rounded-lg hover:bg-muted transition-colors duration-200 group">
                 <div className="mb-6">
                   <div className="inline-flex p-3 bg-blue-100 dark:bg-blue-900/30 rounded-md">
-                    <Send className="w-6 h-6 text-blue-600" />
+                    <Send className="w-6 h-6 text-semantic-info" />
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-3">
@@ -832,7 +832,7 @@ export default function Home() {
               
               <ScrollAnimation container className="space-y-4 pt-4">
                 <ScrollAnimation id="intent-signal-verified" className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
-                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-semantic-success mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-medium text-foreground mb-1">Verified Buyer Signals</h4>
                     <p className="text-sm text-muted-foreground">
@@ -842,7 +842,7 @@ export default function Home() {
                 </ScrollAnimation>
 
                 <ScrollAnimation id="intent-signal-match" className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
-                  <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-semantic-info mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-medium text-foreground mb-1">Perfect Product Match</h4>
                     <p className="text-sm text-muted-foreground">
@@ -852,7 +852,7 @@ export default function Home() {
                 </ScrollAnimation>
 
                 <ScrollAnimation id="intent-signal-timing" className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
-                  <CheckCircle2 className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-semantic-purple mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-medium text-foreground mb-1">Perfect Timing</h4>
                     <p className="text-sm text-muted-foreground">
@@ -868,7 +868,7 @@ export default function Home() {
               <div className="bg-background border border-border/50 rounded-lg shadow-soft p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-foreground">Buyer Intent Score</h3>
-                  <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded-md dark:bg-green-900/30">
+                  <span className="text-xs font-medium px-2 py-1 bg-semantic-success-soft text-semantic-success rounded-md">
                     High Intent
                   </span>
                 </div>
@@ -876,10 +876,10 @@ export default function Home() {
                 {/* Intent Signals */}
                 <div className="space-y-4">
                   {[
-                    { label: "Active Product Search", value: 95, color: "bg-green-500" },
-                    { label: "Recent RFQ Submitted", value: 88, color: "bg-blue-500" },
-                    { label: "Budget Allocated", value: 82, color: "bg-purple-500" },
-                    { label: "Decision Timeline", value: 90, color: "bg-orange-500" },
+                    { label: "Active Product Search", value: 95, color: "bg-gradient-progress-green" },
+                    { label: "Recent RFQ Submitted", value: 88, color: "bg-gradient-progress-blue" },
+                    { label: "Budget Allocated", value: 82, color: "bg-gradient-progress-purple" },
+                    { label: "Decision Timeline", value: 90, color: "bg-gradient-progress-orange" },
                   ].map((signal, idx) => (
                     <div key={idx} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
@@ -1032,7 +1032,7 @@ export default function Home() {
               {/* BEFORE */}
               <ScrollAnimation id="case-study-before-card" className="relative">
                 <div className="absolute -top-3 left-6 z-20">
-                  <span className="text-xs font-medium px-3 py-1.5 bg-red-100 text-red-700 rounded-md dark:bg-red-900/30">
+                  <span className="text-xs font-medium px-3 py-1.5 bg-semantic-error-soft text-semantic-error rounded-md">
                     ❌ Before Pitchivo
                   </span>
                 </div>
@@ -1090,7 +1090,7 @@ export default function Home() {
               {/* AFTER */}
               <ScrollAnimation id="case-study-after-card" className="relative">
                 <div className="absolute -top-3 left-6 z-20">
-                  <span className="text-xs font-medium px-3 py-1.5 bg-green-100 text-green-700 rounded-md dark:bg-green-900/30">
+                  <span className="text-xs font-medium px-3 py-1.5 bg-semantic-success-soft text-semantic-success rounded-md">
                     ✅ After Pitchivo
                   </span>
                 </div>
@@ -1100,31 +1100,31 @@ export default function Home() {
                   <div className="space-y-6">
                     {/* Metrics - After */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <div className="p-4 bg-semantic-success-soft rounded-lg">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-2xl font-semibold text-green-700">45-68%</div>
-                          <span className="text-green-600 text-xs font-medium">↑ 20x</span>
+                          <div className="text-2xl font-semibold text-semantic-success">45-68%</div>
+                          <span className="text-semantic-success text-xs font-medium">↑ 20x</span>
                         </div>
                         <div className="text-sm text-muted-foreground">Email Open Rate</div>
                       </div>
                       <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-2xl font-semibold text-blue-700">12-18%</div>
-                          <span className="text-blue-600 text-xs font-medium">↑ 30x</span>
+                          <div className="text-2xl font-semibold text-semantic-info">12-18%</div>
+                          <span className="text-semantic-info text-xs font-medium">↑ 30x</span>
                         </div>
                         <div className="text-sm text-muted-foreground">Response Rate</div>
                       </div>
-                      <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <div className="p-4 bg-semantic-purple-soft rounded-lg">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-2xl font-semibold text-purple-700">50-80</div>
+                          <div className="text-2xl font-semibold text-semantic-purple">50-80</div>
                           <span className="text-purple-600 text-xs font-medium">↑ 12x</span>
                         </div>
                         <div className="text-sm text-muted-foreground">RFQs/month</div>
                       </div>
-                      <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                      <div className="p-4 bg-semantic-warning-soft rounded-lg">
                         <div className="flex items-baseline gap-1">
-                          <div className="text-2xl font-semibold text-orange-700">6-8 wk</div>
-                          <span className="text-orange-600 text-xs font-medium">↓ 75%</span>
+                          <div className="text-2xl font-semibold text-semantic-warning">6-8 wk</div>
+                          <span className="text-semantic-warning text-xs font-medium">↓ 75%</span>
                         </div>
                         <div className="text-sm text-muted-foreground">Sales Cycle</div>
                       </div>
@@ -1232,8 +1232,8 @@ export default function Home() {
               {/* Inbound Lead Routing */}
               <ScrollAnimation id="inbound-routing-card" className="bg-background-secondary rounded-lg p-8 hover:bg-muted transition-colors duration-200">
                 <div className="mb-6">
-                  <div className="inline-flex p-3 bg-purple-100 dark:bg-purple-900/30 rounded-md">
-                    <Database className="w-6 h-6 text-purple-600" />
+                  <div className="inline-flex p-3 bg-semantic-purple-soft rounded-md">
+                    <Database className="w-6 h-6 text-semantic-purple" />
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-4">
@@ -1289,7 +1289,7 @@ export default function Home() {
                 </div>
 
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-purple-600 text-white font-semibold text-lg mb-2">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-semantic-purple text-white font-semibold text-lg mb-2">
                     B
                   </div>
                   <p className="text-sm font-medium text-foreground">Buyers</p>
@@ -1310,9 +1310,9 @@ export default function Home() {
                 <div className="relative bg-background border border-border/50 rounded-lg shadow-soft overflow-hidden">
                   {/* Browser Header */}
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-background-secondary/50">
-                    <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
-                    <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
-                    <div className="w-2.5 h-2.5 bg-green-400 rounded-full"></div>
+                    <div className="w-2.5 h-2.5 bg-dot-red rounded-full"></div>
+                    <div className="w-2.5 h-2.5 bg-dot-yellow rounded-full"></div>
+                    <div className="w-2.5 h-2.5 bg-dot-green rounded-full"></div>
                     <span className="ml-2 text-xs text-muted-foreground">yourcompany.pitchivo.com</span>
                   </div>
 
@@ -1334,9 +1334,9 @@ export default function Home() {
                       <div className="text-xs font-medium text-muted-foreground mb-2">Featured Products</div>
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { name: 'Titanium Dioxide', color: 'bg-blue-50 dark:bg-blue-900/20' },
-                          { name: 'Citric Acid', color: 'bg-green-50 dark:bg-green-900/20' },
-                          { name: 'Ascorbic Acid', color: 'bg-purple-50 dark:bg-purple-900/20' }
+                          { name: 'Titanium Dioxide', color: 'bg-semantic-info-soft' },
+                          { name: 'Citric Acid', color: 'bg-semantic-success-soft' },
+                          { name: 'Ascorbic Acid', color: 'bg-semantic-purple-soft' }
                         ].map((product, i) => (
                           <div key={i} className={`aspect-square rounded-md ${product.color} flex items-center justify-center p-2`}>
                             <span className="text-[9px] text-center font-medium text-muted-foreground leading-tight">{product.name}</span>
@@ -1367,12 +1367,12 @@ export default function Home() {
 
                 {/* Floating badges */}
                 <div className="absolute -top-3 -right-3 z-10">
-                  <span className="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded-md dark:bg-green-900/30">
+                  <span className="text-xs font-medium px-2 py-1 bg-semantic-success-soft text-semantic-success rounded-md">
                     SEO Optimized
                   </span>
                 </div>
                 <div className="absolute -bottom-3 -left-3 z-10">
-                  <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-md dark:bg-blue-900/30">
+                  <span className="text-xs font-medium px-2 py-1 bg-semantic-info-soft text-semantic-info rounded-md">
                     AEO Ready
                   </span>
                 </div>
@@ -1400,7 +1400,7 @@ export default function Home() {
 
                 <ScrollAnimation container className="space-y-4 pt-2">
                   <ScrollAnimation id="storefront-benefit-seo" className="flex items-start gap-4 p-4 rounded-lg bg-background">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-semantic-success mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-foreground mb-1">SEO-Friendly Architecture</h4>
                       <p className="text-sm text-muted-foreground">
@@ -1410,7 +1410,7 @@ export default function Home() {
                   </ScrollAnimation>
 
                   <ScrollAnimation id="storefront-benefit-aeo" className="flex items-start gap-4 p-4 rounded-lg bg-background">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-semantic-info mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-foreground mb-1">AEO-Ready Content</h4>
                       <p className="text-sm text-muted-foreground">
@@ -1430,7 +1430,7 @@ export default function Home() {
                   </ScrollAnimation>
 
                   <ScrollAnimation id="storefront-benefit-analytics" className="flex items-start gap-4 p-4 rounded-lg bg-background">
-                    <CheckCircle2 className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-semantic-warning mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-foreground mb-1">Built-In Analytics</h4>
                       <p className="text-sm text-muted-foreground">

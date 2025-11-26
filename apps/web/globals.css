@@ -130,6 +130,46 @@ html body [data-sonner-toast] * {
     --chart-3: 192 35% 55%;
     --chart-4: 192 40% 45%;
     --chart-5: 35 100% 74%;
+    
+    /* ============================================
+       ARTISTIC SEMANTIC COLORS - Muted & Elegant
+       Use these instead of saturated Tailwind colors
+       ============================================ */
+    
+    /* Success/Green - Sage green, muted */
+    --semantic-success: 150 25% 65%;
+    --semantic-success-bg: 150 30% 95%;
+    --semantic-success-text: 150 30% 35%;
+    
+    /* Info/Blue - Soft sky blue */
+    --semantic-info: 210 35% 65%;
+    --semantic-info-bg: 210 40% 95%;
+    --semantic-info-text: 210 40% 35%;
+    
+    /* Warning/Orange - Warm peach/apricot */
+    --semantic-warning: 30 45% 65%;
+    --semantic-warning-bg: 30 50% 95%;
+    --semantic-warning-text: 30 50% 35%;
+    
+    /* Error/Red - Dusty rose */
+    --semantic-error: 0 35% 65%;
+    --semantic-error-bg: 0 40% 95%;
+    --semantic-error-text: 0 40% 35%;
+    
+    /* Purple - Soft lavender */
+    --semantic-purple: 270 25% 65%;
+    --semantic-purple-bg: 270 30% 95%;
+    --semantic-purple-text: 270 30% 40%;
+    
+    /* Teal - Soft cyan */
+    --semantic-teal: 175 30% 60%;
+    --semantic-teal-bg: 175 35% 95%;
+    --semantic-teal-text: 175 35% 35%;
+    
+    /* Browser Dots - Muted pastel traffic lights */
+    --dot-red: 0 40% 70%;
+    --dot-yellow: 45 45% 70%;
+    --dot-green: 140 30% 65%;
   }
   
   .dark {
@@ -185,6 +225,35 @@ html body [data-sonner-toast] * {
     --chart-3: 192 40% 55%;
     --chart-4: 192 45% 45%;
     --chart-5: 35 80% 65%;
+    
+    /* Semantic Colors - Dark Mode */
+    --semantic-success: 150 30% 55%;
+    --semantic-success-bg: 150 25% 18%;
+    --semantic-success-text: 150 35% 75%;
+    
+    --semantic-info: 210 40% 55%;
+    --semantic-info-bg: 210 35% 18%;
+    --semantic-info-text: 210 45% 75%;
+    
+    --semantic-warning: 30 50% 55%;
+    --semantic-warning-bg: 30 45% 18%;
+    --semantic-warning-text: 30 55% 75%;
+    
+    --semantic-error: 0 40% 55%;
+    --semantic-error-bg: 0 35% 18%;
+    --semantic-error-text: 0 45% 75%;
+    
+    --semantic-purple: 270 30% 55%;
+    --semantic-purple-bg: 270 25% 18%;
+    --semantic-purple-text: 270 35% 75%;
+    
+    --semantic-teal: 175 35% 50%;
+    --semantic-teal-bg: 175 30% 18%;
+    --semantic-teal-text: 175 40% 75%;
+    
+    --dot-red: 0 35% 55%;
+    --dot-yellow: 45 40% 55%;
+    --dot-green: 140 25% 50%;
   }
 }
 
@@ -749,6 +818,71 @@ html body [data-sonner-toast] * {
       padding-top: 8rem;
       padding-bottom: 8rem;
     }
+  }
+}
+
+/* ============================================
+   ARTISTIC SEMANTIC COLOR UTILITIES
+   Muted, elegant colors for status indicators
+   ============================================ */
+
+@layer utilities {
+  /* Success/Green - Sage */
+  .bg-semantic-success { background-color: hsl(var(--semantic-success)); }
+  .bg-semantic-success-soft { background-color: hsl(var(--semantic-success-bg)); }
+  .text-semantic-success { color: hsl(var(--semantic-success-text)); }
+  .border-semantic-success { border-color: hsl(var(--semantic-success) / 0.3); }
+  
+  /* Info/Blue - Sky */
+  .bg-semantic-info { background-color: hsl(var(--semantic-info)); }
+  .bg-semantic-info-soft { background-color: hsl(var(--semantic-info-bg)); }
+  .text-semantic-info { color: hsl(var(--semantic-info-text)); }
+  .border-semantic-info { border-color: hsl(var(--semantic-info) / 0.3); }
+  
+  /* Warning/Orange - Peach */
+  .bg-semantic-warning { background-color: hsl(var(--semantic-warning)); }
+  .bg-semantic-warning-soft { background-color: hsl(var(--semantic-warning-bg)); }
+  .text-semantic-warning { color: hsl(var(--semantic-warning-text)); }
+  .border-semantic-warning { border-color: hsl(var(--semantic-warning) / 0.3); }
+  
+  /* Error/Red - Rose */
+  .bg-semantic-error { background-color: hsl(var(--semantic-error)); }
+  .bg-semantic-error-soft { background-color: hsl(var(--semantic-error-bg)); }
+  .text-semantic-error { color: hsl(var(--semantic-error-text)); }
+  .border-semantic-error { border-color: hsl(var(--semantic-error) / 0.3); }
+  
+  /* Purple - Lavender */
+  .bg-semantic-purple { background-color: hsl(var(--semantic-purple)); }
+  .bg-semantic-purple-soft { background-color: hsl(var(--semantic-purple-bg)); }
+  .text-semantic-purple { color: hsl(var(--semantic-purple-text)); }
+  .border-semantic-purple { border-color: hsl(var(--semantic-purple) / 0.3); }
+  
+  /* Teal - Cyan */
+  .bg-semantic-teal { background-color: hsl(var(--semantic-teal)); }
+  .bg-semantic-teal-soft { background-color: hsl(var(--semantic-teal-bg)); }
+  .text-semantic-teal { color: hsl(var(--semantic-teal-text)); }
+  .border-semantic-teal { border-color: hsl(var(--semantic-teal) / 0.3); }
+  
+  /* Browser Dots - Muted Traffic Lights */
+  .bg-dot-red { background-color: hsl(var(--dot-red)); }
+  .bg-dot-yellow { background-color: hsl(var(--dot-yellow)); }
+  .bg-dot-green { background-color: hsl(var(--dot-green)); }
+  
+  /* Gradient Progress Bars - Artistic */
+  .bg-gradient-progress-green {
+    background: linear-gradient(90deg, hsl(var(--semantic-success) / 0.6), hsl(var(--semantic-success)));
+  }
+  .bg-gradient-progress-blue {
+    background: linear-gradient(90deg, hsl(var(--semantic-info) / 0.6), hsl(var(--semantic-info)));
+  }
+  .bg-gradient-progress-purple {
+    background: linear-gradient(90deg, hsl(var(--semantic-purple) / 0.6), hsl(var(--semantic-purple)));
+  }
+  .bg-gradient-progress-orange {
+    background: linear-gradient(90deg, hsl(var(--semantic-warning) / 0.6), hsl(var(--semantic-warning)));
+  }
+  .bg-gradient-progress-teal {
+    background: linear-gradient(90deg, hsl(var(--semantic-teal) / 0.6), hsl(var(--semantic-teal)));
   }
 }
 

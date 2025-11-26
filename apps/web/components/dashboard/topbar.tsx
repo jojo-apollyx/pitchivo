@@ -42,7 +42,7 @@ export function Topbar({ user, title }: TopbarProps) {
           >
             <Bell className="h-5 w-5 text-muted-foreground" />
             {/* Notification badge */}
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
+            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-semantic-error" />
           </Button>
           
           {/* User menu */}

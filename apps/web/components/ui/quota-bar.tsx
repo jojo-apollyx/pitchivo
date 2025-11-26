@@ -30,18 +30,18 @@ export function QuotaBar({
   const percentage = unlimited ? 0 : Math.min(100, Math.round((used / total) * 100))
   const remaining = unlimited ? 'Unlimited' : Math.max(0, total - used)
 
-  // Color based on usage
+  // Color based on usage - using artistic semantic colors
   const getColor = () => {
-    if (unlimited) return 'bg-green-500'
-    if (percentage >= 90) return 'bg-red-500'
-    if (percentage >= 80) return 'bg-amber-500'
+    if (unlimited) return 'bg-semantic-success'
+    if (percentage >= 90) return 'bg-semantic-error'
+    if (percentage >= 80) return 'bg-semantic-warning'
     return 'bg-primary-dark'
   }
 
   const getTextColor = () => {
-    if (unlimited) return 'text-green-600 dark:text-green-400'
-    if (percentage >= 90) return 'text-red-600 dark:text-red-400'
-    if (percentage >= 80) return 'text-amber-600 dark:text-amber-400'
+    if (unlimited) return 'text-semantic-success'
+    if (percentage >= 90) return 'text-semantic-error'
+    if (percentage >= 80) return 'text-semantic-warning'
     return 'text-primary-dark'
   }
 
@@ -79,7 +79,7 @@ export function QuotaBar({
             {typeof remaining === 'number' ? remaining.toLocaleString() : remaining} remaining
           </span>
           {percentage >= 80 && (
-            <span className="text-amber-600 dark:text-amber-400 font-medium">
+            <span className="text-semantic-warning font-medium">
               {percentage >= 90 ? 'Almost full' : 'Running low'}
             </span>
           )}

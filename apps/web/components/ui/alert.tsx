@@ -10,13 +10,13 @@ const alertVariants = cva(
       variant: {
         default: "bg-background-secondary text-foreground [&>svg]:text-foreground",
         destructive:
-          "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 [&>svg]:text-red-600",
+          "bg-semantic-error-soft text-semantic-error [&>svg]:text-semantic-error",
         success:
-          "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 [&>svg]:text-green-600",
+          "bg-semantic-success-soft text-semantic-success [&>svg]:text-semantic-success",
         warning:
-          "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 [&>svg]:text-yellow-600",
+          "bg-semantic-warning-soft text-semantic-warning [&>svg]:text-semantic-warning",
         info:
-          "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 [&>svg]:text-blue-600",
+          "bg-semantic-info-soft text-semantic-info [&>svg]:text-semantic-info",
       },
     },
     defaultVariants: {
