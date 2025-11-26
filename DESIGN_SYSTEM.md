@@ -4,18 +4,25 @@
 
 This design system is built for **mobile-first Progressive Web Apps (PWA)** using **shadcn/ui** as the foundation. It provides a sophisticated, premium UI optimized for mobile devices with seamless desktop adaptation. Built with Next.js (App Router), React, TypeScript, Tailwind CSS v3.4.18, and PWA capabilities.
 
-**Design Philosophy: WOW Users, Not Just Function**
+**Design Philosophy: Notion-Inspired Light Minimalism**
 
-This isn't a basic MVP. The interface should look **stunning at first glance** with rich aesthetics, modern design practices, and a high-end, cutting-edge feeling. Users should be impressed by the visual excellence and dynamic, lively interactions.
+The interface follows a **"Unified Flow"** approach where everything feels like one continuous sheet of paper. Instead of "boxed" or "card-based" UI with heavy borders and shadows, we use **white space and typography** for visual separation. The design is clean, minimal, and lets content breathe.
+
+**Core Principles:**
+1. **Flatten** - Remove card borders and shadows
+2. **Lighten** - Use `#333333` for text (never pure black), `#FFFFFF` for backgrounds
+3. **Space** - Generous whitespace and padding (40px+ margins)
+4. **Tint** - Apply soft pastel accent colors to buttons, links, and focus states
+5. **Soften** - Use subtle `ease-in-out` transitions for interactions
 
 **Current Implementation:**
 - ✅ Next.js App Router with React & TypeScript
 - ✅ shadcn/ui components installed (Button, Input, Card, Badge)
-- ✅ Organization-based color theming implemented
+- ✅ Notion-inspired light minimalism color scheme
 - ✅ ThemeProvider configured with next-themes
-- ✅ Premium animations and utilities
+- ✅ Subtle color transitions (not scale transforms)
 - ✅ Mobile-first responsive design
-- ✅ Modern Google Fonts (Inter, Outfit, Roboto)
+- ✅ Inter font family
 - ✅ Semantic HTML5 structure
 - ✅ SEO-optimized with meta tags
 
@@ -168,299 +175,285 @@ This isn't a basic MVP. The interface should look **stunning at first glance** w
 
 ## 🎨 Color System
 
-### Rich Aesthetics & Visual Excellence
+### Notion-Inspired Light Minimalism Palette
 
-**Rule: Avoid plain primary colors. Use carefully curated color palettes with HSL for maximum control and vibrancy.**
+**Rule: Use a restrained, sophisticated palette. Avoid heavy saturation. Let whitespace do the work.**
 
-#### HSL Color Philosophy
+#### Color Philosophy
 
-Use HSL (Hue, Saturation, Lightness) for more sophisticated color control:
-
-```css
-/* ✅ Good - HSL gives fine control */
---primary: 142 71% 45%;        /* Emerald Green - rich, vibrant */
---primary-light: 142 71% 65%;  /* Lighter variant */
---primary-dark: 142 71% 35%;   /* Darker variant */
-
-/* ❌ Avoid - Plain, boring primary colors */
---primary: #0000FF;  /* Plain blue - too basic */
---primary: #FF0000;  /* Plain red - too harsh */
---primary: #00FF00;  /* Plain green - too bright */
-```
-
-**Color Selection Guidelines:**
-1. **Avoid plain RGB primaries** (pure red/blue/green)
-2. **Use sophisticated hues** with proper saturation (50-70%)
-3. **Create depth** with lightness variants (35% dark, 65% light)
-4. **Test contrast** - ensure WCAG AA compliance (4.5:1 ratio)
-5. **Use HSL format** in Tailwind for maximum flexibility
-
-### Organization-Based Theming
-
-Each organization can customize their color scheme with three colors:
-- **Primary Color**: Main brand identity color
-- **Secondary Color**: Darker shade for hover states
-- **Accent Color**: Complementary color for highlights
-
-Colors are stored in the `organizations` table and applied via `ThemeProvider` in the dashboard layout.
-
-### Color Roles & Usage
-
-#### PRIMARY COLOR
-**Main brand identity color**
-
-**Use for:**
-- ✅ Primary buttons (CTAs)
-- ✅ Active navigation items
-- ✅ Links and hyperlinks
-- ✅ Form focus states
-- ✅ Selected checkboxes/radio buttons
-- ✅ Active tab indicators
-- ✅ Logo and brand elements
-
-**Text:** Always white text on primary color for maximum contrast
-
-**Example:**
-```tsx
-// Primary button
-<Button className="bg-primary text-primary-foreground hover:bg-primary-dark">
-  Get Started
-</Button>
-
-// Active navigation
-<Link className={isActive && 'bg-primary/10 text-primary'}>
-  Dashboard
-</Link>
-```
-
-#### SECONDARY COLOR
-**Darker shade of primary - used internally for hover states**
-
-**Use for:**
-- ✅ Hover states on primary elements
-- ✅ Pressed states on buttons
-- ✅ Darker variations (automatically applied as `--primary-dark`)
-
-**Don't use directly in components** - it's automatically applied via `hover:bg-primary-dark`
-
-#### ACCENT COLOR
-**Complementary color - use SPARINGLY for highlights**
-
-**Use for:**
-- ✅ Notification badges (e.g., "3 new messages")
-- ✅ Success messages and alerts
-- ✅ Important status indicators
-- ✅ Small icons for special actions
-- ✅ Sale tags and promotional badges
-- ✅ Progress highlights
-
-**AVOID for:**
-- ❌ Large background areas
-- ❌ Primary action buttons
-- ❌ Navigation elements
-- ❌ Large text sections
-
-**Example:**
-```tsx
-// Notification badge
-<div className="relative">
-  <BellIcon />
-  <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full px-1.5">
-    3
-  </span>
-</div>
-
-// Success message
-<Alert className="border-accent/20 bg-accent/5 text-accent-dark">
-  <CheckIcon className="text-accent" />
-  Profile updated successfully!
-</Alert>
-
-// Important tag
-<Badge className="bg-accent text-accent-foreground">
-  New
-</Badge>
-```
-
-### CSS Variables
-
-The design system uses CSS variables for theming (defined in `globals.css`):
+The design uses a minimal color palette with subtle pastel accents:
 
 ```css
+/* ============================================
+   NOTION-INSPIRED LIGHT MINIMALISM PALETTE
+   ============================================ */
+
 :root {
-  /* Primary - Main brand color */
-  --primary: /* Organization's primary color */
-  --primary-foreground: white /* Text on primary */
-  --primary-light: /* Lighter variant */
-  --primary-dark: /* Hover state (uses secondary) */
-  --primary-darker: /* Pressed state */
+  /* Primary Backgrounds */
+  --background: 0 0% 100%;              /* #FFFFFF - Pure White */
+  --background-secondary: 0 0% 97%;     /* #F7F7F7 - Light Gray for sections */
+  --foreground: 0 0% 20%;               /* #333333 - Dark Charcoal (never pure black) */
   
-  /* Accent - Complementary highlights */
-  --accent: /* Organization's accent color */
-  --accent-foreground: white /* Text on accent */
-  --accent-color: /* Pure accent */
-  --accent-light: /* Lighter variant */
-  --accent-dark: /* Darker variant */
+  /* Brand Accent: Soft Pastel Blue */
+  --primary: 192 30% 75%;               /* #AEC6CF - Pastel Blue */
+  --primary-foreground: 0 0% 100%;      /* White text on primary */
+  --primary-dark: 192 35% 55%;          /* Darker for hover states */
   
-  /* Base colors */
-  --background: 0 0% 100%;           /* white */
-  --foreground: 0 0% 5%;             /* gray-950 */
-  --card: 0 0% 100%;                 /* white */
-  --card-foreground: 0 0% 5%;        /* gray-950 */
-  --border: 0 0% 90%;                /* gray-200 */
-  --input: 0 0% 90%;                 /* gray-200 */
-  --ring: /* Primary color */         /* Focus ring */
-  --radius: 0.75rem;                 /* 12px - premium rounded */
+  /* Accent Surface - 10% opacity tint */
+  --accent-surface: 192 30% 95%;        /* Very light pastel blue tint */
+  --accent-color: 192 30% 75%;          /* Same as primary */
+  
+  /* Muted Text */
+  --muted-foreground: 0 0% 40%;         /* #666666 - Medium Gray */
+  
+  /* Borders - Very subtle */
+  --border: 0 0% 90%;                   /* #E5E5E5 - Subtle borders */
 }
 ```
 
-### Color Usage Rules
+**Color Guidelines:**
+1. **Never use pure black** - Use `#333333` (--foreground) for text
+2. **Backgrounds are white** - Use `bg-background` (#FFFFFF) or `bg-background-secondary` (#F7F7F7)
+3. **Soft pastel accent** - Pastel blue for interactive elements
+4. **Subtle borders** - Use `border-border/50` for very light dividers
+5. **No heavy shadows** - Use `shadow-soft` or no shadows at all
 
-**✅ ALWAYS use CSS variables:**
+### CSS Variable Reference
+
+| Variable | Light Mode | Dark Mode | Usage |
+|----------|-----------|-----------|-------|
+| `--background` | #FFFFFF | #141414 | Main page background |
+| `--background-secondary` | #F7F7F7 | #1F1F1F | Card/section backgrounds |
+| `--foreground` | #333333 | #EDEDED | Primary text color |
+| `--muted-foreground` | #666666 | #999999 | Secondary/muted text |
+| `--primary` | #AEC6CF | Pastel Blue | Brand color |
+| `--primary-dark` | Darker Blue | Darker Blue | Hover states |
+| `--accent-surface` | Light Blue Tint | Dark Blue Tint | Icon containers, highlights |
+| `--border` | #E5E5E5 | #333333 | Border color |
+
+### Color Roles & Usage
+
+#### BACKGROUND COLORS
+
+**`bg-background`** - Pure white (#FFFFFF)
+- Main page background
+- Modal backgrounds
+- Dropdown backgrounds
+
+**`bg-background-secondary`** - Light gray (#F7F7F7)
+- Card backgrounds
+- Section backgrounds
+- Table row hover states
+- Form section containers
+
+```tsx
+// ✅ Correct - Card backgrounds
+<div className="bg-background-secondary rounded-lg p-6">
+  Card content
+</div>
+
+// ❌ Wrong - Old card styling with blur
+<div className="bg-card/50 backdrop-blur-sm rounded-xl">
+  Card content
+</div>
+```
+
+#### TEXT COLORS
+
+**`text-foreground`** - Dark charcoal (#333333)
+- Primary text, headings
+- Never use pure black
+
+**`text-muted-foreground`** - Medium gray (#666666)
+- Secondary text, descriptions
+- Labels, metadata
+
 ```tsx
 // ✅ Correct
-className="bg-background text-foreground"
-className="bg-card text-card-foreground"
-className="bg-primary text-primary-foreground"
-className="text-muted-foreground"
-className="text-destructive"
-className="border-border/30"  // Use opacity for subtle borders
+<h1 className="text-foreground">Page Title</h1>
+<p className="text-muted-foreground">Description text</p>
 
-// ❌ Wrong - Never hardcode colors
-className="text-red-600 dark:text-red-400"
-className="bg-gradient-to-r from-primary to-primary/80"
+// ❌ Wrong - Pure black
+<h1 className="text-black">Page Title</h1>
 ```
 
-**Usage in Tailwind:**
-```css
-bg-primary text-primary-foreground
-hover:bg-primary-dark
-bg-accent text-accent-foreground
-border-accent/20
+#### ACCENT COLORS
+
+**`bg-accent-surface`** - Very light blue tint
+- Icon containers
+- Highlighted areas
+- Secondary button hover
+
+**`text-primary-dark`** - Darker pastel blue
+- Icon colors
+- Active link text
+- Interactive element text
+
+```tsx
+// ✅ Correct - Icon container
+<div className="h-10 w-10 rounded-lg bg-accent-surface flex items-center justify-center">
+  <Icon className="h-5 w-5 text-primary-dark" />
+</div>
+
+// ❌ Wrong - Old gradient/primary background
+<div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+  <Icon className="h-5 w-5 text-primary" />
+</div>
 ```
 
-### Example Color Schemes
+#### BORDER COLORS
 
-#### Emerald Spark (Default)
-- **Primary:** `#10B981` (Emerald Green)
-- **Secondary:** `#059669` (Darker Green)
-- **Accent:** `#F87171` (Coral Red - complementary)
-- **Use:** Fresh, modern, growth-oriented brands
+**`border-border/50`** - Subtle border
+- Section dividers
+- Card borders (when needed)
+- Input borders
 
-#### Ocean Energy
-- **Primary:** `#0EA5E9` (Sky Blue)
-- **Secondary:** `#0284C7` (Deep Blue)
-- **Accent:** `#FB923C` (Orange - complementary)
-- **Use:** Trust, professionalism, tech companies
+```tsx
+// ✅ Correct - Subtle border
+className="border border-border/50"
 
-#### Royal Violet
-- **Primary:** `#8B5CF6` (Violet)
-- **Secondary:** `#7C3AED` (Deep Purple)
-- **Accent:** `#FBBF24` (Gold - complementary)
-- **Use:** Luxury, creativity, premium brands
+// ❌ Wrong - Heavy border
+className="border border-border"
+```
 
-### Component-Specific Color Guidelines
+### Color Usage Quick Reference
+
+| Element | Background | Text | Border |
+|---------|-----------|------|--------|
+| Page | `bg-background` | `text-foreground` | - |
+| Card/Section | `bg-background-secondary` | `text-foreground` | `border-border/50` |
+| Icon Container | `bg-accent-surface` | `text-primary-dark` | - |
+| Muted Text | - | `text-muted-foreground` | - |
+| Hover State | `hover:bg-muted` | - | - |
+| Focus Ring | - | - | `ring-primary/20` |
+
+### Component-Specific Styling Guidelines
+
+#### Cards & Sections
+```tsx
+// ✅ Correct - Flat card with subtle styling
+<div className="bg-background-secondary rounded-lg p-6 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
+  Card content
+</div>
+
+// ❌ Wrong - Old gradient/blur styling
+<div className="bg-card/50 backdrop-blur-sm rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/20">
+  Card content
+</div>
+
+// ❌ Wrong - Heavy borders
+<Card className="border border-border rounded-xl shadow-lg">
+  Card content
+</Card>
+```
 
 #### Buttons
 ```tsx
-// Primary CTA - use primary color
-<Button className="bg-primary text-primary-foreground hover:bg-primary-dark">
+// ✅ Primary button - Uses default Button styling (bg-primary-dark)
+<Button className="transition-colors duration-200">
   Save Changes
 </Button>
 
-// Secondary action - use outline with primary
-<Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
+// ✅ Outline button
+<Button variant="outline" className="transition-colors duration-200">
   Cancel
 </Button>
 
-// Accent for special actions (use sparingly!)
-<Button className="bg-accent text-accent-foreground hover:bg-accent-dark">
-  Upgrade Now
+// ❌ Wrong - Scale transforms and heavy shadows
+<Button className="hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary-light/20">
+  Submit
 </Button>
 ```
 
-#### Navigation
+#### Icon Containers
 ```tsx
-// Sidebar active state - subtle primary background
+// ✅ Correct - Accent surface with primary-dark icon
+<div className="h-10 w-10 rounded-lg bg-accent-surface flex items-center justify-center transition-colors duration-200">
+  <Icon className="h-5 w-5 text-primary-dark" />
+</div>
+
+// ❌ Wrong - Gradient/primary backgrounds with scale
+<div className="h-10 w-10 rounded-lg bg-primary/10 hover:scale-110 hover:bg-primary/20 hover:shadow-lg">
+  <Icon className="h-5 w-5 text-primary" />
+</div>
+```
+
+#### Navigation Items
+```tsx
+// ✅ Correct - Simple hover state
 <Link className={cn(
-  'px-4 py-3 rounded-lg',
+  'px-4 py-3 rounded-lg transition-colors duration-200',
   isActive 
-    ? 'bg-primary/10 text-primary font-medium'
-    : 'text-foreground/70 hover:bg-accent/5'
+    ? 'bg-accent-surface text-primary-dark font-medium'
+    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
 )}>
   Dashboard
 </Link>
-
-// Don't use full accent color backgrounds - too chaotic!
 ```
 
-#### Badges & Pills
+#### Lists & Tables
 ```tsx
-// Status badge with accent for important info
-<Badge className="bg-accent text-accent-foreground">
-  Sale
+// ✅ Correct - Subtle hover on rows
+<div className="divide-y divide-border/50">
+  {items.map(item => (
+    <div key={item.id} className="py-4 hover:bg-muted transition-colors duration-200">
+      {/* Content */}
+    </div>
+  ))}
+</div>
+
+// ❌ Wrong - Heavy hover effects
+<div className="hover:bg-accent/5 hover:shadow-md transition-all duration-300">
+```
+
+#### Badges & Status
+```tsx
+// ✅ Correct - Neutral, consistent styling
+<Badge variant="outline" className="bg-background-secondary text-foreground border-border/50">
+  Active
 </Badge>
 
-// Regular badge with subtle primary
-<Badge className="bg-primary/10 text-primary">
+// ❌ Wrong - Colored backgrounds
+<Badge className="bg-blue-100 text-blue-700 border-blue-300">
   Active
 </Badge>
 ```
 
-#### Forms
-```tsx
-// Focus state uses primary
-<Input className="focus:ring-primary focus:border-primary" />
+### Common Styling Mistakes to Avoid
 
-// Error state (not accent - use destructive)
-<Input className="border-destructive focus:ring-destructive" />
-```
+1. **Using gradient backgrounds**
+   - ❌ `bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10`
+   - ✅ `bg-background` (pure white)
 
-#### Notifications
-```tsx
-// Success - use accent
-<div className="bg-accent/10 border-accent/20 text-accent-dark">
-  <CheckCircle className="text-accent" />
-  Order confirmed!
-</div>
+2. **Decorative blur elements**
+   - ❌ Floating orbs with `blur-3xl`
+   - ✅ Remove all decorative background elements
 
-// Info - use primary
-<div className="bg-primary/10 border-primary/20 text-primary-dark">
-  <Info className="text-primary" />
-  New features available
-</div>
-```
+3. **Card backdrop blur**
+   - ❌ `bg-card/50 backdrop-blur-sm`
+   - ✅ `bg-background-secondary`
 
-### Common Color Mistakes to Avoid
+4. **Scale transforms on hover**
+   - ❌ `hover:scale-[1.02] active:scale-[0.98]`
+   - ✅ `hover:bg-muted transition-colors duration-200`
 
-1. **Using accent color everywhere**
-   - ❌ Active nav items with full accent background
-   - ✅ Active nav items with subtle primary background
+5. **Heavy shadow effects**
+   - ❌ `hover:shadow-lg hover:shadow-primary-light/20`
+   - ✅ `hover:shadow-soft` or no shadow
 
-2. **Mixing too many colors**
-   - ❌ Different colors for each menu item
-   - ✅ Consistent primary for all active states
+6. **Colored status badges**
+   - ❌ `bg-blue-100 text-blue-700`
+   - ✅ `bg-background-secondary text-foreground`
 
-3. **Poor contrast**
-   - ❌ Dark text on dark primary
-   - ✅ White text on all primary/accent backgrounds
+### Quick Styling Rules
 
-4. **Accent overload**
-   - ❌ Large buttons in accent color
-   - ✅ Small badges and notifications in accent
-
-5. **Ignoring hover states**
-   - ❌ No visual feedback on hover
-   - ✅ Use `hover:bg-primary-dark` for clear feedback
-
-### Quick Color Rules
-
-1. **Primary = Brand** → Use for main actions and navigation
-2. **Secondary = Hover** → Automatically applied, darker shade
-3. **Accent = Highlight** → Use sparingly for notifications and badges
-4. **Always white text** on primary and accent backgrounds
-5. **Keep it simple** → Don't use more than 3 colors per screen
-6. **Test contrast** → Ensure readability on all backgrounds
+1. **Background** → `bg-background` or `bg-background-secondary`
+2. **Text** → `text-foreground` or `text-muted-foreground`
+3. **Icons** → `text-primary-dark` in `bg-accent-surface` container
+4. **Borders** → `border-border/50` (subtle)
+5. **Hover** → `hover:bg-muted` (color change, not scale)
+6. **Transitions** → `transition-colors duration-200` (not `transition-all duration-300`)
+7. **Radius** → `rounded-lg` (6px) or `rounded-md` (4px)
 
 ---
 
@@ -832,371 +825,273 @@ className="border-2 border-border" // Too thick
 
 ## ✨ Visual Excellence
 
-### Premium Visual Elements
+### Notion-Inspired Minimalism
 
-**Rule: Create depth and sophistication through gradients, shadows, glassmorphism, and modern effects**
+**Rule: Less is more. Let whitespace and typography create hierarchy, not visual effects.**
 
-#### Smooth Gradients
+#### Clean Backgrounds
 
-**✅ Use sophisticated gradients for backgrounds and accents**
+**✅ Use flat, solid backgrounds - NO gradients**
 
 ```tsx
-// ✅ Correct - Subtle, premium gradients
-<div className="bg-gradient-to-br from-primary/10 via-background to-accent/5">
-  Hero Section
-</div>
-
-<div className="bg-gradient-to-r from-primary to-primary-dark text-primary-foreground">
-  CTA Button Background
-</div>
-
-// Dark mode gradient hero
-<div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
-  Premium Dark Hero
-</div>
-
-// Mesh gradient background
-<div 
-  className="relative"
-  style={{
-    background: `
-      radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, hsl(var(--accent) / 0.1) 0%, transparent 50%),
-      hsl(var(--background))
-    `
-  }}
->
+// ✅ Correct - Clean solid backgrounds
+<main className="min-h-screen bg-background">
   Content
+</main>
+
+<div className="bg-background-secondary rounded-lg p-6">
+  Card content
 </div>
 
-// ❌ Wrong - Harsh, basic gradients
-<div className="bg-gradient-to-r from-red-500 to-blue-500">  // Too harsh
-```
-
-#### Soft Shadows
-
-**✅ Use layered shadows for depth**
-
-```tsx
-// ✅ Correct - Soft, layered shadows
-className="shadow-sm"                           // Subtle elevation
-className="shadow-md"                           // Card elevation
-className="shadow-lg shadow-primary/10"         // Premium card with tint
-className="shadow-2xl shadow-primary/20"        // Hero elements
-
-// Custom premium shadow
-className="shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
-
-// Hover elevation
-className="shadow-md hover:shadow-xl hover:shadow-primary/20 transition-shadow duration-300"
-
-// ❌ Wrong - Harsh shadows
-className="shadow-[0_0_20px_#FF0000]"  // Too bright, no subtlety
-```
-
-#### Glassmorphism
-
-**✅ Modern glass-like effect for premium feel**
-
-```tsx
-// ✅ Correct - Glassmorphism card
-<div className="
-  bg-white/10 
-  backdrop-blur-lg 
-  border border-white/20
-  rounded-xl
-  shadow-lg
-  p-6
-">
-  Glass Card Content
-</div>
-
-// Glass navigation bar
-<nav className="
-  sticky top-0 z-50
-  bg-background/80
-  backdrop-blur-md
-  border-b border-border/50
-  shadow-sm
-">
-  Navigation
-</nav>
-
-// Dark mode glass
-<div className="
-  bg-gray-900/70
-  backdrop-blur-xl
-  border border-gray-700/50
-  rounded-2xl
-">
-  Dark Glass
-</div>
-```
-
-#### Dark Mode & Theme
-
-**✅ Support elegant dark mode**
-
-```tsx
-// ✅ Correct - Dark mode support with next-themes
-import { ThemeProvider } from 'next-themes'
-
-// In layout.tsx
-<ThemeProvider attribute="class" defaultTheme="system">
-  {children}
-</ThemeProvider>
-
-// Dark mode styles
-<div className="
-  bg-white dark:bg-gray-900
-  text-gray-900 dark:text-gray-100
-  border-gray-200 dark:border-gray-800
-">
+// ❌ FORBIDDEN - Gradient backgrounds
+<main className="bg-gradient-to-br from-primary-light/20 via-background to-primary-light/10">
   Content
-</div>
-
-// Use CSS variables (auto-adapts to dark mode)
-<div className="bg-background text-foreground">
-  Auto-adapting content
-</div>
+</main>
 ```
 
-#### Visual Hierarchy
+#### Minimal Shadows
 
-**✅ Create clear visual hierarchy with size, weight, and color**
+**✅ Use soft shadows sparingly or not at all**
 
 ```tsx
-// ✅ Correct - Clear hierarchy
+// ✅ Correct - Minimal or no shadows
+className="shadow-soft"           // Very subtle shadow (defined in tailwind config)
+className=""                      // No shadow is often best
+
+// Hover shadow (only if needed)
+className="hover:shadow-soft transition-shadow duration-200"
+
+// ❌ FORBIDDEN - Heavy/colored shadows
+className="shadow-lg shadow-primary-light/20"
+className="shadow-2xl shadow-primary/20"
+className="hover:shadow-xl hover:shadow-primary-light/20"
+```
+
+#### NO Glassmorphism or Blur Effects
+
+**❌ REMOVED - No backdrop blur effects**
+
+```tsx
+// ❌ FORBIDDEN - Remove all glassmorphism
+<div className="bg-card/50 backdrop-blur-sm">  // NO
+<div className="bg-white/10 backdrop-blur-lg">  // NO
+
+// ✅ Correct - Use solid backgrounds
+<div className="bg-background-secondary">
+  Clean card content
+</div>
+
+// ✅ Sticky headers can use subtle backdrop
+<header className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/50">
+  Navigation only
+</header>
+```
+
+#### NO Decorative Background Elements
+
+**❌ REMOVED - No floating orbs or patterns**
+
+```tsx
+// ❌ FORBIDDEN - Remove all decorative elements
+<div className="absolute top-20 right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
+<div className="absolute bottom-20 left-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl" />
+
+// ✅ Correct - Clean, empty background
+<main className="min-h-screen bg-background relative overflow-hidden">
+  <div className="relative">
+    {/* Content only, no decorative elements */}
+  </div>
+</main>
+```
+
+#### Visual Hierarchy Through Typography
+
+**✅ Create hierarchy with size, weight, and color - NOT effects**
+
+```tsx
+// ✅ Correct - Typography-based hierarchy
 <section>
-  {/* Primary focal point - largest, bold, primary color */}
-  <h1 className="text-4xl font-display font-bold text-foreground">
-    Main Title
+  {/* Primary - Large, semibold, dark charcoal */}
+  <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold text-foreground">
+    Page Title
   </h1>
   
-  {/* Secondary - medium, semibold, muted */}
-  <h2 className="text-2xl font-display font-semibold text-foreground/90 mt-4">
-    Subtitle
-  </h2>
-  
-  {/* Tertiary - base size, normal weight, more muted */}
-  <p className="text-base font-sans text-muted-foreground mt-2">
-    Supporting text with less emphasis
+  {/* Secondary - Smaller, muted */}
+  <p className="text-sm text-muted-foreground mt-2">
+    Description text
   </p>
   
-  {/* Metadata - small, muted */}
-  <span className="text-sm text-muted-foreground/70">
-    Published 2 hours ago
-  </span>
+  {/* Section headers */}
+  <h2 className="text-lg font-semibold text-foreground mt-8 mb-4">
+    Section Title
+  </h2>
 </section>
 
-// ❌ Wrong - No hierarchy
-<section>
-  <h1 className="text-2xl">Title</h1>
-  <p className="text-2xl">Text</p>  // Same size as title
-  <span className="text-2xl">Metadata</span>  // Same size again
-</section>
+// ❌ Wrong - Using effects for hierarchy
+<h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+  Fancy Title  // NO gradients on text
+</h1>
 ```
 
-#### Decorative Elements
+#### Spacing Over Borders
 
-**✅ Add subtle decorative elements for premium feel**
+**✅ Use whitespace for separation, not heavy borders**
 
 ```tsx
-// Floating orbs
-<div className="absolute top-20 right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse pointer-events-none -z-10" />
-<div className="absolute bottom-20 left-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-pulse pointer-events-none -z-10" />
+// ✅ Correct - Generous spacing
+<div className="space-y-6">
+  <section className="px-4 sm:px-6 lg:px-8 py-6">
+    Content section 1
+  </section>
+  <section className="px-4 sm:px-6 lg:px-8 py-6">
+    Content section 2
+  </section>
+</div>
 
-// Diagonal lines pattern
-<div 
-  className="absolute inset-0 pointer-events-none opacity-20 -z-10"
-  style={{
-    backgroundImage: `repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 20px,
-      hsl(var(--primary)) 20px,
-      hsl(var(--primary)) 21px
-    )`
-  }}
-/>
+// ✅ Subtle dividers when needed
+<div className="divide-y divide-border/30">
+  {items.map(item => (
+    <div key={item.id} className="py-4">
+      {/* Item content */}
+    </div>
+  ))}
+</div>
 
-// Dot grid pattern
-<div 
-  className="absolute inset-0 pointer-events-none opacity-10 -z-10"
-  style={{
-    backgroundImage: `radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)`,
-    backgroundSize: '24px 24px'
-  }}
-/>
+// ❌ Wrong - Heavy borders everywhere
+<Card className="border-2 border-border shadow-lg mb-6">
 ```
 
 ---
 
 ## 🎯 Animation System
 
-### Micro-Interactions
+### Simple Color Transitions
 
-**Rule: Add subtle micro-interactions to make the UI feel alive and responsive**
+**Rule: Use subtle color transitions only. NO scale transforms, NO heavy shadows on hover.**
 
 #### Hover States
 
 ```tsx
-// ✅ Correct - Sophisticated hover effects
-<button className="
-  transition-all duration-300
-  hover:scale-[1.02]
-  hover:shadow-lg
-  hover:shadow-primary/30
-  hover:-translate-y-0.5
-  active:scale-[0.98]
-  active:translate-y-0
-">
+// ✅ Correct - Simple color transition
+<button className="transition-colors duration-200 hover:bg-muted">
   Interactive Button
 </button>
 
-// Card hover with multiple effects
+// ✅ Card hover - background color change only
 <div className="
-  group
-  transition-all duration-300
-  hover:shadow-xl
-  hover:shadow-primary/20
-  hover:-translate-y-1
-  hover:border-primary/50
-  cursor-pointer
+  bg-background-secondary 
+  rounded-lg 
+  p-6
+  transition-colors duration-200
+  hover:bg-muted
+  hover:shadow-soft
 ">
-  <div className="
-    transition-transform duration-300
-    group-hover:scale-105
-  ">
-    Card Content
-  </div>
-  <div className="
-    text-muted-foreground
-    transition-colors duration-300
-    group-hover:text-primary
-  ">
-    Hover to highlight
-  </div>
+  Card Content
 </div>
 
-// Link hover
+// ✅ Link hover - color change
 <a className="
-  text-primary
-  underline-offset-4
-  decoration-2
-  hover:underline
+  text-muted-foreground
+  transition-colors duration-200
   hover:text-primary-dark
-  transition-all duration-200
 ">
   Interactive Link
 </a>
+
+// ❌ FORBIDDEN - Scale transforms
+<button className="hover:scale-[1.02] active:scale-[0.98]">
+  Button  // NO scale transforms
+</button>
+
+// ❌ FORBIDDEN - Heavy shadows on hover
+<div className="hover:shadow-lg hover:shadow-primary-light/20 hover:-translate-y-1">
+  Card  // NO shadow/translate effects
+</div>
 ```
 
 #### Focus States
 
 ```tsx
-// ✅ Correct - Clear focus indicators
+// ✅ Correct - Subtle focus indicators
 <input className="
-  focus:ring-2
-  focus:ring-primary
-  focus:ring-offset-2
-  focus:border-primary
-  focus:outline-none
-  transition-all duration-200
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-primary/20
+  focus-visible:border-primary-dark
+  transition-colors duration-200
 " />
 
 <button className="
-  focus-visible:ring-2
-  focus-visible:ring-primary
-  focus-visible:ring-offset-2
   focus-visible:outline-none
-  focus-visible:scale-[1.02]
-  transition-all duration-200
+  focus-visible:ring-2
+  focus-visible:ring-primary/20
+  transition-colors duration-200
 ">
   Accessible Button
+</button>
+
+// ❌ Wrong - Scale on focus
+<button className="focus-visible:scale-[1.02]">
+  Button  // NO scale on focus
 </button>
 ```
 
 #### Page Transitions
 
 ```tsx
-// ✅ Correct - Smooth page transitions with Framer Motion
+// ✅ Correct - Subtle opacity fade
 import { motion } from 'framer-motion'
 
 <motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  exit={{ opacity: 0, y: -20 }}
-  transition={{ duration: 0.3, ease: 'easeInOut' }}
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 0.2, ease: 'easeInOut' }}
 >
   Page Content
 </motion.div>
 
-// Staggered list animations
+// ❌ Avoid - Complex motion effects
 <motion.div
-  variants={{
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  }}
-  initial="hidden"
-  animate="show"
+  initial={{ opacity: 0, y: 20, scale: 0.95 }}  // Too complex
+  animate={{ opacity: 1, y: 0, scale: 1 }}
+  transition={{ duration: 0.5 }}
 >
-  {items.map(item => (
-    <motion.div
-      key={item.id}
-      variants={{
-        hidden: { opacity: 0, x: -20 },
-        show: { opacity: 1, x: 0 }
-      }}
-    >
-      {item.content}
-    </motion.div>
-  ))}
+  Content
 </motion.div>
 ```
 
 #### Loading States
 
 ```tsx
-// ✅ Correct - Smooth loading animations
+// ✅ Correct - Clean loading spinner
+<div className="flex items-center justify-center">
+  <div className="
+    animate-spin
+    rounded-full
+    h-8 w-8
+    border-4
+    border-primary/20
+    border-t-primary-dark
+  " />
+</div>
+
+// ✅ Skeleton loader
 <div className="animate-pulse space-y-4">
   <div className="h-4 bg-muted rounded w-3/4" />
   <div className="h-4 bg-muted rounded w-1/2" />
 </div>
-
-// Spinner
-<div className="
-  animate-spin
-  rounded-full
-  h-8 w-8
-  border-2
-  border-primary
-  border-t-transparent
-" />
-
-// Skeleton with shimmer
-<div className="
-  relative
-  overflow-hidden
-  bg-muted
-  rounded-lg
-  before:absolute
-  before:inset-0
-  before:-translate-x-full
-  before:animate-shimmer
-  before:bg-gradient-to-r
-  before:from-transparent
-  before:via-white/20
-  before:to-transparent
-">
-  Content
-</div>
 ```
+
+### Transition Classes Quick Reference
+
+| Use Case | Class |
+|----------|-------|
+| Background color change | `transition-colors duration-200` |
+| All properties (rare) | `transition-all duration-200` |
+| Shadow change | `transition-shadow duration-200` |
+| Opacity fade | `transition-opacity duration-200` |
+
+**Note:** Always use `duration-200` (200ms) for quick, responsive feedback. Avoid `duration-300` or longer.
 
 ---
 
@@ -1855,74 +1750,78 @@ className="h-screen overflow-y-auto"     // Scrollable full screen
 
 ### Core Principles (Priority Order)
 
-1. **🎨 WOW FACTOR (CRITICAL)**: 
-   - Interface must look **stunning at first glance**
-   - Not a basic MVP - high-end, cutting-edge aesthetic
-   - Rich colors, depth, motion, and premium feel
-   - Users should be impressed immediately
+1. **🎨 NOTION-INSPIRED MINIMALISM (CRITICAL)**: 
+   - **Unified Flow** - Interface feels like one continuous sheet of paper
+   - **NO boxed/card-based UI** with heavy borders and shadows
+   - Use **whitespace and typography** for visual separation
+   - Clean, minimal, content-focused design
 
-2. **⚡ INTEGRAL DESIGN**: 
-   - **ALWAYS** use continuous flow with `<section>` elements
-   - **NEVER** use cards with borders (`<Card>` with borders)
-   - Use `border-b` dividers between sections, not card wrappers
-   - Sticky headers for section navigation
-   - `divide-y` for list items within sections
+2. **⚡ FLAT DESIGN RULES**:
+   - **FLATTEN** - Remove card borders and shadows
+   - **LIGHTEN** - Use `#333333` for text, `#FFFFFF` for backgrounds
+   - **SPACE** - Generous whitespace (40px+ margins)
+   - **TINT** - Soft pastel accent colors
+   - **SOFTEN** - Subtle `ease-in-out` color transitions
 
-3. **📋 SEMANTIC HTML**: 
+3. **❌ FORBIDDEN ELEMENTS**:
+   - Gradient backgrounds (`bg-gradient-to-br from-primary-light/20`)
+   - Decorative blur elements (`blur-3xl` floating orbs)
+   - Backdrop blur on cards (`bg-card/50 backdrop-blur-sm`)
+   - Scale transforms on hover (`hover:scale-[1.02]`)
+   - Heavy colored shadows (`hover:shadow-lg hover:shadow-primary-light/20`)
+   - Colored status badges (`bg-blue-100 text-blue-700`)
+
+4. **✅ REQUIRED PATTERNS**:
+   - `bg-background` or `bg-background-secondary` for all backgrounds
+   - `text-foreground` (#333333) and `text-muted-foreground` (#666666) for text
+   - `bg-accent-surface` with `text-primary-dark` for icon containers
+   - `hover:bg-muted` for hover states (not scale transforms)
+   - `transition-colors duration-200` for interactions
+   - `border-border/50` for subtle borders
+
+5. **📋 SEMANTIC HTML**: 
    - Exactly **one `<h1>` per page**
    - Proper heading hierarchy (h2, h3, h4)
    - Use semantic elements (`<header>`, `<main>`, `<section>`, `<nav>`, `<footer>`, `<article>`)
    - **Every interactive element** has unique, descriptive `id`
    - Accessible labels on all inputs and buttons
 
-4. **🎨 VISUAL EXCELLENCE**:
-   - **NO plain primary colors** (avoid pure red/blue/green)
-   - Use **sophisticated HSL color palettes**
-   - Modern **Google Fonts** (Inter, Outfit, Roboto) - never browser defaults
-   - Smooth gradients, soft shadows, glassmorphism
-   - Clear visual hierarchy with size, weight, and color
-
-5. **✨ DYNAMIC & ALIVE**:
-   - Subtle micro-interactions (hover, focus, press states)
-   - Smooth animations and transitions
-   - Loading states with skeletons
-   - Responsive feedback on all interactions
-
-6. **🚫 NO PLACEHOLDERS**:
-   - Never use Lorem ipsum
-   - Use realistic sample copy
-   - High-quality images from Unsplash or custom SVGs
-   - No "Coming soon" or "Image here" placeholders
-
-7. **🔍 SEO OPTIMIZED**:
-   - Unique title and meta description per page
-   - Open Graph and Twitter Card tags
-   - Semantic HTML for search engines
-   - Fast performance (< 3s load time)
-
-8. **📱 MOBILE-FIRST**: 
+6. **📱 MOBILE-FIRST**: 
    - Design for mobile, enhance for desktop
    - 44px minimum touch targets
    - Touch-optimized interactions
 
-9. **🎯 TECH STACK**:
+7. **🎯 TECH STACK**:
    - Next.js (App Router)
    - React with TypeScript
    - Tailwind CSS (no inline styles)
    - shadcn/ui components
-   - Framer Motion for animations
+   - Inter font family
+
+### Quick Reference: Old vs New
+
+| Old (FORBIDDEN) | New (REQUIRED) |
+|-----------------|----------------|
+| `bg-gradient-to-br from-primary-light/20 via-background` | `bg-background` |
+| `bg-card/50 backdrop-blur-sm` | `bg-background-secondary` |
+| `hover:scale-[1.02] active:scale-[0.98]` | `hover:bg-muted` |
+| `hover:shadow-lg hover:shadow-primary-light/20` | `hover:shadow-soft` or none |
+| `transition-all duration-300` | `transition-colors duration-200` |
+| `rounded-xl` | `rounded-lg` |
+| `bg-primary/10` (icon container) | `bg-accent-surface` |
+| `text-primary` (icon color) | `text-primary-dark` |
+| `bg-blue-100 text-blue-700` (badge) | `bg-background-secondary text-foreground` |
 
 ### Key Metrics
 
 - **Touch Target**: Minimum 44px × 44px
-- **Typography**: Minimum 16px on mobile, modern Google Fonts required
-- **Border Radius**: 8px (rounded-lg) or 12px (rounded-xl)
+- **Typography**: Inter font, minimum 16px on mobile
+- **Border Radius**: 6px (rounded-lg) or 4px (rounded-md)
 - **Spacing Mobile**: gap-3 (12px), px-4 (16px)
 - **Spacing Desktop**: lg:gap-6 (24px), lg:px-8 (32px)
-- **Animation Scale**: 1.02 hover, 0.98 tap
+- **Transitions**: `duration-200` (200ms) only
+- **Borders**: `border-border/50` (very subtle)
 - **Heading Hierarchy**: One h1, proper h2-h6 structure
-- **Color Format**: HSL for maximum control
-- **Load Time**: < 3 seconds for SEO
 
 ---
 
@@ -1931,58 +1830,49 @@ className="h-screen overflow-y-auto"     // Scrollable full screen
 When generating UI with AI, use this prompt:
 
 ```
-Create a **STUNNING, PREMIUM** web application using **Next.js (App Router) + shadcn/ui + Tailwind CSS**.
+Create a **NOTION-INSPIRED MINIMAL** web application using **Next.js (App Router) + shadcn/ui + Tailwind CSS**.
 
-🎨 VISUAL EXCELLENCE (MUST WOW USERS):
-- Interface must look **stunning at first glance** - NOT a basic MVP
-- Use sophisticated **HSL color palettes** - NEVER plain primary colors (red/blue/green)
-- Modern **Google Fonts** (Inter, Outfit, Roboto) - NEVER browser defaults
-- Rich aesthetics: smooth gradients, soft shadows, glassmorphism, depth
-- Subtle micro-interactions: hover effects, focus states, smooth transitions
-- Dynamic and alive: animations, loading states, responsive feedback
+🎨 DESIGN PHILOSOPHY (NOTION-INSPIRED LIGHT MINIMALISM):
+- **Unified Flow** - Everything feels like one continuous sheet of paper
+- **NO boxed/card-based UI** - Use whitespace and typography for separation
+- Clean, minimal design that lets content breathe
+- Inter font family for consistency
+
+❌ FORBIDDEN ELEMENTS (NEVER USE):
+- Gradient backgrounds (`bg-gradient-to-br from-primary-light/20`)
+- Decorative blur elements (floating orbs with `blur-3xl`)
+- Backdrop blur on cards (`bg-card/50 backdrop-blur-sm`)
+- Scale transforms (`hover:scale-[1.02] active:scale-[0.98]`)
+- Heavy shadows (`hover:shadow-lg hover:shadow-primary-light/20`)
+- Colored status badges (`bg-blue-100 text-blue-700`)
+- `rounded-xl` - use `rounded-lg` instead
+
+✅ REQUIRED PATTERNS:
+- `bg-background` (white) or `bg-background-secondary` (#F7F7F7) for backgrounds
+- `text-foreground` (#333333) for primary text
+- `text-muted-foreground` (#666666) for secondary text
+- `bg-accent-surface` with `text-primary-dark` for icon containers
+- `hover:bg-muted` for hover states (NOT scale transforms)
+- `transition-colors duration-200` for all interactions
+- `border-border/50` for subtle borders
+- `rounded-lg` (6px) for border radius
 
 📋 SEMANTIC HTML (REQUIRED):
 - **Exactly ONE `<h1>` per page** with proper heading hierarchy (h2, h3, h4)
-- Use semantic elements: `<header>`, `<main>`, `<section>`, `<nav>`, `<footer>`, `<article>`, `<aside>`
-- **Every interactive element** needs unique, descriptive `id` (e.g., `user-profile-edit-button`)
-- Format: `[context]-[element]-[action]` (e.g., `dashboard-stats-refresh-button`)
-- All inputs and buttons need accessible labels (`aria-label`)
+- Use semantic elements: `<header>`, `<main>`, `<section>`, `<nav>`, `<footer>`
+- **Every interactive element** needs unique, descriptive `id`
+- Format: `[context]-[element]-[action]` (e.g., `dashboard-stats-card`)
 
-⚡ INTEGRAL DESIGN (CRITICAL):
-- **NEVER use Card components with borders** - this is FORBIDDEN
-- **ALWAYS use continuous flow** with `<section>` elements
-- Use `border-b border-border/30` for section dividers, NOT card borders
-- Use sticky headers: `sticky top-0 bg-background/95 backdrop-blur-sm z-10`
-- Use `divide-y divide-border/30` for list items within sections
-- Structure: Page Header → Search/Filter Section → Content Section (all as `<section>`)
-
-🚫 NO PLACEHOLDERS:
-- NEVER use "Lorem ipsum" text
-- Use realistic sample copy with actual feature descriptions
-- High-quality images from Unsplash (https://images.unsplash.com/photo-...)
-- Custom SVG illustrations with brand colors
-- NO "Coming soon" or "Image here" placeholders
-
-🔍 SEO OPTIMIZATION (EVERY PAGE):
-- Unique `<title>` tag (50-60 characters)
-- Meta description (150-160 characters)
-- Open Graph and Twitter Card tags
-- Semantic HTML structure for search engines
-- Alt text on all images
-
-📱 MOBILE-FIRST PWA:
+📱 MOBILE-FIRST:
 - Design for mobile first, enhance for desktop
 - 44px minimum touch targets
-- Touch-optimized: `touch-manipulation`, `active:scale-[0.98]`
-- Bottom navigation on mobile, sidebar on desktop
-- Responsive: `px-4 sm:px-6 lg:px-8`, `text-base lg:text-lg`
+- Responsive: `px-4 sm:px-6 lg:px-8`
 
 🎯 TECH STACK:
 - Next.js App Router with TypeScript
-- Tailwind CSS (NO inline styles except rare cases)
+- Tailwind CSS (NO inline styles)
 - shadcn/ui components
-- Framer Motion for animations
-- next/font/google for font optimization
+- Inter font
 
 Example page structure:
 ```tsx
@@ -1990,50 +1880,54 @@ Example page structure:
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Dashboard - Your App',
+  title: 'Dashboard - Pitchivo',
   description: 'Manage your projects and track progress',
-  openGraph: {
-    title: 'Dashboard - Your App',
-    description: 'Manage your projects and track progress',
-    images: [{ url: '/og-dashboard.png' }],
-  },
 }
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-background">
-      {/* Page Header - Integral Section */}
-      <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-bold">Dashboard</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Track your progress and manage your workflow
-          </p>
-        </div>
-      </section>
-
-      {/* Stats Section - Integral */}
-      <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Stats with unique IDs */}
-          <div id="stat-total-projects" className="p-4 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors">
-            <p className="text-sm text-muted-foreground">Total Projects</p>
-            <p className="text-2xl font-display font-bold text-foreground">24</p>
+    <main className="min-h-screen bg-background relative overflow-hidden">
+      <div className="relative">
+        {/* Page Header */}
+        <section className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold text-foreground">
+              Dashboard
+            </h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Track your progress
+            </p>
           </div>
-          {/* More stats... */}
-        </div>
-      </section>
+        </section>
 
-      {/* Content Section - Integral */}
-      <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <h2 className="text-lg md:text-xl font-semibold mb-4">Recent Activity</h2>
-        <div className="divide-y divide-border/30">
-          {/* List items with unique IDs */}
-          <div id="activity-item-1" className="py-4 hover:bg-accent/5 transition-colors">
-            {/* Content */}
+        {/* Stats Section */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div 
+              id="stat-total-projects" 
+              className="bg-background-secondary rounded-lg p-4 transition-colors duration-200 hover:bg-muted hover:shadow-soft"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-lg bg-accent-surface flex items-center justify-center">
+                  <FolderIcon className="h-4 w-4 text-primary-dark" />
+                </div>
+                <span className="text-sm text-muted-foreground">Projects</span>
+              </div>
+              <p className="text-2xl font-semibold text-foreground">24</p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Content Section */}
+        <section className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
+          <div className="bg-background-secondary rounded-lg divide-y divide-border/50">
+            <div className="p-4 hover:bg-muted transition-colors duration-200">
+              {/* Item content */}
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   )
 }
@@ -2043,4 +1937,4 @@ export default function DashboardPage() {
 ---
 
 **Last Updated**: November 2024  
-**Version**: 4.0 (Premium Modern Web App - Complete Guide)
+**Version**: 5.0 (Notion-Inspired Light Minimalism)
