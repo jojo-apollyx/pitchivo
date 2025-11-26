@@ -74,21 +74,12 @@ export async function DELETE(request: NextRequest) {
 
         // Count and delete email templates
         const { count: templatesCount } = await supabase
-          .from('email_templates')
+          .from('brevo_email_templates')
           .select('*', { count: 'exact', head: true })
           .in('campaign_id', campaignIds)
-        await supabase.from('email_templates').delete().in('campaign_id', campaignIds)
-        deletedTables['email_templates'] = templatesCount || 0
+        await supabase.from('brevo_email_templates').delete().in('campaign_id', campaignIds)
+        deletedTables['brevo_email_templates'] = templatesCount || 0
         totalDeleted += templatesCount || 0
-
-        // Count and delete email quality scores
-        const { count: qualityCount } = await supabase
-          .from('email_quality_scores')
-          .select('*', { count: 'exact', head: true })
-          .in('campaign_id', campaignIds)
-        await supabase.from('email_quality_scores').delete().in('campaign_id', campaignIds)
-        deletedTables['email_quality_scores'] = qualityCount || 0
-        totalDeleted += qualityCount || 0
 
         // Delete campaigns
         await supabase.from('campaigns').delete().eq('product_id', id)
@@ -159,8 +150,7 @@ export async function DELETE(request: NextRequest) {
           // Delete campaign-related data
           await supabase.from('campaign_activities').delete().in('campaign_id', campaignIds)
           await supabase.from('scheduled_emails').delete().in('campaign_id', campaignIds)
-          await supabase.from('email_templates').delete().in('campaign_id', campaignIds)
-          await supabase.from('email_quality_scores').delete().in('campaign_id', campaignIds)
+          await supabase.from('brevo_email_templates').delete().in('campaign_id', campaignIds)
 
           // Delete campaigns
           const { error: campaignsError } = await supabase

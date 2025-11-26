@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .select('*')
       .eq('campaign_id', campaignId)
       .order('created_at', { ascending: false })
@@ -71,14 +71,14 @@ export async function POST(request: NextRequest) {
     // If this template is set as default, unset any existing default
     if (isDefault) {
       await supabaseAdmin
-        .from('email_templates')
+        .from('brevo_email_templates')
         .update({ is_default: false })
         .eq('campaign_id', campaignId)
         .eq('is_default', true)
     }
 
     const { data, error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .insert({
         campaign_id: campaignId,
         template_name: templateName,
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest) {
 
     // Get the template to find its campaign_id
     const { data: existingTemplate, error: fetchError } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .select('campaign_id')
       .eq('template_id', templateId)
       .single()
@@ -139,7 +139,7 @@ export async function PUT(request: NextRequest) {
     // If this template is set as default, unset any existing default
     if (isDefault) {
       await supabaseAdmin
-        .from('email_templates')
+        .from('brevo_email_templates')
         .update({ is_default: false })
         .eq('campaign_id', existingTemplate.campaign_id)
         .eq('is_default', true)
@@ -156,7 +156,7 @@ export async function PUT(request: NextRequest) {
     if (isDefault !== undefined) updateData.is_default = isDefault
 
     const { data, error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .update(updateData)
       .eq('template_id', templateId)
       .select()
@@ -196,7 +196,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .delete()
       .eq('template_id', templateId)
 

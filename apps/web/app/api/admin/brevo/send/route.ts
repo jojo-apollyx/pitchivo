@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Store initial 'sent' event in database for tracking
     if (result?.messageId) {
       try {
-        await supabaseAdmin.from('email_events').insert({
+        await supabaseAdmin.from('brevo_email_events').insert({
           brevo_message_id: result.messageId,
           recipient_email: to,
           event_type: 'sent',

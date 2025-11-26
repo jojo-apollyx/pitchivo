@@ -21,36 +21,72 @@ async function checkEmailDomainStatus(email: string): Promise<'public' | 'blocke
 
   const supabase = createClient();
   const { data, error } = await supabase
-    .from('email_domains')
-    .select('status')
+    .from('email_domain_policy')
+    .select('status, is_public_domain')
     .eq('domain', domain)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     return 'allowed';
   }
 
-  return data.status as 'public' | 'blocked' | 'allowed';
+  // Check if it's a public domain first
+  if (data.is_public_domain === true) {
+    return 'public';
+  }
+
+  // Map backend status to frontend status
+  if (data.status === 'blocked') {
+    return 'blocked';
+  }
+
+  // 'whitelisted' or 'allowed' both mean allowed
+  if (data.status === 'whitelisted' || data.status === 'allowed') {
+    return 'allowed';
+  }
+
+  return 'allowed';
 }
 
-// Check if email is in invited_emails table
+// Check if email is invited (either on waitlist with status 'invited' or domain is whitelisted)
 async function isInvitedEmail(email: string): Promise<boolean> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from('invited_emails')
-    .select('email')
-    .eq('email', email.toLowerCase())
-    .single();
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (!domain) return false;
 
-  if (error) {
-    if (error.code === 'PGRST116') {
+  // Check if domain is whitelisted
+  const { data: domainPolicy, error: domainError } = await supabase
+    .from('email_domain_policy')
+    .select('status')
+    .eq('domain', domain)
+    .eq('status', 'whitelisted')
+    .maybeSingle();
+
+  if (domainError) {
+    console.error('Error checking domain policy:', domainError);
+  }
+
+  if (domainPolicy) {
+    return true;
+  }
+
+  // Check if email is on waitlist with status 'invited'
+  const { data: waitlistEntry, error: waitlistError } = await supabase
+    .from('waitlist')
+    .select('status')
+    .eq('email', email.toLowerCase())
+    .eq('status', 'invited')
+    .maybeSingle();
+
+  if (waitlistError) {
+    if (waitlistError.code === 'PGRST116') {
       return false;
     }
-    console.error('Error checking invited email:', error);
+    console.error('Error checking waitlist:', waitlistError);
     return false;
   }
 
-  return !!data;
+  return !!waitlistEntry;
 }
 
 interface HeroEmailFormProps {

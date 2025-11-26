@@ -51,7 +51,7 @@ export async function GET(
 
     // Fetch all events for this scheduled email, ordered by timestamp
     const { data: events, error: eventsError } = await supabaseAdmin
-      .from('email_events')
+      .from('brevo_email_events')
       .select('*')
       .eq('scheduled_email_id', scheduledEmailId)
       .order('event_timestamp', { ascending: true })

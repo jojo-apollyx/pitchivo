@@ -16,10 +16,7 @@ import {
   FileText,
   Users,
   Star,
-  Moon,
-  Sun,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { sendWaitlistConfirmationEmail, sendWaitlistAdminNotification } from "@/lib/emails";
 import { useForm } from "react-hook-form";
@@ -287,7 +284,6 @@ export default function Home() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const pricingRef = useRef<HTMLElement>(null);
-  const { theme, setTheme } = useTheme();
 
   // Waitlist form
   const {
@@ -426,18 +422,6 @@ export default function Home() {
                 onClick={scrollToPricing}
               >
                 Pricing
-              </Button>
-              <Button
-                id="nav-theme-toggle-button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="w-9 h-9 p-0 rounded-md hover:bg-background-secondary"
-                aria-label="Toggle theme"
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
               </Button>
             </div>
           </div>

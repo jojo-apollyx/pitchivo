@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch all email events, grouped by message_id
     const { data: events, error } = await supabaseAdmin
-      .from('email_events')
+      .from('brevo_email_events')
       .select('*')
       .not('brevo_message_id', 'is', null)
       .order('event_timestamp', { ascending: false })

@@ -102,13 +102,13 @@ export async function GET(request: NextRequest) {
 
         // 4. Email Events
         const { data: events, count: eventsCount } = await supabase
-          .from('email_events')
+          .from('brevo_email_events')
           .select('event_id, event_type', { count: 'exact' })
           .in('campaign_id', campaignIds)
           .limit(5)
         
         if (eventsCount && eventsCount > 0) {
-          tables['email_events'] = {
+          tables['brevo_email_events'] = {
             count: eventsCount,
             sampleIds: events?.map(e => `${e.event_type} (${e.event_id.substring(0, 8)}...)`) || [],
             description: 'Email tracking events (opens, clicks, bounces, etc.)'

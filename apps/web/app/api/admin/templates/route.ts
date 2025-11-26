@@ -16,7 +16,7 @@ const supabaseAdmin = createClient(
 export async function GET(request: NextRequest) {
   try {
     const { data: templates, error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .select('*')
       .order('created_at', { ascending: false })
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: template, error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .insert(insertData)
       .select()
       .single()
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { data: template, error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .update(updateData)
       .eq('template_id', templateId)
       .select()
@@ -153,7 +153,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { error } = await supabaseAdmin
-      .from('email_templates')
+      .from('brevo_email_templates')
       .delete()
       .eq('template_id', templateId)
 

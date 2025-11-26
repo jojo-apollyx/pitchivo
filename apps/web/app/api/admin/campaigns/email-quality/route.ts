@@ -288,26 +288,8 @@ export async function POST(request: NextRequest) {
     // Analyze email quality
     const analysis = analyzeEmailQuality(subject, content)
 
-    // Save to database if campaignId is provided
-    if (campaignId) {
-      const { error: insertError } = await supabaseAdmin
-        .from('email_quality_scores')
-        .insert({
-          campaign_id: campaignId,
-          template_id: templateId || null,
-          subject,
-          content,
-          overall_score: analysis.overallScore,
-          spam_risk_level: analysis.spamRiskLevel,
-          issues: analysis.issues,
-          suggestions: analysis.suggestions
-        })
-
-      if (insertError) {
-        console.error('Error saving quality score:', insertError)
-        // Don't fail the request if saving fails
-      }
-    }
+    // Note: email_quality_scores table has been removed
+    // Quality analysis is performed on-demand and not persisted
 
     return NextResponse.json({
       success: true,

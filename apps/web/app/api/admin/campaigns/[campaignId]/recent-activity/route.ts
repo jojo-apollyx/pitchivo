@@ -22,7 +22,7 @@ export async function GET(
     const { campaignId } = await params
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20')
 
-    // Get recent activity from campaign_activities or email_events
+    // Get recent activity from campaign_activities or brevo_email_events
     const { data: activities, error } = await supabase
       .from('campaign_activities')
       .select('*')

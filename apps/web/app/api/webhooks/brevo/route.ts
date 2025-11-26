@@ -234,9 +234,9 @@ async function processBrevoEvent(event: any) {
     console.log(`📧 Updating Brevo transactional email record...`)
     await updateBrevoTransactionalEmailStatus(scheduledEmailId, campaignId, email, messageId, ourEventType)
 
-    // Record event in email_events history table
+    // Record event in brevo_email_events history table
     // This uses scheduledEmailId directly if available
-    console.log(`📝 Recording event in email_events history...`)
+    console.log(`📝 Recording event in brevo_email_events history...`)
     await recordEmailEvent(scheduledEmailId, campaignId, email, messageId, ourEventType, event)
 
     console.log(`✅ Event processed successfully`)
@@ -407,9 +407,9 @@ async function recordEmailEvent(scheduledEmailId: string | null, campaignId: str
                           (eventData.ts_event ? new Date(eventData.ts_event * 1000).toISOString() : null) ||
                           new Date().toISOString()
 
-    // Insert event into email_events table
+    // Insert event into brevo_email_events table
     const { error: insertError } = await supabaseAdmin
-      .from('email_events')
+      .from('brevo_email_events')
       .insert({
         brevo_email_id: finalScheduledEmailId,
         campaign_id: finalCampaignId,
