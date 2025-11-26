@@ -279,20 +279,83 @@ async function main() {
       console.log('⏭️  Step 1: Skipping organizations migration\n');
       // Load existing organizations into mapping for signal resolution
       console.log('  Loading existing organizations for signal resolution...');
-      const { data: existingOrgs } = await supabase
-        .from('leads_organizations')
-        .select('id, profile_data');
       
-      if (existingOrgs) {
+      // Load ALL organizations (Supabase might limit to 1000 by default)
+      let allOrgs: any[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      let totalCount: number | null = null;
+      
+      while (hasMore) {
+        const { data: pageOrgs, error: orgError, count } = await supabase
+          .from('leads_organizations')
+          .select('id, profile_data', { count: 'exact' })
+          .range(offset, offset + pageSize - 1);
+        
+        if (orgError) {
+          console.warn(`  ⚠️  Error loading organizations (offset ${offset}): ${orgError.message}`);
+          break;
+        }
+        
+        if (totalCount === null && count !== null) {
+          totalCount = count;
+          console.log(`  📊 Total organizations in database: ${totalCount.toLocaleString()}`);
+        }
+        
+        if (pageOrgs && pageOrgs.length > 0) {
+          allOrgs = allOrgs.concat(pageOrgs);
+          offset += pageOrgs.length;
+          hasMore = pageOrgs.length === pageSize;
+          console.log(`  📥 Loaded ${allOrgs.length.toLocaleString()} organizations so far...`);
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`  📊 Total organizations fetched: ${allOrgs.length.toLocaleString()}`);
+      
+      if (allOrgs.length > 0) {
         let loadedCount = 0;
-        for (const org of existingOrgs) {
-          const mongoId = org.profile_data?.mongo_id;
-          if (mongoId && typeof mongoId === 'string') {
-            orgIdMapping.set(mongoId, org.id);
-            loadedCount++;
+        let noMongoIdCount = 0;
+        let parseErrorCount = 0;
+        const sampleMongoIds: string[] = [];
+        
+        for (const org of allOrgs) {
+          try {
+            // profile_data might be a JSON string or already parsed object
+            const profileData = typeof org.profile_data === 'string' 
+              ? JSON.parse(org.profile_data) 
+              : org.profile_data;
+            const mongoId = profileData?.mongo_id;
+            if (mongoId && typeof mongoId === 'string') {
+              orgIdMapping.set(mongoId, org.id);
+              loadedCount++;
+              if (sampleMongoIds.length < 5) {
+                sampleMongoIds.push(mongoId);
+              }
+            } else {
+              noMongoIdCount++;
+            }
+          } catch (err: any) {
+            parseErrorCount++;
+            if (parseErrorCount <= 3) {
+              console.warn(`  ⚠️  JSON parse error for org ${org.id}: ${err.message}`);
+            }
           }
         }
-        console.log(`  ✓ Loaded ${loadedCount.toLocaleString()} existing organizations into mapping\n`);
+        console.log(`  ✓ Loaded ${loadedCount.toLocaleString()} existing organizations into mapping`);
+        if (noMongoIdCount > 0) {
+          console.log(`  ⚠️  ${noMongoIdCount.toLocaleString()} organizations without mongo_id in profile_data (skipped)`);
+        }
+        if (parseErrorCount > 0) {
+          console.log(`  ⚠️  ${parseErrorCount.toLocaleString()} organizations with JSON parse errors`);
+        }
+        console.log(`  📊 Total organizations in mapping: ${orgIdMapping.size.toLocaleString()}`);
+        if (sampleMongoIds.length > 0) {
+          console.log(`  📋 Sample mongo_ids loaded: ${sampleMongoIds.slice(0, 3).join(', ')}`);
+        }
+        console.log('');
       } else {
         console.log('  ⚠️  No existing organizations found in database\n');
       }
@@ -392,17 +455,52 @@ async function main() {
       console.log('⏭️  Step 2: Skipping market items migration\n');
       // Load existing market items into mapping for signal resolution
       console.log('  Loading existing market items for signal resolution...');
-      const { data: existingItems } = await supabase
-        .from('leads_market_items')
-        .select('id, attributes');
       
-      if (existingItems) {
+      // Load ALL market items (Supabase might limit to 1000 by default)
+      let allItems: any[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data: pageItems, error: itemError } = await supabase
+          .from('leads_market_items')
+          .select('id, attributes')
+          .range(offset, offset + pageSize - 1);
+        
+        if (itemError) {
+          console.warn(`  ⚠️  Error loading market items (offset ${offset}): ${itemError.message}`);
+          break;
+        }
+        
+        if (pageItems && pageItems.length > 0) {
+          allItems = allItems.concat(pageItems);
+          offset += pageItems.length;
+          hasMore = pageItems.length === pageSize;
+          console.log(`  📥 Loaded ${allItems.length.toLocaleString()} market items so far...`);
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`  📊 Total market items fetched: ${allItems.length.toLocaleString()}`);
+      
+      if (allItems.length > 0) {
         let loadedCount = 0;
-        for (const item of existingItems) {
-          const mongoId = item.attributes?.mongo_id;
-          if (mongoId && typeof mongoId === 'string') {
-            itemIdMapping.set(mongoId, item.id);
-            loadedCount++;
+        for (const item of allItems) {
+          try {
+            // attributes might be a JSON string or already parsed object
+            const attributes = typeof item.attributes === 'string' 
+              ? JSON.parse(item.attributes) 
+              : item.attributes;
+            const mongoId = attributes?.mongo_id;
+            if (mongoId && typeof mongoId === 'string') {
+              itemIdMapping.set(mongoId, item.id);
+              loadedCount++;
+            }
+          } catch (err) {
+            // If JSON parsing fails, skip this item
+            continue;
           }
         }
         console.log(`  ✓ Loaded ${loadedCount.toLocaleString()} existing market items into mapping\n`);
@@ -584,8 +682,8 @@ async function main() {
         
         // Transform all contacts first
         const transformedBatch = batch.map(mongoDoc => {
-          // Resolve company reference
-          const companyMongoId = mongoDoc.company?.$id?.$oid;
+          // Resolve company reference - MongoDB DBRef object has .oid property
+          const companyMongoId = (mongoDoc.company as any)?.oid?.toString();
           const orgId = companyMongoId ? orgIdMapping.get(companyMongoId) || null : null;
           return {
             mongoDoc,
@@ -635,6 +733,7 @@ async function main() {
       console.log('⏭️  Step 4: Skipping signals migration\n');
     } else {
       console.log('📦 Step 4: Migrating purchases (signals)...');
+      console.log(`  📊 Organizations in mapping: ${orgIdMapping.size.toLocaleString()}, Market items in mapping: ${itemIdMapping.size.toLocaleString()}\n`);
       
       // Get or create MongoDB Migration source
       let sourceId: string | null = null;
@@ -680,11 +779,19 @@ async function main() {
         let skippedNoOrg = 0;
         let skippedNoItem = 0;
         let skippedNoName = 0;
+        let foundCount = 0;
+        let notFoundCount = 0;
         
         for (const mongoDoc of batch) {
-          // Resolve buyer company
-          const buyerMongoId = mongoDoc.buyer_company?.$id?.$oid;
-          const orgId = buyerMongoId ? orgIdMapping.get(buyerMongoId) || null : null;
+          // Resolve buyer company - MongoDB DBRef object has .oid property
+          const buyerMongoId = (mongoDoc.buyer_company as any)?.oid?.toString();
+          
+          if (!buyerMongoId) {
+            skippedNoOrg++;
+            continue;
+          }
+          
+          let orgId = orgIdMapping.get(buyerMongoId) || null;
           
           if (!orgId) {
             skippedNoOrg++;
@@ -798,9 +905,15 @@ async function main() {
         let skippedNoItem = 0;
         
         for (const mongoDoc of batch) {
-          // Resolve company reference
-          const companyMongoId = mongoDoc.company?.$id?.$oid;
-          const orgId = companyMongoId ? orgIdMapping.get(companyMongoId) || null : null;
+          // Resolve company reference - MongoDB DBRef object has .oid property
+          const companyMongoId = (mongoDoc.company as any)?.oid?.toString();
+          
+          if (!companyMongoId) {
+            skippedNoOrg++;
+            continue;
+          }
+          
+          let orgId = orgIdMapping.get(companyMongoId) || null;
           
           if (!orgId) {
             skippedNoOrg++;
@@ -884,4 +997,5 @@ if (require.main === module) {
 }
 
 export { main };
+
 
