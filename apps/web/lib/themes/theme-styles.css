@@ -1,12 +1,9 @@
 /**
  * Theme Style Variations
  * 
- * Detailed styling for each theme aesthetic:
- * - Typography
- * - Shadows
- * - Borders
- * - Special effects
- * - Component-level customizations
+ * Detailed styling for each theme aesthetic.
+ * IMPORTANT: Only apply special effects to proper card/section containers,
+ * not to small inline elements with bg-background-secondary.
  */
 
 /* ============================================
@@ -63,8 +60,9 @@
   letter-spacing: -0.01em;
 }
 
-[data-theme-style="minimalism"] .card,
-[data-theme-style="minimalism"] [class*="bg-background-secondary"] {
+/* Only apply to sections, not inline elements */
+[data-theme-style="minimalism"] section[class*="bg-background-secondary"],
+[data-theme-style="minimalism"] .card {
   border: none;
   box-shadow: none;
 }
@@ -72,21 +70,6 @@
 [data-theme-style="minimalism"] button[class*="default"] {
   font-weight: 500;
   letter-spacing: 0;
-}
-
-[data-theme-style="minimalism"] input,
-[data-theme-style="minimalism"] textarea {
-  background: transparent;
-  border-bottom: 1px solid hsl(var(--border));
-  border-radius: 0;
-  padding-left: 0;
-}
-
-[data-theme-style="minimalism"] input:focus,
-[data-theme-style="minimalism"] textarea:focus {
-  border-color: hsl(var(--foreground));
-  box-shadow: none;
-  outline: none;
 }
 
 /* ============================================
@@ -139,56 +122,33 @@
 
 /* ============================================
    3. NATURALISM
-   Organic, earthy
+   Organic, earthy - SIMPLIFIED (no texture overlay)
    ============================================ */
 [data-theme-style="naturalism"] {
-  --shadow-soft: 0 2px 8px -2px rgb(60 40 20 / 0.1);
-  --shadow-premium: 0 4px 12px -3px rgb(60 40 20 / 0.12);
-  --shadow-card: 0 1px 4px 0 rgb(60 40 20 / 0.06);
+  --shadow-soft: 0 2px 8px -2px rgb(60 40 20 / 0.08);
+  --shadow-premium: 0 4px 12px -3px rgb(60 40 20 / 0.1);
+  --shadow-card: 0 1px 4px 0 rgb(60 40 20 / 0.05);
 }
 
 [data-theme-style="naturalism"] {
-  font-family: 'Source Serif Pro', 'Georgia', 'Times New Roman', serif;
-  letter-spacing: 0.01em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [data-theme-style="naturalism"] h1,
 [data-theme-style="naturalism"] h2,
 [data-theme-style="naturalism"] h3 {
-  font-family: 'Source Serif Pro', 'Georgia', serif;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-[data-theme-style="naturalism"] button,
-[data-theme-style="naturalism"] input,
-[data-theme-style="naturalism"] select,
-[data-theme-style="naturalism"] label {
-  font-family: 'Inter', -apple-system, sans-serif;
-  letter-spacing: 0;
-}
-
-[data-theme-style="naturalism"] .card {
+[data-theme-style="naturalism"] .card,
+[data-theme-style="naturalism"] section[class*="bg-background-secondary"] {
   border: 1px solid hsl(var(--border));
-  background: linear-gradient(
-    180deg,
-    hsl(var(--background)),
-    hsl(var(--background-secondary) / 0.5)
-  );
+  border-radius: var(--radius);
 }
 
 [data-theme-style="naturalism"] button[class*="default"] {
   border-radius: var(--radius-sm);
-}
-
-/* Organic texture overlay */
-[data-theme-style="naturalism"] [class*="bg-background-secondary"]::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.02;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ============================================
@@ -232,8 +192,9 @@
   background: hsl(var(--background));
 }
 
+/* Only apply neumorphic shadows to cards/sections, not inline elements */
 [data-theme-style="neomorphism"] .card,
-[data-theme-style="neomorphism"] [class*="bg-background-secondary"] {
+[data-theme-style="neomorphism"] section[class*="bg-background-secondary"] {
   border: none;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -269,11 +230,11 @@
 
 /* ============================================
    5. DIFFUSE GRADIENT
-   Ethereal, dreamy
+   Ethereal, dreamy - SIMPLIFIED backgrounds
    ============================================ */
 [data-theme-style="diffuse-gradient"] {
-  --shadow-soft: 0 4px 20px -5px hsl(var(--primary) / 0.12);
-  --shadow-premium: 0 8px 30px -8px hsl(var(--primary) / 0.18);
+  --shadow-soft: 0 4px 20px -5px hsl(var(--primary) / 0.1);
+  --shadow-premium: 0 8px 30px -8px hsl(var(--primary) / 0.15);
   --shadow-card: 0 2px 15px -3px hsl(var(--primary) / 0.08);
 }
 
@@ -288,24 +249,21 @@
   letter-spacing: -0.02em;
 }
 
-/* Aurora background effect */
+/* Subtle aurora effect on body only */
 [data-theme-style="diffuse-gradient"] body {
   background: 
-    radial-gradient(ellipse 80% 50% at 20% -10%, hsl(var(--primary) / 0.08), transparent 50%),
-    radial-gradient(ellipse 60% 40% at 80% 10%, hsl(var(--accent-color) / 0.06), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 20% -10%, hsl(var(--primary) / 0.04), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, hsl(var(--accent-color) / 0.03), transparent 50%),
     hsl(var(--background));
   background-attachment: fixed;
 }
 
+/* Simple card styling, no complex gradients */
 [data-theme-style="diffuse-gradient"] .card,
-[data-theme-style="diffuse-gradient"] [class*="bg-background-secondary"] {
-  background: linear-gradient(
-    145deg,
-    hsl(var(--background) / 0.95),
-    hsl(var(--background-secondary) / 0.8)
-  );
-  backdrop-filter: blur(8px);
-  border: 1px solid hsl(var(--border) / 0.4);
+[data-theme-style="diffuse-gradient"] section[class*="bg-background-secondary"] {
+  background: hsl(var(--background-secondary));
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: var(--radius-lg);
 }
 
 [data-theme-style="diffuse-gradient"] button[class*="default"] {
@@ -314,31 +272,22 @@
     hsl(var(--primary)),
     hsl(var(--primary-dark))
   );
-  box-shadow: 0 4px 15px -3px hsl(var(--primary) / 0.35);
+  box-shadow: 0 4px 15px -3px hsl(var(--primary) / 0.25);
   transition: all 0.3s ease;
 }
 
 [data-theme-style="diffuse-gradient"] button[class*="default"]:hover {
-  box-shadow: 0 6px 20px -3px hsl(var(--primary) / 0.45);
-  transform: translateY(-1px);
-}
-
-/* Gradient text for headers (optional) */
-[data-theme-style="diffuse-gradient"] h1 {
-  background: linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary-dark)));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  box-shadow: 0 6px 20px -3px hsl(var(--primary) / 0.35);
 }
 
 /* ============================================
    6. DOPAMINE
-   Joyful, energizing
+   Joyful, energizing - SIMPLIFIED hover effects
    ============================================ */
 [data-theme-style="dopamine"] {
-  --shadow-soft: 0 4px 14px -3px hsl(var(--primary) / 0.2);
-  --shadow-premium: 0 8px 25px -5px hsl(var(--primary) / 0.28);
-  --shadow-card: 0 2px 10px -2px hsl(var(--primary) / 0.12);
+  --shadow-soft: 0 4px 14px -3px hsl(var(--primary) / 0.15);
+  --shadow-premium: 0 8px 25px -5px hsl(var(--primary) / 0.2);
+  --shadow-card: 0 2px 10px -2px hsl(var(--primary) / 0.1);
 }
 
 [data-theme-style="dopamine"] {
@@ -352,18 +301,18 @@
   letter-spacing: -0.02em;
 }
 
+/* Only apply border/hover effects to cards/sections */
 [data-theme-style="dopamine"] .card,
-[data-theme-style="dopamine"] [class*="bg-background-secondary"] {
-  border: 2px solid hsl(var(--primary) / 0.12);
+[data-theme-style="dopamine"] section[class*="bg-background-secondary"] {
+  border: 1px solid hsl(var(--primary) / 0.1);
   border-radius: var(--radius-lg);
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 [data-theme-style="dopamine"] .card:hover,
-[data-theme-style="dopamine"] [class*="bg-background-secondary"]:hover {
-  border-color: hsl(var(--primary) / 0.25);
-  box-shadow: var(--shadow-premium);
-  transform: translateY(-2px);
+[data-theme-style="dopamine"] section[class*="bg-background-secondary"]:hover {
+  border-color: hsl(var(--primary) / 0.2);
+  box-shadow: var(--shadow-soft);
 }
 
 [data-theme-style="dopamine"] button[class*="default"] {
@@ -372,26 +321,13 @@
     hsl(var(--primary)),
     hsl(var(--primary-dark))
   );
-  box-shadow: 0 4px 15px -3px hsl(var(--primary) / 0.4);
+  box-shadow: 0 4px 15px -3px hsl(var(--primary) / 0.3);
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
 [data-theme-style="dopamine"] button[class*="default"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px -3px hsl(var(--primary) / 0.5);
-}
-
-/* Fun colored underline on headings */
-[data-theme-style="dopamine"] h1::after,
-[data-theme-style="dopamine"] h2::after {
-  content: '';
-  display: block;
-  width: 40px;
-  height: 4px;
-  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent-color)));
-  border-radius: 2px;
-  margin-top: 8px;
+  box-shadow: 0 6px 20px -3px hsl(var(--primary) / 0.4);
 }
 
 /* ============================================
@@ -399,48 +335,33 @@
    Vintage meets modern
    ============================================ */
 [data-theme-style="retro-futurism"] {
-  --shadow-soft: 0 3px 10px -3px rgb(0 0 0 / 0.12);
-  --shadow-premium: 0 6px 20px -5px rgb(0 0 0 / 0.15);
-  --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.08);
+  --shadow-soft: 0 3px 10px -3px rgb(0 0 0 / 0.1);
+  --shadow-premium: 0 6px 20px -5px rgb(0 0 0 / 0.12);
+  --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.06);
 }
 
 [data-theme-style="retro-futurism"] {
-  font-family: 'DM Sans', 'Inter', -apple-system, sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
 [data-theme-style="retro-futurism"] h1,
 [data-theme-style="retro-futurism"] h2,
 [data-theme-style="retro-futurism"] h3 {
-  font-family: 'DM Serif Display', 'Georgia', serif;
-  font-weight: 400;
-  letter-spacing: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-[data-theme-style="retro-futurism"] .card {
+[data-theme-style="retro-futurism"] .card,
+[data-theme-style="retro-futurism"] section[class*="bg-background-secondary"] {
   border: 1px solid hsl(var(--border));
-  border-left: 4px solid hsl(var(--primary));
+  border-left: 3px solid hsl(var(--primary));
   border-radius: var(--radius-sm);
 }
 
 [data-theme-style="retro-futurism"] button[class*="default"] {
   border-radius: var(--radius-sm);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8125rem;
-}
-
-[data-theme-style="retro-futurism"] input,
-[data-theme-style="retro-futurism"] textarea {
-  border-radius: var(--radius-sm);
-  border: 1px solid hsl(var(--border));
-}
-
-/* Subtle paper texture */
-[data-theme-style="retro-futurism"] body {
-  background-image: 
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
-  background-attachment: fixed;
+  letter-spacing: 0.02em;
 }
 
 /* ============================================
@@ -472,7 +393,7 @@
 }
 
 [data-theme-style="linear"] .card,
-[data-theme-style="linear"] [class*="bg-background-secondary"] {
+[data-theme-style="linear"] section[class*="bg-background-secondary"] {
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
   background: hsl(var(--background-secondary));
@@ -513,16 +434,6 @@
 [data-theme-style="linear"] textarea:focus {
   border-color: hsl(var(--primary));
   box-shadow: 0 0 0 1px hsl(var(--primary) / 0.5);
-}
-
-/* Keyboard shortcut styling */
-[data-theme-style="linear"] kbd {
-  background: hsl(var(--background-secondary));
-  border: 1px solid hsl(var(--border));
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 /* Selection color */
