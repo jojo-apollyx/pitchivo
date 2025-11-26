@@ -36,7 +36,9 @@
     "enrich:contacts": "tsx scripts/migration/enrichment/pipeline.ts contacts",
     "enrich:contacts:prod": "tsx scripts/migration/enrichment/pipeline.ts contacts --env=.env.prod",
     "generate:embeddings": "tsx scripts/generate-embeddings.ts",
-    "generate:embeddings:prod": "tsx scripts/generate-embeddings.ts --env=.env.prod"
+    "generate:embeddings:prod": "tsx scripts/generate-embeddings.ts --env=.env.prod",
+    "populate:contacts-org-id": "tsx scripts/populate-leads-contacts-org-id.ts",
+    "populate:contacts-org-id:prod": "tsx scripts/populate-leads-contacts-org-id.ts --env=.env.prod"
   },
   "dependencies": {
     "@ai-sdk/azure": "^2.0.60",
