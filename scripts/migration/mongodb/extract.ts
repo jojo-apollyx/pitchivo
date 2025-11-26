@@ -9,6 +9,7 @@ export interface ExtractOptions {
   batchSize?: number;
   limit?: number;
   skip?: number;
+  filter?: any; // MongoDB filter query
 }
 
 /**
@@ -59,7 +60,7 @@ export async function* extractProducts(
   db: Db,
   options: ExtractOptions = {}
 ): AsyncGenerator<MongoProductLead[], void, unknown> {
-  const { batchSize = 1000, limit, skip = 0 } = options;
+  const { batchSize = 1000, limit, skip = 0, filter = {} } = options;
   const collection = db.collection<MongoProductLead>('ProductLead');
   
   let currentSkip = skip;
@@ -74,7 +75,7 @@ export async function* extractProducts(
     
     const fetchSize = limit ? Math.min(batchSize, remaining) : batchSize;
     // Sort by _id for deterministic ordering (ensures skip counts are consistent across runs)
-    const query = collection.find({}).sort({ _id: 1 }).skip(currentSkip).limit(fetchSize);
+    const query = collection.find(filter).sort({ _id: 1 }).skip(currentSkip).limit(fetchSize);
     
     const batch = await query.toArray();
     

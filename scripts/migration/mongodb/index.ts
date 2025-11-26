@@ -145,8 +145,8 @@ import { getAzureContainerClient } from '../shared/azure-client';
 import { ensureContainerExists, uploadBatchToAzure } from './azure-storage';
 import { PublicAccessType } from '@azure/storage-blob';
 import { extractCompanies, extractProducts, extractContacts, extractPurchases, extractIngredients } from './extract';
-import { transformCompany, transformProduct, transformContact, transformPurchase } from './transform';
-import { deduplicateOrganization, deduplicateMarketItem, deduplicateContact, batchDeduplicateMarketItems } from './deduplicate';
+import { transformCompany, transformProduct, transformContact, transformPurchase, transformProductSupplierSignal } from './transform';
+import { deduplicateOrganization, deduplicateMarketItem, deduplicateContact, batchDeduplicateMarketItems, batchDeduplicateContacts } from './deduplicate';
 import { uploadOrganizations, uploadMarketItems, uploadContacts, uploadSignals } from './upload';
 import { migrateCompanyLogo, migrateIngredientLogo } from './logo-migration';
 import { sleep } from '../shared/utils';
@@ -272,10 +272,30 @@ async function main() {
     let totalItems = 0;
     let totalContacts = 0;
     let totalPurchases = 0;
+    let totalSupplierSignals = 0;
     
     // Step 1: Migrate Organizations
     if (skipFlags.skipOrganizations) {
       console.log('⏭️  Step 1: Skipping organizations migration\n');
+      // Load existing organizations into mapping for signal resolution
+      console.log('  Loading existing organizations for signal resolution...');
+      const { data: existingOrgs } = await supabase
+        .from('leads_organizations')
+        .select('id, profile_data');
+      
+      if (existingOrgs) {
+        let loadedCount = 0;
+        for (const org of existingOrgs) {
+          const mongoId = org.profile_data?.mongo_id;
+          if (mongoId && typeof mongoId === 'string') {
+            orgIdMapping.set(mongoId, org.id);
+            loadedCount++;
+          }
+        }
+        console.log(`  ✓ Loaded ${loadedCount.toLocaleString()} existing organizations into mapping\n`);
+      } else {
+        console.log('  ⚠️  No existing organizations found in database\n');
+      }
     } else {
       console.log('📦 Step 1: Migrating organizations...');
       
@@ -370,6 +390,25 @@ async function main() {
     // Step 2: Migrate Market Items (Products + Ingredients)
     if (skipFlags.skipMarketItems) {
       console.log('⏭️  Step 2: Skipping market items migration\n');
+      // Load existing market items into mapping for signal resolution
+      console.log('  Loading existing market items for signal resolution...');
+      const { data: existingItems } = await supabase
+        .from('leads_market_items')
+        .select('id, attributes');
+      
+      if (existingItems) {
+        let loadedCount = 0;
+        for (const item of existingItems) {
+          const mongoId = item.attributes?.mongo_id;
+          if (mongoId && typeof mongoId === 'string') {
+            itemIdMapping.set(mongoId, item.id);
+            loadedCount++;
+          }
+        }
+        console.log(`  ✓ Loaded ${loadedCount.toLocaleString()} existing market items into mapping\n`);
+      } else {
+        console.log('  ⚠️  No existing market items found in database\n');
+      }
     } else {
       console.log('📦 Step 2: Migrating market items...');
       
@@ -543,14 +582,28 @@ async function main() {
           console.log(`  ⏭️  Skipped Azure upload for contact batch ${contactBatchNum}`);
         }
         
-        const transformedContacts = [];
-        for (const mongoDoc of batch) {
+        // Transform all contacts first
+        const transformedBatch = batch.map(mongoDoc => {
           // Resolve company reference
           const companyMongoId = mongoDoc.company?.$id?.$oid;
           const orgId = companyMongoId ? orgIdMapping.get(companyMongoId) || null : null;
-          
-          const transformed = transformContact(mongoDoc, orgId);
-          const existingId = await deduplicateContact(supabase, transformed);
+          return {
+            mongoDoc,
+            transformed: transformContact(mongoDoc, orgId)
+          };
+        });
+        
+        // Batch deduplicate all contacts at once by email
+        const emails = transformedBatch
+          .map(t => t.transformed.email)
+          .filter((email): email is string => email !== null && email !== undefined && email.trim().length > 0);
+        const existingContactsMap = await batchDeduplicateContacts(supabase, emails);
+        
+        const transformedContacts = [];
+        for (const { mongoDoc, transformed } of transformedBatch) {
+          const existingId = transformed.email 
+            ? existingContactsMap.get(transformed.email.toLowerCase().trim()) || null
+            : null;
           
           if (!existingId) {
             transformedContacts.push(transformed);
@@ -564,7 +617,9 @@ async function main() {
           for (const [mongoId, supabaseId] of newMappings.entries()) {
             contactIdMapping.set(mongoId, supabaseId);
           }
-          console.log(`  ✓ Uploaded ${transformedContacts.length} new contacts`);
+          console.log(`  ✓ Uploaded ${transformedContacts.length} new contacts (${batch.length - transformedContacts.length} duplicates skipped)`);
+        } else {
+          console.log(`  ✓ All ${batch.length} contacts already exist (duplicates)`);
         }
         
         totalContacts += batch.length;
@@ -698,6 +753,106 @@ async function main() {
       }
     }
     
+    // Step 5: Create supplier/manufacturer signals from ProductLead company references
+    console.log('📦 Step 5: Creating supplier/manufacturer signals from product-company relationships...');
+    
+    // Get or create MongoDB Migration source (reuse from Step 4)
+    let sourceId: string | null = null;
+    const { data: source } = await supabase
+      .from('leads_sources')
+      .select('id')
+      .eq('name', 'MongoDB Migration')
+      .single();
+    
+    if (source) {
+      sourceId = source.id;
+    }
+    
+    // Get total count of products with company references
+    const totalProductsWithCompany = await db.collection('ProductLead').countDocuments({
+      company: { $exists: true, $ne: null }
+    });
+    
+    if (totalProductsWithCompany === 0) {
+      console.log('  No products with company references found\n');
+    } else {
+      console.log(`  Total products with company references: ${totalProductsWithCompany.toLocaleString()}\n`);
+      
+      let supplierBatchNum = 0;
+      let processedSuppliers = 0;
+      let totalSupplierSignals = 0;
+      
+      // Extract products with company references
+      for await (const batch of extractProducts(db, { 
+        batchSize: config.batchSize, 
+        skip: 0,
+        filter: { company: { $exists: true, $ne: null } }
+      })) {
+        supplierBatchNum++;
+        processedSuppliers += batch.length;
+        const progress = `${processedSuppliers.toLocaleString()}/${totalProductsWithCompany.toLocaleString()}`;
+        console.log(`  Processing supplier batch ${supplierBatchNum} (${batch.length} products) - Progress: ${progress}...`);
+        
+        const transformedSignals = [];
+        let skippedNoOrg = 0;
+        let skippedNoItem = 0;
+        
+        for (const mongoDoc of batch) {
+          // Resolve company reference
+          const companyMongoId = mongoDoc.company?.$id?.$oid;
+          const orgId = companyMongoId ? orgIdMapping.get(companyMongoId) || null : null;
+          
+          if (!orgId) {
+            skippedNoOrg++;
+            continue;
+          }
+          
+          // Resolve item (product) - use the itemIdMapping we built during product migration
+          const itemId = itemIdMapping.get(mongoDoc._id.toString()) || null;
+          
+          if (!itemId) {
+            // Try to find by normalized name as fallback
+            const transformed = transformProduct(mongoDoc);
+            const normalizedName = transformed.normalized_name;
+            const { data: item } = await supabase
+              .from('leads_market_items')
+              .select('id')
+              .eq('normalized_name', normalizedName)
+              .limit(1)
+              .single();
+            
+            if (item) {
+              const resolvedItemId = item.id;
+              // Create signal
+              const signal = transformProductSupplierSignal(mongoDoc, orgId, resolvedItemId, sourceId);
+              transformedSignals.push(signal);
+            } else {
+              skippedNoItem++;
+            }
+          } else {
+            // Create signal
+            const signal = transformProductSupplierSignal(mongoDoc, orgId, itemId, sourceId);
+            transformedSignals.push(signal);
+          }
+        }
+        
+        // Log statistics
+        if (skippedNoOrg > 0 || skippedNoItem > 0) {
+          console.log(`    Skipped: ${skippedNoOrg} (no org), ${skippedNoItem} (no item)`);
+        }
+        
+        if (transformedSignals.length > 0) {
+          await uploadSignals(supabase, transformedSignals);
+          totalSupplierSignals += transformedSignals.length;
+          console.log(`  ✓ Created ${transformedSignals.length} supplier/manufacturer signals`);
+        }
+        
+        await sleep(100);
+      }
+      
+      console.log(`  Total supplier/manufacturer signals created: ${totalSupplierSignals.toLocaleString()}\n`);
+    }
+    
     console.log('✅ Migration completed successfully!');
     console.log(`\nSummary:`);
     if (!skipFlags.skipOrganizations) {
@@ -710,8 +865,9 @@ async function main() {
       console.log(`  - Contacts: ${totalContacts}`);
     }
     if (!skipFlags.skipSignals) {
-      console.log(`  - Signals: ${totalPurchases}`);
+      console.log(`  - Purchase Signals: ${totalPurchases}`);
     }
+    console.log(`  - Supplier/Manufacturer Signals: ${totalSupplierSignals}`);
     
   } catch (error) {
     console.error('❌ Migration failed:', error);

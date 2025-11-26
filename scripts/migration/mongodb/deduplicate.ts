@@ -161,3 +161,78 @@ export async function deduplicateContact(
   return null;
 }
 
+/**
+ * Batch deduplicate contacts by email addresses
+ * Returns a map of email (lowercase) -> id for existing contacts
+ */
+export async function batchDeduplicateContacts(
+  supabase: SupabaseClient,
+  emails: string[]
+): Promise<Map<string, string>> {
+  if (emails.length === 0) {
+    return new Map();
+  }
+  
+  // Filter out null, undefined, or empty strings, and normalize to lowercase
+  const validEmails = emails
+    .filter(email => email && typeof email === 'string' && email.trim().length > 0)
+    .map(email => email.toLowerCase().trim());
+  
+  if (validEmails.length === 0) {
+    return new Map();
+  }
+  
+  // Remove duplicates from the input array
+  const uniqueEmails = Array.from(new Set(validEmails));
+  
+  // Supabase/PostgREST has stricter limits - use smaller chunks
+  const chunkSize = 100;
+  const resultMap = new Map<string, string>();
+  
+  for (let i = 0; i < uniqueEmails.length; i += chunkSize) {
+    const chunk = uniqueEmails.slice(i, i + chunkSize);
+    
+    try {
+      const { data: existing, error } = await supabase
+        .from('leads_contacts')
+        .select('id, email')
+        .in('email', chunk);
+      
+      if (error) {
+        // If batch query fails, fall back to individual queries for this chunk
+        console.warn(`  ⚠️  Batch contact deduplication failed for chunk, falling back to individual queries: ${error.message}`);
+        for (const email of chunk) {
+          try {
+            const { data: contact } = await supabase
+              .from('leads_contacts')
+              .select('id, email')
+              .eq('email', email)
+              .limit(1)
+              .single();
+            
+            if (contact) {
+              resultMap.set(contact.email, contact.id);
+            }
+          } catch (err: any) {
+            // Skip individual item if it fails
+            continue;
+          }
+        }
+        continue;
+      }
+      
+      if (existing) {
+        for (const contact of existing) {
+          resultMap.set(contact.email.toLowerCase().trim(), contact.id);
+        }
+      }
+    } catch (err: any) {
+      console.warn(`  ⚠️  Error in batch contact deduplication chunk: ${err.message}`);
+      // Continue with next chunk
+      continue;
+    }
+  }
+  
+  return resultMap;
+}
+

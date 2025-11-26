@@ -223,6 +223,47 @@ export function transformPurchase(
 }
 
 /**
+ * Transform ProductLead with company reference to supplier/manufacturer signal
+ */
+export function transformProductSupplierSignal(
+  mongoDoc: MongoProductLead,
+  orgId: string | null,
+  itemId: string | null,
+  sourceId: string | null = null
+) {
+  // Determine interaction type based on product characteristics
+  // If it's a finished product, likely 'manufactured', otherwise 'supplied'
+  const interactionType = mongoDoc.is_finished_product ? 'manufactured' : 'supplied';
+  
+  return {
+    org_id: orgId,
+    item_id: itemId,
+    contact_id: null,
+    interaction_type: interactionType,
+    event_date: mongoDoc.created_at?.$date 
+      ? new Date(mongoDoc.created_at.$date).toISOString().split('T')[0]
+      : null,
+    source_id: sourceId,
+    source: 'MongoDB Migration',
+    metadata: {
+      product_name: mongoDoc.name,
+      description: mongoDoc.description,
+      form: mongoDoc.form,
+      concentration: mongoDoc.concentration,
+      processing_method: mongoDoc.processing_method,
+      grade: mongoDoc.grade,
+      categories: mongoDoc.categories || [],
+      applications: mongoDoc.applications || [],
+      end_uses: mongoDoc.end_uses || [],
+      is_finished_product: mongoDoc.is_finished_product,
+      is_ingredient: mongoDoc.is_ingredient,
+    },
+    raw_data: mongoDoc as any,
+    is_verified: false,
+  };
+}
+
+/**
  * Parse MongoDB date object
  */
 export function parseMongoDate(dateObj?: { $date: string }): Date | null {
