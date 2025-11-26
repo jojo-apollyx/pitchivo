@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme style variations */
+@import './lib/themes/theme-styles.css';
+
 /* Make toast text selectable - override Sonner's default styles */
 [data-sonner-toast],
 [data-sonner-toast] *,

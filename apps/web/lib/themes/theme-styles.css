@@ -1,0 +1,401 @@
+/**
+ * Theme Style Variations
+ * 
+ * Each theme has detailed styling beyond just colors:
+ * - Border radius
+ * - Shadows
+ * - Gradients
+ * - Special effects
+ */
+
+/* ============================================
+   BASE THEME CHARACTERISTICS
+   ============================================ */
+
+/* Border Radius Variants */
+[data-theme-radius="sharp"] {
+  --radius: 0.125rem;
+  --radius-sm: 0;
+  --radius-lg: 0.25rem;
+}
+
+[data-theme-radius="soft"] {
+  --radius: 0.375rem;
+  --radius-sm: 0.25rem;
+  --radius-lg: 0.5rem;
+}
+
+[data-theme-radius="rounded"] {
+  --radius: 0.5rem;
+  --radius-sm: 0.375rem;
+  --radius-lg: 0.75rem;
+}
+
+[data-theme-radius="pill"] {
+  --radius: 9999px;
+  --radius-sm: 9999px;
+  --radius-lg: 9999px;
+}
+
+/* ============================================
+   1. MINIMALISM THEME
+   ============================================ */
+[data-theme-style="minimalism"] {
+  /* Ultra clean, barely there styling */
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  --shadow-premium: 0 2px 4px 0 rgb(0 0 0 / 0.04);
+  --shadow-card: none;
+}
+
+[data-theme-style="minimalism"] .card,
+[data-theme-style="minimalism"] [class*="bg-background-secondary"] {
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme-style="minimalism"] button[class*="primary"] {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* ============================================
+   2. DESIGN SYSTEM THEME
+   ============================================ */
+[data-theme-style="design-system"] {
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
+  --shadow-premium: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+}
+
+[data-theme-style="design-system"] .card {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+}
+
+[data-theme-style="design-system"] button {
+  font-weight: 600;
+}
+
+[data-theme-style="design-system"] input:focus,
+[data-theme-style="design-system"] textarea:focus {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+}
+
+/* ============================================
+   3. NATURALISM THEME
+   ============================================ */
+[data-theme-style="naturalism"] {
+  --shadow-soft: 0 2px 8px -2px rgb(60 40 20 / 0.12);
+  --shadow-premium: 0 4px 12px -3px rgb(60 40 20 / 0.15);
+  --shadow-card: 0 1px 4px 0 rgb(60 40 20 / 0.08);
+}
+
+[data-theme-style="naturalism"] {
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+[data-theme-style="naturalism"] h1,
+[data-theme-style="naturalism"] h2,
+[data-theme-style="naturalism"] h3 {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 500;
+}
+
+[data-theme-style="naturalism"] button,
+[data-theme-style="naturalism"] input,
+[data-theme-style="naturalism"] select {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+[data-theme-style="naturalism"] .card {
+  border: 1px solid hsl(var(--border));
+  background: linear-gradient(
+    180deg,
+    hsl(var(--background-secondary)),
+    hsl(var(--background-secondary) / 0.8)
+  );
+}
+
+/* ============================================
+   4. NEOMORPHISM THEME
+   ============================================ */
+[data-theme-style="neomorphism"] {
+  --shadow-soft: 
+    4px 4px 8px hsl(220 25% 85%),
+    -4px -4px 8px hsl(0 0% 100%);
+  --shadow-premium: 
+    6px 6px 12px hsl(220 25% 82%),
+    -6px -6px 12px hsl(0 0% 100%);
+  --shadow-card: 
+    inset 2px 2px 4px hsl(0 0% 100%),
+    inset -2px -2px 4px hsl(220 25% 88%);
+  --shadow-inset: 
+    inset 3px 3px 6px hsl(220 25% 85%),
+    inset -3px -3px 6px hsl(0 0% 100%);
+}
+
+.dark[data-theme-style="neomorphism"] {
+  --shadow-soft: 
+    4px 4px 8px hsl(220 20% 10%),
+    -4px -4px 8px hsl(220 20% 22%);
+  --shadow-premium: 
+    6px 6px 12px hsl(220 20% 8%),
+    -6px -6px 12px hsl(220 20% 24%);
+  --shadow-card: 
+    inset 2px 2px 4px hsl(220 20% 22%),
+    inset -2px -2px 4px hsl(220 20% 12%);
+}
+
+[data-theme-style="neomorphism"] .card,
+[data-theme-style="neomorphism"] [class*="bg-background-secondary"] {
+  border: none;
+  box-shadow: var(--shadow-soft);
+  background: hsl(var(--background));
+}
+
+[data-theme-style="neomorphism"] button[class*="primary"] {
+  box-shadow: var(--shadow-soft);
+}
+
+[data-theme-style="neomorphism"] button[class*="primary"]:active {
+  box-shadow: var(--shadow-inset);
+}
+
+[data-theme-style="neomorphism"] input,
+[data-theme-style="neomorphism"] textarea,
+[data-theme-style="neomorphism"] select {
+  box-shadow: var(--shadow-inset);
+  border: none;
+}
+
+/* ============================================
+   5. DIFFUSE GRADIENT THEME
+   ============================================ */
+[data-theme-style="diffuse-gradient"] {
+  --shadow-soft: 0 4px 20px -5px hsl(var(--primary) / 0.15);
+  --shadow-premium: 0 8px 30px -8px hsl(var(--primary) / 0.2);
+  --shadow-card: 0 2px 15px -3px hsl(var(--primary) / 0.1);
+}
+
+[data-theme-style="diffuse-gradient"] body {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background)),
+    hsl(var(--background-secondary)),
+    hsl(var(--primary) / 0.05)
+  );
+  background-attachment: fixed;
+}
+
+[data-theme-style="diffuse-gradient"] .card,
+[data-theme-style="diffuse-gradient"] [class*="bg-background-secondary"] {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--background) / 0.9),
+    hsl(var(--background-secondary) / 0.7)
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid hsl(var(--border) / 0.3);
+}
+
+[data-theme-style="diffuse-gradient"] button[class*="primary"] {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary)),
+    hsl(var(--primary-dark))
+  );
+}
+
+[data-theme-style="diffuse-gradient"] button[class*="primary"]:hover {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary-dark)),
+    hsl(var(--primary-darker))
+  );
+}
+
+/* Diffuse aurora effect */
+[data-theme-style="diffuse-gradient"]::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60vh;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -10%,
+    hsl(var(--primary) / 0.08),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================================
+   6. DOPAMINE THEME
+   ============================================ */
+[data-theme-style="dopamine"] {
+  --shadow-soft: 0 4px 14px -3px hsl(var(--primary) / 0.25);
+  --shadow-premium: 0 8px 25px -5px hsl(var(--primary) / 0.3);
+  --shadow-card: 0 2px 10px -2px hsl(var(--primary) / 0.15);
+}
+
+[data-theme-style="dopamine"] .card,
+[data-theme-style="dopamine"] [class*="bg-background-secondary"] {
+  border: 2px solid hsl(var(--primary) / 0.15);
+  transition: all 0.3s ease;
+}
+
+[data-theme-style="dopamine"] .card:hover,
+[data-theme-style="dopamine"] [class*="bg-background-secondary"]:hover {
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow: var(--shadow-premium);
+}
+
+[data-theme-style="dopamine"] button[class*="primary"] {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary)),
+    hsl(var(--primary-dark))
+  );
+  box-shadow: 0 4px 15px -3px hsl(var(--primary) / 0.4);
+  transition: all 0.2s ease;
+}
+
+[data-theme-style="dopamine"] button[class*="primary"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -3px hsl(var(--primary) / 0.5);
+}
+
+/* Fun accent dots */
+[data-theme-style="dopamine"] h1::after,
+[data-theme-style="dopamine"] h2::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--semantic-warning));
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: super;
+}
+
+/* ============================================
+   7. RETRO-FUTURISM THEME
+   ============================================ */
+[data-theme-style="retro-futurism"] {
+  --shadow-soft: 0 4px 15px -4px rgb(0 0 0 / 0.15);
+  --shadow-premium: 0 8px 25px -5px rgb(0 0 0 / 0.2);
+  --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.1);
+}
+
+[data-theme-style="retro-futurism"] {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+[data-theme-style="retro-futurism"] h1,
+[data-theme-style="retro-futurism"] h2,
+[data-theme-style="retro-futurism"] h3 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+[data-theme-style="retro-futurism"] .card {
+  border: 1px solid hsl(var(--border));
+  border-left: 4px solid hsl(var(--primary));
+}
+
+[data-theme-style="retro-futurism"] button[class*="primary"] {
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+}
+
+/* Vintage paper texture feel */
+[data-theme-style="retro-futurism"] [class*="bg-background-secondary"] {
+  background-image: 
+    linear-gradient(
+      hsl(var(--background-secondary)),
+      hsl(var(--background-secondary))
+    ),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* ============================================
+   8. LINEAR THEME
+   ============================================ */
+[data-theme-style="linear"] {
+  --shadow-soft: none;
+  --shadow-premium: 0 0 0 1px hsl(var(--border));
+  --shadow-card: none;
+}
+
+[data-theme-style="linear"] {
+  font-family: 'Inter', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme-style="linear"] h1,
+[data-theme-style="linear"] h2,
+[data-theme-style="linear"] h3 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+[data-theme-style="linear"] .card,
+[data-theme-style="linear"] [class*="bg-background-secondary"] {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--background-secondary));
+}
+
+[data-theme-style="linear"] button[class*="primary"] {
+  background: hsl(var(--primary));
+  border: none;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+[data-theme-style="linear"] button[class*="primary"]:hover {
+  background: hsl(var(--primary-light));
+}
+
+[data-theme-style="linear"] button[class*="secondary"],
+[data-theme-style="linear"] button[class*="ghost"] {
+  border: 1px solid hsl(var(--border));
+}
+
+[data-theme-style="linear"] button[class*="secondary"]:hover,
+[data-theme-style="linear"] button[class*="ghost"]:hover {
+  background: hsl(var(--background-secondary));
+  border-color: hsl(var(--border-hover));
+}
+
+/* Linear uses subtle hover highlights */
+[data-theme-style="linear"] [class*="hover:bg-"] {
+  transition: background-color 0.15s ease;
+}
+
+/* Keyboard shortcut styling like Linear */
+[data-theme-style="linear"] kbd {
+  background: hsl(var(--background-secondary));
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* ============================================
+   THEME TRANSITION EFFECTS
+   ============================================ */
+[data-theme-transitioning] * {
+  transition: 
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease !important;
+}
+

@@ -2,46 +2,97 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Palette, Save, Sparkles, Sun, Moon } from 'lucide-react'
+import { Palette, Save, Sparkles, Sun, Moon, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { COLOR_SCHEMES, type ColorScheme } from '@/lib/theme'
-import { useThemeStore } from '@/lib/stores/theme-store'
+import { cn } from '@/lib/utils'
+import { useThemeStore, THEME_PRESETS, type ThemePreset } from '@/lib/stores/theme-store'
 import { useTheme } from 'next-themes'
 
-// Minimalist SVG illustration for color/palette
-function ColorPaletteIllustration({ colors }: { colors: { primary: string; secondary: string; accent: string } }) {
+// Minimalist SVG illustration for each theme style
+function ThemeStyleIllustration({ preset, isSelected }: { preset: ThemePreset; isSelected: boolean }) {
+  const { primary, secondary, accent, background } = preset.preview
+  
   return (
-    <svg
-      width="64"
-      height="64"
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="drop-shadow-sm"
-    >
-      {/* Artistic brush stroke shapes */}
-      <ellipse cx="20" cy="28" rx="14" ry="18" fill={colors.primary} opacity="0.9" transform="rotate(-15 20 28)" />
-      <ellipse cx="38" cy="24" rx="12" ry="16" fill={colors.secondary} opacity="0.85" transform="rotate(10 38 24)" />
-      <ellipse cx="44" cy="42" rx="10" ry="14" fill={colors.accent} opacity="0.8" transform="rotate(-5 44 42)" />
-      {/* Subtle highlight */}
-      <circle cx="16" cy="22" r="3" fill="white" opacity="0.4" />
-      <circle cx="36" cy="18" r="2" fill="white" opacity="0.3" />
-    </svg>
+    <div className={cn(
+      "relative w-full aspect-[4/3] rounded-lg overflow-hidden transition-all duration-300",
+      isSelected 
+        ? "ring-2 ring-primary-dark ring-offset-2 ring-offset-background" 
+        : "ring-1 ring-border/50 hover:ring-border"
+    )}>
+      {/* Background */}
+      <div 
+        className="absolute inset-0"
+        style={{ backgroundColor: background }}
+      />
+      
+      {/* Mini UI mockup */}
+      <div className="absolute inset-2 flex flex-col gap-1.5">
+        {/* Header bar */}
+        <div 
+          className="h-2 rounded-sm opacity-20"
+          style={{ backgroundColor: primary }}
+        />
+        
+        {/* Content area */}
+        <div className="flex-1 flex gap-1.5">
+          {/* Sidebar */}
+          <div className="w-1/4 flex flex-col gap-1">
+            <div 
+              className="h-1.5 w-full rounded-sm opacity-30"
+              style={{ backgroundColor: secondary }}
+            />
+            <div 
+              className="h-1.5 w-3/4 rounded-sm opacity-20"
+              style={{ backgroundColor: secondary }}
+            />
+            <div 
+              className="h-1.5 w-full rounded-sm opacity-15"
+              style={{ backgroundColor: secondary }}
+            />
+          </div>
+          
+          {/* Main content */}
+          <div className="flex-1 flex flex-col gap-1">
+            {/* Card 1 */}
+            <div 
+              className="h-6 rounded-sm"
+              style={{ backgroundColor: primary, opacity: 0.15 }}
+            />
+            {/* Cards row */}
+            <div className="flex gap-1">
+              <div 
+                className="flex-1 h-4 rounded-sm"
+                style={{ backgroundColor: secondary, opacity: 0.2 }}
+              />
+              <div 
+                className="flex-1 h-4 rounded-sm"
+                style={{ backgroundColor: accent, opacity: 0.25 }}
+              />
+            </div>
+            {/* Button */}
+            <div 
+              className="h-2 w-1/3 rounded-sm mt-auto"
+              style={{ backgroundColor: primary }}
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* Selection indicator */}
+      {isSelected && (
+        <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary-dark flex items-center justify-center">
+          <Check className="w-3 h-3 text-white" />
+        </div>
+      )}
+    </div>
   )
 }
 
-// Minimalist SVG illustration for theme/appearance
-function ThemeIllustration({ isDark }: { isDark: boolean }) {
+// Theme appearance illustration (sun/moon)
+function ThemeAppearanceIllustration({ isDark }: { isDark: boolean }) {
   return (
     <svg
       width="64"
@@ -92,81 +143,45 @@ function ThemeIllustration({ isDark }: { isDark: boolean }) {
 
 interface PersonalizationSettingsProps {
   organizationId: string
-  currentScheme?: {
-    primary: string
-    secondary: string
-    accent: string
-  }
+  currentStyleId?: string
 }
 
 export function PersonalizationSettings({ 
   organizationId, 
-  currentScheme = {
-    primary: '#10B981',
-    secondary: '#059669',
-    accent: '#F87171'
-  }
+  currentStyleId = 'minimalism'
 }: PersonalizationSettingsProps) {
   const router = useRouter()
   const supabase = createClient()
   const { theme, setTheme } = useTheme()
   
-  // Default fallback scheme
-  const FALLBACK_SCHEME: ColorScheme = {
-    name: 'Emerald Spark',
-    primary: '#10B981',
-    secondary: '#059669',
-    accent: '#F87171',
-    description: 'Fresh emerald with coral red accents',
-    category: 'Vibrant'
-  }
-  
-  // Find the matching scheme from COLOR_SCHEMES or use fallback
-  const getInitialScheme = (): ColorScheme => {
-    try {
-      if (!COLOR_SCHEMES || !Array.isArray(COLOR_SCHEMES) || COLOR_SCHEMES.length === 0) {
-        return FALLBACK_SCHEME
-      }
-      
-      const matchingScheme = COLOR_SCHEMES.find(scheme => 
-        scheme?.primary === currentScheme.primary &&
-        scheme?.secondary === currentScheme.secondary &&
-        scheme?.accent === currentScheme.accent
-      )
-      
-      return matchingScheme || COLOR_SCHEMES[0] || FALLBACK_SCHEME
-    } catch (error) {
-      return FALLBACK_SCHEME
-    }
-  }
-
-  const { selectedScheme, setScheme, initializeFromStorage } = useThemeStore()
+  const { selectedStyle, setStyle, initializeFromStorage } = useThemeStore()
   const [isSaving, setIsSaving] = useState(false)
+  const [originalStyleId, setOriginalStyleId] = useState(currentStyleId)
 
   useEffect(() => {
     initializeFromStorage()
   }, [initializeFromStorage])
-  
-  useEffect(() => {
-    const scheme = getInitialScheme()
-    if (scheme) {
-      setScheme(scheme)
-    }
-  }, [currentScheme.primary, currentScheme.secondary, currentScheme.accent, setScheme])
+
+  const currentSelectedStyle = selectedStyle || THEME_PRESETS.find(p => p.id === currentStyleId) || THEME_PRESETS[0]
+
+  const handleStyleSelect = (preset: ThemePreset) => {
+    setStyle(preset)
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      if (!selectedScheme) {
-        toast.error('No color scheme selected')
+      if (!selectedStyle) {
+        toast.error('No style selected')
         return
       }
 
+      // Save the theme style ID to the organization
       const { data, error } = await supabase.rpc('update_user_organization', {
         p_org_id: organizationId,
-        p_primary_color: selectedScheme.primary,
-        p_secondary_color: selectedScheme.secondary,
-        p_accent_color: selectedScheme.accent,
+        p_primary_color: selectedStyle.preview.primary,
+        p_secondary_color: selectedStyle.preview.secondary,
+        p_accent_color: selectedStyle.preview.accent,
         p_name: null,
         p_industry: null,
         p_company_size: null,
@@ -179,11 +194,11 @@ export function PersonalizationSettings({
       if (error) throw error
 
       if (!data) {
-        throw new Error('Failed to update colors. You may not have permission.')
+        throw new Error('Failed to update style. You may not have permission.')
       }
 
-      toast.success(`Color scheme saved!`)
-      setScheme(selectedScheme)
+      setOriginalStyleId(selectedStyle.id)
+      toast.success(`${selectedStyle.name} style applied!`)
       router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update. Please try again.')
@@ -192,34 +207,16 @@ export function PersonalizationSettings({
     }
   }
 
-  const hasChanged = selectedScheme
-    ? (selectedScheme.primary !== currentScheme.primary ||
-       selectedScheme.secondary !== currentScheme.secondary ||
-       selectedScheme.accent !== currentScheme.accent)
-    : false
+  const hasChanged = selectedStyle?.id !== originalStyleId
 
-  const currentSelectedScheme = selectedScheme || getInitialScheme()
-
-  // Group schemes by category
-  const schemesByCategory = COLOR_SCHEMES.reduce((acc, scheme) => {
-    if (!acc[scheme.category]) {
-      acc[scheme.category] = []
-    }
-    acc[scheme.category].push(scheme)
-    return acc
-  }, {} as Record<string, ColorScheme[]>)
-
-  const categoryOrder: Array<ColorScheme['category']> = [
-    'Vibrant',
-    'Tranquil',
-    'Playful',
-    'Neutral',
-    'Romantic'
-  ]
+  // Group presets by category
+  const lightPresets = THEME_PRESETS.filter(p => p.category === 'Light')
+  const vibrantPresets = THEME_PRESETS.filter(p => p.category === 'Vibrant')
+  const darkPresets = THEME_PRESETS.filter(p => p.category === 'Dark')
 
   return (
     <div className="space-y-8">
-      {/* Header with subtle gradient */}
+      {/* Header */}
       <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-background via-background to-muted/30 p-6 border border-border/30">
         <div className="relative z-10">
           <h2 className="text-lg sm:text-xl font-semibold mb-2 flex items-center gap-2">
@@ -229,103 +226,105 @@ export function PersonalizationSettings({
             Personalization
           </h2>
           <p className="text-sm text-muted-foreground">
-            Customize the look and feel of your workspace
+            Choose a style that reflects your brand personality
           </p>
         </div>
-        {/* Decorative accent dot */}
+        {/* Decorative accent */}
         <div 
           className="absolute -top-4 -right-4 w-24 h-24 rounded-full opacity-[0.07]"
-          style={{ backgroundColor: currentSelectedScheme.primary }}
+          style={{ backgroundColor: currentSelectedStyle.preview.primary }}
         />
       </div>
 
-      {/* Theme Color Section */}
-      <div className="bg-background-secondary rounded-lg p-6 hover:shadow-soft transition-shadow duration-300">
-        <div className="flex items-start gap-4">
-          {/* Minimalist Color Illustration */}
-          <div className="hidden sm:flex flex-shrink-0">
-            <ColorPaletteIllustration colors={currentSelectedScheme} />
+      {/* Style Selection */}
+      <div className="space-y-6">
+        {/* Light Styles */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Palette className="h-4 w-4 text-primary-dark" />
+            <Label className="text-sm font-medium">Light & Clean</Label>
           </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {lightPresets.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => handleStyleSelect(preset)}
+                className="text-left group"
+              >
+                <ThemeStyleIllustration 
+                  preset={preset} 
+                  isSelected={currentSelectedStyle.id === preset.id} 
+                />
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-foreground group-hover:text-primary-dark transition-colors">
+                    {preset.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {preset.description}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 space-y-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Palette className="h-4 w-4 text-primary-dark sm:hidden" />
-                <Label className="text-sm font-medium">Brand Colors</Label>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Choose colors for your dashboard and customer pages
-              </p>
-            </div>
+        {/* Vibrant Styles */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-4 w-4 text-primary-dark" />
+            <Label className="text-sm font-medium">Vibrant & Expressive</Label>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {vibrantPresets.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => handleStyleSelect(preset)}
+                className="text-left group"
+              >
+                <ThemeStyleIllustration 
+                  preset={preset} 
+                  isSelected={currentSelectedStyle.id === preset.id} 
+                />
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-foreground group-hover:text-primary-dark transition-colors">
+                    {preset.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {preset.description}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <Select
-              value={currentSelectedScheme.name}
-              onValueChange={(name) => {
-                const scheme = COLOR_SCHEMES.find(s => s.name === name)
-                if (scheme) setScheme(scheme)
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div 
-                        className="h-4 w-4 rounded" 
-                        style={{ backgroundColor: currentSelectedScheme.primary }}
-                      />
-                      <div 
-                        className="h-4 w-4 rounded" 
-                        style={{ backgroundColor: currentSelectedScheme.secondary }}
-                      />
-                      <div 
-                        className="h-4 w-4 rounded" 
-                        style={{ backgroundColor: currentSelectedScheme.accent }}
-                      />
-                    </div>
-                    <span className="font-medium">{currentSelectedScheme.name}</span>
-                  </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {categoryOrder.map((category) => (
-                  <div key={category}>
-                    <div className="px-2 py-2 text-xs font-semibold text-muted-foreground">
-                      {category}
-                    </div>
-                    {schemesByCategory[category]?.map((scheme) => (
-                      <SelectItem 
-                        key={scheme.name} 
-                        value={scheme.name}
-                        className="py-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <div 
-                              className="h-4 w-4 rounded" 
-                              style={{ backgroundColor: scheme.primary }}
-                            />
-                            <div 
-                              className="h-4 w-4 rounded" 
-                              style={{ backgroundColor: scheme.secondary }}
-                            />
-                            <div 
-                              className="h-4 w-4 rounded" 
-                              style={{ backgroundColor: scheme.accent }}
-                            />
-                          </div>
-                          <span>{scheme.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </div>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <p className="text-xs text-muted-foreground">
-              {currentSelectedScheme.description}
-            </p>
+        {/* Dark Styles */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Moon className="h-4 w-4 text-primary-dark" />
+            <Label className="text-sm font-medium">Dark & Sleek</Label>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {darkPresets.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => handleStyleSelect(preset)}
+                className="text-left group"
+              >
+                <ThemeStyleIllustration 
+                  preset={preset} 
+                  isSelected={currentSelectedStyle.id === preset.id} 
+                />
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-foreground group-hover:text-primary-dark transition-colors">
+                    {preset.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {preset.description}
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -335,7 +334,7 @@ export function PersonalizationSettings({
         <div className="flex items-start gap-4">
           {/* Minimalist Theme Illustration */}
           <div className="hidden sm:flex flex-shrink-0">
-            <ThemeIllustration isDark={theme === 'dark'} />
+            <ThemeAppearanceIllustration isDark={theme === 'dark'} />
           </div>
 
           {/* Content */}
@@ -347,38 +346,42 @@ export function PersonalizationSettings({
                 ) : (
                   <Sun className="h-4 w-4 text-primary-dark sm:hidden" />
                 )}
-                <Label className="text-sm font-medium">Appearance</Label>
+                <Label className="text-sm font-medium">Mode</Label>
               </div>
               <p className="text-xs text-muted-foreground">
                 Choose between light and dark mode
               </p>
             </div>
 
-            <Select value={theme} onValueChange={setTheme}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">
-                  <div className="flex items-center gap-2">
-                    <Sun className="h-4 w-4" />
-                    <span>Light</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="dark">
-                  <div className="flex items-center gap-2">
-                    <Moon className="h-4 w-4" />
-                    <span>Dark</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="system">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    <span>System</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('light')}
+                className="gap-2"
+              >
+                <Sun className="h-4 w-4" />
+                Light
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('dark')}
+                className="gap-2"
+              >
+                <Moon className="h-4 w-4" />
+                Dark
+              </Button>
+              <Button
+                variant={theme === 'system' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('system')}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Auto
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -392,11 +395,10 @@ export function PersonalizationSettings({
             className="gap-2 transition-colors duration-200"
           >
             <Save className="h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isSaving ? 'Saving...' : 'Save Style'}
           </Button>
         </div>
       )}
     </div>
   )
 }
-
