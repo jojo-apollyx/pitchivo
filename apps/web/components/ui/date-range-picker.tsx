@@ -132,8 +132,8 @@ export function DateRangePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            'w-full justify-start text-left font-normal min-h-[44px] h-11 bg-background border-border shadow-sm hover:bg-accent/50 hover:border-primary/50 transition-all duration-200',
-            'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+            'w-full justify-start text-left font-normal h-10 bg-background border-border hover:bg-background-secondary',
+            'transition-all duration-200',
             (!from && !to && !startDate && !endDate) && 'text-muted-foreground',
             className
           )}
@@ -143,7 +143,7 @@ export function DateRangePicker({
           <span className="flex-1 text-left">{displayText()}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 shadow-xl border-border/50 rounded-xl bg-background/95 backdrop-blur-sm" align="start">
+      <PopoverContent className="w-auto p-0 border-border/50 rounded-lg bg-background" align="start">
         <div className="p-3 space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium text-foreground">
@@ -175,4 +175,3 @@ export function DateRangePicker({
     </Popover>
   )
 }
-

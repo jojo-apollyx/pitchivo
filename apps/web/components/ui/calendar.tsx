@@ -61,12 +61,12 @@ export function Calendar({ value, onChange, minDate, className }: CalendarProps)
           variant="ghost"
           size="icon"
           onClick={handlePrevMonth}
-          className="h-8 w-8 hover:bg-accent"
+          className="h-8 w-8 hover:bg-background-secondary"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-base text-foreground">
+          <h3 className="font-semibold text-sm text-foreground">
             {format(currentMonth, 'MMMM yyyy')}
           </h3>
         </div>
@@ -74,7 +74,7 @@ export function Calendar({ value, onChange, minDate, className }: CalendarProps)
           variant="ghost"
           size="icon"
           onClick={handleNextMonth}
-          className="h-8 w-8 hover:bg-accent"
+          className="h-8 w-8 hover:bg-background-secondary"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -85,7 +85,7 @@ export function Calendar({ value, onChange, minDate, className }: CalendarProps)
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-xs font-semibold text-muted-foreground text-center py-2"
+            className="text-xs font-medium text-muted-foreground text-center py-2"
           >
             {day}
           </div>
@@ -108,13 +108,13 @@ export function Calendar({ value, onChange, minDate, className }: CalendarProps)
               onClick={() => handleDateClick(day)}
               disabled={isDisabled}
               className={cn(
-                'h-9 w-9 rounded-lg text-sm font-medium transition-all duration-150',
-                'hover:bg-accent hover:text-accent-foreground',
-                'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
-                isOtherMonth && 'text-muted-foreground/30',
+                'h-9 w-9 rounded-md text-sm font-medium transition-all duration-200',
+                'hover:bg-background-secondary hover:text-foreground',
+                'focus:outline-none focus:ring-2 focus:ring-primary-dark/20',
+                isOtherMonth && 'text-muted-foreground/40',
                 isDisabled && 'opacity-30 cursor-not-allowed hover:bg-transparent',
-                isToday && !isSelected && 'bg-primary/10 text-primary font-semibold border border-primary/20',
-                isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md scale-105',
+                isToday && !isSelected && 'bg-accent-surface text-primary-dark font-medium',
+                isSelected && 'bg-primary-dark text-white hover:bg-primary-darker',
                 !isSelected && !isToday && isCurrentMonth && 'text-foreground'
               )}
             >
@@ -125,12 +125,12 @@ export function Calendar({ value, onChange, minDate, className }: CalendarProps)
       </div>
 
       {/* Footer */}
-      <div className="mt-4 pt-4 border-t border-border/50">
+      <div className="mt-4 pt-4 border-t border-border/30">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={handleToday}
-          className="w-full text-xs h-8"
+          className="w-full text-xs h-8 text-primary-dark hover:bg-accent-surface"
           disabled={minDate && new Date() < minDate}
         >
           Today
@@ -139,4 +139,3 @@ export function Calendar({ value, onChange, minDate, className }: CalendarProps)
     </div>
   )
 }
-

@@ -65,7 +65,7 @@ export function TagListField({
 
       {/* Display items as badges */}
       {items.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-2 border border-border/30 rounded-lg bg-muted/30 mb-2">
+        <div className="flex flex-wrap gap-2 p-3 border border-border/30 rounded-lg bg-background-secondary/50 mb-2">
           {items.map((item) => (
             <Badge
               key={item}
@@ -76,7 +76,7 @@ export function TagListField({
               <button
                 type="button"
                 onClick={() => removeItem(item)}
-                className="hover:bg-destructive/20 rounded-full p-0.5 transition-colors"
+                className="hover:bg-destructive/20 rounded-full p-0.5 transition-colors duration-200"
                 aria-label={`Remove ${item}`}
               >
                 <X className="h-3 w-3" />
@@ -143,4 +143,3 @@ export function TagListField({
     </div>
   )
 }
-

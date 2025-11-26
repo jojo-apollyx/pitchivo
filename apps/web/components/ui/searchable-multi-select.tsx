@@ -72,7 +72,7 @@ export function SearchableMultiSelect({
       
       {/* Selected Items Display */}
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-2 border border-border/30 rounded-lg bg-muted/30">
+        <div className="flex flex-wrap gap-2 p-2 border border-border/30 rounded-lg bg-background-secondary/50">
           {selected.map((item) => (
             <Badge
               key={item}
@@ -83,7 +83,7 @@ export function SearchableMultiSelect({
               <button
                 type="button"
                 onClick={(e) => removeOption(item, e)}
-                className="hover:bg-destructive/20 rounded-full p-0.5"
+                className="hover:bg-destructive/20 rounded-full p-0.5 transition-colors duration-200"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -98,9 +98,10 @@ export function SearchableMultiSelect({
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            'w-full h-11 px-3 rounded-xl border border-input bg-background',
+            'w-full h-10 px-3 rounded-md border border-border bg-background',
             'flex items-center justify-between text-sm',
-            'hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20',
+            'hover:bg-background-secondary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/15',
+            'transition-all duration-200',
             'text-muted-foreground'
           )}
         >
@@ -113,9 +114,9 @@ export function SearchableMultiSelect({
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-2 rounded-xl border border-border bg-background shadow-lg">
+          <div className="absolute z-50 w-full mt-2 rounded-lg border border-border/50 bg-background shadow-lg">
             {/* Search Input */}
-            <div className="p-2 border-b border-border">
+            <div className="p-2 border-b border-border/30">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -144,21 +145,21 @@ export function SearchableMultiSelect({
                       type="button"
                       onClick={() => toggleOption(option)}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left',
-                        'hover:bg-accent hover:text-accent-foreground',
-                        'transition-colors',
-                        isSelected && 'bg-primary/10 text-primary font-medium'
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left',
+                        'hover:bg-background-secondary hover:text-foreground',
+                        'transition-colors duration-200',
+                        isSelected && 'bg-accent-surface text-primary-dark font-medium'
                       )}
                     >
                       <div
                         className={cn(
-                          'flex items-center justify-center w-4 h-4 rounded border',
+                          'flex items-center justify-center w-4 h-4 rounded border transition-colors duration-200',
                           isSelected
-                            ? 'bg-primary border-primary'
-                            : 'border-input'
+                            ? 'bg-primary-dark border-primary-dark'
+                            : 'border-border'
                         )}
                       >
-                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                        {isSelected && <Check className="h-3 w-3 text-white" />}
                       </div>
                       <span className="flex-1 truncate">{option}</span>
                     </button>
@@ -169,7 +170,7 @@ export function SearchableMultiSelect({
 
             {/* Footer with selected count */}
             {selected.length > 0 && (
-              <div className="p-2 border-t border-border bg-muted/30">
+              <div className="p-2 border-t border-border/30 bg-background-secondary/50">
                 <p className="text-xs text-muted-foreground text-center">
                   {selected.length} item{selected.length !== 1 ? 's' : ''} selected
                 </p>
@@ -181,4 +182,3 @@ export function SearchableMultiSelect({
     </div>
   )
 }
-

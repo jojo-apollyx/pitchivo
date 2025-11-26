@@ -98,10 +98,11 @@ export function CountrySelect({
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
         className={cn(
-          'w-full h-11 px-3 rounded-xl border border-input bg-background',
+          'w-full h-10 px-3 rounded-md border border-border bg-background',
           'flex items-center justify-between',
           'text-sm text-foreground',
-          'hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20',
+          'hover:bg-background-secondary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/15',
+          'transition-all duration-200',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           !value && 'text-muted-foreground',
           className
@@ -124,14 +125,14 @@ export function CountrySelect({
       </button>
 
       {open && (
-        <div className="absolute z-50 w-full mt-2 rounded-xl border border-border bg-background shadow-lg">
-          <div className="p-2 border-b border-border">
+        <div className="absolute z-50 w-full mt-2 rounded-lg border border-border/50 bg-background shadow-lg">
+          <div className="p-2 border-b border-border/30">
             <input
               type="text"
               placeholder="Search country..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-9 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm transition-all duration-200 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/15"
             />
           </div>
           <div className="max-h-64 overflow-y-auto p-1">
@@ -150,15 +151,15 @@ export function CountrySelect({
                     setSearch('')
                   }}
                   className={cn(
-                    'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left',
-                    'hover:bg-accent hover:text-accent-foreground',
-                    'transition-colors',
-                    value === country && 'bg-accent/50'
+                    'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left',
+                    'hover:bg-background-secondary hover:text-foreground',
+                    'transition-colors duration-200',
+                    value === country && 'bg-accent-surface text-primary-dark'
                   )}
                 >
                   <Check
                     className={cn(
-                      'h-4 w-4 shrink-0',
+                      'h-4 w-4 shrink-0 text-primary-dark',
                       value === country ? 'opacity-100' : 'opacity-0'
                     )}
                   />

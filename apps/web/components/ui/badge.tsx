@@ -4,28 +4,28 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-lg border px-2.5 py-1 text-xs sm:text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
+          "bg-primary-dark text-white",
         secondary:
-          "border-border bg-background text-foreground hover:bg-muted",
+          "bg-background-secondary text-foreground",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
-        outline: "text-foreground border-border bg-background",
+          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        outline: 
+          "border border-border bg-background text-foreground",
         premium:
-          "border-primary/20 bg-primary/10 text-primary shadow-sm hover:bg-primary/20",
-        // Semantic variants using theme colors with light backgrounds for readability
+          "bg-accent-surface text-primary-dark",
         success:
-          "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15",
+          "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
         warning:
-          "border-accent/30 bg-accent/10 text-accent hover:bg-accent/15",
+          "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
         info:
-          "border-border bg-muted/50 text-foreground hover:bg-muted",
+          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
         error:
-          "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15",
+          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
       },
     },
     defaultVariants: {

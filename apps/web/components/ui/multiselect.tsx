@@ -56,7 +56,7 @@ export function Multiselect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between h-9 text-left font-normal",
+            "w-full justify-between h-10 text-left font-normal",
             !value.length && "text-muted-foreground",
             className
           )}
@@ -69,7 +69,7 @@ export function Multiselect({
                 {value.slice(0, 3).map((option) => (
                   <span
                     key={option}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-md flex-shrink-0 max-w-full"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-accent-surface text-primary-dark rounded-md flex-shrink-0 max-w-full"
                   >
                     <span className="truncate">{option}</span>
                     <span
@@ -89,7 +89,7 @@ export function Multiselect({
                   </span>
                 ))}
                 {value.length > 3 && (
-                  <span className="inline-flex items-center px-2 py-0.5 text-xs bg-muted text-muted-foreground rounded-md flex-shrink-0">
+                  <span className="inline-flex items-center px-2 py-0.5 text-xs bg-background-secondary text-muted-foreground rounded-md flex-shrink-0">
                     +{value.length - 3} more
                   </span>
                 )}
@@ -101,14 +101,14 @@ export function Multiselect({
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         {searchable && (
-          <div className="p-2 border-b">
+          <div className="p-2 border-b border-border/30">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8"
+                className="pl-8 h-9"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -123,7 +123,7 @@ export function Multiselect({
             filteredOptions.map((option) => (
               <div
                 key={option}
-                className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent rounded-sm cursor-pointer"
+                className="flex items-center space-x-2 px-2 py-2 hover:bg-background-secondary rounded-md cursor-pointer transition-colors duration-200"
                 onClick={() => handleToggle(option)}
               >
                 <Checkbox
@@ -138,12 +138,12 @@ export function Multiselect({
           )}
         </div>
         {value.length > 0 && (
-          <div className="border-t p-2">
+          <div className="border-t border-border/30 p-2">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="w-full text-xs"
+              className="w-full text-xs text-muted-foreground hover:text-foreground"
               onClick={() => onChange([])}
             >
               Clear all
@@ -154,4 +154,3 @@ export function Multiselect({
     </Popover>
   )
 }
-

@@ -35,22 +35,22 @@ export function QuotaBar({
     if (unlimited) return 'bg-green-500'
     if (percentage >= 90) return 'bg-red-500'
     if (percentage >= 80) return 'bg-amber-500'
-    return 'bg-blue-500'
+    return 'bg-primary-dark'
   }
 
   const getTextColor = () => {
-    if (unlimited) return 'text-green-600'
-    if (percentage >= 90) return 'text-red-600'
-    if (percentage >= 80) return 'text-amber-600'
-    return 'text-blue-600'
+    if (unlimited) return 'text-green-600 dark:text-green-400'
+    if (percentage >= 90) return 'text-red-600 dark:text-red-400'
+    if (percentage >= 80) return 'text-amber-600 dark:text-amber-400'
+    return 'text-primary-dark'
   }
 
   return (
     <div className={cn('space-y-2', className)}>
       {/* Label and Usage */}
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-gray-700">{label}</span>
-        <span className={cn('font-semibold', getTextColor())}>
+        <span className="font-medium text-foreground">{label}</span>
+        <span className={cn('font-medium', getTextColor())}>
           {unlimited ? (
             'Unlimited'
           ) : (
@@ -73,13 +73,13 @@ export function QuotaBar({
 
       {/* Remaining Count */}
       {!unlimited && (
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {percentage >= 90 ? '⚠️ ' : percentage >= 80 ? '⚡ ' : ''}
             {typeof remaining === 'number' ? remaining.toLocaleString() : remaining} remaining
           </span>
           {percentage >= 80 && (
-            <span className="text-amber-600 font-medium">
+            <span className="text-amber-600 dark:text-amber-400 font-medium">
               {percentage >= 90 ? 'Almost full' : 'Running low'}
             </span>
           )}
@@ -88,4 +88,3 @@ export function QuotaBar({
     </div>
   )
 }
-

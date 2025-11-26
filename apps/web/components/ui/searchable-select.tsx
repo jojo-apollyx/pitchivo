@@ -64,9 +64,10 @@ export function SearchableSelect({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'w-full h-11 px-3 rounded-xl border border-input bg-background',
+          'w-full h-10 px-3 rounded-md border border-border bg-background',
           'flex items-center justify-between text-sm',
-          'hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20',
+          'hover:bg-background-secondary focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/15',
+          'transition-all duration-200',
           !value && 'text-muted-foreground'
         )}
       >
@@ -75,9 +76,9 @@ export function SearchableSelect({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 rounded-xl border border-border bg-background shadow-lg">
+        <div className="absolute z-50 w-full mt-2 rounded-lg border border-border/50 bg-background shadow-lg">
           {/* Search Input */}
-          <div className="p-2 border-b border-border">
+          <div className="p-2 border-b border-border/30">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -106,15 +107,15 @@ export function SearchableSelect({
                     type="button"
                     onClick={() => handleSelect(option)}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left',
-                      'hover:bg-accent hover:text-accent-foreground',
-                      'transition-colors',
-                      isSelected && 'bg-accent/50'
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left',
+                      'hover:bg-background-secondary hover:text-foreground',
+                      'transition-colors duration-200',
+                      isSelected && 'bg-accent-surface text-primary-dark'
                     )}
                   >
                     <Check
                       className={cn(
-                        'h-4 w-4 shrink-0',
+                        'h-4 w-4 shrink-0 text-primary-dark',
                         isSelected ? 'opacity-100' : 'opacity-0'
                       )}
                     />
@@ -129,4 +130,3 @@ export function SearchableSelect({
     </div>
   )
 }
-
