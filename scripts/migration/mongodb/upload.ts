@@ -304,7 +304,13 @@ export async function uploadSignals(
   supabase: SupabaseClient,
   signals: any[]
 ): Promise<void> {
+  if (signals.length === 0) return;
+  
+  // Don't deduplicate - each purchase document should create a signal
+  // Just try to insert and handle duplicate key errors if there's a unique constraint
   const chunks = chunkArray(signals, 100);
+  let totalInserted = 0;
+  let totalSkipped = 0;
   
   for (const chunk of chunks) {
     const { error } = await supabase
@@ -312,9 +318,33 @@ export async function uploadSignals(
       .insert(chunk);
     
     if (error) {
-      console.error('Error uploading signals:', error);
-      throw error;
+      // If duplicate key error or other constraint violation, try individual inserts
+      if (error.code === '23505' || error.code === '23503') {
+        for (const signal of chunk) {
+          const { error: insertError } = await supabase
+            .from('leads_signals')
+            .insert(signal);
+          
+          if (insertError && (insertError.code === '23505' || insertError.code === '23503')) {
+            // Duplicate or constraint violation - skip it
+            totalSkipped++;
+          } else if (insertError) {
+            console.error(`    ⚠️  Error inserting signal: ${insertError.message}`);
+          } else {
+            totalInserted++;
+          }
+        }
+      } else {
+        console.error('Error uploading signals:', error);
+        throw error;
+      }
+    } else {
+      totalInserted += chunk.length;
     }
+  }
+  
+  if (totalSkipped > 0) {
+    console.log(`    ℹ️  Skipped ${totalSkipped} duplicate signals (constraint violation)`);
   }
 }
 
