@@ -148,7 +148,7 @@ import { extractCompanies, extractProducts, extractContacts, extractPurchases, e
 import { transformCompany, transformProduct, transformContact, transformPurchase } from './transform';
 import { deduplicateOrganization, deduplicateMarketItem, deduplicateContact } from './deduplicate';
 import { uploadOrganizations, uploadMarketItems, uploadContacts, uploadSignals } from './upload';
-import { migrateCompanyLogo } from './logo-migration';
+import { migrateCompanyLogo, migrateIngredientLogo } from './logo-migration';
 import { sleep } from '../shared/utils';
 import type { MigrationConfig } from '../shared/types';
 import type { MongoCompanyLead, MongoProductLead, MongoPersonLead, MongoPurchaseLead } from './types';
@@ -439,7 +439,32 @@ async function main() {
         
         const transformedItems = [];
         for (const mongoDoc of batch) {
+          // Migrate logo first if it exists
+          let logoUrl = (mongoDoc as any).logo_url;
+          if (logoUrl && typeof logoUrl === 'string' && !skipFlags.skipLogos) {
+            try {
+              const migratedLogoUrl = await migrateIngredientLogo(
+                logoUrl,
+                mongoDoc._id.toString(),
+                logoContainerClient
+              );
+              if (migratedLogoUrl) {
+                logoUrl = migratedLogoUrl;
+              }
+            } catch (error: any) {
+              console.warn(`  ⚠️  Failed to migrate logo for ${mongoDoc.name}: ${error.message}`);
+              // Continue with original URL if migration fails
+            }
+          } else if (logoUrl && typeof logoUrl === 'string' && skipFlags.skipLogos) {
+            console.log(`    ⏭️  Skipped logo migration for ${mongoDoc.name}`);
+          }
+          
           const transformed = transformProduct(mongoDoc);
+          // Update logo URL in column
+          if (logoUrl) {
+            transformed.logo_url = logoUrl;
+          }
+          
           const existingId = await deduplicateMarketItem(supabase, transformed);
           
           if (!existingId) {

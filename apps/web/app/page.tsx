@@ -729,7 +729,7 @@ export default function Home() {
 
           <ScrollAnimation container className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Automated Email Warmup */}
-            <ScrollAnimation id="managed-campaign-warmup-card">
+            <ScrollAnimation>
               <div className="h-full p-8 bg-background-secondary rounded-lg hover:bg-muted transition-colors duration-200 group">
                 <div className="mb-6">
                   <div className="inline-flex p-3 bg-semantic-success-soft rounded-md">
@@ -746,7 +746,7 @@ export default function Home() {
             </ScrollAnimation>
 
             {/* Professional Copywriting */}
-            <ScrollAnimation id="managed-campaign-copy-card">
+            <ScrollAnimation>
               <div className="h-full p-8 bg-background-secondary rounded-lg hover:bg-muted transition-colors duration-200 group">
                 <div className="mb-6">
                   <div className="inline-flex p-3 bg-semantic-purple-soft rounded-md">
@@ -763,7 +763,7 @@ export default function Home() {
             </ScrollAnimation>
 
             {/* Strategic Follow-ups */}
-            <ScrollAnimation id="managed-campaign-followup-card">
+            <ScrollAnimation>
               <div className="h-full p-8 bg-background-secondary rounded-lg hover:bg-muted transition-colors duration-200 group">
                 <div className="mb-6">
                   <div className="inline-flex p-3 bg-blue-100 dark:bg-blue-900/30 rounded-md">
@@ -831,7 +831,7 @@ export default function Home() {
               </ScrollAnimation>
               
               <ScrollAnimation container className="space-y-4 pt-4">
-                <ScrollAnimation id="intent-signal-verified" className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
+                <ScrollAnimation className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
                   <CheckCircle2 className="w-5 h-5 text-semantic-success mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-medium text-foreground mb-1">Verified Buyer Signals</h4>
@@ -841,7 +841,7 @@ export default function Home() {
                   </div>
                 </ScrollAnimation>
 
-                <ScrollAnimation id="intent-signal-match" className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
+                <ScrollAnimation className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
                   <CheckCircle2 className="w-5 h-5 text-semantic-info mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-medium text-foreground mb-1">Perfect Product Match</h4>
@@ -851,7 +851,7 @@ export default function Home() {
                   </div>
                 </ScrollAnimation>
 
-                <ScrollAnimation id="intent-signal-timing" className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
+                <ScrollAnimation className="flex items-start gap-4 p-5 rounded-lg bg-background hover:bg-background transition-colors">
                   <CheckCircle2 className="w-5 h-5 text-semantic-purple mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="font-medium text-foreground mb-1">Perfect Timing</h4>
@@ -1030,7 +1030,7 @@ export default function Home() {
           <div className="max-w-5xl mx-auto">
             <ScrollAnimation container className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* BEFORE */}
-              <ScrollAnimation id="case-study-before-card" className="relative">
+              <ScrollAnimation className="relative">
                 <div className="absolute -top-3 left-6 z-20">
                   <span className="text-xs font-medium px-3 py-1.5 bg-semantic-error-soft text-semantic-error rounded-md">
                     ❌ Before Pitchivo
@@ -1088,7 +1088,7 @@ export default function Home() {
               </ScrollAnimation>
 
               {/* AFTER */}
-              <ScrollAnimation id="case-study-after-card" className="relative">
+              <ScrollAnimation className="relative">
                 <div className="absolute -top-3 left-6 z-20">
                   <span className="text-xs font-medium px-3 py-1.5 bg-semantic-success-soft text-semantic-success rounded-md">
                     ✅ After Pitchivo
@@ -1201,7 +1201,7 @@ export default function Home() {
           <div className="max-w-5xl mx-auto">
             <ScrollAnimation container className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Outbound Sales Automation */}
-              <ScrollAnimation id="outbound-sales-card" className="bg-background-secondary rounded-lg p-8 hover:bg-muted transition-colors duration-200">
+              <ScrollAnimation className="bg-background-secondary rounded-lg p-8 hover:bg-muted transition-colors duration-200">
                 <div className="mb-6">
                   <div className="inline-flex p-3 bg-accent-surface rounded-md">
                     <Send className="w-6 h-6 text-primary-dark" />
@@ -1230,7 +1230,7 @@ export default function Home() {
               </ScrollAnimation>
 
               {/* Inbound Lead Routing */}
-              <ScrollAnimation id="inbound-routing-card" className="bg-background-secondary rounded-lg p-8 hover:bg-muted transition-colors duration-200">
+              <ScrollAnimation className="bg-background-secondary rounded-lg p-8 hover:bg-muted transition-colors duration-200">
                 <div className="mb-6">
                   <div className="inline-flex p-3 bg-semantic-purple-soft rounded-md">
                     <Database className="w-6 h-6 text-semantic-purple" />
@@ -1399,7 +1399,7 @@ export default function Home() {
                 </ScrollAnimation>
 
                 <ScrollAnimation container className="space-y-4 pt-2">
-                  <ScrollAnimation id="storefront-benefit-seo" className="flex items-start gap-4 p-4 rounded-lg bg-background">
+                  <ScrollAnimation className="flex items-start gap-4 p-4 rounded-lg bg-background">
                     <CheckCircle2 className="w-5 h-5 text-semantic-success mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-foreground mb-1">SEO-Friendly Architecture</h4>
@@ -1409,7 +1409,7 @@ export default function Home() {
                     </div>
                   </ScrollAnimation>
 
-                  <ScrollAnimation id="storefront-benefit-aeo" className="flex items-start gap-4 p-4 rounded-lg bg-background">
+                  <ScrollAnimation className="flex items-start gap-4 p-4 rounded-lg bg-background">
                     <CheckCircle2 className="w-5 h-5 text-semantic-info mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-foreground mb-1">AEO-Ready Content</h4>
@@ -1419,7 +1419,7 @@ export default function Home() {
                     </div>
                   </ScrollAnimation>
 
-                  <ScrollAnimation id="storefront-benefit-traffic" className="flex items-start gap-4 p-4 rounded-lg bg-background">
+                  <ScrollAnimation className="flex items-start gap-4 p-4 rounded-lg bg-background">
                     <CheckCircle2 className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-foreground mb-1">Organic Traffic Growth</h4>
@@ -1429,7 +1429,7 @@ export default function Home() {
                     </div>
                   </ScrollAnimation>
 
-                  <ScrollAnimation id="storefront-benefit-analytics" className="flex items-start gap-4 p-4 rounded-lg bg-background">
+                  <ScrollAnimation className="flex items-start gap-4 p-4 rounded-lg bg-background">
                     <CheckCircle2 className="w-5 h-5 text-semantic-warning mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-foreground mb-1">Built-In Analytics</h4>

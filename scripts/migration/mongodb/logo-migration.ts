@@ -176,6 +176,92 @@ export async function migrateCompanyLogo(
 }
 
 /**
+ * Migrate ingredient logo from URL to Azure Blob Storage
+ * 
+ * @param logoUrl Original logo URL
+ * @param ingredientMongoId MongoDB ingredient ID (for naming)
+ * @param containerClient Azure container client (should be public access)
+ * @returns New public URL or null if migration failed
+ */
+export async function migrateIngredientLogo(
+  logoUrl: string,
+  ingredientMongoId: string,
+  containerClient: ContainerClient
+): Promise<string | null> {
+  if (!logoUrl || typeof logoUrl !== 'string') {
+    return null;
+  }
+  
+  try {
+    // Validate URL
+    let url: URL;
+    try {
+      url = new URL(logoUrl);
+    } catch {
+      // Invalid URL, return null
+      return null;
+    }
+    
+    // Generate a deterministic blob name based on ingredient ID and URL hash for deduplication
+    const urlHash = Buffer.from(logoUrl).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    const urlHashShort = urlHash.substring(0, 12); // Use shorter hash for filename
+    
+    // Download image (even if it's already in Azure, we want it in OUR container)
+    console.log(`      Downloading ingredient logo from ${logoUrl}...`);
+    const imageBuffer = await downloadImage(logoUrl);
+    
+    // Validate image size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (imageBuffer.length > maxSize) {
+      throw new Error(`Image too large: ${imageBuffer.length} bytes (max ${maxSize})`);
+    }
+    
+    // Detect content type
+    const contentType = getContentType(logoUrl, imageBuffer);
+    const extension = getExtensionFromContentType(contentType);
+    
+    // Generate deterministic blob name for deduplication: ingredient-{ingredientMongoId}-{urlHash}.{ext}
+    const blobName = `ingredient-${ingredientMongoId}-${urlHashShort}.${extension}`;
+    
+    // Check if blob already exists (deduplication)
+    const blockBlobClient: BlockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const exists = await blockBlobClient.exists();
+    
+    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || '';
+    const containerName = containerClient.containerName;
+    const publicUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}`;
+    
+    if (exists) {
+      console.log(`      ✓ Ingredient logo already exists in container "${containerName}", skipping upload: ${blobName}`);
+      return publicUrl;
+    }
+    
+    // Upload to Azure Blob Storage
+    console.log(`      Uploading ingredient logo to container "${containerName}": ${blobName}`);
+    
+    await blockBlobClient.upload(imageBuffer, imageBuffer.length, {
+      blobHTTPHeaders: {
+        blobContentType: contentType,
+        blobCacheControl: 'public, max-age=31536000', // Cache for 1 year
+      },
+      metadata: {
+        originalUrl: logoUrl,
+        migratedAt: new Date().toISOString(),
+        ingredientMongoId: ingredientMongoId,
+      },
+    });
+    
+    // Return public URL
+    console.log(`      ✓ Ingredient logo uploaded successfully: ${publicUrl}`);
+    return publicUrl;
+    
+  } catch (error: any) {
+    console.error(`      Error migrating ingredient logo: ${error.message}`);
+    return null;
+  }
+}
+
+/**
  * Batch migrate multiple logos
  */
 export async function migrateCompanyLogos(

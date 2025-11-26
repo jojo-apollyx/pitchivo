@@ -90,32 +90,47 @@ function determineBusinessType(company: MongoCompanyLead): string[] {
  * Transform MongoDB product to Supabase market item
  */
 export function transformProduct(mongoDoc: MongoProductLead | MongoIngredient) {
-  const isIngredient = 'override_type' in mongoDoc 
-    ? mongoDoc.override_type === 'ingredient'
-    : mongoDoc.is_ingredient === true;
+  // Type guard to check if it's a MongoIngredient
+  const isMongoIngredient = (doc: MongoProductLead | MongoIngredient): doc is MongoIngredient => {
+    return 'product_id' in doc || 'number_of_suppliers' in doc;
+  };
+  
+  const isFromIngredientCollection = isMongoIngredient(mongoDoc);
+  
+  const isIngredient = isFromIngredientCollection
+    ? (mongoDoc.override_type === 'ingredient')
+    : ('is_ingredient' in mongoDoc && mongoDoc.is_ingredient === true);
+  
+  // Extract properties that exist on both types or use type-specific access
+  const productDoc = isFromIngredientCollection ? null : mongoDoc as MongoProductLead;
+  const ingredientDoc = isFromIngredientCollection ? mongoDoc as MongoIngredient : null;
   
   return {
     name: mongoDoc.name || '',
     normalized_name: normalizeName(mongoDoc.name),
     category: mongoDoc.categories?.[0] || null,
     item_type: isIngredient ? 'ingredient' : 'product',
-    aliases: mongoDoc.name_aliases || [],
+    aliases: productDoc?.name_aliases || [],
     // New column: description (for full-text search)
     description: mongoDoc.description || null,
+    // Mark items from Ingredient collection as standard/generic ingredients (official names without brand)
+    is_standard_ingredient: isFromIngredientCollection,
+    // Logo URL will be set after migration (if applicable)
+    logo_url: null,
     // Keep form, grade, concentration, processing_method in attributes
     attributes: {
-      form: mongoDoc.form,
-      grade: mongoDoc.grade,
-      concentration: mongoDoc.concentration,
-      processing_method: mongoDoc.processing_method,
+      form: productDoc?.form,
+      grade: productDoc?.grade,
+      concentration: productDoc?.concentration,
+      processing_method: productDoc?.processing_method,
       categories: mongoDoc.categories || [],
-      applications: mongoDoc.applications || [],
-      end_uses: mongoDoc.end_uses || [],
-      specifications: (mongoDoc as MongoProductLead).specifications || {},
-      certifications: mongoDoc.certifications || [],
+      applications: productDoc?.applications || [],
+      end_uses: productDoc?.end_uses || [],
+      specifications: productDoc?.specifications || {},
+      certifications: productDoc?.certifications || [],
       mongo_id: mongoDoc._id.toString(),
-      product_id: 'product_id' in mongoDoc ? mongoDoc.product_id : undefined,
-      slug: 'slug' in mongoDoc ? mongoDoc.slug : undefined,
+      product_id: ingredientDoc?.product_id,
+      slug: ingredientDoc?.slug,
     },
   };
 }

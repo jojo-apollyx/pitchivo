@@ -72,11 +72,6 @@ export function SettingsTabs({ organization, userRole, members }: SettingsTabsPr
       <TabsContent value="personalization" className="mt-0">
         <PersonalizationSettings
           organizationId={organization.id}
-          currentScheme={{
-            primary: organization.primary_color || '#10B981',
-            secondary: organization.secondary_color || '#059669',
-            accent: organization.accent_color || '#F87171',
-          }}
         />
       </TabsContent>
 
