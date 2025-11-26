@@ -9,13 +9,14 @@ interface ThemeState {
 }
 
 /**
- * Apply theme CSS variables to the document
+ * Apply theme CSS variables and mode to the document
+ * Each theme has a fixed mode (Linear = dark, others = light)
  */
-function applyThemePreset(preset: ThemePreset, isDark: boolean = false): void {
+function applyThemePreset(preset: ThemePreset): void {
   if (typeof document === 'undefined') return
   
   const root = document.documentElement
-  const variables = isDark ? preset.cssVariables.dark : preset.cssVariables.light
+  const variables = preset.cssVariables
   
   // Add transitioning class for smooth theme change
   root.setAttribute('data-theme-transitioning', 'true')
@@ -29,25 +30,19 @@ function applyThemePreset(preset: ThemePreset, isDark: boolean = false): void {
   root.setAttribute('data-theme-style', preset.id)
   root.setAttribute('data-theme-radius', preset.characteristics.borderRadius)
   
+  // Apply dark/light mode based on theme (Linear is dark, others are light)
+  if (preset.isDark) {
+    root.classList.add('dark')
+    root.style.colorScheme = 'dark'
+  } else {
+    root.classList.remove('dark')
+    root.style.colorScheme = 'light'
+  }
+  
   // Remove transitioning class after animation
   setTimeout(() => {
     root.removeAttribute('data-theme-transitioning')
   }, 300)
-}
-
-/**
- * Detect if dark mode is active
- */
-function isDarkMode(): boolean {
-  if (typeof window === 'undefined') return false
-  
-  // Check for next-themes dark class or system preference
-  const htmlElement = document.documentElement
-  if (htmlElement.classList.contains('dark')) return true
-  if (htmlElement.getAttribute('data-theme') === 'dark') return true
-  
-  // Fallback to system preference
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
 /**
@@ -57,7 +52,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   selectedStyle: null,
 
   setStyle: (preset: ThemePreset) => {
-    applyThemePreset(preset, isDarkMode())
+    applyThemePreset(preset)
     
     // Persist to localStorage
     if (typeof window !== 'undefined') {
@@ -68,7 +63,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
   resetStyle: () => {
     const defaultPreset = getDefaultThemePreset()
-    applyThemePreset(defaultPreset, isDarkMode())
+    applyThemePreset(defaultPreset)
     
     if (typeof window !== 'undefined') {
       localStorage.setItem('pitchivo-theme-style', defaultPreset.id)
@@ -80,7 +75,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     const state = get()
     
     if (state.selectedStyle) {
-      applyThemePreset(state.selectedStyle, isDarkMode())
+      applyThemePreset(state.selectedStyle)
       return
     }
     
@@ -91,7 +86,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       if (storedStyleId) {
         const preset = getThemePreset(storedStyleId)
         if (preset) {
-          applyThemePreset(preset, isDarkMode())
+          applyThemePreset(preset)
           set({ selectedStyle: preset })
           return
         }
@@ -99,43 +94,11 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       
       // No stored style, use default
       const defaultPreset = getDefaultThemePreset()
-      applyThemePreset(defaultPreset, isDarkMode())
+      applyThemePreset(defaultPreset)
       set({ selectedStyle: defaultPreset })
     }
   },
 }))
 
-// Listen for dark mode changes to reapply theme
-if (typeof window !== 'undefined') {
-  // Watch for class changes on html element (next-themes)
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.attributeName === 'class' || mutation.attributeName === 'data-theme') {
-        const state = useThemeStore.getState()
-        if (state.selectedStyle) {
-          applyThemePreset(state.selectedStyle, isDarkMode())
-        }
-      }
-    })
-  })
-  
-  // Start observing when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      observer.observe(document.documentElement, { attributes: true })
-    })
-  } else {
-    observer.observe(document.documentElement, { attributes: true })
-  }
-  
-  // Also listen for system color scheme changes
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    const state = useThemeStore.getState()
-    if (state.selectedStyle) {
-      applyThemePreset(state.selectedStyle, isDarkMode())
-    }
-  })
-}
-
-// Re-export for backwards compatibility
+// Re-export for convenience
 export { THEME_PRESETS, type ThemePreset }
