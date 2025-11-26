@@ -206,37 +206,37 @@ export const THEME_PRESETS: ThemePreset[] = [
       primary: '#4A7C59',    // Forest sage
       secondary: '#8B7355',  // Warm taupe
       accent: '#D4A373',     // Honey gold
-      background: '#FFFCF7'
+      background: '#FEFEFE'
     },
     cssVariables: {
-      // Backgrounds - Warm cream paper
-      '--background': '40 100% 99%',
-      '--background-secondary': '38 50% 96%',
-      '--foreground': '30 25% 18%',
+      // Backgrounds - Subtle warm white (NOT too cream/yellow)
+      '--background': '40 30% 99%',
+      '--background-secondary': '35 20% 97%',
+      '--foreground': '30 20% 18%',
       
       // Primary - Deep forest sage
       '--primary': '140 28% 39%',
-      '--primary-foreground': '40 100% 99%',
+      '--primary-foreground': '0 0% 100%',
       '--primary-light': '140 25% 55%',
       '--primary-dark': '140 32% 32%',
       '--primary-darker': '140 35% 25%',
       
       // Accent - Warm honey gold
-      '--accent-surface': '38 40% 95%',
+      '--accent-surface': '35 15% 96%',
       '--accent-color': '30 50% 64%',
       '--accent-color-foreground': '30 25% 18%',
       
       // Muted & Secondary
-      '--muted': '38 35% 95%',
-      '--muted-foreground': '30 15% 45%',
-      '--secondary': '30 20% 93%',
-      '--secondary-foreground': '30 25% 18%',
+      '--muted': '35 15% 96%',
+      '--muted-foreground': '30 12% 45%',
+      '--secondary': '35 12% 94%',
+      '--secondary-foreground': '30 20% 18%',
       
-      // Borders - Warm and soft
-      '--border': '38 25% 88%',
-      '--border-hover': '140 20% 75%',
+      // Borders - Subtle warm gray
+      '--border': '35 12% 90%',
+      '--border-hover': '140 15% 78%',
       '--ring': '140 32% 32%',
-      '--input': '38 25% 90%',
+      '--input': '35 12% 92%',
       
       // Semantic - Natural tones
       '--semantic-success': '145 45% 40%',
@@ -365,13 +365,13 @@ export const THEME_PRESETS: ThemePreset[] = [
       primary: '#8B5CF6',    // Vivid violet
       secondary: '#06B6D4',  // Cyan
       accent: '#F472B6',     // Pink
-      background: '#FEFEFF'
+      background: '#FFFFFF'
     },
     cssVariables: {
-      // Backgrounds - Crisp with hint of violet
-      '--background': '270 50% 100%',
-      '--background-secondary': '270 30% 98%',
-      '--foreground': '270 40% 15%',
+      // Backgrounds - Clean white with subtle violet hint
+      '--background': '0 0% 100%',
+      '--background-secondary': '260 15% 98%',
+      '--foreground': '260 30% 15%',
       
       // Primary - Vivid violet (Stripe-inspired)
       '--primary': '263 70% 66%',
@@ -381,19 +381,19 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--primary-darker': '263 80% 45%',
       
       // Accent - Electric cyan
-      '--accent-surface': '263 45% 97%',
+      '--accent-surface': '260 20% 97%',
       '--accent-color': '186 91% 43%',
       '--accent-color-foreground': '0 0% 100%',
       
       // Muted & Secondary
-      '--muted': '270 25% 97%',
-      '--muted-foreground': '270 15% 48%',
-      '--secondary': '270 25% 97%',
-      '--secondary-foreground': '270 40% 15%',
+      '--muted': '260 15% 97%',
+      '--muted-foreground': '260 12% 48%',
+      '--secondary': '260 15% 97%',
+      '--secondary-foreground': '260 30% 15%',
       
-      // Borders - Ethereal
-      '--border': '270 20% 92%',
-      '--border-hover': '263 45% 82%',
+      // Borders - Subtle
+      '--border': '260 12% 92%',
+      '--border-hover': '263 40% 85%',
       '--ring': '263 75% 54%',
       '--input': '270 20% 94%',
       
@@ -444,13 +444,13 @@ export const THEME_PRESETS: ThemePreset[] = [
       primary: '#FF6B6B',    // Coral
       secondary: '#4ECDC4',  // Teal
       accent: '#FFE66D',     // Sunny yellow
-      background: '#FFFFFE'
+      background: '#FFFFFF'
     },
     cssVariables: {
-      // Backgrounds - Warm white
-      '--background': '60 50% 100%',
-      '--background-secondary': '45 40% 98%',
-      '--foreground': '215 30% 18%',
+      // Backgrounds - Clean white (slightly warm)
+      '--background': '0 0% 100%',
+      '--background-secondary': '40 15% 98%',
+      '--foreground': '215 25% 18%',
       
       // Primary - Energetic coral (not too red)
       '--primary': '0 100% 71%',
@@ -460,19 +460,19 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--primary-darker': '0 85% 52%',
       
       // Accent - Fresh teal
-      '--accent-surface': '0 50% 97%',
+      '--accent-surface': '40 15% 97%',
       '--accent-color': '168 76% 55%',
       '--accent-color-foreground': '0 0% 100%',
       
       // Muted & Secondary
-      '--muted': '45 30% 97%',
-      '--muted-foreground': '215 20% 48%',
-      '--secondary': '45 30% 97%',
-      '--secondary-foreground': '215 30% 18%',
+      '--muted': '40 12% 97%',
+      '--muted-foreground': '215 18% 48%',
+      '--secondary': '40 12% 97%',
+      '--secondary-foreground': '215 25% 18%',
       
-      // Borders - Warm and playful
-      '--border': '45 25% 90%',
-      '--border-hover': '0 60% 85%',
+      // Borders - Subtle warm
+      '--border': '40 10% 91%',
+      '--border-hover': '0 55% 88%',
       '--ring': '0 90% 62%',
       '--input': '45 25% 92%',
       
@@ -523,13 +523,13 @@ export const THEME_PRESETS: ThemePreset[] = [
       primary: '#D56C4E',    // Burnt sienna
       secondary: '#2D4A6F',  // Navy blue
       accent: '#E8B059',     // Mustard gold
-      background: '#FFF8F0'
+      background: '#FEFEFE'
     },
     cssVariables: {
-      // Backgrounds - Warm parchment
-      '--background': '30 100% 98%',
-      '--background-secondary': '32 50% 95%',
-      '--foreground': '215 45% 18%',
+      // Backgrounds - Subtle warm white (not too cream)
+      '--background': '30 20% 99%',
+      '--background-secondary': '30 15% 97%',
+      '--foreground': '215 40% 18%',
       
       // Primary - Rich terracotta
       '--primary': '15 62% 57%',
@@ -539,19 +539,19 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--primary-darker': '15 70% 38%',
       
       // Accent - Vintage gold
-      '--accent-surface': '32 45% 95%',
+      '--accent-surface': '30 15% 96%',
       '--accent-color': '40 75% 63%',
-      '--accent-color-foreground': '215 45% 18%',
+      '--accent-color-foreground': '215 40% 18%',
       
       // Muted & Secondary
-      '--muted': '32 40% 95%',
-      '--muted-foreground': '215 30% 45%',
+      '--muted': '30 12% 96%',
+      '--muted-foreground': '215 25% 45%',
       '--secondary': '215 42% 36%',
-      '--secondary-foreground': '30 100% 98%',
+      '--secondary-foreground': '0 0% 100%',
       
-      // Borders - Warm sepia
-      '--border': '32 30% 88%',
-      '--border-hover': '15 40% 78%',
+      // Borders - Subtle warm
+      '--border': '30 10% 90%',
+      '--border-hover': '15 35% 82%',
       '--ring': '15 65% 48%',
       '--input': '32 30% 90%',
       
