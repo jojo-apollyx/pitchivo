@@ -34,7 +34,11 @@
     "enrich:organizations": "tsx scripts/migration/enrichment/pipeline.ts organizations",
     "enrich:organizations:prod": "tsx scripts/migration/enrichment/pipeline.ts organizations --env=.env.prod",
     "enrich:contacts": "tsx scripts/migration/enrichment/pipeline.ts contacts",
-    "enrich:contacts:prod": "tsx scripts/migration/enrichment/pipeline.ts contacts --env=.env.prod"
+    "enrich:contacts:prod": "tsx scripts/migration/enrichment/pipeline.ts contacts --env=.env.prod",
+    "generate:embeddings": "tsx scripts/generate-embeddings.ts",
+    "generate:embeddings:prod": "tsx scripts/generate-embeddings.ts --env=.env.prod",
+    "reprocess:items:ai": "tsx scripts/reprocess-items-with-ai.ts",
+    "reprocess:items:ai:prod": "tsx scripts/reprocess-items-with-ai.ts --env=.env.prod"
   },
   "dependencies": {
     "@ai-sdk/azure": "^2.0.60",

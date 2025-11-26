@@ -1,35 +1,104 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Building2, Users, MapPin, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Building2, Users, MapPin, ExternalLink, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
-import { MOCK_BUYERS, generateMockBuyers } from '@/lib/mock-data/buyers'
 import { useEffect, useState } from 'react'
 import React from 'react'
+import { Badge } from '@/components/ui/badge'
+
+interface Buyer {
+  company: string
+  companyType: string
+  location: string
+  website: string | null
+  employeeCount: string | null
+  contacts: number
+  contactDetails?: Array<{
+    name: string
+    title: string | null
+  }>
+}
+
+interface BuyerStats {
+  totalBuyers: number
+  totalContacts: number
+  verifiedFields: number
+  countries: number
+  avgContactsPerBuyer: number
+}
 
 export default function MatchedBuyersPage() {
   const router = useRouter()
   const { draft, setDraft, nextStep, prevStep } = useCampaignStore()
-  const [allBuyers, setAllBuyers] = useState(MOCK_BUYERS)
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
+  const [buyers, setBuyers] = useState<Buyer[]>([])
+  const [stats, setStats] = useState<BuyerStats>({
+    totalBuyers: 0,
+    totalContacts: 0,
+    verifiedFields: 0,
+    countries: 0,
+    avgContactsPerBuyer: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load full buyer list
-    const buyers = generateMockBuyers(2450)
-    setAllBuyers(buyers)
+    async function loadBuyers() {
+      if (!draft.productName) {
+        setError('Product name is required')
+        setLoading(false)
+        return
+      }
 
-    // Save sample buyers with contact counts for later steps
-    const topBuyers = buyers.slice(0, 10).map(b => ({ 
-      company: b.company, 
-      contacts: b.contacts || (b.contactDetails?.length || 0)
-    }))
-    setDraft({
-      sampleBuyers: topBuyers,
-      buyerCount: 2450,
-      totalContacts: 8932
-    })
-  }, [])
+      try {
+        setLoading(true)
+        const response = await fetch('/api/campaigns/generate-buyers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            productName: draft.productName,
+            productIndustry: draft.productIndustry
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to load buyers')
+        }
+
+        const data = await response.json()
+        setBuyers(data.buyers || [])
+        setStats({
+          totalBuyers: data.totalBuyers || 0,
+          totalContacts: data.totalContacts || 0,
+          verifiedFields: data.verifiedFields || 0,
+          countries: data.countries || 0,
+          avgContactsPerBuyer: data.avgContactsPerBuyer || 0
+        })
+
+        // Save sample buyers with contact counts for later steps
+        const topBuyers = (data.buyers || []).map((b: Buyer) => ({ 
+          company: b.company, 
+          contacts: b.contacts
+        }))
+        setDraft({
+          sampleBuyers: topBuyers,
+          buyerCount: data.totalBuyers || 0,
+          totalContacts: data.totalContacts || 0
+        })
+      } catch (err) {
+        console.error('Error loading buyers:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load buyers')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadBuyers()
+  }, [draft.productName, draft.productIndustry, setDraft])
 
   function handleNext() {
     nextStep()
@@ -39,21 +108,6 @@ export default function MatchedBuyersPage() {
   function handleBack() {
     prevStep()
     router.push('/dashboard/campaigns/create/product')
-  }
-
-  // Calculate totals
-  const totalBuyers = 2450
-  const totalContacts = 8932
-  const avgContactsPerBuyer = (totalContacts / totalBuyers).toFixed(1)
-
-  function toggleRow(index: number) {
-    const newExpanded = new Set(expandedRows)
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index)
-    } else {
-      newExpanded.add(index)
-    }
-    setExpandedRows(newExpanded)
   }
 
   return (
@@ -97,44 +151,61 @@ export default function MatchedBuyersPage() {
               </div>
 
               {/* Buyers Table */}
-              <div className="bg-card/50 rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 border-b border-border/50">
-                      <tr>
-                        <th className="text-left px-4 py-3 text-sm font-semibold">
-                          Buyer Company
-                        </th>
-                        <th className="text-right px-4 py-3 text-sm font-semibold">
-                          Contacts
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/30">
-                      {allBuyers.slice(0, 10).map((buyer, index) => {
-                        const topContacts = buyer.contactDetails?.slice(0, 5) || []
-                        const isExpanded = expandedRows.has(index)
-                        return (
-                          <React.Fragment key={index}>
-                            <tr
-                              className="hover:bg-accent/5 transition-colors"
-                            >
-                              <td className="px-4 py-3">
+              {loading ? (
+                <div className="bg-card/50 rounded-xl p-12 text-center">
+                  <p className="text-muted-foreground">Loading matched buyers...</p>
+                </div>
+              ) : error ? (
+                <div className="bg-card/50 rounded-xl p-12 text-center">
+                  <p className="text-destructive">{error}</p>
+                </div>
+              ) : buyers.length === 0 ? (
+                <div className="bg-card/50 rounded-xl p-12 text-center">
+                  <p className="text-muted-foreground">No buyers found for this product.</p>
+                </div>
+              ) : (
+                <div className="bg-card/50 rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50 border-b border-border/50">
+                        <tr>
+                          <th className="text-left px-4 py-3 text-sm font-semibold">
+                            Buyer Company
+                          </th>
+                          <th className="text-right px-4 py-3 text-sm font-semibold">
+                            Contacts
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/30">
+                        {buyers.map((buyer, index) => (
+                          <tr key={index} className="hover:bg-accent/5 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="space-y-2">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                   <span className="text-sm font-medium">{buyer.company}</span>
-                                  {buyer.country && (
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                                  <Badge variant="outline" className="text-xs">
+                                    <Briefcase className="h-3 w-3 mr-1" />
+                                    {buyer.companyType}
+                                  </Badge>
+                                  {buyer.location && (
+                                    <div className="flex items-center gap-1">
                                       <MapPin className="h-3 w-3" />
-                                      <span>{buyer.country}</span>
+                                      <span>{buyer.location}</span>
                                     </div>
                                   )}
-                                  {buyer.website && (
+                                  {buyer.employeeCount && (
+                                    <span>• {buyer.employeeCount} employees</span>
+                                  )}
+                                  {buyer.website && buyer.website.trim() !== '' && (
                                     <a
                                       href={buyer.website}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-xs text-primary hover:underline"
+                                      className="flex items-center gap-1 text-primary hover:underline"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       <ExternalLink className="h-3 w-3" />
@@ -142,63 +213,36 @@ export default function MatchedBuyersPage() {
                                     </a>
                                   )}
                                 </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <button
-                                  onClick={() => toggleRow(index)}
-                                  className="flex items-center justify-end gap-1 w-full text-right hover:text-primary transition-colors"
-                                >
-                                  <Users className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-sm">{buyer.contacts}</span>
-                                  {isExpanded ? (
-                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                </button>
-                              </td>
-                            </tr>
-                            {isExpanded && topContacts.length > 0 && (
-                              <tr className="bg-muted/20">
-                                <td colSpan={2} className="px-4 py-3">
-                                  <div className="pl-6 space-y-2">
-                                    <div className="font-semibold text-xs text-muted-foreground mb-2">
-                                      Showing {topContacts.length} {topContacts.length === 1 ? 'contact' : 'contacts'} out of {buyer.contacts}
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      {topContacts.map((contact, idx) => (
-                                        <div key={idx} className="text-xs">
-                                          <div className="font-medium text-foreground">{contact.name}</div>
-                                          <div className="text-muted-foreground">{contact.title || contact.role}</div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1 text-right">
+                                <Users className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm">{buyer.contacts}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                {/* Table Footer */}
-                <div className="px-4 py-4 border-t border-border/50 bg-muted/30">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Showing top 10 of <span className="font-semibold text-foreground">{totalBuyers.toLocaleString()}</span> matched buyers
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Estimated total contacts: <span className="font-semibold text-foreground">{totalContacts.toLocaleString()}</span> verified leads
-                  </p>
-                  <div className="pt-3 border-t border-border/30">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Source:</span> Pitchivo Curated Database (auto-updated monthly based on verified sourcing records)
+                  {/* Table Footer */}
+                  <div className="px-4 py-4 border-t border-border/50 bg-muted/30">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Showing <span className="font-semibold text-foreground">{buyers.length}</span> of <span className="font-semibold text-foreground">{stats.totalBuyers.toLocaleString()}</span> matched buyers
                     </p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      <span className="font-semibold text-foreground">{stats.totalContacts.toLocaleString()}</span> verified contacts • <span className="font-semibold text-foreground">{stats.verifiedFields}</span> verified fields
+                    </p>
+                    <div className="pt-3 border-t border-border/30">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium">Source:</span> Pitchivo Database (companies that purchased this product)
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Right Section - Audience Insights */}
@@ -214,7 +258,17 @@ export default function MatchedBuyersPage() {
                         Total matched buyers
                       </div>
                       <div className="text-2xl font-bold text-primary">
-                        {totalBuyers.toLocaleString()}
+                        {stats.totalBuyers.toLocaleString()}
+                      </div>
+                    </div>
+
+                    {/* Verified Fields */}
+                    <div className="pt-4 border-t border-border/30">
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Verified fields
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {stats.verifiedFields}
                       </div>
                     </div>
 
@@ -224,7 +278,7 @@ export default function MatchedBuyersPage() {
                         Avg contacts per buyer
                       </div>
                       <div className="text-2xl font-bold">
-                        {avgContactsPerBuyer}
+                        {stats.avgContactsPerBuyer.toFixed(1)}
                       </div>
                     </div>
 
@@ -234,17 +288,17 @@ export default function MatchedBuyersPage() {
                         Geographic coverage
                       </div>
                       <div className="text-2xl font-bold">
-                        42 <span className="text-base font-normal text-muted-foreground">countries</span>
+                        {stats.countries} <span className="text-base font-normal text-muted-foreground">countries</span>
                       </div>
                     </div>
 
-                    {/* Last Updated */}
+                    {/* Total Contacts */}
                     <div className="pt-4 border-t border-border/30">
                       <div className="text-sm text-muted-foreground mb-1">
-                        Last updated
+                        Total contacts
                       </div>
-                      <div className="text-base font-semibold">
-                        Oct 2025
+                      <div className="text-2xl font-bold">
+                        {stats.totalContacts.toLocaleString()}
                       </div>
                     </div>
                   </div>
