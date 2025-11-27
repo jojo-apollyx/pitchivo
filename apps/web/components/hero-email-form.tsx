@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createAuthClient } from "@/lib/supabase/client";
 
 // Email validation
 function isValidEmail(email: string): boolean {
@@ -159,7 +159,8 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
         return;
       }
 
-      const supabase = createClient();
+      // Use the auth client for PKCE - it properly stores code_verifier in localStorage
+      const authClient = createAuthClient();
       // Use the auth redirect URL constant
       const { getAuthRedirectUrl } = await import('@/lib/constants/auth');
       const redirectUrl = getAuthRedirectUrl();
@@ -170,11 +171,12 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
         redirect_url: redirectUrl,
         origin: window.location.origin,
         user_agent: navigator.userAgent,
-        referrer: document.referrer || 'none'
+        referrer: document.referrer || 'none',
+        client: 'Auth Client (PKCE)'
       });
 
       const requestStart = Date.now()
-      const { data, error } = await supabase.auth.signInWithOtp({
+      const { data, error } = await authClient.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: redirectUrl,

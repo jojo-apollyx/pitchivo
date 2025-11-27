@@ -153,9 +153,9 @@ async function sendMagicLink(email: string) {
       throw new Error('This function must be called on the client side')
     }
 
-    // Use the SSR client to ensure consistent storage for PKCE code_verifier
-    const { createClient } = await import('@/lib/supabase/client')
-    const client = createClient()
+    // Use the auth client which properly handles PKCE code_verifier storage in localStorage
+    const { createAuthClient } = await import('@/lib/supabase/client')
+    const client = createAuthClient()
 
     // Use the auth redirect URL constant
     const { getAuthRedirectUrl } = await import('@/lib/constants/auth')

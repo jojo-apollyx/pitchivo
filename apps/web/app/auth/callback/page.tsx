@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, createAuthClient } from '@/lib/supabase/client'
 
 /**
  * Comprehensive logging helper for auth callback
@@ -196,11 +196,14 @@ function AuthCallbackContent() {
             code_preview: code.substring(0, 20) + '...'
           })
           
+          // Use the auth client for PKCE exchange - it uses the same localStorage as signInWithOtp
+          // This ensures the code_verifier stored during magic link request is found
+          const authClient = createAuthClient()
+          
           // Exchange the code for a session
           // Note: exchangeCodeForSession automatically retrieves code_verifier from localStorage
-          // For magic links, Supabase handles PKCE server-side, so this should work
           const exchangeStart = Date.now()
-          const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          const { data: exchangeData, error: exchangeError } = await authClient.auth.exchangeCodeForSession(code)
           const exchangeDuration = Date.now() - exchangeStart
           
           if (exchangeError) {
