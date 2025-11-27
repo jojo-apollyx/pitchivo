@@ -47,7 +47,7 @@ export default async function HelpPage() {
 
         {/* Help Resources */}
         <section id="help-resources-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-border/30">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
+          <div className="max-w-6xl mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {helpResources.map((resource) => {
               const Icon = resource.icon
               const resourceId = resource.title.toLowerCase().replace(/\s+&?\s+/g, '-')
@@ -82,7 +82,7 @@ export default async function HelpPage() {
 
         {/* FAQ Section */}
         <section id="help-faq-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="max-w-4xl">
+          <div className="max-w-4xl mx-auto">
             <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
               <div className="flex items-center gap-2 mb-4">
                 <HelpCircle className="h-5 w-5 text-primary-dark" />

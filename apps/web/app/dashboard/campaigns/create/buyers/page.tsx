@@ -202,8 +202,12 @@ export default function MatchedBuyersPage() {
 
               {/* Buyers Table */}
               {loading ? (
-                <div className="bg-card/50 rounded-xl p-12 sm:p-16 flex items-center justify-center">
-                  <LoadingIllustration size="lg" progress={progress} />
+                <div className="bg-card/50 rounded-xl p-12 sm:p-16 flex items-center justify-center min-h-[400px]">
+                  <LoadingIllustration 
+                    size="lg" 
+                    progress={progress} 
+                    message="Finding potential buyers from our database..."
+                  />
                 </div>
               ) : error ? (
                 <div className="bg-card/50 rounded-xl p-12 text-center">

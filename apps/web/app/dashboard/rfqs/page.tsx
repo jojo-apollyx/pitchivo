@@ -185,6 +185,15 @@ export default function RFQsPage() {
     setStatusDialogOpen(true)
   }
 
+  // Show full-page loading during initial data fetch for consistent UX
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <DopamineLoading variant="rfqs" message="Loading RFQs..." />
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-background relative overflow-hidden">
 
@@ -197,11 +206,9 @@ export default function RFQsPage() {
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">
                   Requests for Quotation
                 </h1>
-                {!isLoading && (
-                  <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2.5 py-1">
-                    {totalCount} {totalCount === 1 ? 'RFQ' : 'RFQs'}
-                  </Badge>
-                )}
+                <Badge variant="secondary" className="text-xs sm:text-sm font-medium px-2.5 py-1">
+                  {totalCount} {totalCount === 1 ? 'RFQ' : 'RFQs'}
+                </Badge>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                 Manage and respond to buyer inquiries
@@ -230,7 +237,7 @@ export default function RFQsPage() {
 
       <div className="relative max-w-7xl mx-auto">
         {/* Filters - Only show when there are RFQs */}
-        {!isLoading && totalCount > 0 && (
+        {totalCount > 0 && (
           <section id="rfqs-filters-section" className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
               {/* Search */}
@@ -307,9 +314,7 @@ export default function RFQsPage() {
 
         {/* RFQs List */}
         <section id="rfqs-list-section" className="px-4 sm:px-6 lg:px-8 py-6">
-          {isLoading ? (
-            <DopamineLoading variant="rfqs" message="Loading RFQs..." />
-          ) : rfqs.length === 0 ? (
+          {rfqs.length === 0 ? (
             <motion.div 
               className="max-w-2xl mx-auto py-12"
               initial={{ opacity: 0, y: 20 }}
@@ -603,7 +608,7 @@ export default function RFQsPage() {
           )}
 
           {/* Pagination */}
-          {!isLoading && totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="mt-6 sm:mt-8">
               <Pagination
                 currentPage={currentPage}

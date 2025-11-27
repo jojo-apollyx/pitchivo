@@ -76,7 +76,7 @@ export default async function MorePage() {
 
         {/* Menu Items */}
         <section id="more-menu-section" className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="max-w-4xl">
+          <div className="max-w-4xl mx-auto">
             <div className="bg-background-secondary rounded-lg divide-y divide-border/50 overflow-hidden">
               {menuItems.map((item) => {
                 const Icon = item.icon

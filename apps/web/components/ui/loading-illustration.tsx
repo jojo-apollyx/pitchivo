@@ -7,211 +7,255 @@ interface LoadingIllustrationProps {
   className?: string
   size?: 'sm' | 'md' | 'lg'
   progress?: number // 0-100
+  message?: string
 }
 
 const sizeMap = {
-  sm: { width: 96, height: 96, strokeWidth: 2 },
-  md: { width: 128, height: 128, strokeWidth: 2.5 },
-  lg: { width: 160, height: 160, strokeWidth: 3 },
+  sm: { width: 120, height: 120 },
+  md: { width: 160, height: 160 },
+  lg: { width: 200, height: 200 },
 }
 
 /**
- * Minimalistic loading illustration with dopamine-style progress animation
- * Features smooth, satisfying animations with a progress indicator
+ * Minimalist loading illustration with dopamine-style progress animation
+ * Features clean, satisfying animations that match the design system
  */
 export function LoadingIllustration({ 
   className, 
   size = 'md',
-  progress = 0 
+  progress = 0,
+  message
 }: LoadingIllustrationProps) {
-  const { width, height, strokeWidth } = sizeMap[size]
+  const { width, height } = sizeMap[size]
   const centerX = width / 2
   const centerY = height / 2
-  const radius = Math.min(width, height) * 0.3
-  const circumference = 2 * Math.PI * radius
+  const outerRadius = width * 0.35
+  const innerRadius = width * 0.28
+  const circumference = 2 * Math.PI * outerRadius
   const progressOffset = circumference - (progress / 100) * circumference
 
   return (
-    <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
+    <div className={cn('flex flex-col items-center justify-center gap-6', className)}>
       {/* Main illustration container */}
       <div className="relative" style={{ width, height }}>
-        {/* Progress ring with background pulse */}
+        {/* Background glow pulse */}
+        <motion.div
+          className="absolute inset-0 rounded-full bg-primary/5"
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.3, 0.1, 0.3],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+
+        {/* SVG illustration */}
         <svg
           width={width}
           height={height}
           viewBox={`0 0 ${width} ${height}`}
-          className="absolute inset-0 -rotate-90"
+          fill="none"
+          className="relative z-10"
         >
-          {/* Background circle with subtle pulse */}
+          {/* Outer decorative ring - dashed, slowly rotating */}
           <motion.circle
             cx={centerX}
             cy={centerY}
-            r={radius + 8}
+            r={outerRadius + 12}
+            stroke="hsl(var(--primary-dark) / 0.1)"
+            strokeWidth="1"
+            strokeDasharray="6 10"
             fill="none"
-            stroke="hsl(var(--primary) / 0.1)"
-            strokeWidth={strokeWidth * 0.5}
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.3, 0.5, 0.3],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+            style={{ transformOrigin: 'center' }}
           />
-          
-          {/* Background circle */}
+
+          {/* Background track circle */}
           <circle
             cx={centerX}
             cy={centerY}
-            r={radius}
+            r={outerRadius}
+            stroke="hsl(var(--accent-surface))"
+            strokeWidth="8"
             fill="none"
-            stroke="hsl(var(--primary) / 0.15)"
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
           />
-          
-          {/* Progress circle */}
+
+          {/* Progress circle with glow */}
           <motion.circle
             cx={centerX}
             cy={centerY}
-            r={radius}
-            fill="none"
-            stroke="hsl(var(--primary))"
-            strokeWidth={strokeWidth}
+            r={outerRadius}
+            stroke="hsl(var(--primary-dark))"
+            strokeWidth="8"
             strokeLinecap="round"
+            fill="none"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: progressOffset }}
             transition={{
               type: 'spring',
-              damping: 20,
-              stiffness: 100,
-              duration: 0.5,
+              damping: 25,
+              stiffness: 120,
             }}
             style={{
-              filter: 'drop-shadow(0 0 4px hsl(var(--primary) / 0.5))',
+              transformOrigin: 'center',
+              transform: 'rotate(-90deg)',
+              filter: progress > 0 ? 'drop-shadow(0 0 6px hsl(var(--primary-dark) / 0.4))' : 'none',
             }}
           />
-        </svg>
 
-        {/* Central icon - database/search illustration */}
-        <svg
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          className="absolute inset-0"
-        >
-          {/* Database cylinder */}
-          <motion.ellipse
+          {/* Inner soft circle */}
+          <circle
             cx={centerX}
-            cy={centerY + 8}
-            rx={radius * 0.6}
-            ry={radius * 0.4}
+            cy={centerY}
+            r={innerRadius}
             fill="hsl(var(--accent-surface))"
-            stroke="hsl(var(--primary) / 0.3)"
-            strokeWidth={strokeWidth * 0.8}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ 
-              opacity: [0.6, 0.8, 0.6],
-              scale: [0.95, 1, 0.95],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-          
-          {/* Database top */}
-          <motion.ellipse
-            cx={centerX}
-            cy={centerY - 8}
-            rx={radius * 0.6}
-            ry={radius * 0.25}
-            fill="hsl(var(--background-secondary))"
-            stroke="hsl(var(--primary) / 0.4)"
-            strokeWidth={strokeWidth * 0.8}
-            initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: [0.7, 0.9, 0.7],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: 0.2,
-            }}
           />
 
-          {/* Data points - animated */}
-          {[0, 1, 2].map((i) => (
+          {/* Minimalist search/users icon */}
+          <g>
+            {/* Person 1 - center */}
             <motion.circle
-              key={i}
-              cx={centerX - radius * 0.3 + (i * radius * 0.3)}
-              cy={centerY + 12}
-              r={strokeWidth * 0.8}
-              fill="hsl(var(--primary) / 0.4)"
-              initial={{ opacity: 0, y: centerY + 8 }}
-              animate={{
-                opacity: [0, 0.6, 0],
-                y: [centerY + 8, centerY - 4, centerY - 4],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                ease: 'easeOut',
-                delay: i * 0.3,
-              }}
+              cx={centerX}
+              cy={centerY - 8}
+              r={10}
+              fill="hsl(var(--background-secondary))"
+              stroke="hsl(var(--primary-dark))"
+              strokeWidth="2"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             />
-          ))}
+            <motion.path
+              d={`M${centerX - 16} ${centerY + 20} Q${centerX} ${centerY + 4} ${centerX + 16} ${centerY + 20}`}
+              fill="hsl(var(--background-secondary))"
+              stroke="hsl(var(--primary-dark))"
+              strokeWidth="2"
+              strokeLinecap="round"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+
+            {/* Small person left - staggered animation */}
+            <motion.circle
+              cx={centerX - 28}
+              cy={centerY}
+              r={6}
+              fill="hsl(var(--primary-dark))"
+              opacity="0.2"
+              animate={{ 
+                opacity: [0.1, 0.25, 0.1],
+                x: [-2, 2, -2],
+              }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
+            />
+
+            {/* Small person right - staggered animation */}
+            <motion.circle
+              cx={centerX + 28}
+              cy={centerY}
+              r={6}
+              fill="hsl(var(--primary-dark))"
+              opacity="0.2"
+              animate={{ 
+                opacity: [0.1, 0.25, 0.1],
+                x: [2, -2, 2],
+              }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+            />
+          </g>
+
+          {/* Orbiting dot accents */}
+          {[0, 1, 2].map((i) => {
+            const angle = (i * 120 - 90) * (Math.PI / 180)
+            const orbitRadius = outerRadius + 24
+            return (
+              <motion.circle
+                key={i}
+                cx={centerX + Math.cos(angle) * orbitRadius}
+                cy={centerY + Math.sin(angle) * orbitRadius}
+                r={3}
+                fill="hsl(var(--primary-dark))"
+                animate={{
+                  opacity: [0.2, 0.6, 0.2],
+                  scale: [0.8, 1.2, 0.8],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: i * 0.3,
+                }}
+              />
+            )
+          })}
 
           {/* Sparkle accents */}
-          {[
-            { x: centerX - radius * 1.2, y: centerY - radius * 0.8 },
-            { x: centerX + radius * 1.2, y: centerY - radius * 0.6 },
-            { x: centerX - radius * 0.8, y: centerY + radius * 1.1 },
-          ].map((pos, i) => (
-            <motion.path
-              key={i}
-              d={`M${pos.x} ${pos.y}L${pos.x + 2} ${pos.y + 2}L${pos.x + 4} ${pos.y}L${pos.x + 2} ${pos.y - 2}Z`}
-              fill="hsl(var(--primary) / 0.3)"
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{
-                opacity: [0, 0.6, 0],
-                scale: [0, 1, 0],
-                rotate: [0, 180, 360],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: i * 0.4,
-              }}
-            />
-          ))}
+          <motion.path
+            d={`M${centerX + outerRadius + 8} ${centerY - outerRadius - 8}
+                l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2z`}
+            fill="hsl(var(--primary-dark))"
+            opacity="0.3"
+            animate={{
+              opacity: [0.1, 0.4, 0.1],
+              scale: [0.8, 1.1, 0.8],
+              rotate: [0, 90, 180],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+            style={{ transformOrigin: `${centerX + outerRadius + 8}px ${centerY - outerRadius - 8}px` }}
+          />
         </svg>
       </div>
 
-      {/* Progress text */}
-      <motion.div
-        className="text-sm font-medium text-muted-foreground"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <motion.span
-          key={Math.floor(progress)}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.2 }}
+      {/* Progress text and message */}
+      <div className="text-center space-y-2">
+        {progress > 0 && (
+          <motion.div
+            className="text-2xl font-semibold text-foreground tabular-nums"
+            key={Math.floor(progress)}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {Math.floor(progress)}%
+          </motion.div>
+        )}
+        
+        <motion.p
+          className="text-sm text-muted-foreground"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         >
-          {progress > 0 ? `${Math.floor(progress)}%` : 'Searching...'}
-        </motion.span>
-      </motion.div>
+          {message || 'Searching potential buyers...'}
+        </motion.p>
+
+        {/* Animated dots */}
+        <div className="flex items-center justify-center gap-1.5 pt-1">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-primary-dark"
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.3, 1, 0.3],
+              }}
+              transition={{
+                duration: 0.8,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: i * 0.15,
+              }}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
-

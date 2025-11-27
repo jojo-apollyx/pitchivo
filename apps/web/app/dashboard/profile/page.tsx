@@ -37,7 +37,8 @@ export default async function ProfilePage() {
         </section>
 
         {/* Content */}
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="max-w-4xl mx-auto space-y-6">
           {/* Profile Information */}
           <section id="profile-personal-info-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
             <div className="flex items-center gap-2 mb-2">
@@ -147,6 +148,7 @@ export default async function ProfilePage() {
               </p>
             </div>
           </section>
+          </div>
         </div>
       </div>
     </main>
