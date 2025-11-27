@@ -266,15 +266,44 @@ async function addToWaitlist(data: {
     
     const client = createClient(supabaseUrl, supabaseKey)
 
+    // Check if email already exists in waitlist
+    const { data: existingEntry, error: checkError } = await client
+      .from("waitlist")
+      .select("email")
+      .eq("email", data.email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 is "not found" which is expected, other errors should be handled
+      throw checkError;
+    }
+
+    if (existingEntry) {
+      // User is already on the waitlist
+      toast.info("You're already on the waitlist!", {
+        description: "We'll notify you once your account is approved.",
+      });
+      return true;
+    }
+
     const { error } = await client.from("waitlist").insert({
-      email: data.email,
+      email: data.email.toLowerCase().trim(),
       full_name: data.fullName,
       company: data.company,
       role: data.role || null,
       note: data.note || null,
     });
 
-    if (error) throw error;
+    if (error) {
+      // Handle duplicate email error (409 Conflict) gracefully
+      if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        toast.info("You're already on the waitlist!", {
+          description: "We'll notify you once your account is approved.",
+        });
+        return true;
+      }
+      throw error;
+    }
 
     // Send waitlist confirmation email (non-blocking)
     sendWaitlistConfirmationEmail({
