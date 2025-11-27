@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check authentication (optional - welcome emails might be sent during signup)
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     const template = createWelcomeEmail({

@@ -160,7 +160,9 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
       }
 
       const supabase = createClient();
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      // Use the auth redirect URL constant
+      const { getAuthRedirectUrl } = await import('@/lib/constants/auth');
+      const redirectUrl = getAuthRedirectUrl();
       
       console.log('[Magic Link Request]', {
         timestamp: new Date().toISOString(),

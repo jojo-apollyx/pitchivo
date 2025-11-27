@@ -60,7 +60,8 @@ export async function sendTrackedEmail(
   } = options
 
   // Normalize recipient
-  const recipientEmail = Array.isArray(to) ? to[0] : (typeof to === 'string' ? to : to.email)
+  // to can be string or string[], so we extract the first email if it's an array
+  const recipientEmail = Array.isArray(to) ? to[0] : to
   const recipientNameValue = recipientName || recipientEmail.split('@')[0]
 
   // Get content (prefer htmlContent/html, fallback to textContent/text)

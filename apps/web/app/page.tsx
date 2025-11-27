@@ -163,7 +163,9 @@ async function sendMagicLink(email: string) {
     
     const client = createClient(supabaseUrl, supabaseKey)
 
-    const redirectUrl = `${globalThis.window.location.origin}/auth/callback`
+    // Use the auth redirect URL constant
+    const { getAuthRedirectUrl } = await import('@/lib/constants/auth')
+    const redirectUrl = getAuthRedirectUrl()
     
     console.log('[Magic Link Request]', {
       timestamp: new Date().toISOString(),
@@ -344,9 +346,65 @@ export default function Home() {
 
   // Handle auth callback on landing page (in case redirect didn't work)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+    if (typeof window === 'undefined') return
+
+    // Handle tokens in hash fragment (from Supabase direct redirect)
+    if (window.location.hash.includes('access_token')) {
       const hash = window.location.hash
       window.location.replace('/auth/callback' + hash)
+      return
+    }
+
+    // Handle verification tokens in query params (from Supabase /auth/v1/verify redirect)
+    // Format: ?token=xxx&type=magiclink&redirect_to=xxx
+    const queryParams = new URLSearchParams(window.location.search)
+    const verificationToken = queryParams.get('token')
+    const verificationType = queryParams.get('type')
+    
+    if (verificationToken) {
+      console.log('[Root Page] Verification token detected, redirecting to verify endpoint', {
+        has_token: !!verificationToken,
+        token_type: verificationType,
+        token_length: verificationToken.length,
+        redirect_to: queryParams.get('redirect_to')
+      })
+      
+      // Redirect to our verification API endpoint which will handle the token exchange
+      const verifyUrl = new URL('/api/auth/verify', window.location.origin)
+      verifyUrl.searchParams.set('token', verificationToken)
+      if (verificationType) verifyUrl.searchParams.set('type', verificationType)
+      if (queryParams.get('redirect_to')) {
+        verifyUrl.searchParams.set('redirect_to', queryParams.get('redirect_to')!)
+      }
+      
+      window.location.href = verifyUrl.toString()
+      return
+    }
+
+    // Handle error parameters in query params
+    const errorParam = queryParams.get('error')
+    const errorMessage = queryParams.get('message')
+    
+    if (errorParam) {
+      console.log('[Root Page] Error parameter detected', {
+        error: errorParam,
+        message: errorMessage
+      })
+      
+      // Show error toast
+      setTimeout(() => {
+        const message = errorMessage 
+          ? decodeURIComponent(errorMessage) 
+          : 'The login link is invalid or has expired.'
+        
+        toast.error('Authentication Error', {
+          description: message,
+          duration: 5000,
+        })
+        
+        // Clear error from URL
+        window.history.replaceState(null, '', '/')
+      }, 100)
     }
   }, [])
 

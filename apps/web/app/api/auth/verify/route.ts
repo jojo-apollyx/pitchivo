@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { AUTH_REDIRECT_URL } from '@/lib/constants/auth'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -31,9 +32,27 @@ export async function GET(request: NextRequest) {
 
     // Validate required parameters
     if (!token) {
-      console.error('[Auth Verify] ❌ MISSING_TOKEN')
+      console.error('[Auth Verify] ❌ MISSING_TOKEN', {
+        url: request.url,
+        search_params: Object.fromEntries(searchParams.entries()),
+        user_agent: request.headers.get('user-agent')
+      })
       return NextResponse.redirect(
         new URL('/?error=missing_token&message=' + encodeURIComponent('Verification token is missing.'), request.url)
+      )
+    }
+
+    // Check for truncated tokens (common issue with URL length limits)
+    if (token.length < 20) {
+      console.error('[Auth Verify] ❌ TRUNCATED_TOKEN', {
+        token_length: token.length,
+        token_preview: token.substring(0, 20),
+        full_url: request.url,
+        url_length: request.url.length,
+        user_agent: request.headers.get('user-agent')
+      })
+      return NextResponse.redirect(
+        new URL('/?error=truncated_token&message=' + encodeURIComponent('The verification token appears to be truncated. Please try clicking the link again or request a new login link.'), request.url)
       )
     }
 
@@ -61,9 +80,13 @@ export async function GET(request: NextRequest) {
     console.log('[Auth Verify] EXCHANGING_TOKEN', {
       token_length: token.length,
       token_type: type,
-      token_preview: token.substring(0, 10) + '...',
+      token_preview: token.substring(0, 20) + '...',
+      token_suffix: '...' + token.substring(token.length - 10),
+      full_url_length: request.url.length,
+      redirect_to: redirectTo,
       supabase_url: supabaseUrl ? '✓ Set' : '✗ Missing',
-      supabase_key: supabaseKey ? '✓ Set' : '✗ Missing'
+      supabase_key: supabaseKey ? '✓ Set' : '✗ Missing',
+      user_agent: request.headers.get('user-agent')
     })
 
     // The token from Supabase's /auth/v1/verify endpoint
@@ -147,7 +170,8 @@ export async function GET(request: NextRequest) {
     // Build callback URL with tokens in hash fragment
     // IMPORTANT: NextResponse.redirect() doesn't preserve hash fragments when using URL object
     // We need to construct the full URL string with hash fragment
-    const baseUrl = new URL('/auth/callback', request.url)
+    // Use the configured auth redirect URL (defaults to /auth/callback)
+    const baseUrl = new URL(AUTH_REDIRECT_URL, request.url)
     const callbackUrl = `${baseUrl.origin}${baseUrl.pathname}#access_token=${encodeURIComponent(access_token)}&refresh_token=${encodeURIComponent(refresh_token)}&type=${encodeURIComponent(type || 'email')}`
 
     const processingTime = Date.now() - startTime
