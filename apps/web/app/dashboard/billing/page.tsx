@@ -224,7 +224,7 @@ export default function BillingPage() {
 
         {/* Tabs Content */}
         <section id="billing-tabs-section" className="px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col min-h-0">
-          <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col min-h-0">
+          <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
             <Tabs defaultValue="plan" className="flex flex-col h-full min-h-0 w-full">
               <TabsList className="grid w-full grid-cols-4 mb-6 flex-shrink-0">
                 <TabsTrigger value="plan" className="gap-2">

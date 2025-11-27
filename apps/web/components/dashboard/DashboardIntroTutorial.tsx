@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Plus, Send, MessageSquare, CheckCircle2, Package, Mail } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Send, MessageSquare, CheckCircle2, Package, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -202,10 +202,6 @@ export function DashboardIntroTutorial({ open, onClose }: DashboardIntroTutorial
     onClose()
   }
 
-  const handleSkip = () => {
-    handleComplete()
-  }
-
   const currentStepData = TUTORIAL_STEPS[currentStep]
   const isLastStep = currentStep === TUTORIAL_STEPS.length - 1
 
@@ -213,24 +209,12 @@ export function DashboardIntroTutorial({ open, onClose }: DashboardIntroTutorial
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleComplete()}>
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl font-semibold">
-                Welcome to Your Dashboard
-              </DialogTitle>
-              <DialogDescription className="mt-1">
-                Let's explore the key features to help you get started
-              </DialogDescription>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSkip}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-xl font-semibold">
+            Welcome to Your Dashboard
+          </DialogTitle>
+          <DialogDescription className="mt-1">
+            Let's explore the key features to help you get started
+          </DialogDescription>
         </DialogHeader>
 
         <div className="px-6 py-6 space-y-6">

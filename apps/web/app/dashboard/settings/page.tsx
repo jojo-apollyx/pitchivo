@@ -29,7 +29,7 @@ export default async function SettingsPage() {
             </div>
           </section>
           <div className="px-4 sm:px-6 lg:px-8 py-6">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-7xl mx-auto">
               <p className="text-sm text-muted-foreground">No organization found.</p>
             </div>
           </div>
@@ -53,7 +53,7 @@ export default async function SettingsPage() {
 
         {/* Tabs Content */}
         <section id="settings-tabs-section" className="px-4 sm:px-6 lg:px-8 py-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <SettingsTabs
               organization={organization}
               userRole={profile?.org_role || null}
