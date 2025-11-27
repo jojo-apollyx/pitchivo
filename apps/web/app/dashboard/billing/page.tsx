@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CreditCard, ArrowUpRight, Mail, Link as LinkIcon, Loader2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CreditCard, ArrowUpRight, Mail, Link as LinkIcon, Loader2, Package, BarChart3, Receipt } from 'lucide-react'
 import { useSubscription } from '@/lib/hooks/use-subscription'
 import { PRICING_TIERS, formatPrice, formatQuota } from '@/lib/constants/pricing'
 import { QuotaBar } from '@/components/ui/quota-bar'
@@ -92,10 +93,10 @@ export default function BillingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background relative overflow-hidden">
-      <div className="relative">
+    <main className="h-screen bg-background relative overflow-hidden flex flex-col">
+      <div className="relative flex flex-col flex-1 min-h-0">
         {/* Page Header */}
-        <section id="billing-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50">
+        <section id="billing-header-section" className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border/50 flex-shrink-0">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-display font-semibold tracking-tight text-foreground">Billing & Subscription</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-normal">
@@ -104,164 +105,232 @@ export default function BillingPage() {
           </div>
         </section>
 
-        {/* Content */}
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 max-w-4xl">
-          {/* Current Plan */}
-          <section id="billing-current-plan-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Current Plan</h2>
-              {getStatusBadge(status)}
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
-                  {tierConfig?.name || 'Free'} Plan
-                </p>
-                <p className="text-sm text-muted-foreground mt-1 font-normal">
-                  {tierConfig?.description || 'Free tier'}
-                </p>
-                {tierConfig && tierConfig.price !== null && (
-                  <p className="text-lg font-semibold text-foreground mt-2">
-                    {formatPrice(tierConfig.price)}/month
-                  </p>
-                )}
-                {subscription?.current_period_end && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {subscription.cancel_at_period_end 
-                      ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                      : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                    }
-                  </p>
+        {/* Tabs Content */}
+        <section id="billing-tabs-section" className="px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col min-h-0">
+          <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col min-h-0">
+            <Tabs defaultValue="plan" className="flex flex-col h-full min-h-0 w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-6 flex-shrink-0">
+                <TabsTrigger value="plan" className="gap-2">
+                  <Package className="h-4 w-4" />
+                  <span className="hidden sm:inline">Plan</span>
+                </TabsTrigger>
+                <TabsTrigger value="usage" className="gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Usage</span>
+                </TabsTrigger>
+                <TabsTrigger value="billing" className="gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  <span className="hidden sm:inline">Billing</span>
+                </TabsTrigger>
+                <TabsTrigger value="invoices" className="gap-2">
+                  <Receipt className="h-4 w-4" />
+                  <span className="hidden sm:inline">Invoices</span>
+                </TabsTrigger>
+              </TabsList>
+
+            {/* Plan Tab */}
+            <TabsContent value="plan" className="flex-1 overflow-y-auto min-h-0 mt-0">
+              <div className="space-y-6 pb-6">
+                <section id="billing-current-plan-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Current Plan</h2>
+                    {getStatusBadge(status)}
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                        {tierConfig?.name || 'Free'} Plan
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1 font-normal">
+                        {tierConfig?.description || 'Free tier'}
+                      </p>
+                      {tierConfig && tierConfig.price !== null && (
+                        <p className="text-lg font-semibold text-foreground mt-2">
+                          {formatPrice(tierConfig.price)}/month
+                        </p>
+                      )}
+                      {subscription?.current_period_end && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {subscription.cancel_at_period_end 
+                            ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                            : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                          }
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Link href="/dashboard/pricing">
+                        <Button id="billing-change-plan-button" aria-label="Change subscription plan" className="gap-2 w-full">
+                          {tier === 'free' ? 'Upgrade Plan' : 'Change Plan'}
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      {subscription?.stripe_customer_id && (
+                        <Button 
+                          id="billing-manage-billing-button"
+                          aria-label="Manage billing through Stripe"
+                          variant="outline" 
+                          onClick={handleManageBilling}
+                          disabled={isLoadingPortal}
+                          className="gap-2 w-full"
+                        >
+                          {isLoadingPortal ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4" />
+                              Manage Billing
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </TabsContent>
+
+            {/* Usage Tab */}
+            <TabsContent value="usage" className="flex-1 overflow-y-auto min-h-0 mt-0">
+              <div className="space-y-6 pb-6">
+                {quotaUsage ? (
+                  <section id="billing-usage-statistics-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
+                    <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground mb-6">Usage Statistics</h2>
+                    <div className="space-y-6">
+                      <QuotaBar
+                        used={quotaUsage.emailsUsed}
+                        total={quotaUsage.emailsQuota}
+                        label="Email Quota"
+                        type="emails"
+                        showPercentage
+                      />
+                      <QuotaBar
+                        used={quotaUsage.qrLinksUsed}
+                        total={quotaUsage.qrLinksQuota}
+                        label="QR / Custom Links"
+                        type="links"
+                        showPercentage
+                      />
+                    </div>
+
+                    {/* Usage Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-primary-dark" />
+                            Emails Sent
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {quotaUsage.emailsUsed.toLocaleString()}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            of {formatQuota(quotaUsage.emailsQuota)} this month
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <LinkIcon className="h-4 w-4 text-primary-dark" />
+                            QR Links Created
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {quotaUsage.qrLinksUsed.toLocaleString()}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            of {formatQuota(quotaUsage.qrLinksQuota)} total
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </section>
+                ) : (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground text-center">No usage data available</p>
+                  </section>
                 )}
               </div>
-              <div className="flex flex-col gap-2">
-                <Link href="/dashboard/pricing">
-                  <Button id="billing-change-plan-button" aria-label="Change subscription plan" className="gap-2 w-full">
-                    {tier === 'free' ? 'Upgrade Plan' : 'Change Plan'}
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                {subscription?.stripe_customer_id && (
-                  <Button 
-                    id="billing-manage-billing-button"
-                    aria-label="Manage billing through Stripe"
-                    variant="outline" 
-                    onClick={handleManageBilling}
-                    disabled={isLoadingPortal}
-                    className="gap-2 w-full"
-                  >
-                    {isLoadingPortal ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-4 w-4" />
-                        Manage Billing
-                      </>
+            </TabsContent>
+
+            {/* Billing Tab */}
+            <TabsContent value="billing" className="flex-1 overflow-y-auto min-h-0 mt-0">
+              <div className="space-y-6 pb-6">
+                <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
+                  <div className="text-center">
+                    <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                      <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
+                    </div>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      {subscription?.stripe_customer_id 
+                        ? 'Billing managed through Stripe'
+                        : 'No billing information on file'
+                      }
+                    </p>
+                    {subscription?.stripe_customer_id && (
+                      <Button 
+                        variant="link" 
+                        onClick={handleManageBilling}
+                        disabled={isLoadingPortal}
+                        className="mt-2"
+                      >
+                        View billing details
+                      </Button>
                     )}
-                  </Button>
-                )}
+                  </div>
+                </section>
               </div>
-            </div>
-          </section>
+            </TabsContent>
 
-          {/* Usage Statistics */}
-          {quotaUsage && (
-            <section id="billing-usage-statistics-section" className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200 hover:bg-muted hover:shadow-soft">
-              <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground mb-6">Usage Statistics</h2>
-              <div className="space-y-6">
-                <QuotaBar
-                  used={quotaUsage.emailsUsed}
-                  total={quotaUsage.emailsQuota}
-                  label="Email Quota"
-                  type="emails"
-                  showPercentage
-                />
-                <QuotaBar
-                  used={quotaUsage.qrLinksUsed}
-                  total={quotaUsage.qrLinksQuota}
-                  label="QR / Custom Links"
-                  type="links"
-                  showPercentage
-                />
-              </div>
-
-              {/* Usage Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-primary-dark" />
-                      Emails Sent
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {quotaUsage.emailsUsed.toLocaleString()}
+            {/* Invoices Tab */}
+            <TabsContent value="invoices" className="flex-1 overflow-y-auto min-h-0 mt-0">
+              <div className="space-y-6 pb-6">
+                <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
+                  <div className="text-center">
+                    <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                      <Receipt className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      of {formatQuota(quotaUsage.emailsQuota)} this month
+                    <p className="text-sm text-muted-foreground text-center font-normal mb-4">
+                      {subscription?.stripe_customer_id 
+                        ? 'Invoice history available in Stripe billing portal'
+                        : 'No invoices yet'
+                      }
                     </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <LinkIcon className="h-4 w-4 text-primary-dark" />
-                      QR Links Created
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {quotaUsage.qrLinksUsed.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      of {formatQuota(quotaUsage.qrLinksQuota)} total
-                    </p>
-                  </CardContent>
-                </Card>
+                    {subscription?.stripe_customer_id && (
+                      <Button 
+                        variant="outline" 
+                        onClick={handleManageBilling}
+                        disabled={isLoadingPortal}
+                        className="gap-2"
+                      >
+                        {isLoadingPortal ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="h-4 w-4" />
+                            View Invoices in Stripe
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </section>
               </div>
-            </section>
-          )}
-
-          {/* Billing Information */}
-          <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200 hover:bg-muted hover:shadow-soft">
-            <div className="text-center">
-              <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
-                <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
-              </div>
-              <p className="text-sm text-muted-foreground font-normal">
-                {subscription?.stripe_customer_id 
-                  ? 'Billing managed through Stripe'
-                  : 'No billing information on file'
-                }
-              </p>
-              {subscription?.stripe_customer_id && (
-                <Button 
-                  variant="link" 
-                  onClick={handleManageBilling}
-                  disabled={isLoadingPortal}
-                  className="mt-2"
-                >
-                  View billing details
-                </Button>
-              )}
-            </div>
-          </section>
-
-          {/* Invoice History */}
-          <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200 hover:bg-muted hover:shadow-soft">
-            <p className="text-sm text-muted-foreground text-center font-normal">
-              {subscription?.stripe_customer_id 
-                ? 'Invoice history available in Stripe billing portal'
-                : 'No invoices yet'
-              }
-            </p>
-          </section>
-        </div>
+            </TabsContent>
+            </Tabs>
+          </div>
+        </section>
       </div>
     </main>
   )

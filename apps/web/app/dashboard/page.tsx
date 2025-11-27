@@ -16,6 +16,16 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { Metadata } from 'next'
+import { DashboardIntroWrapper } from '@/components/dashboard/DashboardIntroWrapper'
+import {
+  createOnboardingActivities,
+  formatProductActivity,
+  formatCampaignActivity,
+  formatRFQActivity,
+  formatSubscriptionActivity,
+  formatRelativeTime,
+  type Activity
+} from '@/lib/utils/activities'
 
 export const metadata: Metadata = {
   title: 'Dashboard - Pitchivo',
@@ -36,6 +46,8 @@ export default async function DashboardPage() {
   let productsPublished = 0
   let rfqsTotal = 0
   let rfqsNew = 0
+  let emailsSent = 0
+  let emailsOpened = 0
   let subscriptionTier = 'Free'
   let subscriptionStatus = 'active'
 
@@ -45,6 +57,7 @@ export default async function DashboardPage() {
       { count: publishedCount } = { count: 0 },
       { count: rfqsCount } = { count: 0 },
       { count: newRfqsCount } = { count: 0 },
+      { data: campaigns } = { data: [] },
       { data: subscription } = { data: null },
     ] = await Promise.all([
       supabase
@@ -66,6 +79,10 @@ export default async function DashboardPage() {
         .eq('org_id', orgId)
         .eq('status', 'new'),
       supabase
+        .from('campaigns')
+        .select('emails_sent, emails_opened')
+        .eq('org_id', orgId),
+      supabase
         .from('subscriptions')
         .select('tier, status')
         .eq('org_id', orgId)
@@ -77,6 +94,12 @@ export default async function DashboardPage() {
     rfqsTotal = rfqsCount || 0
     rfqsNew = newRfqsCount || 0
     
+    // Calculate total emails sent and opened from all campaigns
+    if (campaigns && campaigns.length > 0) {
+      emailsSent = campaigns.reduce((sum, campaign) => sum + (campaign.emails_sent || 0), 0)
+      emailsOpened = campaigns.reduce((sum, campaign) => sum + (campaign.emails_opened || 0), 0)
+    }
+    
     // Capitalize tier name
     if (subscription) {
       subscriptionTier = subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)
@@ -84,10 +107,23 @@ export default async function DashboardPage() {
     }
   }
 
-  // Calculate conversion rate (RFQs / Products, if products > 0)
-  const conversionRate = productsTotal > 0 
-    ? ((rfqsTotal / productsTotal) * 100).toFixed(1)
+  // Calculate open rate (emails opened / emails sent)
+  const openRate = emailsSent > 0 
+    ? ((emailsOpened / emailsSent) * 100).toFixed(1)
     : '0.0'
+
+  // Calculate conversion rate: RFQ Conversion Rate = (RFQs / Emails Sent) * 100
+  // This shows what percentage of emails resulted in RFQs
+  let conversionRate: string
+  let conversionRateLabel: string
+  if (emailsSent > 0) {
+    conversionRate = ((rfqsTotal / emailsSent) * 100).toFixed(1)
+    conversionRateLabel = `${rfqsTotal} RFQs / ${emailsSent} Emails`
+  } else {
+    // If no emails sent yet, show N/A and explain
+    conversionRate = 'N/A'
+    conversionRateLabel = 'Send emails to calculate'
+  }
 
   type MetricChangeType = 'positive' | 'negative' | 'neutral'
   
@@ -108,17 +144,17 @@ export default async function DashboardPage() {
     },
     {
       label: 'Emails Sent',
-      value: '0',
+      value: emailsSent.toString(),
       icon: Mail,
-      change: '+0%',
-      changeType: 'neutral',
+      change: emailsOpened > 0 ? `${emailsOpened} opened` : '0 opened',
+      changeType: emailsOpened > 0 ? 'positive' : 'neutral',
     },
     {
       label: 'Open Rate',
-      value: '0%',
+      value: `${openRate}%`,
       icon: Eye,
-      change: '+0%',
-      changeType: 'neutral',
+      change: emailsSent > 0 ? `${emailsOpened} of ${emailsSent}` : 'No emails sent',
+      changeType: parseFloat(openRate) > 20 ? 'positive' : parseFloat(openRate) > 10 ? 'neutral' : 'neutral',
     },
     {
       label: 'RFQs Received',
@@ -129,10 +165,10 @@ export default async function DashboardPage() {
     },
     {
       label: 'Conversion Rate',
-      value: `${conversionRate}%`,
+      value: conversionRate === 'N/A' ? 'N/A' : `${conversionRate}%`,
       icon: TrendingUp,
-      change: `${rfqsTotal} RFQs / ${productsTotal} Products`,
-      changeType: 'neutral',
+      change: conversionRateLabel,
+      changeType: conversionRate !== 'N/A' && parseFloat(conversionRate) > 0 ? 'positive' : 'neutral',
     },
     {
       label: 'Subscription',
@@ -165,35 +201,102 @@ export default async function DashboardPage() {
     },
   ]
 
-  const recentActivities = [
-    {
-      icon: CheckCircle2,
-      title: 'Welcome to Pitchivo!',
-      description: 'Your account has been created successfully',
-      time: 'Just now',
-      type: 'success' as const,
-    },
-    {
-      icon: FileText,
-      title: 'Next step: Upload your first product',
-      description: 'Create product pages to start reaching buyers',
-      time: '1 min ago',
-      type: 'info' as const,
-    },
-    {
-      icon: Mail,
-      title: 'Set up your first campaign',
-      description: 'Start sending personalized emails to potential buyers',
-      time: '2 min ago',
-      type: 'info' as const,
-    },
-  ]
+  // Fetch recent activities from database
+  let recentActivities: Activity[] = []
+  
+  if (orgId) {
+    const [
+      { data: recentProducts } = { data: [] },
+      { data: recentCampaigns } = { data: [] },
+      { data: recentRFQs } = { data: [] },
+      { data: subscriptionData } = { data: null },
+    ] = await Promise.all([
+      // Get 2 most recent products (we'll combine with other activities and take top 3)
+      supabase
+        .from('products')
+        .select('product_id, product_name, created_at')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false })
+        .limit(2),
+      // Get 2 most recent campaigns
+      supabase
+        .from('campaigns')
+        .select('campaign_id, campaign_name, created_at')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false })
+        .limit(2),
+      // Get 2 most recent RFQs
+      supabase
+        .from('product_rfqs')
+        .select('rfq_id, name, company, submitted_at, product_id')
+        .eq('org_id', orgId)
+        .order('submitted_at', { ascending: false })
+        .limit(2),
+      // Get subscription for activity (may not exist)
+      supabase
+        .from('subscriptions')
+        .select('tier, status, updated_at, created_at')
+        .eq('org_id', orgId)
+        .maybeSingle(),
+    ])
+
+    const activities: Activity[] = []
+
+    // Add product activities
+    if (recentProducts) {
+      recentProducts.forEach((product: any) => {
+        activities.push(formatProductActivity(product))
+      })
+    }
+
+    // Add campaign activities
+    if (recentCampaigns) {
+      recentCampaigns.forEach((campaign: any) => {
+        activities.push(formatCampaignActivity(campaign))
+      })
+    }
+
+    // Add RFQ activities
+    if (recentRFQs) {
+      recentRFQs.forEach((rfq: any) => {
+        activities.push(formatRFQActivity(rfq))
+      })
+    }
+
+    // Add subscription activity if updated recently (within last 7 days)
+    if (subscriptionData) {
+      const updatedAt = subscriptionData.updated_at ? new Date(subscriptionData.updated_at) : null
+      const createdAt = new Date(subscriptionData.created_at)
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      
+      if (updatedAt && updatedAt > sevenDaysAgo) {
+        activities.push(formatSubscriptionActivity(subscriptionData))
+      } else if (createdAt > sevenDaysAgo) {
+        activities.push(formatSubscriptionActivity(subscriptionData))
+      }
+    }
+
+    // Create onboarding activities
+    const onboardingActivities = createOnboardingActivities(
+      productsTotal > 0,
+      (recentCampaigns?.length || 0) > 0,
+      false, // productIntroCompleted - could check localStorage if needed
+      false  // dashboardIntroCompleted - could check localStorage if needed
+    )
+
+    // Combine and sort by timestamp (most recent first)
+    recentActivities = [...onboardingActivities, ...activities]
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 3) // Limit to 3 most recent
+  }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="relative">
-        {/* Welcome Section */}
-        <section id="dashboard-welcome-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
+    <DashboardIntroWrapper>
+      <main className="min-h-screen bg-background">
+        <div className="relative">
+          {/* Welcome Section */}
+          <section id="dashboard-welcome-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
           <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -300,19 +403,19 @@ export default async function DashboardPage() {
           </h2>
           <div className="max-w-4xl">
             <div className="bg-background rounded-lg divide-y divide-border/30">
-              {recentActivities.map((activity, index) => {
-                const Icon = activity.icon
-                return (
-                  <div 
-                    key={index}
-                    id={`dashboard-activity-item-${index + 1}`}
-                    className="p-4 sm:p-5 hover:bg-background-secondary transition-colors duration-200 cursor-pointer touch-manipulation group"
-                    role="article"
-                  >
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity) => {
+                  const Icon = activity.icon
+                  const isCompleted = activity.completed === true
+                  const isOnboarding = activity.type.startsWith('onboarding_')
+                  
+                  const ActivityContent = (
                     <div className="flex items-start gap-4">
                       <div className={`h-10 w-10 rounded-md flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                        activity.type === 'success' 
+                        isCompleted
                           ? 'bg-green-100 text-green-600 dark:bg-green-900/30' 
+                          : isOnboarding
+                          ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
                           : 'bg-background-secondary text-muted-foreground'
                       }`}>
                         <Icon className="h-5 w-5" />
@@ -327,18 +430,47 @@ export default async function DashboardPage() {
                         <div className="flex items-center gap-2 mt-2">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">
-                            {activity.time}
+                            {formatRelativeTime(activity.timestamp)}
                           </span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+
+                  // Make clickable if href is provided
+                  if (activity.href) {
+                    return (
+                      <Link
+                        key={activity.id}
+                        href={activity.href}
+                        id={`dashboard-activity-item-${activity.id}`}
+                        className="block p-4 sm:p-5 hover:bg-background-secondary transition-colors duration-200 cursor-pointer touch-manipulation group"
+                      >
+                        {ActivityContent}
+                      </Link>
+                    )
+                  }
+
+                  return (
+                    <div
+                      key={activity.id}
+                      id={`dashboard-activity-item-${activity.id}`}
+                      className="p-4 sm:p-5 hover:bg-background-secondary transition-colors duration-200 group"
+                    >
+                      {ActivityContent}
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="p-4 sm:p-5 text-center text-muted-foreground">
+                  <p className="text-sm">No recent activity</p>
+                </div>
+              )}
             </div>
           </div>
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </DashboardIntroWrapper>
   )
 }

@@ -29,6 +29,7 @@ import { useProduct } from '@/lib/api/products'
 import { productPublishSchema, validateProductForPublish } from './validation'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/api/client'
+import { ProductIntroTutorial, useShouldShowProductIntro } from '@/components/products/ProductIntroTutorial'
 
 const initialFormData: FoodSupplementProductData & { inventoryLocation?: any[] } = {
   // Core Product Information
@@ -132,6 +133,21 @@ export default function CreateProductPage() {
   const [formData, setFormData] = useState<FoodSupplementProductData>(initialFormData)
   const [uploadedFiles, setUploadedFiles] = useState<FileWithExtraction[]>([])
   const [productId, setProductId] = useState<string | null>(urlProductId) // Track product ID for updates
+  
+  // Show intro tutorial for first-time users
+  const shouldShowIntro = useShouldShowProductIntro()
+  const [showTutorial, setShowTutorial] = useState(false)
+  
+  useEffect(() => {
+    // Only show tutorial if user hasn't completed it and this is a new product (not editing)
+    if (shouldShowIntro && !urlProductId) {
+      // Small delay to ensure page is fully loaded
+      const timer = setTimeout(() => {
+        setShowTutorial(true)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [shouldShowIntro, urlProductId])
   
   // Load product data if editing - force refetch to get latest draft
   const { data: productData, isLoading: isLoadingProduct, refetch: refetchProduct } = useProduct(urlProductId || '', {
@@ -1421,6 +1437,12 @@ export default function CreateProductPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      {/* Product Intro Tutorial */}
+      <ProductIntroTutorial
+        open={showTutorial}
+        onClose={() => setShowTutorial(false)}
+      />
+      
       {/* Header */}
       <header id="product-create-header-section" className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
