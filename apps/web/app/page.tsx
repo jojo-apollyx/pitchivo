@@ -153,15 +153,9 @@ async function sendMagicLink(email: string) {
       throw new Error('This function must be called on the client side')
     }
 
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase environment variables are not set')
-    }
-    
-    const client = createClient(supabaseUrl, supabaseKey)
+    // Use the SSR client to ensure consistent storage for PKCE code_verifier
+    const { createClient } = await import('@/lib/supabase/client')
+    const client = createClient()
 
     // Use the auth redirect URL constant
     const { getAuthRedirectUrl } = await import('@/lib/constants/auth')
@@ -174,8 +168,7 @@ async function sendMagicLink(email: string) {
       origin: globalThis.window.location.origin,
       user_agent: navigator.userAgent,
       referrer: document.referrer || 'none',
-      supabase_url: supabaseUrl ? '✓ Set' : '✗ Missing',
-      supabase_key: supabaseKey ? '✓ Set' : '✗ Missing'
+      client: 'SSR Browser Client'
     });
     
     const requestStart = Date.now()

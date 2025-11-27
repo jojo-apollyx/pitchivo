@@ -283,13 +283,13 @@ function AuthCallbackContent() {
               has_access_token: !!access_token,
               has_refresh_token: !!refresh_token,
               full_url: window.location.href,
-              isMobile: isMobile
+              isMobile: mobile
             })
             
             let errorMsg = 'The login link is missing required information. Please request a new login link.'
             
             // Provide mobile-specific guidance
-            if (isMobile) {
+            if (mobile) {
               errorMsg += ' If you\'re on a mobile device, try copying the link and opening it in a different browser, or request a new login link.'
             }
             
