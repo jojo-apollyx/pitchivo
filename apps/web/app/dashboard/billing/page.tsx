@@ -7,17 +7,67 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CreditCard, ArrowUpRight, Mail, Link as LinkIcon, Loader2, Package, BarChart3, Receipt } from 'lucide-react'
+import { CreditCard, ArrowUpRight, Mail, Link as LinkIcon, Loader2, Package, BarChart3, Receipt, Download, ExternalLink, MapPin, Phone } from 'lucide-react'
 import { useSubscription } from '@/lib/hooks/use-subscription'
 import { PRICING_TIERS, formatPrice, formatQuota } from '@/lib/constants/pricing'
 import { QuotaBar } from '@/components/ui/quota-bar'
 import Link from 'next/link'
+
+interface Invoice {
+  id: string
+  number: string | null
+  amount: number
+  currency: string
+  status: string
+  created: number
+  dueDate: number | null
+  periodStart: number | null
+  periodEnd: number | null
+  hostedInvoiceUrl: string | null
+  invoicePdf: string | null
+  description: string | null
+}
+
+interface PaymentMethod {
+  id: string
+  type: string
+  card: {
+    brand: string
+    last4: string
+    expMonth: number
+    expYear: number
+  } | null
+  isDefault: boolean
+}
+
+interface BillingData {
+  customer: {
+    id: string
+    email: string | null
+    name: string | null
+    phone: string | null
+    address: {
+      line1: string | null
+      line2: string | null
+      city: string | null
+      state: string | null
+      postalCode: string | null
+      country: string | null
+    } | null
+  } | null
+  paymentMethods: PaymentMethod[]
+  defaultPaymentMethod: PaymentMethod | null
+}
 
 export default function BillingPage() {
   const router = useRouter()
   const [orgId, setOrgId] = useState<string | null>(null)
   const [isLoadingOrg, setIsLoadingOrg] = useState(true)
   const [isLoadingPortal, setIsLoadingPortal] = useState(false)
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [billingData, setBillingData] = useState<BillingData | null>(null)
+  const [isLoadingInvoices, setIsLoadingInvoices] = useState(false)
+  const [isLoadingBilling, setIsLoadingBilling] = useState(false)
 
   const { subscription, tier, status, quotaUsage, isLoading: isLoadingSub } = useSubscription(orgId || undefined)
 
@@ -47,6 +97,50 @@ export default function BillingPage() {
     getOrgId()
   }, [router])
 
+  // Fetch invoices when orgId is available
+  useEffect(() => {
+    if (!orgId || !subscription?.stripe_customer_id) return
+
+    async function fetchInvoices() {
+      setIsLoadingInvoices(true)
+      try {
+        const response = await fetch('/api/stripe/invoices')
+        if (response.ok) {
+          const data = await response.json()
+          setInvoices(data.invoices || [])
+        }
+      } catch (error) {
+        console.error('Error fetching invoices:', error)
+      } finally {
+        setIsLoadingInvoices(false)
+      }
+    }
+
+    fetchInvoices()
+  }, [orgId, subscription?.stripe_customer_id])
+
+  // Fetch billing data when orgId is available
+  useEffect(() => {
+    if (!orgId || !subscription?.stripe_customer_id) return
+
+    async function fetchBillingData() {
+      setIsLoadingBilling(true)
+      try {
+        const response = await fetch('/api/stripe/billing')
+        if (response.ok) {
+          const data = await response.json()
+          setBillingData(data)
+        }
+      } catch (error) {
+        console.error('Error fetching billing data:', error)
+      } finally {
+        setIsLoadingBilling(false)
+      }
+    }
+
+    fetchBillingData()
+  }, [orgId, subscription?.stripe_customer_id])
+
   const tierConfig = tier ? PRICING_TIERS[tier] : null
 
   const getStatusBadge = (status: string) => {
@@ -62,6 +156,27 @@ export default function BillingPage() {
       default:
         return <Badge variant="outline">Inactive</Badge>
     }
+  }
+
+  const getInvoiceStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge variant="default">Paid</Badge>
+      case 'open':
+        return <Badge variant="secondary">Open</Badge>
+      case 'draft':
+        return <Badge variant="outline">Draft</Badge>
+      case 'void':
+        return <Badge variant="outline" className="border-destructive/50 text-destructive">Void</Badge>
+      case 'uncollectible':
+        return <Badge variant="destructive">Uncollectible</Badge>
+      default:
+        return <Badge variant="outline">{status}</Badge>
+    }
+  }
+
+  const formatCardBrand = (brand: string) => {
+    return brand.charAt(0).toUpperCase() + brand.slice(1)
   }
 
   const handleManageBilling = async () => {
@@ -264,47 +379,180 @@ export default function BillingPage() {
             {/* Billing Tab */}
             <TabsContent value="billing" className="flex-1 overflow-y-auto min-h-0 mt-0">
               <div className="space-y-6 pb-6">
-                <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
-                  <div className="text-center">
-                    <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
-                      <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
+                {isLoadingBilling ? (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </section>
+                ) : !subscription?.stripe_customer_id ? (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
+                    <div className="text-center">
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                        <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
+                      </div>
+                      <p className="text-sm text-muted-foreground font-normal">
+                        No billing information on file
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground font-normal">
-                      {subscription?.stripe_customer_id 
-                        ? 'Billing managed through Stripe'
-                        : 'No billing information on file'
-                      }
-                    </p>
-                    {subscription?.stripe_customer_id && (
-                      <Button 
-                        variant="link" 
-                        onClick={handleManageBilling}
-                        disabled={isLoadingPortal}
-                        className="mt-2"
-                      >
-                        View billing details
-                      </Button>
+                  </section>
+                ) : billingData ? (
+                  <div className="space-y-6">
+                    {/* Payment Methods */}
+                    {billingData.paymentMethods.length > 0 && (
+                      <section className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
+                        <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground mb-4">Payment Methods</h2>
+                        <div className="space-y-3">
+                          {billingData.paymentMethods.map((pm) => (
+                            <Card key={pm.id} className={pm.isDefault ? 'border-primary/50' : ''}>
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-lg bg-accent-surface flex items-center justify-center">
+                                      <CreditCard className="h-5 w-5 text-primary-dark" />
+                                    </div>
+                                    <div>
+                                      {pm.card && (
+                                        <>
+                                          <p className="text-sm font-medium">
+                                            {formatCardBrand(pm.card.brand)} •••• {pm.card.last4}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            Expires {pm.card.expMonth}/{pm.card.expYear}
+                                          </p>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {pm.isDefault && (
+                                    <Badge variant="default" className="text-xs">Default</Badge>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={handleManageBilling}
+                          disabled={isLoadingPortal}
+                          className="mt-4 gap-2"
+                        >
+                          {isLoadingPortal ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4" />
+                              Manage Payment Methods
+                            </>
+                          )}
+                        </Button>
+                      </section>
+                    )}
+
+                    {/* Billing Address */}
+                    {billingData.customer?.address && (
+                      <section className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
+                        <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground mb-4">Billing Address</h2>
+                        <div className="space-y-2 text-sm">
+                          {billingData.customer.name && (
+                            <p className="font-medium">{billingData.customer.name}</p>
+                          )}
+                          {billingData.customer.address.line1 && (
+                            <p>{billingData.customer.address.line1}</p>
+                          )}
+                          {billingData.customer.address.line2 && (
+                            <p>{billingData.customer.address.line2}</p>
+                          )}
+                          <p>
+                            {[
+                              billingData.customer.address.city,
+                              billingData.customer.address.state,
+                              billingData.customer.address.postalCode,
+                            ].filter(Boolean).join(', ')}
+                          </p>
+                          {billingData.customer.address.country && (
+                            <p>{billingData.customer.address.country}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={handleManageBilling}
+                          disabled={isLoadingPortal}
+                          className="mt-4 gap-2"
+                        >
+                          {isLoadingPortal ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <MapPin className="h-4 w-4" />
+                              Update Address
+                            </>
+                          )}
+                        </Button>
+                      </section>
+                    )}
+
+                    {/* Customer Info */}
+                    {billingData.customer && (
+                      <section className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
+                        <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground mb-4">Customer Information</h2>
+                        <div className="space-y-2 text-sm">
+                          {billingData.customer.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span>{billingData.customer.email}</span>
+                            </div>
+                          )}
+                          {billingData.customer.phone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span>{billingData.customer.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </section>
                     )}
                   </div>
-                </section>
+                ) : (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground text-center">No billing information available</p>
+                  </section>
+                )}
               </div>
             </TabsContent>
 
             {/* Invoices Tab */}
             <TabsContent value="invoices" className="flex-1 overflow-y-auto min-h-0 mt-0">
               <div className="space-y-6 pb-6">
-                <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
-                  <div className="text-center">
-                    <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
-                      <Receipt className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
+                {isLoadingInvoices ? (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </section>
+                ) : !subscription?.stripe_customer_id ? (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
+                    <div className="text-center">
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                        <Receipt className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center font-normal">
+                        No invoices yet
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground text-center font-normal mb-4">
-                      {subscription?.stripe_customer_id 
-                        ? 'Invoice history available in Stripe billing portal'
-                        : 'No invoices yet'
-                      }
-                    </p>
-                    {subscription?.stripe_customer_id && (
+                  </section>
+                ) : invoices.length === 0 ? (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
+                    <div className="text-center">
+                      <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg bg-accent-surface flex items-center justify-center mx-auto mb-4 transition-colors duration-200">
+                        <Receipt className="h-6 w-6 sm:h-8 sm:w-8 text-primary-dark" />
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center font-normal mb-4">
+                        No invoices found
+                      </p>
                       <Button 
                         variant="outline" 
                         onClick={handleManageBilling}
@@ -318,14 +566,103 @@ export default function BillingPage() {
                           </>
                         ) : (
                           <>
-                            <CreditCard className="h-4 w-4" />
-                            View Invoices in Stripe
+                            <ExternalLink className="h-4 w-4" />
+                            View in Stripe Portal
                           </>
                         )}
                       </Button>
-                    )}
-                  </div>
-                </section>
+                    </div>
+                  </section>
+                ) : (
+                  <section className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-lg sm:text-xl font-display font-semibold text-foreground">Invoice History</h2>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleManageBilling}
+                        disabled={isLoadingPortal}
+                        className="gap-2"
+                      >
+                        {isLoadingPortal ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <ExternalLink className="h-4 w-4" />
+                            Manage in Stripe
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {invoices.map((invoice) => (
+                        <Card key={invoice.id}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <div className="h-10 w-10 rounded-lg bg-accent-surface flex items-center justify-center flex-shrink-0">
+                                    <Receipt className="h-5 w-5 text-primary-dark" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">
+                                      {invoice.number || invoice.id}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {invoice.description || 'Subscription'}
+                                    </p>
+                                    {invoice.periodStart && invoice.periodEnd && (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {new Date(invoice.periodStart * 1000).toLocaleDateString()} - {new Date(invoice.periodEnd * 1000).toLocaleDateString()}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 flex-shrink-0">
+                                <div className="text-right">
+                                  <p className="text-sm font-semibold">
+                                    {invoice.currency.toUpperCase()} {formatPrice(invoice.amount / 100)}
+                                  </p>
+                                  <div className="mt-1">
+                                    {getInvoiceStatusBadge(invoice.status)}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {invoice.invoicePdf && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => window.open(invoice.invoicePdf!, '_blank')}
+                                      className="h-8 w-8"
+                                      title="Download PDF"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {invoice.hostedInvoiceUrl && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => window.open(invoice.hostedInvoiceUrl!, '_blank')}
+                                      className="h-8 w-8"
+                                      title="View invoice"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             </TabsContent>
             </Tabs>
