@@ -23,8 +23,8 @@ const getStatusBadge = (status: string) => {
 }
 
 export const createWaitlistColumns = (
-  onInvite: (entry: WaitlistEntry) => void,
   onApprove: (entry: WaitlistEntry) => void,
+  onSendInvite: (entry: WaitlistEntry) => void,
   onResendInvite: (entry: WaitlistEntry) => void,
   onBlock: (entry: WaitlistEntry) => void,
   onRestore: (entry: WaitlistEntry) => void
@@ -61,40 +61,40 @@ export const createWaitlistColumns = (
       return (
         <div className="flex items-center justify-end gap-2">
           {entry.status === 'pending' && (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onInvite(entry)}
-                    className="min-h-[36px] px-2"
-                  >
-                    <Mail className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Send invitation email</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onApprove(entry)}
-                    className="min-h-[36px] px-2"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Approve and move to whitelist</p>
-                </TooltipContent>
-              </Tooltip>
-            </>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onApprove(entry)}
+                  className="min-h-[36px] px-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Approve and add to whitelist</p>
+              </TooltipContent>
+            </Tooltip>
           )}
-          {(entry.status === 'invited' || entry.status === 'approved') && (
+          {entry.status === 'approved' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onSendInvite(entry)}
+                  className="min-h-[36px] px-2"
+                >
+                  <Mail className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Send invitation email</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {entry.status === 'invited' && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -107,7 +107,7 @@ export const createWaitlistColumns = (
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{entry.status === 'invited' ? 'Resend invitation email' : 'Send invitation email'}</p>
+                <p>Resend invitation email</p>
               </TooltipContent>
             </Tooltip>
           )}

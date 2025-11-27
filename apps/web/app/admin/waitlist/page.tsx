@@ -54,16 +54,9 @@ export default function AdminWaitlistPage() {
   }, [waitlist, filterStatus])
 
   // Handlers
-  const handleInvite = (entry: WaitlistEntry) => {
-    openDialog('invite', entry)
-  }
-
-  const confirmInvite = async () => {
-    const entry = getDialogData('invite') as WaitlistEntry
-    if (!entry) return
-
+  const handleSendInvite = async (entry: WaitlistEntry) => {
     try {
-      console.log('📧 Starting invitation process:', {
+      console.log('📧 Sending invitation:', {
         email: entry.email,
         fullName: entry.full_name,
         company: entry.company,
@@ -77,7 +70,8 @@ export default function AdminWaitlistPage() {
         throw new Error('Invalid email domain')
       }
 
-      // Check if domain is already whitelisted
+      // Domain should already be whitelisted since entry is 'approved'
+      // But we'll ensure it's whitelisted just in case
       const { data: existingPolicy, error: checkError } = await supabase
         .from('email_domain_policy')
         .select('status')
@@ -89,7 +83,7 @@ export default function AdminWaitlistPage() {
         throw checkError
       }
 
-      // If domain is not whitelisted, whitelist it first
+      // If domain is not whitelisted, whitelist it
       if (!existingPolicy || existingPolicy.status !== 'whitelisted') {
         console.log('🔒 Domain not whitelisted, whitelisting now:', domain)
         const { data: policyId, error: whitelistError } = await supabase.rpc('whitelist_domain', {
@@ -105,8 +99,6 @@ export default function AdminWaitlistPage() {
         }
 
         console.log('✅ Domain whitelisted:', { domain, policyId })
-      } else {
-        console.log('✅ Domain already whitelisted:', domain)
       }
 
       // Send invitation email
@@ -122,7 +114,7 @@ export default function AdminWaitlistPage() {
         return
       }
 
-      // Update waitlist status to 'invited' and set email timestamps
+      // Update waitlist status from 'approved' to 'invited' and set email timestamps
       const { error: updateError } = await supabase
         .from('waitlist')
         .update({
@@ -138,14 +130,13 @@ export default function AdminWaitlistPage() {
         throw updateError
       }
 
-      console.log('✅ Invitation completed successfully:', {
+      console.log('✅ Invitation sent successfully:', {
         email: entry.email,
         messageId: emailResult.messageId,
         timestamp: new Date().toISOString(),
       })
 
       toast.success('Invitation sent successfully')
-      closeDialog('invite')
       queryClient.invalidateQueries({ queryKey: ['admin', 'waitlist'] })
     } catch (error) {
       console.error('❌ Error sending invite:', error)
@@ -294,9 +285,13 @@ export default function AdminWaitlistPage() {
         console.log('✅ Domain whitelisted:', { domain, policyId })
       }
 
+      // Update waitlist status to 'invited' and set email timestamps
       const { error } = await supabase
         .from('waitlist')
         .update({ 
+          status: 'invited',
+          invited_at: new Date().toISOString(),
+          invited_by: user?.id || null,
           invitation_email_sent_at: new Date().toISOString(),
         })
         .eq('id', entry.id)
@@ -346,8 +341,8 @@ export default function AdminWaitlistPage() {
 
   const columns = useMemo(
     () => createWaitlistColumns(
-      handleInvite,
       handleApprove,
+      handleSendInvite,
       handleResendInvite,
       handleBlock,
       handleRestoreRejected
@@ -458,36 +453,6 @@ export default function AdminWaitlistPage() {
           </div>
         </motion.section>
       </div>
-
-      {/* Invite Confirmation Dialog */}
-      <Dialog
-        open={isDialogOpen('invite')}
-        onOpenChange={(open) => open ? null : closeDialog('invite')}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send Invitation</DialogTitle>
-            <DialogDescription>
-              Send an invitation email to <strong>{(getDialogData('invite') as WaitlistEntry)?.email}</strong>?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => closeDialog('invite')}
-              className="transition-colors duration-200"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={confirmInvite}
-              className="transition-colors duration-200"
-            >
-              Send Invitation
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Block Confirmation Dialog */}
       <Dialog
