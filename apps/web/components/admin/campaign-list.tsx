@@ -389,30 +389,42 @@ export function CampaignList() {
 
                     <div className="flex flex-col gap-2">
                       {/* Admin Processing Control */}
-                      <Button
-                        variant={campaign.admin_processing_paused ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleToggleProcessing(campaign)}
-                        disabled={togglingPause === campaign.campaign_id}
-                        className={`gap-2 w-full justify-start ${
-                          campaign.admin_processing_paused 
-                            ? 'bg-amber-600 hover:bg-amber-700 text-white' 
-                            : 'hover:bg-accent'
-                        }`}
-                        title={campaign.admin_processing_paused 
-                          ? 'Resume email processing (cron will send emails)' 
-                          : 'Pause email processing (cron will skip this campaign)'
-                        }
-                      >
-                        {togglingPause === campaign.campaign_id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : campaign.admin_processing_paused ? (
-                          <Play className="h-4 w-4" />
-                        ) : (
-                          <Pause className="h-4 w-4" />
-                        )}
-                        {campaign.admin_processing_paused ? 'Resume Processing' : 'Pause Processing'}
-                      </Button>
+                      {(() => {
+                        const isPaused = campaign.status === 'paused' || campaign.admin_processing_paused
+                        const isProcessing = togglingPause === campaign.campaign_id
+                        
+                        return (
+                          <Button
+                            variant={isPaused ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleToggleProcessing(campaign)}
+                            disabled={isProcessing}
+                            className={`gap-2 w-full justify-start ${
+                              isPaused 
+                                ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                                : 'hover:bg-accent'
+                            }`}
+                            title={isPaused 
+                              ? 'Resume email processing (cron will send emails)' 
+                              : 'Pause email processing (cron will skip this campaign)'
+                            }
+                          >
+                            {isProcessing ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : isPaused ? (
+                              <Play className="h-4 w-4" />
+                            ) : (
+                              <Pause className="h-4 w-4" />
+                            )}
+                            {isProcessing 
+                              ? 'Processing...' 
+                              : isPaused 
+                                ? 'Resume Processing' 
+                                : 'Pause Processing'
+                            }
+                          </Button>
+                        )
+                      })()}
                       
                       <Button
                         variant="default"
