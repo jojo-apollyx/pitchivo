@@ -118,7 +118,6 @@ scripts/migration/
 - Removed: `openai` (replaced with Vercel AI SDK + Azure OpenAI)
 - Added scripts:
   - `migrate:mongodb` - Run full MongoDB migration
-  - `migrate:mongodb:test` - Run test migration with limited records
   - `migrate:verify` - Verify migration results
   - `enrich:organizations` - Enrich organizations
   - `enrich:contacts` - Enrich contacts
@@ -273,19 +272,7 @@ Repeat for other providers as needed.
 
 ### Step 6: Test MongoDB Migration (Optional - Small Dataset First)
 
-**Before running full migration, test with a small dataset:**
-
-1. **Run test migration with limited records:**
-   ```bash
-   # Migrate 10 organizations (default)
-   npm run migrate:mongodb:test
-   
-   # Migrate specific number of records
-   npm run migrate:mongodb:test -- --limit=50
-   
-   # Skip first N records and migrate next batch
-   npm run migrate:mongodb:test -- --limit=20 --skip=10
-   ```
+**Before running full migration, you can test with a small dataset by using the main migration script with limits:**
 
 2. **Run verification after test:**
    ```bash

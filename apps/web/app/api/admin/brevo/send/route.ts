@@ -13,7 +13,7 @@ const supabaseAdmin = createClient(
   }
 )
 
-// POST - Send email via Brevo
+// POST - Send email via Brevo (transactional emails only, not for campaigns)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -37,42 +37,66 @@ export async function POST(request: NextRequest) {
 
     console.log('[admin/brevo/send] Sending email to:', to)
 
-    // Send email via Brevo - NO placeholder replacement
+    // Create brevo_transactional_emails record first (for tracking)
+    const { data: insertedData, error: insertError } = await supabaseAdmin
+      .from('brevo_transactional_emails')
+      .insert({
+        recipient_email: to,
+        recipient_name: to.split('@')[0],
+        subject,
+        content,
+        scheduled_time: new Date().toISOString(),
+        status: 'pending',
+        email_type: 'admin-transactional',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('brevo_email_id')
+      .single()
+
+    if (insertError) {
+      console.error('[admin/brevo/send] Error creating email record:', insertError)
+      return NextResponse.json(
+        { error: 'Failed to create email record', details: insertError.message },
+        { status: 500 }
+      )
+    }
+
+    const brevoEmailId = insertedData.brevo_email_id
+    console.log('[admin/brevo/send] Brevo transactional email record created with ID:', brevoEmailId)
+
+    // Send email via Brevo with brevo_email tag for webhook tracking
     const result = await sendEmail({
       to,
       subject,
       html: content,
       text: content.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-      tags: ['admin-transactional'] // Tag for tracking
+      tags: [`brevo_email_${brevoEmailId}`] // Tag for webhook tracking
     })
 
     console.log('[admin/brevo/send] Email sent successfully:', result?.messageId)
 
-    // Store initial 'sent' event in database for tracking
-    if (result?.messageId) {
-      try {
-        await supabaseAdmin.from('brevo_email_events').insert({
-          brevo_message_id: result.messageId,
-          recipient_email: to,
-          event_type: 'sent',
-          event_timestamp: new Date().toISOString(),
-          tags: ['admin-transactional'],
-          metadata: {
-            subject,
-            sent_by: 'admin',
-            sent_at: new Date().toISOString()
-          }
-        })
-        console.log('[admin/brevo/send] Stored sent event in database')
-      } catch (dbError) {
-        console.error('[admin/brevo/send] Failed to store event:', dbError)
-        // Don't fail the request if event storage fails
-      }
+    // Update brevo_transactional_emails record to 'sent' status
+    const { error: updateError } = await supabaseAdmin
+      .from('brevo_transactional_emails')
+      .update({
+        status: 'sent',
+        sent_at: new Date().toISOString(),
+        brevo_message_id: result?.messageId || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('brevo_email_id', brevoEmailId)
+
+    if (updateError) {
+      console.error('[admin/brevo/send] Error updating email status:', updateError)
+    } else {
+      console.log('[admin/brevo/send] Email status updated to sent')
     }
 
     return NextResponse.json({
       success: true,
-      messageId: result?.messageId
+      messageId: result?.messageId,
+      brevoEmailId
     })
   } catch (error: any) {
     console.error('[admin/brevo/send] Error sending email:', error)
