@@ -24,6 +24,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { EmailEventStats } from '@/components/email/email-event-stats'
 import { SmartleadEventStats } from '@/components/smartlead/event-stats'
 import { SmartleadEventTimeline } from '@/components/smartlead/event-timeline'
+import { DopamineLoading } from '@/components/ui/dopamine-loading'
 
 const chartColors = {
   delivered: 'hsl(var(--primary-dark))',
@@ -868,11 +869,8 @@ export default function CampaignDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-dark border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading campaign analytics...</p>
-        </div>
+      <main className="min-h-screen bg-background">
+        <DopamineLoading variant="analytics" message="Loading campaign analytics..." />
       </main>
     )
   }

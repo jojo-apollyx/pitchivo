@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageSquare, Search, X, Mail, Phone, Building2, Calendar, Package, CheckCircle2, Clock, Archive, TrendingUp, TrendingDown, MoreVertical, ExternalLink, Loader2 } from 'lucide-react'
+import { MessageSquare, Search, X, Mail, Phone, Building2, Calendar, Package, CheckCircle2, Clock, Archive, TrendingUp, TrendingDown, MoreVertical, ExternalLink } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +11,7 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { EmptyInboxIllustration, EmptySearchIllustration } from '@/components/ui/illustrations'
-import { PageLoadingSkeleton, LoadingText } from '@/components/ui/skeleton-loading'
+import { DopamineLoading } from '@/components/ui/dopamine-loading'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -308,22 +308,7 @@ export default function RFQsPage() {
         {/* RFQs List */}
         <section id="rfqs-list-section" className="px-4 sm:px-6 lg:px-8 py-6">
           {isLoading ? (
-            <motion.div 
-              className="flex items-center justify-center py-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex flex-col items-center gap-3">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  <Loader2 className="h-6 w-6 text-primary-dark" />
-                </motion.div>
-                <LoadingText text="Loading RFQs..." />
-              </div>
-            </motion.div>
+            <DopamineLoading variant="rfqs" message="Loading RFQs..." />
           ) : rfqs.length === 0 ? (
             <motion.div 
               className="max-w-2xl mx-auto py-12"

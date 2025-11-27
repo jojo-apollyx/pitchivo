@@ -13,7 +13,7 @@ import { useSubscription } from '@/lib/hooks/use-subscription'
 import { PRICING_TIERS, formatPrice, formatQuota } from '@/lib/constants/pricing'
 import { QuotaBar } from '@/components/ui/quota-bar'
 import Link from 'next/link'
-import { PageLoadingSkeleton } from '@/components/ui/skeleton-loading'
+import { DopamineLoading, DopamineLoadingInline } from '@/components/ui/dopamine-loading'
 
 interface Invoice {
   id: string
@@ -203,19 +203,9 @@ export default function BillingPage() {
 
   if (isLoadingOrg || isLoadingSub) {
     return (
-      <motion.div 
-        className="flex items-center justify-center min-h-screen bg-background"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        >
-          <Loader2 className="h-8 w-8 text-primary-dark" />
-        </motion.div>
-      </motion.div>
+      <main className="min-h-screen bg-background">
+        <DopamineLoading variant="dashboard" message="Loading billing info..." />
+      </main>
     )
   }
 
@@ -393,7 +383,7 @@ export default function BillingPage() {
               <div className="space-y-6 pb-6">
                 {isLoadingBilling ? (
                   <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <DopamineLoadingInline message="Loading billing details..." />
                   </section>
                 ) : !subscription?.stripe_customer_id ? (
                   <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">
@@ -543,7 +533,7 @@ export default function BillingPage() {
               <div className="space-y-6 pb-6">
                 {isLoadingInvoices ? (
                   <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <DopamineLoadingInline message="Loading invoices..." />
                   </section>
                 ) : !subscription?.stripe_customer_id ? (
                   <section className="bg-background-secondary rounded-lg p-6 sm:p-8 min-h-[200px] flex items-center justify-center transition-colors duration-200">

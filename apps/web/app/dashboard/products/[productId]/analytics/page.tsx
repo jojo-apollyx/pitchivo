@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, BarChart3, Eye, Download, MessageSquare, QrCode, Link2, TrendingUp, Users, Calendar, Globe, Monitor, Smartphone, Tablet, ChevronDown, ChevronRight, MapPin, Sparkles } from 'lucide-react'
+import { ArrowLeft, BarChart3, Eye, Download, MessageSquare, QrCode, Link2, TrendingUp, Users, Calendar, Globe, Monitor, Smartphone, Tablet, ChevronDown, ChevronRight, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useProduct } from '@/lib/api/products'
 import { createClient } from '@/lib/supabase/client'
 import { format, subDays, startOfDay } from 'date-fns'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { DopamineLoading } from '@/components/ui/dopamine-loading'
 
 interface AccessLog {
   access_id: string
@@ -288,13 +289,8 @@ export default function ProductAnalyticsPage() {
 
   if (productLoading || isLoading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <Sparkles className="h-8 w-8 animate-pulse mx-auto mb-4 text-primary-dark" />
-          </div>
-          <p className="text-sm text-muted-foreground font-normal">Loading analytics...</p>
-        </div>
+      <main className="min-h-screen bg-background">
+        <DopamineLoading variant="analytics" message="Loading product analytics..." />
       </main>
     )
   }

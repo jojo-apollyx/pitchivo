@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
 import { EmptyProductsIllustration, EmptySearchIllustration } from '@/components/ui/illustrations'
-import { PageLoadingSkeleton } from '@/components/ui/skeleton-loading'
+import { DopamineLoading } from '@/components/ui/dopamine-loading'
 import QRCode from 'react-qr-code'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -83,7 +83,11 @@ export default function ProductsPage() {
   }
 
   if (isLoading) {
-    return <PageLoadingSkeleton title subtitle cards={6} />
+    return (
+      <main className="min-h-screen bg-background">
+        <DopamineLoading variant="products" message="Loading your products..." />
+      </main>
+    )
   }
 
   if (error) {

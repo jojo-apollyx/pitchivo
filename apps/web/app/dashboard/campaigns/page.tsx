@@ -34,7 +34,7 @@ import {
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { EmptyCampaignsIllustration } from '@/components/ui/illustrations'
-import { PageLoadingSkeleton } from '@/components/ui/skeleton-loading'
+import { DopamineLoading } from '@/components/ui/dopamine-loading'
 
 interface Campaign {
   campaign_id: string
@@ -492,7 +492,11 @@ export default function CampaignsPage() {
 
 
   if (loading) {
-    return <PageLoadingSkeleton title subtitle cards={4} />
+    return (
+      <main className="min-h-screen bg-background">
+        <DopamineLoading variant="campaigns" message="Loading your campaigns..." />
+      </main>
+    )
   }
 
   if (campaigns.length === 0) {
