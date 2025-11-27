@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient, createAuthClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 // Email validation
 function isValidEmail(email: string): boolean {
@@ -93,11 +94,16 @@ interface HeroEmailFormProps {
   onOpenWaitlist: (email: string) => void;
 }
 
-export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
-  const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+type FormStep = 'email' | 'otp';
 
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
+export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [formStep, setFormStep] = useState<FormStep>('email');
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email.trim()) {
@@ -134,7 +140,7 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
 
       const invited = await isInvitedEmail(email);
       if (!invited) {
-        toast(
+        const toastId = toast(
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-md bg-accent-surface flex items-center justify-center">
               <span className="text-lg">🎉</span>
@@ -147,77 +153,66 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
             </div>
           </div>,
           {
-            duration: 5000,
+            duration: 10000,
             action: {
               label: "Join Waitlist",
-              onClick: () => onOpenWaitlist(email),
+              onClick: () => {
+                toast.dismiss(toastId);
+                onOpenWaitlist(email);
+              },
             },
           }
         );
         setIsLoading(false);
-        onOpenWaitlist(email);
         return;
       }
 
-      // Use the auth client for PKCE - it properly stores code_verifier in localStorage
+      // Send OTP code to email
       const authClient = createAuthClient();
-      // Use the auth redirect URL constant
-      const { getAuthRedirectUrl } = await import('@/lib/constants/auth');
-      const redirectUrl = getAuthRedirectUrl();
       
-      console.log('[Magic Link Request]', {
+      console.log('[OTP Request]', {
         timestamp: new Date().toISOString(),
         email: email.toLowerCase().trim(),
-        redirect_url: redirectUrl,
-        origin: window.location.origin,
         user_agent: navigator.userAgent,
-        referrer: document.referrer || 'none',
-        client: 'Auth Client (PKCE)'
       });
 
-      const requestStart = Date.now()
-      const { data, error } = await authClient.auth.signInWithOtp({
-        email,
+      const requestStart = Date.now();
+      const { error } = await authClient.auth.signInWithOtp({
+        email: email.toLowerCase().trim(),
         options: {
-          emailRedirectTo: redirectUrl,
+          // Don't set emailRedirectTo - this makes Supabase send OTP code instead of magic link
+          shouldCreateUser: true,
         },
       });
-      const requestDuration = Date.now() - requestStart
+      const requestDuration = Date.now() - requestStart;
 
       if (error) {
-        console.error('[Magic Link Request] ❌ FAILED', {
+        console.error('[OTP Request] ❌ FAILED', {
           timestamp: new Date().toISOString(),
           duration_ms: requestDuration,
           email: email.toLowerCase().trim(),
-          redirect_url: redirectUrl,
           error: {
             message: error.message,
             status: error.status,
             name: error.name
           },
-          user_agent: navigator.userAgent,
-          origin: window.location.origin
         });
         
-        toast.error("Failed to send magic link", {
+        toast.error("Failed to send verification code", {
           description: error.message,
         });
       } else {
-        console.log('[Magic Link Request] ✅ SUCCESS', {
+        console.log('[OTP Request] ✅ SUCCESS', {
           timestamp: new Date().toISOString(),
           duration_ms: requestDuration,
           email: email.toLowerCase().trim(),
-          redirect_url: redirectUrl,
-          message: 'Magic link email sent successfully',
-          has_response_data: !!data,
-          has_user: !!(data && data.user),
-          has_session: !!(data && data.session)
+          message: 'OTP code sent successfully',
         });
         
-        toast.success("Magic link sent!", {
-          description: "Check your email for a login link.",
+        toast.success("Verification code sent!", {
+          description: "Check your email for a 6-digit code.",
         });
-        setEmail("");
+        setFormStep('otp');
       }
     } catch {
       toast.error("An unexpected error occurred");
@@ -226,8 +221,219 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
     }
   };
 
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!otpCode.trim() || otpCode.length !== 6) {
+      toast.error("Please enter the 6-digit verification code");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const authClient = createAuthClient();
+      const supabase = createClient();
+
+      console.log('[OTP Verify]', {
+        timestamp: new Date().toISOString(),
+        email: email.toLowerCase().trim(),
+        otp_length: otpCode.length,
+      });
+
+      const verifyStart = Date.now();
+      const { data, error } = await authClient.auth.verifyOtp({
+        email: email.toLowerCase().trim(),
+        token: otpCode,
+        type: 'email',
+      });
+      const verifyDuration = Date.now() - verifyStart;
+
+      if (error) {
+        console.error('[OTP Verify] ❌ FAILED', {
+          timestamp: new Date().toISOString(),
+          duration_ms: verifyDuration,
+          email: email.toLowerCase().trim(),
+          error: {
+            message: error.message,
+            status: error.status,
+            name: error.name
+          },
+        });
+        
+        toast.error("Verification failed", {
+          description: error.message.includes('expired') 
+            ? "The code has expired. Please request a new one."
+            : error.message.includes('invalid')
+            ? "Invalid code. Please check and try again."
+            : error.message,
+        });
+        return;
+      }
+
+      if (!data.session || !data.user) {
+        toast.error("Verification failed", {
+          description: "Unable to create session. Please try again.",
+        });
+        return;
+      }
+
+      // Sync the session to the main cookie-based client
+      const { error: syncError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+
+      if (syncError) {
+        console.error('[OTP Verify] ❌ SESSION_SYNC_FAILED', syncError);
+      }
+
+      console.log('[OTP Verify] ✅ SUCCESS', {
+        timestamp: new Date().toISOString(),
+        duration_ms: verifyDuration,
+        user_id: data.user.id,
+        user_email: data.user.email,
+        session_synced: !syncError,
+      });
+
+      toast.success("Signed in successfully!");
+
+      // Check if user has completed organization setup
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id, domain, organization_id, org_role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.log('[OTP Verify] Profile not found, redirecting to setup');
+        router.push('/setup/organization');
+        return;
+      }
+
+      // Check organization onboarding status
+      const { data: organizations } = await supabase
+        .from('organizations')
+        .select('id, onboarding_completed_at')
+        .eq('domain', profile.domain)
+        .not('onboarding_completed_at', 'is', null)
+        .limit(1);
+
+      const organization = organizations?.[0];
+      const hasOrgOnboardingCompleted = !!organization?.onboarding_completed_at;
+      const hasUserCompletedProfile = !!profile.org_role;
+
+      if (!hasOrgOnboardingCompleted || !hasUserCompletedProfile) {
+        router.push('/setup/organization');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToEmail = () => {
+    setFormStep('email');
+    setOtpCode('');
+  };
+
+  const handleResendCode = async () => {
+    setIsLoading(true);
+    try {
+      const authClient = createAuthClient();
+      const { error } = await authClient.auth.signInWithOtp({
+        email: email.toLowerCase().trim(),
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+
+      if (error) {
+        toast.error("Failed to resend code", {
+          description: error.message,
+        });
+      } else {
+        toast.success("New code sent!", {
+          description: "Check your email for a fresh 6-digit code.",
+        });
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (formStep === 'otp') {
+    return (
+      <div className="mt-8 max-w-lg">
+        <div className="mb-4">
+          <button
+            onClick={handleBackToEmail}
+            className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            disabled={isLoading}
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back
+          </button>
+        </div>
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground">
+            Enter the 6-digit code sent to <span className="font-medium text-foreground">{email}</span>
+          </p>
+        </div>
+        <form onSubmit={handleOtpSubmit} className="space-y-4">
+          <Input
+            id="otp-input"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            placeholder="000000"
+            value={otpCode}
+            onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+            className="h-12 text-center text-2xl tracking-[0.5em] font-mono bg-background border-border rounded-md px-4 focus:border-primary-dark focus:ring-2 focus:ring-primary/20"
+            disabled={isLoading}
+            autoFocus
+            aria-label="Verification code"
+          />
+          <Button
+            id="verify-otp-button"
+            type="submit"
+            size="lg"
+            className="w-full h-12 text-base font-medium rounded-md bg-primary-dark hover:bg-primary-darker text-white transition-colors duration-200"
+            disabled={isLoading || otpCode.length !== 6}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              "Verify & Sign In"
+            )}
+          </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            Didn&apos;t receive the code?{" "}
+            <button
+              type="button"
+              onClick={handleResendCode}
+              className="text-primary-dark hover:text-primary-darker font-medium transition-colors"
+              disabled={isLoading}
+            >
+              Resend
+            </button>
+          </p>
+        </form>
+      </div>
+    );
+  }
+
   return (
-    <form id="hero-cta-form" onSubmit={handleMagicLinkSubmit} className="mt-8">
+    <form id="hero-cta-form" onSubmit={handleEmailSubmit} className="mt-8">
       <div className="flex max-w-lg flex-col gap-3 sm:flex-row">
         <Input
           id="hero-email-input"
@@ -246,8 +452,17 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
           className="h-12 px-6 text-base font-medium rounded-md bg-primary-dark hover:bg-primary-darker text-white transition-colors duration-200"
           disabled={isLoading}
         >
-          {isLoading ? "Sending..." : "Get Started"}
-          <ArrowRight className="ml-2 h-4 w-4" />
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              Get Started
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </form>

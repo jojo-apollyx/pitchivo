@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient, createAuthClient } from '@/lib/supabase/client'
 
@@ -90,6 +90,9 @@ function AuthCallbackContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [browserWarning, setBrowserWarning] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  
+  // Ref to prevent double execution in React Strict Mode
+  const processingCode = useRef<string | null>(null)
 
   useEffect(() => {
     // Check browser compatibility on mount
@@ -190,6 +193,13 @@ function AuthCallbackContent() {
         
         // Step 3a: Handle PKCE code exchange
         if (code) {
+          // Prevent double execution for the same code
+          if (processingCode.current === code) {
+            console.log('[Auth Callback] Already processing this code, skipping duplicate execution')
+            return
+          }
+          processingCode.current = code
+
           logAuthStep('PKCE_CODE_DETECTED', {
             has_code: !!code,
             code_length: code.length,
@@ -244,16 +254,31 @@ function AuthCallbackContent() {
             }, 2000)
             return
           }
+
+          // CRITICAL: Sync the session to the main cookie-based client (supabase)
+          // The authClient (PKCE) stores session in localStorage, but the rest of the app uses cookies (supabase client).
+          // We must manually set the session on the cookie client using the tokens we just got.
+          const { error: syncError } = await supabase.auth.setSession({
+            access_token: exchangeData.session.access_token,
+            refresh_token: exchangeData.session.refresh_token
+          })
+
+          if (syncError) {
+            console.error('[Auth Callback] ❌ SESSION_SYNC_FAILED', syncError)
+            // We continue anyway as the localStorage session might be enough for client-side, 
+            // but SSR might fail until next refresh
+          }
           
           logAuthStep('PKCE_CODE_EXCHANGED', {
             duration_ms: exchangeDuration,
             user_id: exchangeData.user.id,
             user_email: exchangeData.user.email,
-            session_expires_at: exchangeData.session.expires_at
+            session_expires_at: exchangeData.session.expires_at,
+            session_synced: !syncError
           })
           
           // Continue with session setup (skip to Step 6)
-          // The session is already set by exchangeCodeForSession, so we can proceed to user/profile checks
+          // The session is already set by exchangeCodeForSession (and now synced), so we can proceed to user/profile checks
         } else {
           // Step 3b: Parse tokens from both hash fragment and query parameters
           // Supabase can send tokens in either location depending on configuration
