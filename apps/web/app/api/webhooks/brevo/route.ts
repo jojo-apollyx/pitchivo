@@ -134,7 +134,7 @@ async function processBrevoEvent(event: any) {
     const allTags = tags || (tag ? [tag] : [])
     console.log(`🏷️  All tags:`, allTags)
     
-    // Look for brevo_email_ tag
+    // Look for brevo_email_ tag (primary method)
     const brevoEmailTag = allTags.find((t: string) => 
       t?.startsWith('brevo_email_')
     )
@@ -175,169 +175,32 @@ async function processBrevoEvent(event: any) {
         }
       }
     } else if (messageId) {
-      // Fallback: try to find by message ID and email
-      console.log('🔍 No brevo_email_ tag, looking up by message ID')
-      
-      // Brevo webhooks send message IDs in SMTP format: <id@domain>
-      // But Brevo API might return just the ID part
-      // Try multiple matching strategies
-      let scheduledEmail = null
-      let lookupError = null
-      
-      // Strategy 1: Exact match
-      console.log('🔍 Strategy 1: Trying exact message ID match')
+      // Fallback: try to find by exact message ID match only
+      console.log('🔍 No brevo_email_ tag, looking up by exact message ID')
       console.log(`   Search criteria: messageId="${messageId}", email="${email}"`)
-      const strategy1Start = Date.now()
-      let { data, error } = await supabaseAdmin
+      const lookupStart = Date.now()
+      const { data: scheduledEmail, error: lookupError } = await supabaseAdmin
         .from('brevo_transactional_emails')
         .select('brevo_email_id, campaign_id, recipient_email, subject, status, brevo_message_id')
         .eq('brevo_message_id', messageId)
         .eq('recipient_email', email)
         .maybeSingle()
-      const strategy1Duration = Date.now() - strategy1Start
+      const lookupDuration = Date.now() - lookupStart
       
-      if (!error && data) {
-        scheduledEmail = data
-        console.log(`✅ Strategy 1: Found email by exact message ID match (${strategy1Duration}ms)`)
-        console.log(`   Found: brevo_email_id=${data.brevo_email_id}, campaign_id=${data.campaign_id || 'null'}`)
-      } else {
-        if (error) {
-          console.log(`❌ Strategy 1: No match (${strategy1Duration}ms, error: ${error.message || 'not found'})`)
-        } else {
-          console.log(`❌ Strategy 1: No match (${strategy1Duration}ms, no records found)`)
-        }
-        
-        // Strategy 2: Try without angle brackets (if present)
-        const messageIdWithoutBrackets = messageId.replace(/^<|>$/g, '')
-        if (!scheduledEmail && messageIdWithoutBrackets !== messageId) {
-          console.log(`🔍 Strategy 2: Trying message ID without angle brackets`)
-          console.log(`   Search criteria: messageId="${messageIdWithoutBrackets}", email="${email}"`)
-          const strategy2Start = Date.now()
-          const { data: data2, error: error2 } = await supabaseAdmin
-            .from('brevo_transactional_emails')
-            .select('brevo_email_id, campaign_id, recipient_email, subject, status, brevo_message_id')
-            .eq('brevo_message_id', messageIdWithoutBrackets)
-            .eq('recipient_email', email)
-            .maybeSingle()
-          const strategy2Duration = Date.now() - strategy2Start
-          
-          if (!error2 && data2) {
-            scheduledEmail = data2
-            console.log(`✅ Strategy 2: Found email by message ID without brackets (${strategy2Duration}ms)`)
-            console.log(`   Found: brevo_email_id=${data2.brevo_email_id}, campaign_id=${data2.campaign_id || 'null'}`)
-          } else if (error2) {
-            console.log(`❌ Strategy 2: No match (${strategy2Duration}ms, error: ${error2.message || 'not found'})`)
-            lookupError = error2
-          } else {
-            console.log(`❌ Strategy 2: No match (${strategy2Duration}ms, no records found)`)
-          }
-        }
-        
-        // Strategy 3: Try matching by extracting core ID from SMTP format
-        // Extract the part before @ if it looks like an SMTP message ID
-        if (!scheduledEmail && messageId.includes('@')) {
-          const coreId = messageId.split('@')[0].replace(/^<|>$/g, '')
-          if (coreId && coreId !== messageId && coreId !== messageIdWithoutBrackets) {
-            console.log(`🔍 Strategy 3: Trying extracted core ID from SMTP format`)
-            console.log(`   Extracted core ID: "${coreId}" (from "${messageId}")`)
-            console.log(`   Search criteria: messageId="${coreId}", email="${email}"`)
-            const strategy3Start = Date.now()
-            const { data: data3, error: error3 } = await supabaseAdmin
-              .from('brevo_transactional_emails')
-              .select('brevo_email_id, campaign_id, recipient_email, subject, status, brevo_message_id')
-              .eq('brevo_message_id', coreId)
-              .eq('recipient_email', email)
-              .maybeSingle()
-            const strategy3Duration = Date.now() - strategy3Start
-            
-            if (!error3 && data3) {
-              scheduledEmail = data3
-              console.log(`✅ Strategy 3: Found email by extracted core ID (${strategy3Duration}ms)`)
-              console.log(`   Found: brevo_email_id=${data3.brevo_email_id}, campaign_id=${data3.campaign_id || 'null'}`)
-            } else if (error3) {
-              console.log(`❌ Strategy 3: No match (${strategy3Duration}ms, error: ${error3.message || 'not found'})`)
-            } else {
-              console.log(`❌ Strategy 3: No match (${strategy3Duration}ms, no records found)`)
-            }
-          }
-        }
-        
-        // Strategy 4: Fallback - find by email + subject + recent timestamp (within last 24 hours)
-        if (!scheduledEmail && subject) {
-          console.log('🔍 Strategy 4: Fallback - Looking up by email + subject + recent timestamp')
-          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-          console.log(`   Search criteria: email="${email}", subject="${subject}", after="${oneDayAgo}", status="sent"`)
-          const strategy4Start = Date.now()
-          const { data: data4, error: error4 } = await supabaseAdmin
-            .from('brevo_transactional_emails')
-            .select('brevo_email_id, campaign_id, recipient_email, subject, status, created_at')
-            .eq('recipient_email', email)
-            .eq('subject', subject)
-            .gte('created_at', oneDayAgo)
-            .eq('status', 'sent')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-          const strategy4Duration = Date.now() - strategy4Start
-          
-          if (!error4 && data4) {
-            scheduledEmail = data4
-            console.log(`✅ Strategy 4: Found email by fallback lookup (${strategy4Duration}ms)`)
-            console.log(`   Found: brevo_email_id=${data4.brevo_email_id}, campaign_id=${data4.campaign_id || 'null'}, created_at=${data4.created_at}`)
-          } else if (error4) {
-            console.log(`❌ Strategy 4: No match (${strategy4Duration}ms, error: ${error4.message || 'not found'})`)
-          } else {
-            console.log(`❌ Strategy 4: No match (${strategy4Duration}ms, no records found)`)
-          }
-        }
-        
-        // Strategy 5: Last resort - find by email only (most recent sent email within 24 hours)
-        if (!scheduledEmail) {
-          console.log('🔍 Strategy 5: Last resort - Looking up by email only (most recent)')
-          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-          console.log(`   Search criteria: email="${email}", after="${oneDayAgo}", status="sent"`)
-          const strategy5Start = Date.now()
-          const { data: data5, error: error5 } = await supabaseAdmin
-            .from('brevo_transactional_emails')
-            .select('brevo_email_id, campaign_id, recipient_email, subject, status, created_at')
-            .eq('recipient_email', email)
-            .gte('created_at', oneDayAgo)
-            .eq('status', 'sent')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-          const strategy5Duration = Date.now() - strategy5Start
-          
-          if (!error5 && data5) {
-            scheduledEmail = data5
-            console.log(`✅ Strategy 5: Found email by email-only lookup (${strategy5Duration}ms)`)
-            console.log(`   Found: brevo_email_id=${data5.brevo_email_id}, campaign_id=${data5.campaign_id || 'null'}, created_at=${data5.created_at}`)
-          } else if (error5) {
-            console.log(`❌ Strategy 5: No match (${strategy5Duration}ms, error: ${error5.message || 'not found'})`)
-          } else {
-            console.log(`❌ Strategy 5: No match (${strategy5Duration}ms, no records found)`)
-          }
-        }
-      }
-      
-      if (scheduledEmail) {
+      if (lookupError) {
+        console.warn(`⚠️  Database lookup error for message ID ${messageId}:`, lookupError)
+        console.warn(`   Error details:`, JSON.stringify(lookupError, null, 2))
+      } else if (scheduledEmail) {
         brevoEmailId = scheduledEmail.brevo_email_id
         campaignId = scheduledEmail.campaign_id
-        console.log(`📧 Found Brevo Email ID via message ID lookup: ${brevoEmailId}`)
-        if (campaignId) {
-          console.log(`🎯 Campaign ID: ${campaignId}`)
-        } else {
-          console.log(`ℹ️  No campaign_id (transactional email only)`)
-        }
+        console.log(`✅ Found email by exact message ID match (${lookupDuration}ms)`)
+        console.log(`   Found: brevo_email_id=${brevoEmailId}, campaign_id=${campaignId || 'null'}`)
       } else {
-        console.warn('⚠️  Could not find brevo transactional email by message ID after trying all strategies')
+        console.warn(`⚠️  Could not find brevo transactional email by exact message ID match (${lookupDuration}ms)`)
         console.warn(`   Message ID: ${messageId}`)
         console.warn(`   Recipient: ${email}`)
         console.warn(`   Subject: ${subject || 'N/A'}`)
         console.warn('   This email may not be tracked in our database (e.g., Supabase Auth emails, external sends)')
-        if (lookupError) {
-          console.warn(`   Last lookup error:`, JSON.stringify(lookupError, null, 2))
-        }
       }
     }
     
@@ -543,79 +406,17 @@ async function recordEmailEvent(brevoEmailId: string | null, campaignId: string 
     let finalBrevoEmailId = brevoEmailId
     let finalCampaignId = campaignId
     
-    if (!finalBrevoEmailId) {
-      console.log(`🔍 [recordEmailEvent] No brevoEmailId provided, attempting to find email record...`)
-      // Try to find by message ID with improved matching
-      let scheduledEmails = null
-      let findError = null
+    if (!finalBrevoEmailId && messageId) {
+      console.log(`🔍 [recordEmailEvent] No brevoEmailId provided, attempting to find by exact message ID...`)
+      console.log(`   Message ID: ${messageId}, Email: ${email}`)
       
-      if (messageId) {
-        console.log(`   Searching by message ID: ${messageId}`)
-        // Strategy 1: Exact match
-        let query = supabaseAdmin
-          .from('brevo_transactional_emails')
-          .select('brevo_email_id, campaign_id')
-          .eq('recipient_email', email)
-          .eq('status', 'sent')
-          .eq('brevo_message_id', messageId)
-        
-        if (campaignId) {
-          query = query.eq('campaign_id', campaignId)
-        }
-        
-        let { data, error } = await query.limit(1)
-        
-        if (!error && data && data.length > 0) {
-          scheduledEmails = data
-          console.log(`   ✅ Found by exact message ID match`)
-        } else {
-          // Strategy 2: Try without angle brackets
-          const messageIdWithoutBrackets = messageId.replace(/^<|>$/g, '')
-          if (messageIdWithoutBrackets !== messageId) {
-            console.log(`   Trying message ID without brackets: ${messageIdWithoutBrackets}`)
-            query = supabaseAdmin
-              .from('brevo_transactional_emails')
-              .select('brevo_email_id, campaign_id')
-              .eq('recipient_email', email)
-              .eq('status', 'sent')
-              .eq('brevo_message_id', messageIdWithoutBrackets)
-            
-            if (campaignId) {
-              query = query.eq('campaign_id', campaignId)
-            }
-            
-            const { data: data2, error: error2 } = await query.limit(1)
-            if (!error2 && data2 && data2.length > 0) {
-              scheduledEmails = data2
-              console.log(`   ✅ Found by message ID without brackets`)
-            } else {
-              findError = error2 || error
-            }
-          } else {
-            findError = error
-          }
-        }
-      } else {
-        console.log(`   No message ID, searching by email${campaignId ? ` + campaign ${campaignId}` : ''}`)
-        // No message ID, try by email + campaign
-        let query = supabaseAdmin
-          .from('brevo_transactional_emails')
-          .select('brevo_email_id, campaign_id')
-          .eq('recipient_email', email)
-          .eq('status', 'sent')
-        
-        if (campaignId) {
-          query = query.eq('campaign_id', campaignId)
-        }
-        
-        const { data, error } = await query.order('created_at', { ascending: false }).limit(1)
-        if (!error && data && data.length > 0) {
-          scheduledEmails = data
-          console.log(`   ✅ Found by email${campaignId ? ' + campaign' : ''} lookup`)
-        } else {
-          findError = error
-        }
-      }
+      const { data: scheduledEmail, error: findError } = await supabaseAdmin
+        .from('brevo_transactional_emails')
+        .select('brevo_email_id, campaign_id')
+        .eq('brevo_message_id', messageId)
+        .eq('recipient_email', email)
+        .eq('status', 'sent')
+        .maybeSingle()
 
       if (findError) {
         console.error(`❌ [recordEmailEvent] Error finding Brevo transactional email:`, findError)
@@ -623,19 +424,22 @@ async function recordEmailEvent(brevoEmailId: string | null, campaignId: string 
         return
       }
 
-      if (!scheduledEmails || scheduledEmails.length === 0) {
-        console.warn(`⚠️  [recordEmailEvent] No Brevo transactional email found`)
+      if (!scheduledEmail) {
+        console.warn(`⚠️  [recordEmailEvent] No Brevo transactional email found by exact message ID`)
         console.warn(`   Email: ${email}`)
-        console.warn(`   Message ID: ${messageId || 'N/A'}`)
-        console.warn(`   Campaign ID: ${campaignId || 'N/A'}`)
+        console.warn(`   Message ID: ${messageId}`)
         return
       }
 
-      finalBrevoEmailId = scheduledEmails[0].brevo_email_id
-      finalCampaignId = scheduledEmails[0].campaign_id
+      finalBrevoEmailId = scheduledEmail.brevo_email_id
+      finalCampaignId = scheduledEmail.campaign_id
       console.log(`✅ [recordEmailEvent] Found email record: brevo_email_id=${finalBrevoEmailId}, campaign_id=${finalCampaignId || 'null'}`)
-    } else {
+    } else if (finalBrevoEmailId) {
       console.log(`✅ [recordEmailEvent] Using provided brevoEmailId: ${finalBrevoEmailId}`)
+    } else {
+      console.warn(`⚠️  [recordEmailEvent] No brevoEmailId and no messageId - cannot find email record`)
+      console.warn(`   Email: ${email}`)
+      return
     }
 
     // Extract metadata from event

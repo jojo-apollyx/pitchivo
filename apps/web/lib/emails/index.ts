@@ -80,80 +80,157 @@ export async function sendEmailWithDefaults(
 
 /**
  * Send waitlist confirmation email (client)
+ * Uses API route for proper tracking
  */
 export async function sendWaitlistConfirmationEmail(data: {
   to: string
   fullName: string
   company: string
 }): Promise<SendEmailResponse> {
-  const template = createWaitlistConfirmationEmail({
-    fullName: data.fullName,
-    company: data.company,
-  })
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/emails/waitlist-confirmation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
 
-  return sendEmailWithDefaults({
-    to: data.to,
-    subject: template.subject,
-    htmlContent: template.html,
-    textContent: template.text,
-  })
+    const result = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.error || 'Failed to send waitlist confirmation email',
+      }
+    }
+
+    return {
+      success: true,
+      messageId: result.messageId,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send waitlist confirmation email',
+    }
+  }
 }
 
 /**
  * Send welcome email (client)
+ * Uses API route for proper tracking
  */
 export async function sendWelcomeEmail(data: {
   to: string
   userName: string
   companyName?: string
 }): Promise<SendEmailResponse> {
-  const template = createWelcomeEmail({
-    userName: data.userName,
-    companyName: data.companyName,
-  })
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/emails/welcome`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
 
-  return sendEmailWithDefaults({
-    to: data.to,
-    subject: template.subject,
-    htmlContent: template.html,
-    textContent: template.text,
-  })
+    const result = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.error || 'Failed to send welcome email',
+      }
+    }
+
+    return {
+      success: true,
+      messageId: result.messageId,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send welcome email',
+    }
+  }
 }
 
 /**
  * Send organization setup email (client)
+ * Uses API route for proper tracking
  */
 export async function sendOrganizationSetupEmail(data: {
   to: string
   userName: string
   companyName: string
 }): Promise<SendEmailResponse> {
-  const template = createOrganizationSetupEmail({
-    userName: data.userName,
-    companyName: data.companyName,
-  })
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/emails/organization-setup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
 
-  return sendEmailWithDefaults({
-    to: data.to,
-    subject: template.subject,
-    htmlContent: template.html,
-    textContent: template.text,
-  })
+    const result = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.error || 'Failed to send organization setup email',
+      }
+    }
+
+    return {
+      success: true,
+      messageId: result.messageId,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send organization setup email',
+    }
+  }
 }
 
 /**
  * Send invitation email (client)
  * Note: Users sign in using magic links on the landing page, not a separate signup page
+ * 
+ * This now uses the API route to ensure proper tracking and webhook matching.
  */
 export async function sendInvitationEmail(data: {
   to: string
   fullName: string
   company: string
 }): Promise<SendEmailResponse> {
-  const template = createInvitationEmail({
-    fullName: data.fullName,
-    company: data.company,
-  })
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Supabase environment variables are not set')
+    return {
+      success: false,
+      error: 'Email service not configured',
+    }
+  }
 
   console.log('📧 Sending invitation email:', {
     to: data.to,
@@ -163,32 +240,59 @@ export async function sendInvitationEmail(data: {
     timestamp: new Date().toISOString(),
   })
 
-  const result = await sendEmailWithDefaults({
-    to: data.to,
-    subject: template.subject,
-    htmlContent: template.html,
-    textContent: template.text,
-  })
+  try {
+    // Get the base URL for API calls
+    const baseUrl = typeof window !== 'undefined' 
+      ? window.location.origin 
+      : process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'
+    
+    // Call API route for sending invitation emails with tracking
+    const response = await fetch(`${baseUrl}/api/emails/invitation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Include cookies for authentication
+      body: JSON.stringify({
+        to: data.to,
+        fullName: data.fullName,
+        company: data.company,
+      }),
+    })
 
-  if (result.success) {
+    const result = await response.json()
+
+    if (!response.ok) {
+      console.error('❌ Failed to send invitation email:', result.error)
+      return {
+        success: false,
+        error: result.error || 'Failed to send invitation email',
+      }
+    }
+
     console.log('✅ Invitation email sent successfully:', {
       to: data.to,
       messageId: result.messageId,
+      brevoEmailId: result.brevoEmailId,
       timestamp: new Date().toISOString(),
     })
-  } else {
-    console.error('❌ Failed to send invitation email:', {
-      to: data.to,
-      error: result.error,
-      timestamp: new Date().toISOString(),
-    })
-  }
 
-  return result
+    return {
+      success: true,
+      messageId: result.messageId,
+    }
+  } catch (error) {
+    console.error('❌ Error sending invitation email:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send invitation email',
+    }
+  }
 }
 
 /**
  * Send waitlist admin notification email (admin)
+ * Uses API route for proper tracking
  */
 export async function sendWaitlistAdminNotification(data: {
   adminEmails: string | string[]
@@ -200,20 +304,44 @@ export async function sendWaitlistAdminNotification(data: {
     note?: string
   }
 }): Promise<SendEmailResponse> {
-  const template = createWaitlistAdminNotificationEmail({
-    waitlistEntry: data.waitlistEntry,
-  })
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_SITE_URL || 'https://pitchivo.com'
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/emails/waitlist-admin-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
 
-  return sendEmailWithDefaults({
-    to: data.adminEmails,
-    subject: template.subject,
-    htmlContent: template.html,
-    textContent: template.text,
-  })
+    const result = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.error || 'Failed to send waitlist admin notification email',
+      }
+    }
+
+    return {
+      success: true,
+      messageId: result.messageId,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send waitlist admin notification email',
+    }
+  }
 }
 
 /**
  * Send RFQ notification email to product owners
+ * Note: This is typically called from server-side API routes, so it uses sendTrackedEmail directly
  */
 export async function sendRfqNotificationEmail(data: {
   to: string | string[]
@@ -239,12 +367,34 @@ export async function sendRfqNotificationEmail(data: {
     industryCode: data.industryCode,
   })
 
-  return sendEmailWithDefaults({
-    to: data.to,
-    subject: template.subject,
-    htmlContent: template.html,
-    textContent: template.text,
-  })
+  // Use tracked email service for proper tracking
+  // This function is called from server-side API routes, so we can use sendTrackedEmail directly
+  const { sendTrackedEmail } = await import('./tracking')
+  
+  // Handle multiple recipients
+  const recipients = Array.isArray(data.to) ? data.to : [data.to]
+  const results = await Promise.all(
+    recipients.map(recipient =>
+      sendTrackedEmail({
+        to: recipient,
+        subject: template.subject,
+        htmlContent: template.html,
+        textContent: template.text,
+        emailType: 'rfq_notification',
+        recipientName: recipient.split('@')[0],
+      })
+    )
+  )
+
+  // Return success if at least one email was sent successfully
+  const success = results.some(r => r.success)
+  const firstResult = results[0]
+
+  return {
+    success,
+    messageId: firstResult?.messageId,
+    error: success ? undefined : firstResult?.error || 'Failed to send RFQ notification email',
+  }
 }
 
 // Export subdomain utilities for promotional emails
