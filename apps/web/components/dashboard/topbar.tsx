@@ -1,8 +1,8 @@
 'use client'
 
-import { Bell, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { UserMenu } from './user-menu'
-import { Button } from '@/components/ui/button'
+import { Notifications } from './notifications'
 
 interface TopbarProps {
   user: {
@@ -35,15 +35,7 @@ export function Topbar({ user, title }: TopbarProps) {
         
         <div className="flex items-center gap-2">
           {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="relative h-10 w-10 rounded-md hover:bg-background-secondary touch-manipulation"
-          >
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            {/* Notification badge */}
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-semantic-error" />
-          </Button>
+          <Notifications />
           
           {/* User menu */}
           <UserMenu user={user} />
