@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { sendInvitationEmail } from '@/lib/emails'
 import { motion } from 'framer-motion'
@@ -443,14 +444,16 @@ export default function AdminWaitlistPage() {
         >
           <div className="max-w-6xl">
             <div className="bg-background-secondary rounded-lg p-6 sm:p-8 transition-colors duration-200">
-              <DataTable
-                columns={columns}
-                data={filteredWaitlist}
-                searchKey="email"
-                searchPlaceholder="Search by email, name, company, or role..."
-                loading={isLoading}
-                emptyMessage="No waitlist entries found"
-              />
+              <TooltipProvider>
+                <DataTable
+                  columns={columns}
+                  data={filteredWaitlist}
+                  searchKey="email"
+                  searchPlaceholder="Search by email, name, company, or role..."
+                  loading={isLoading}
+                  emptyMessage="No waitlist entries found"
+                />
+              </TooltipProvider>
             </div>
           </div>
         </motion.section>

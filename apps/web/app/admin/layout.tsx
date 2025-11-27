@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, getEffectiveUserAndProfile } from '@/lib/auth'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { ThemeProvider } from '@/components/dashboard/theme-provider'
@@ -10,11 +10,14 @@ export default async function AdminLayout({
 }) {
   const { user, profile } = await requireAdmin()
   
+  // Get effective user and profile to get organization colors (handles impersonation)
+  const { organization } = await getEffectiveUserAndProfile()
+  
   // Get color scheme from organization (defaults to Emerald Spark)
   const colorScheme = {
-    primary: '#10B981',
-    secondary: '#059669',
-    accent: '#F87171',
+    primary: organization?.primary_color || '#10B981',
+    secondary: organization?.secondary_color || '#059669',
+    accent: organization?.accent_color || '#F87171',
   }
 
   return (
