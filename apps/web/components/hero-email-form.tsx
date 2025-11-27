@@ -160,18 +160,56 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
       }
 
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      
+      console.log('[Magic Link Request]', {
+        timestamp: new Date().toISOString(),
+        email: email.toLowerCase().trim(),
+        redirect_url: redirectUrl,
+        origin: window.location.origin,
+        user_agent: navigator.userAgent,
+        referrer: document.referrer || 'none'
       });
 
+      const requestStart = Date.now()
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      });
+      const requestDuration = Date.now() - requestStart
+
       if (error) {
+        console.error('[Magic Link Request] ❌ FAILED', {
+          timestamp: new Date().toISOString(),
+          duration_ms: requestDuration,
+          email: email.toLowerCase().trim(),
+          redirect_url: redirectUrl,
+          error: {
+            message: error.message,
+            status: error.status,
+            name: error.name
+          },
+          user_agent: navigator.userAgent,
+          origin: window.location.origin
+        });
+        
         toast.error("Failed to send magic link", {
           description: error.message,
         });
       } else {
+        console.log('[Magic Link Request] ✅ SUCCESS', {
+          timestamp: new Date().toISOString(),
+          duration_ms: requestDuration,
+          email: email.toLowerCase().trim(),
+          redirect_url: redirectUrl,
+          message: 'Magic link email sent successfully',
+          has_response_data: !!data,
+          has_user: !!(data && data.user),
+          has_session: !!(data && data.session)
+        });
+        
         toast.success("Magic link sent!", {
           description: "Check your email for a login link.",
         });

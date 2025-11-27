@@ -165,14 +165,53 @@ async function sendMagicLink(email: string) {
 
     const redirectUrl = `${globalThis.window.location.origin}/auth/callback`
     
-    const { error } = await client.auth.signInWithOtp({
+    console.log('[Magic Link Request]', {
+      timestamp: new Date().toISOString(),
+      email: email.toLowerCase().trim(),
+      redirect_url: redirectUrl,
+      origin: globalThis.window.location.origin,
+      user_agent: navigator.userAgent,
+      referrer: document.referrer || 'none',
+      supabase_url: supabaseUrl ? '✓ Set' : '✗ Missing',
+      supabase_key: supabaseKey ? '✓ Set' : '✗ Missing'
+    });
+    
+    const requestStart = Date.now()
+    const { data, error } = await client.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: redirectUrl,
       },
     });
+    const requestDuration = Date.now() - requestStart
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Magic Link Request] ❌ FAILED', {
+        timestamp: new Date().toISOString(),
+        duration_ms: requestDuration,
+        email: email.toLowerCase().trim(),
+        redirect_url: redirectUrl,
+        error: {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        },
+        user_agent: navigator.userAgent,
+        origin: globalThis.window.location.origin
+      });
+      throw error;
+    }
+
+    console.log('[Magic Link Request] ✅ SUCCESS', {
+      timestamp: new Date().toISOString(),
+      duration_ms: requestDuration,
+      email: email.toLowerCase().trim(),
+      redirect_url: redirectUrl,
+      message: 'Magic link email sent successfully',
+      has_response_data: !!data,
+      has_user: !!(data && data.user),
+      has_session: !!(data && data.session)
+    });
 
     toast.success("Magic link sent!", {
       description: "Check your email for the sign-in link.",
