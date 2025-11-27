@@ -1,12 +1,15 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Building2, Users, MapPin, ExternalLink, Briefcase } from 'lucide-react'
+import { ArrowLeft, Building2, Users, MapPin, ExternalLink, Briefcase, ChevronDown, ChevronUp, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
 import { useEffect, useState } from 'react'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
+import { LoadingIllustration } from '@/components/ui/loading-illustration'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 interface Buyer {
   company: string
@@ -17,6 +20,7 @@ interface Buyer {
   contacts: number
   contactDetails?: Array<{
     name: string
+    email: string | null
     title: string | null
   }>
 }
@@ -42,6 +46,8 @@ export default function MatchedBuyersPage() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     async function loadBuyers() {
@@ -53,6 +59,21 @@ export default function MatchedBuyersPage() {
 
       try {
         setLoading(true)
+        setProgress(0)
+
+        // Simulate progress for dopamine effect
+        const progressInterval = setInterval(() => {
+          setProgress((prev) => {
+            if (prev >= 90) {
+              clearInterval(progressInterval)
+              return 90
+            }
+            // Accelerate then slow down for smooth feel
+            const increment = prev < 30 ? 8 : prev < 70 ? 5 : 2
+            return Math.min(prev + increment, 90)
+          })
+        }, 200)
+
         const response = await fetch('/api/campaigns/generate-buyers', {
           method: 'POST',
           headers: {
@@ -63,6 +84,9 @@ export default function MatchedBuyersPage() {
             productIndustry: draft.productIndustry
           })
         })
+
+        clearInterval(progressInterval)
+        setProgress(100)
 
         if (!response.ok) {
           const errorData = await response.json()
@@ -79,13 +103,23 @@ export default function MatchedBuyersPage() {
           avgContactsPerBuyer: data.avgContactsPerBuyer || 0
         })
 
-        // Save sample buyers with contact counts for later steps
-        const topBuyers = (data.buyers || []).map((b: Buyer) => ({ 
-          company: b.company, 
-          contacts: b.contacts
+        // Save full buyer data with contact details for later steps
+        // Store all buyers (not just top 10) with full contact details including emails
+        const allBuyersWithContacts = (data.buyers || []).map((b: Buyer) => ({
+          company: b.company,
+          companyType: b.companyType,
+          location: b.location,
+          website: b.website,
+          employeeCount: b.employeeCount,
+          contacts: b.contacts,
+          contactDetails: b.contactDetails || []
         }))
         setDraft({
-          sampleBuyers: topBuyers,
+          matchedBuyers: allBuyersWithContacts, // Store full buyer data
+          sampleBuyers: (data.buyers || []).map((b: Buyer) => ({ 
+            company: b.company, 
+            contacts: b.contacts
+          })), // Keep for backward compatibility
           buyerCount: data.totalBuyers || 0,
           totalContacts: data.totalContacts || 0
         })
@@ -93,12 +127,28 @@ export default function MatchedBuyersPage() {
         console.error('Error loading buyers:', err)
         setError(err instanceof Error ? err.message : 'Failed to load buyers')
       } finally {
-        setLoading(false)
+        // Small delay before hiding loading for smooth transition
+        setTimeout(() => {
+          setLoading(false)
+          setProgress(0)
+        }, 300)
       }
     }
 
     loadBuyers()
   }, [draft.productName, draft.productIndustry, setDraft])
+
+  function toggleRow(index: number) {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
 
   function handleNext() {
     nextStep()
@@ -152,8 +202,8 @@ export default function MatchedBuyersPage() {
 
               {/* Buyers Table */}
               {loading ? (
-                <div className="bg-card/50 rounded-xl p-12 text-center">
-                  <p className="text-muted-foreground">Loading matched buyers...</p>
+                <div className="bg-card/50 rounded-xl p-12 sm:p-16 flex items-center justify-center">
+                  <LoadingIllustration size="lg" progress={progress} />
                 </div>
               ) : error ? (
                 <div className="bg-card/50 rounded-xl p-12 text-center">
@@ -178,51 +228,120 @@ export default function MatchedBuyersPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/30">
-                        {buyers.map((buyer, index) => (
-                          <tr key={index} className="hover:bg-accent/5 transition-colors">
-                            <td className="px-4 py-3">
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                  <span className="text-sm font-medium">{buyer.company}</span>
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                                  <Badge variant="outline" className="text-xs">
-                                    <Briefcase className="h-3 w-3 mr-1" />
-                                    {buyer.companyType}
-                                  </Badge>
-                                  {buyer.location && (
-                                    <div className="flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
-                                      <span>{buyer.location}</span>
+                        {buyers.map((buyer, index) => {
+                          const isExpanded = expandedRows.has(index)
+                          const hasContacts = buyer.contactDetails && buyer.contactDetails.length > 0
+                          
+                          return (
+                            <React.Fragment key={index}>
+                              <tr 
+                                className={cn(
+                                  "hover:bg-accent/5 transition-colors",
+                                  hasContacts && "cursor-pointer"
+                                )}
+                                onClick={() => hasContacts && toggleRow(index)}
+                              >
+                                <td className="px-4 py-3">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                      <span className="text-sm font-medium">{buyer.company}</span>
+                                      {hasContacts && (
+                                        <motion.div
+                                          animate={{ rotate: isExpanded ? 180 : 0 }}
+                                          transition={{ duration: 0.2 }}
+                                        >
+                                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                        </motion.div>
+                                      )}
                                     </div>
-                                  )}
-                                  {buyer.employeeCount && (
-                                    <span>• {buyer.employeeCount} employees</span>
-                                  )}
-                                  {buyer.website && buyer.website.trim() !== '' && (
-                                    <a
-                                      href={buyer.website}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-primary hover:underline"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <ExternalLink className="h-3 w-3" />
-                                      <span>Website</span>
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center justify-end gap-1 text-right">
-                                <Users className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-sm">{buyer.contacts}</span>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                    <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                                      <Badge variant="outline" className="text-xs">
+                                        <Briefcase className="h-3 w-3 mr-1" />
+                                        {buyer.companyType}
+                                      </Badge>
+                                      {buyer.location && (
+                                        <div className="flex items-center gap-1">
+                                          <MapPin className="h-3 w-3" />
+                                          <span>{buyer.location}</span>
+                                        </div>
+                                      )}
+                                      {buyer.employeeCount && (
+                                        <span>• {buyer.employeeCount} employees</span>
+                                      )}
+                                      {buyer.website && buyer.website.trim() !== '' && (
+                                        <a
+                                          href={buyer.website}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1 text-primary hover:underline"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <ExternalLink className="h-3 w-3" />
+                                          <span>Website</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-end gap-1 text-right">
+                                    <Users className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-sm">{buyer.contacts}</span>
+                                  </div>
+                                </td>
+                              </tr>
+                              {hasContacts && (
+                                <tr>
+                                  <td colSpan={2} className="p-0">
+                                    <AnimatePresence>
+                                      {isExpanded && (
+                                        <motion.div
+                                          initial={{ opacity: 0, height: 0 }}
+                                          animate={{ opacity: 1, height: 'auto' }}
+                                          exit={{ opacity: 0, height: 0 }}
+                                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                          className="overflow-hidden"
+                                        >
+                                          <div className="px-4 py-3 bg-muted/20">
+                                            <div className="space-y-2">
+                                              <div className="text-xs font-semibold text-muted-foreground mb-2">
+                                                Contact Details
+                                              </div>
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {buyer.contactDetails?.map((contact, contactIndex) => (
+                                                  <motion.div
+                                                    key={contactIndex}
+                                                    initial={{ opacity: 0, x: -8 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: contactIndex * 0.05 }}
+                                                    className="flex items-center gap-2 p-2 rounded-md bg-background/50 border border-border/30"
+                                                  >
+                                                    <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                      <div className="text-sm font-medium truncate">
+                                                        {contact.name}
+                                                      </div>
+                                                      {contact.title && (
+                                                        <div className="text-xs text-muted-foreground truncate">
+                                                          {contact.title}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </motion.div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

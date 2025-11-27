@@ -12,6 +12,7 @@ interface Buyer {
   contacts: number
   contactDetails?: Array<{
     name: string
+    email: string | null
     title: string | null
   }>
 }
@@ -72,9 +73,9 @@ export async function POST(request: NextRequest) {
       // Generate embedding for the product name using Azure OpenAI
       const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME
       const apiKey = process.env.AZURE_OPENAI_API_KEY
-      // Use text-embedding-3-large (better) or text-embedding-ada-002 (fallback)
-      // Available models: text-embedding-ada-002, text-embedding-3-large
-      const embeddingDeployment = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-large'
+      // Use embedding model from env or fallback to text-embedding-ada-002
+      // Available models: text-embedding-ada-002, text-embedding-3-large, etc.
+      const embeddingDeployment = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-ada-002'
 
       if (resourceName && apiKey) {
         const azure = createAzure({
@@ -82,36 +83,46 @@ export async function POST(request: NextRequest) {
           apiKey
         })
 
-        // Generate embedding using Azure OpenAI embedding model
-        const { embedding: queryEmbedding } = await embed({
-          model: azure.embedding(embeddingDeployment),
-          value: productName
-        })
+        try {
+          // Generate embedding using Azure OpenAI embedding model
+          const { embedding: queryEmbedding } = await embed({
+            model: azure.embedding(embeddingDeployment),
+            value: productName
+          })
 
-        // Use vector similarity search (cosine distance)
-        // Find items with similar embeddings (threshold: 0.7 similarity = 0.3 distance)
-        const { data: semanticMatches, error: semanticError } = await supabase.rpc('match_market_items_semantic', {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.7,
-          match_count: 20
-        })
+          // Use vector similarity search (cosine distance)
+          // Find items with similar embeddings (threshold: 0.7 similarity = 0.3 distance)
+          const { data: semanticMatches, error: semanticError } = await supabase.rpc('match_market_items_semantic', {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.7,
+            match_count: 20
+          })
 
-        if (!semanticError && semanticMatches && semanticMatches.length > 0) {
-          marketItems = semanticMatches.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            aliases: item.aliases || []
-          }))
-          console.log(`[Generate Buyers] Found ${marketItems.length} items via semantic search`)
-        } else if (semanticError) {
-          console.warn('[Generate Buyers] Semantic search error:', semanticError.message)
+          if (!semanticError && semanticMatches && semanticMatches.length > 0) {
+            marketItems = semanticMatches.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              aliases: item.aliases || []
+            }))
+            console.log(`[Generate Buyers] Found ${marketItems.length} items via semantic search`)
+          } else if (semanticError) {
+            console.warn('[Generate Buyers] Semantic search error:', semanticError.message)
+            // Fall through to exact matching fallback
+          }
+        } catch (embeddingError: any) {
+          // Handle embedding model errors gracefully
+          if (embeddingError?.message?.includes('Unavailable model') || embeddingError?.message?.includes('model')) {
+            console.warn(`[Generate Buyers] Embedding model '${embeddingDeployment}' not available, falling back to exact matching`)
+          } else {
+            console.warn('[Generate Buyers] Embedding generation failed, falling back to exact matching:', embeddingError?.message || embeddingError)
+          }
           // Fall through to exact matching fallback
         }
       } else {
         console.warn('[Generate Buyers] Azure OpenAI not configured, falling back to exact matching')
       }
     } catch (semanticError) {
-      console.warn('[Generate Buyers] Semantic search failed, falling back to exact matching:', semanticError)
+      console.warn('[Generate Buyers] Semantic search failed, falling back to exact matching:', semanticError instanceof Error ? semanticError.message : semanticError)
       // Fall through to exact matching fallback
     }
 
@@ -237,9 +248,10 @@ export async function POST(request: NextRequest) {
     // Step 4: Get contacts for each organization
     const { data: contacts, error: contactsError } = await supabase
       .from('leads_contacts')
-      .select('org_id, first_name, last_name, full_name, title')
+      .select('org_id, first_name, last_name, full_name, title, email')
       .in('org_id', orgIds)
       .eq('is_current', true)
+      .not('email', 'is', null) // Only include contacts with email addresses
 
     if (contactsError) {
       console.error('[Generate Buyers] Error finding contacts:', contactsError)
@@ -329,8 +341,9 @@ export async function POST(request: NextRequest) {
       // Build contact details
       const contactDetails = orgContacts.slice(0, 10).map(contact => ({
         name: contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown',
+        email: contact.email || null,
         title: contact.title
-      }))
+      })).filter(contact => contact.email) // Only include contacts with email
 
       return {
         company: org.name,

@@ -163,6 +163,7 @@ export default function ReviewLaunchPage() {
       if (error) throw error
 
       // Create campaign in Smartlead with multi-tenant naming
+      let smartleadCampaignCreated = false
       if (data) {
         try {
           // Get user and org info for naming
@@ -202,6 +203,7 @@ export default function ReviewLaunchPage() {
           } else {
             const smartleadData = await smartleadResponse.json()
             console.log('Campaign created in Smartlead:', smartleadData.smartlead_campaign_id)
+            smartleadCampaignCreated = true
             toast.success('Campaign created and started successfully')
           }
         } catch (smartleadError) {
@@ -213,33 +215,48 @@ export default function ReviewLaunchPage() {
         }
       }
 
-      // Add sample buyers as campaign leads
-      if (data && (draft as any).sampleBuyers && (draft as any).sampleBuyers.length > 0) {
+      // Add matched buyers and their contacts as campaign leads
+      // Wait a moment for Smartlead campaign creation to complete and database to update
+      if (smartleadCampaignCreated) {
+        // Small delay to ensure database is updated with smartlead_campaign_id
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+      
+      if (data && (draft as any).matchedBuyers && (draft as any).matchedBuyers.length > 0) {
         try {
-          const sampleBuyers = (draft as any).sampleBuyers
+          const matchedBuyers = (draft as any).matchedBuyers
           const leads: any[] = []
           
-          // Flatten sample buyers into individual contact leads
-          sampleBuyers.forEach((buyer: any) => {
-            // Add all contacts from each buyer
+          // Flatten matched buyers into individual contact leads
+          matchedBuyers.forEach((buyer: any) => {
+            // Add all contacts from each buyer that have email addresses
             if (buyer.contactDetails && buyer.contactDetails.length > 0) {
               buyer.contactDetails.forEach((contact: any) => {
-                leads.push({
-                  email: contact.email,
-                  name: contact.name,
-                  title: contact.title || contact.role,
-                  company: buyer.company,
-                  country: buyer.country,
-                  industry: buyer.industry,
-                  status: 'active'
-                })
+                // Only add leads with valid email addresses
+                if (contact.email && contact.email.trim()) {
+                  // Extract country from location (format: "City, State, Country" or "City, Country")
+                  const locationParts = buyer.location ? buyer.location.split(',').map((p: string) => p.trim()) : []
+                  const country = locationParts.length > 0 ? locationParts[locationParts.length - 1] : null
+                  
+                  leads.push({
+                    email: contact.email.trim(),
+                    name: contact.name || 'Unknown',
+                    title: contact.title || null,
+                    company: buyer.company,
+                    country: country || null,
+                    industry: null, // Industry not available in buyer data
+                    status: 'active'
+                  })
+                }
               })
             }
           })
           
           // Insert leads if we have any
           if (leads.length > 0) {
-            await fetch('/api/admin/campaigns/leads', {
+            console.log(`[Campaign Launch] Adding ${leads.length} leads to campaign ${data.campaign_id}`)
+            
+            const leadsResponse = await fetch('/api/admin/campaigns/leads', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -247,11 +264,29 @@ export default function ReviewLaunchPage() {
                 leads
               })
             })
+
+            if (!leadsResponse.ok) {
+              const errorData = await leadsResponse.json()
+              console.error('Error adding campaign leads:', errorData)
+              toast.error('Failed to add some leads', {
+                description: 'Campaign created but some leads could not be added. You can add them manually later.'
+              })
+            } else {
+              console.log(`[Campaign Launch] Successfully added ${leads.length} leads to campaign`)
+              toast.success(`Added ${leads.length} leads to campaign`)
+            }
+          } else {
+            console.warn('[Campaign Launch] No leads with email addresses found to add')
           }
         } catch (leadError) {
           console.error('Error adding campaign leads:', leadError)
+          toast.error('Failed to add leads', {
+            description: 'Campaign created but leads could not be added. You can add them manually later.'
+          })
           // Don't fail the campaign launch if leads fail to add
         }
+      } else {
+        console.warn('[Campaign Launch] No matched buyers found in draft')
       }
 
       // Reset draft

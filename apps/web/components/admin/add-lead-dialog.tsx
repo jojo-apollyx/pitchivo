@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Search, Plus, Users, Building2, Loader2 } from 'lucide-react'
+import { Search, Plus, Users, Building2, Loader2, Package, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Lead } from '@/lib/mock-data/leads'
 import {
   useReactTable,
@@ -36,10 +36,26 @@ interface Contact {
 }
 
 interface Company {
+  id?: string
   company: string
   industry: string
   country: string
+  location?: string
+  domain?: string | null
+  business_type?: string[]
   contacts: Contact[]
+  products?: Product[]
+  contactCount?: number
+  interaction_type?: string
+}
+
+interface Product {
+  id: string
+  name: string
+  category?: string
+  item_type?: string
+  aliases?: string[]
+  interaction_type?: string
 }
 
 interface AddLeadDialogProps {
@@ -76,40 +92,141 @@ export function AddLeadDialog({
   const [newLead, setNewLead] = useState({ email: '', name: '', title: '', company: '' })
   
   // Database search state
+  const [searchMode, setSearchMode] = useState<'company' | 'product'>('company')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set())
   const [companies, setCompanies] = useState<Company[]>([])
+  const [products, setProducts] = useState<Array<{ id: string; name: string; category?: string; item_type?: string; aliases?: string[]; companies: Company[] }>>([])
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set())
   const [searching, setSearching] = useState(false)
   
-  // Debounced search effect
+  // Autocomplete state
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{ id: string; name: string; display: string; [key: string]: any }>>([])
+  const [showAutocomplete, setShowAutocomplete] = useState(false)
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+  
+  // Debounced autocomplete effect
   useEffect(() => {
-    if (!searchTerm || searchTerm.trim().length < 2) {
-      setCompanies([])
+    if (!searchTerm || searchTerm.trim().length < 1) {
+      setAutocompleteSuggestions([])
+      setShowAutocomplete(false)
       return
     }
 
     const timeoutId = setTimeout(async () => {
-      await searchLeads(searchTerm)
-    }, 300) // 300ms debounce
+      await fetchAutocompleteSuggestions(searchTerm)
+    }, 200) // 200ms debounce for autocomplete
 
     return () => clearTimeout(timeoutId)
-  }, [searchTerm])
+  }, [searchTerm, searchMode])
 
-  async function searchLeads(term: string) {
+  // Debounced full search effect
+  useEffect(() => {
+    if (!searchTerm || searchTerm.trim().length < 2) {
+      setCompanies([])
+      setProducts([])
+      setShowAutocomplete(false)
+      return
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setShowAutocomplete(false) // Hide autocomplete when doing full search
+      if (searchMode === 'company') {
+        await searchByCompany(searchTerm)
+      } else {
+        await searchByProduct(searchTerm)
+      }
+    }, 500) // 500ms debounce for full search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, searchMode])
+
+  async function fetchAutocompleteSuggestions(term: string) {
+    if (!term || term.trim().length < 1) {
+      setAutocompleteSuggestions([])
+      setShowAutocomplete(false)
+      return
+    }
+
+    try {
+      const endpoint = searchMode === 'company' 
+        ? `/api/admin/leads/autocomplete-company?q=${encodeURIComponent(term)}&limit=10`
+        : `/api/admin/leads/autocomplete-product?q=${encodeURIComponent(term)}&limit=10`
+      
+      const response = await fetch(endpoint)
+      if (!response.ok) return
+      
+      const data = await response.json()
+      setAutocompleteSuggestions(data.suggestions || [])
+      setShowAutocomplete((data.suggestions || []).length > 0)
+      setSelectedSuggestionIndex(-1)
+    } catch (error) {
+      console.error('Error fetching autocomplete:', error)
+      setAutocompleteSuggestions([])
+      setShowAutocomplete(false)
+    }
+  }
+
+  async function searchByCompany(term: string) {
     if (!term || term.trim().length < 2) return
 
     setSearching(true)
     try {
-      const response = await fetch(`/api/admin/leads/search?q=${encodeURIComponent(term)}&limit=50`)
-      if (!response.ok) throw new Error('Failed to search leads')
+      const response = await fetch(`/api/admin/leads/search-by-company?q=${encodeURIComponent(term)}&limit=50`)
+      if (!response.ok) throw new Error('Failed to search by company')
       
       const data = await response.json()
       setCompanies(data.companies || [])
+      setProducts([])
     } catch (error) {
-      console.error('Error searching leads:', error)
-      toast.error('Failed to search leads')
+      console.error('Error searching by company:', error)
+      toast.error('Failed to search by company')
     } finally {
       setSearching(false)
+    }
+  }
+
+  async function searchByProduct(term: string) {
+    if (!term || term.trim().length < 2) return
+
+    setSearching(true)
+    try {
+      const response = await fetch(`/api/admin/leads/search-by-product?q=${encodeURIComponent(term)}&limit=50`)
+      if (!response.ok) throw new Error('Failed to search by product')
+      
+      const data = await response.json()
+      setProducts(data.products || [])
+      setCompanies([])
+    } catch (error) {
+      console.error('Error searching by product:', error)
+      toast.error('Failed to search by product')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function toggleCompanyExpansion(companyId: string) {
+    const newExpanded = new Set(expandedCompanies)
+    if (newExpanded.has(companyId)) {
+      newExpanded.delete(companyId)
+    } else {
+      newExpanded.add(companyId)
+    }
+    setExpandedCompanies(newExpanded)
+  }
+
+  function handleSelectSuggestion(suggestion: { id: string; name: string; display: string; [key: string]: any }) {
+    setSearchTerm(suggestion.name)
+    setShowAutocomplete(false)
+    setAutocompleteSuggestions([])
+    setSelectedSuggestionIndex(-1)
+    
+    // Trigger search immediately
+    if (searchMode === 'company') {
+      searchByCompany(suggestion.name)
+    } else {
+      searchByProduct(suggestion.name)
     }
   }
 
@@ -360,8 +477,21 @@ export function AddLeadDialog({
     
     selectedContacts.forEach(key => {
       const [companyName, email] = key.split('|')
-      const company = companies.find(c => c.company === companyName)
-      const contact = company?.contacts?.find(c => c.email === email)
+      
+      // Try to find in companies (search by company mode)
+      let company = companies.find(c => c.company === companyName)
+      let contact = company?.contacts?.find(c => c.email === email)
+      
+      // If not found, try to find in products' companies (search by product mode)
+      if (!company || !contact) {
+        for (const product of products) {
+          company = product.companies.find(c => c.company === companyName)
+          if (company) {
+            contact = company.contacts.find(c => c.email === email)
+            if (contact) break
+          }
+        }
+      }
       
       if (company && contact) {
         leads.push({
@@ -483,16 +613,124 @@ export function AddLeadDialog({
           {/* Database Search Tab */}
           <TabsContent value="database" className="flex-1 flex flex-col space-y-4 min-h-0">
             <div className="space-y-4">
+              {/* Search Mode Toggle */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={searchMode === 'company' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setSearchMode('company')
+                    setSearchTerm('')
+                    setCompanies([])
+                    setProducts([])
+                  }}
+                  className="gap-2"
+                >
+                  <Building2 className="h-4 w-4" />
+                  Search by Company
+                </Button>
+                <Button
+                  variant={searchMode === 'product' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setSearchMode('product')
+                    setSearchTerm('')
+                    setCompanies([])
+                    setProducts([])
+                  }}
+                  className="gap-2"
+                >
+                  <Package className="h-4 w-4" />
+                  Search by Product
+                </Button>
+              </div>
+
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                 <Input
-                  placeholder="Search by company, industry, contact name, or email... (min 2 chars)"
+                  ref={searchInputRef}
+                  placeholder={
+                    searchMode === 'company'
+                      ? 'Search by company name...'
+                      : 'Search by product name...'
+                  }
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    setShowAutocomplete(true)
+                  }}
+                  onFocus={() => {
+                    if (autocompleteSuggestions.length > 0) {
+                      setShowAutocomplete(true)
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Delay hiding to allow click on suggestion
+                    setTimeout(() => {
+                      if (!document.activeElement?.closest('.autocomplete-dropdown')) {
+                        setShowAutocomplete(false)
+                      }
+                    }, 200)
+                  }}
+                  onKeyDown={(e) => {
+                    if (!showAutocomplete || autocompleteSuggestions.length === 0) return
+                    
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      setSelectedSuggestionIndex(prev => 
+                        prev < autocompleteSuggestions.length - 1 ? prev + 1 : prev
+                      )
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1)
+                    } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+                      e.preventDefault()
+                      handleSelectSuggestion(autocompleteSuggestions[selectedSuggestionIndex])
+                    } else if (e.key === 'Escape') {
+                      setShowAutocomplete(false)
+                    }
+                  }}
                   className="pl-9"
                 />
                 {searching && (
                   <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+
+                {/* Autocomplete Dropdown */}
+                {showAutocomplete && autocompleteSuggestions.length > 0 && (
+                  <div className="autocomplete-dropdown absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {autocompleteSuggestions.map((suggestion, index) => (
+                      <div
+                        key={suggestion.id}
+                        className={`px-4 py-2 cursor-pointer hover:bg-accent/50 transition-colors ${
+                          index === selectedSuggestionIndex ? 'bg-accent' : ''
+                        } ${index === 0 ? 'rounded-t-lg' : ''} ${
+                          index === autocompleteSuggestions.length - 1 ? 'rounded-b-lg' : ''
+                        }`}
+                        onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          handleSelectSuggestion(suggestion)
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          {searchMode === 'company' ? (
+                            <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          ) : (
+                            <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{suggestion.name}</div>
+                            {suggestion.display && suggestion.display !== suggestion.name && (
+                              <div className="text-xs text-muted-foreground truncate">
+                                {suggestion.display.replace(suggestion.name, '').trim()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -509,35 +747,14 @@ export function AddLeadDialog({
               )}
             </div>
 
-            {/* Results Table with TanStack Table */}
+            {/* Results Display */}
             <div className="flex-1 flex flex-col rounded-lg border border-border/30 overflow-hidden">
               <div className="overflow-auto flex-1">
-                <div className="min-w-max">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-muted/30 sticky top-0 z-10">
-                      {table.getHeaderGroups().map(headerGroup => (
-                        <tr key={headerGroup.id}>
-                          {headerGroup.headers.map(header => (
-                            <th
-                              key={header.id}
-                              style={{ width: header.getSize() }}
-                              className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-b border-border"
-                            >
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </th>
-                          ))}
-                        </tr>
-                      ))}
-                    </thead>
-                    <tbody>
-                      {tableData.length === 0 ? (
-                        <tr>
-                          <td colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                {searchMode === 'company' ? (
+                  // Search by Company Results
+                  <div className="space-y-4 p-4">
+                    {companies.length === 0 ? (
+                      <div className="h-24 flex items-center justify-center text-muted-foreground">
                             {searching ? (
                               <div className="flex items-center justify-center gap-2">
                                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -546,39 +763,220 @@ export function AddLeadDialog({
                             ) : searchTerm && searchTerm.length >= 2 ? (
                               'No matching companies found'
                             ) : (
-                              'Enter at least 2 characters to search existing leads'
-                            )}
-                          </td>
-                        </tr>
-                      ) : (
-                        table.getRowModel().rows.map(row => {
-                          const isCompanyHeader = row.original.isCompanyHeader
-                          return (
-                            <tr
-                              key={row.id}
-                              className={
-                                isCompanyHeader 
-                                  ? 'bg-muted/30 border-b border-border' 
-                                  : 'hover:bg-accent/50 cursor-pointer border-b border-border/50'
-                              }
-                              onClick={() => !isCompanyHeader && toggleContactSelection(row.original)}
-                            >
-                              {row.getVisibleCells().map(cell => (
-                                <td
-                                  key={cell.id}
-                                  style={{ width: cell.column.getSize() }}
-                                  className="px-4 py-3 align-middle"
+                          'Enter at least 2 characters to search by company'
+                        )}
+                      </div>
+                    ) : (
+                      companies.map((company) => (
+                        <div key={company.id || company.company} className="border border-border/30 rounded-lg p-4 space-y-3">
+                          {/* Company Header */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Building2 className="h-5 w-5 text-muted-foreground" />
+                                <h3 className="font-semibold text-lg">{company.company}</h3>
+                                <Badge variant="outline">{company.contacts.length} contact{company.contacts.length !== 1 ? 's' : ''}</Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                {company.industry && <span>Industry: {company.industry}</span>}
+                                {company.country && <span>Country: {company.country}</span>}
+                                {company.location && <span>Location: {company.location}</span>}
+                              </div>
+                            </div>
+                            <Checkbox
+                              checked={company.contacts.every(c => 
+                                selectedContacts.has(`${company.company}|${c.email}`)
+                              )}
+                              onCheckedChange={() => {
+                                const allSelected = company.contacts.every(c => 
+                                  selectedContacts.has(`${company.company}|${c.email}`)
+                                )
+                                const newSelected = new Set(selectedContacts)
+                                if (allSelected) {
+                                  company.contacts.forEach(c => newSelected.delete(`${company.company}|${c.email}`))
+                                } else {
+                                  company.contacts.forEach(c => newSelected.add(`${company.company}|${c.email}`))
+                                }
+                                setSelectedContacts(newSelected)
+                              }}
+                            />
+                          </div>
+
+                          {/* Products */}
+                          {company.products && company.products.length > 0 && (
+                            <div className="bg-muted/30 rounded-md p-3">
+                              <div className="text-xs font-semibold text-muted-foreground mb-2">Related Products:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {company.products.map((product) => (
+                                  <Badge key={product.id} variant="outline" className="text-xs">
+                                    <Package className="h-3 w-3 mr-1" />
+                                    {product.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Contacts */}
+                          <div className="space-y-2">
+                            <div className="text-xs font-semibold text-muted-foreground">Contacts:</div>
+                            <div className="space-y-1">
+                              {company.contacts.map((contact) => (
+                                <div
+                                  key={contact.email}
+                                  className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 cursor-pointer"
+                                  onClick={() => toggleContactSelection({
+                                    id: `${company.company}|${contact.email}`,
+                                    company: company.company,
+                                    contactName: contact.name,
+                                    contactTitle: contact.title,
+                                    contactEmail: contact.email,
+                                    industry: '',
+                                    country: '',
+                                    isCompanyHeader: false,
+                                    companyData: company,
+                                    contact
+                                  })}
                                 >
-                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </td>
+                                  <Checkbox
+                                    checked={selectedContacts.has(`${company.company}|${contact.email}`)}
+                                    onCheckedChange={() => {}}
+                                  />
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm">{contact.name}</div>
+                                    <div className="text-xs text-muted-foreground">{contact.title}</div>
+                                    <div className="text-xs font-mono text-muted-foreground">{contact.email}</div>
+                                  </div>
+                                </div>
                               ))}
-                            </tr>
-                          )
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  // Search by Product Results
+                  <div className="space-y-4 p-4">
+                    {products.length === 0 ? (
+                      <div className="h-24 flex items-center justify-center text-muted-foreground">
+                        {searching ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Searching database...
+                          </div>
+                        ) : searchTerm && searchTerm.length >= 2 ? (
+                          'No matching products found'
+                        ) : (
+                          'Enter at least 2 characters to search by product'
+                        )}
+                      </div>
+                    ) : (
+                      products.map((product) => (
+                        <div key={product.id} className="border border-border/30 rounded-lg p-4 space-y-3">
+                          {/* Product Header */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                            <h3 className="font-semibold text-lg">{product.name}</h3>
+                            {product.category && (
+                              <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                            )}
+                            {product.aliases && product.aliases.length > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {product.aliases.length} alias{product.aliases.length !== 1 ? 'es' : ''}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* Companies */}
+                          {product.companies.length > 0 ? (
+                            <div className="space-y-2">
+                              <div className="text-xs font-semibold text-muted-foreground">
+                                Related Companies ({product.companies.length}):
+                              </div>
+                              {product.companies.map((company) => (
+                                <div key={company.id || company.company} className="border border-border/20 rounded-md p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                                      <span className="font-medium">{company.company}</span>
+                                      {company.interaction_type && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {company.interaction_type}
+                                        </Badge>
+                                      )}
+                                      <Badge variant="outline" className="text-xs">
+                                        {company.contactCount || company.contacts.length} contact{company.contactCount !== 1 ? 's' : ''}
+                                      </Badge>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleCompanyExpansion(company.id || company.company)}
+                                      className="gap-1"
+                                    >
+                                      {expandedCompanies.has(company.id || company.company) ? (
+                                        <>
+                                          <ChevronUp className="h-4 w-4" />
+                                          Hide Contacts
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="h-4 w-4" />
+                                          Show Contacts
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {company.industry && <span>Industry: {company.industry}</span>}
+                                    {company.country && <span className="ml-2">Country: {company.country}</span>}
+                                  </div>
+
+                                  {/* Expanded Contacts */}
+                                  {expandedCompanies.has(company.id || company.company) && (
+                                    <div className="mt-2 space-y-1 border-t border-border/20 pt-2">
+                                      {company.contacts.map((contact) => (
+                                        <div
+                                          key={contact.email}
+                                          className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 cursor-pointer"
+                                          onClick={() => toggleContactSelection({
+                                            id: `${company.company}|${contact.email}`,
+                                            company: company.company,
+                                            contactName: contact.name,
+                                            contactTitle: contact.title,
+                                            contactEmail: contact.email,
+                                            industry: '',
+                                            country: '',
+                                            isCompanyHeader: false,
+                                            companyData: company,
+                                            contact
+                                          })}
+                                        >
+                                          <Checkbox
+                                            checked={selectedContacts.has(`${company.company}|${contact.email}`)}
+                                            onCheckedChange={() => {}}
+                                          />
+                                          <div className="flex-1">
+                                            <div className="font-medium text-sm">{contact.name}</div>
+                                            <div className="text-xs text-muted-foreground">{contact.title}</div>
+                                            <div className="text-xs font-mono text-muted-foreground">{contact.email}</div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">No companies found for this product</div>
+                          )}
+                        </div>
+                      ))
+                    )}
                 </div>
+                )}
               </div>
             </div>
 

@@ -13,6 +13,19 @@ export interface CampaignDraft {
   buyerCount: number
   totalContacts: number
   sampleBuyers?: { company: string; contacts: number }[]
+  matchedBuyers?: Array<{
+    company: string
+    companyType: string
+    location: string
+    website: string | null
+    employeeCount: string | null
+    contacts: number
+    contactDetails: Array<{
+      name: string
+      email: string | null
+      title: string | null
+    }>
+  }>
   
   // Step 3: Sending Configuration
   emailCount: number
