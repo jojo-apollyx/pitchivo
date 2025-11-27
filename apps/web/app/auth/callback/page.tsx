@@ -124,7 +124,32 @@ function AuthCallbackContent() {
       try {
         const supabase = createClient()
         
-        // Step 1: Check for error parameters in URL (from Supabase or our system)
+        // Step 1: Check for verification tokens FIRST (before error handling)
+        // This intercepts Supabase verify URLs before they can be rejected
+        const verificationToken = searchParams.get('token')
+        const verificationType = searchParams.get('type')
+        
+        if (verificationToken) {
+          logAuthStep('VERIFICATION_TOKEN_DETECTED_IN_CALLBACK', {
+            has_token: !!verificationToken,
+            token_type: verificationType,
+            redirect_to: searchParams.get('redirect_to')
+          })
+          
+          // Redirect to our verification API endpoint which will handle the token exchange
+          const verifyUrl = new URL('/api/auth/verify', window.location.origin)
+          verifyUrl.searchParams.set('token', verificationToken)
+          if (verificationType) verifyUrl.searchParams.set('type', verificationType)
+          if (searchParams.get('redirect_to')) {
+            verifyUrl.searchParams.set('redirect_to', searchParams.get('redirect_to')!)
+          }
+          
+          logAuthStep('REDIRECTING_TO_VERIFY', { verify_url: verifyUrl.toString() })
+          window.location.href = verifyUrl.toString()
+          return
+        }
+        
+        // Step 2: Check for error parameters in URL (from Supabase or our system)
         const errorParam = searchParams.get('error')
         const errorDescription = searchParams.get('error_description')
         const errorCode = searchParams.get('error_code')
@@ -139,7 +164,9 @@ function AuthCallbackContent() {
           let userFriendlyMessage = 'The login link is invalid or has expired.'
           
           if (errorParam === 'access_denied') {
-            userFriendlyMessage = 'Access denied. Please check your email and try again.'
+            // This error typically means the redirect URL is not configured in Supabase
+            // or the token verification failed at Supabase's level
+            userFriendlyMessage = 'Access denied. The login link may be invalid or the redirect URL is not properly configured. Please try requesting a new login link.'
           } else if (errorParam === 'expired_token') {
             userFriendlyMessage = 'This login link has expired. Please request a new one.'
           } else if (errorDescription) {
@@ -156,35 +183,9 @@ function AuthCallbackContent() {
           return
         }
 
-        // Step 2: Parse query parameters and hash fragment
+        // Step 3: Parse query parameters and hash fragment
         const queryParams = new URLSearchParams(window.location.search)
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
-        
-        // Check for Supabase verification token format
-        // Format: ?token=xxx&type=signup&redirect_to=xxx
-        // This happens when users click the direct Supabase verification link
-        const verificationToken = queryParams.get('token')
-        const verificationType = queryParams.get('type')
-        
-        if (verificationToken) {
-          logAuthStep('VERIFICATION_TOKEN_DETECTED', {
-            has_token: !!verificationToken,
-            token_type: verificationType,
-            redirect_to: queryParams.get('redirect_to')
-          })
-          
-          // Redirect to our verification API endpoint which will handle the token exchange
-          const verifyUrl = new URL('/api/auth/verify', window.location.origin)
-          verifyUrl.searchParams.set('token', verificationToken)
-          if (verificationType) verifyUrl.searchParams.set('type', verificationType)
-          if (queryParams.get('redirect_to')) {
-            verifyUrl.searchParams.set('redirect_to', queryParams.get('redirect_to')!)
-          }
-          
-          logAuthStep('REDIRECTING_TO_VERIFY', { verify_url: verifyUrl.toString() })
-          window.location.href = verifyUrl.toString()
-          return
-        }
 
         // Step 3: Parse tokens from both hash fragment and query parameters
         // Supabase can send tokens in either location depending on configuration

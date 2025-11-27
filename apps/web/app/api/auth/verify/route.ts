@@ -90,17 +90,25 @@ export async function GET(request: NextRequest) {
     })
 
     // The token from Supabase's /auth/v1/verify endpoint
-    // For verification URLs, we use token_hash instead of token
-    // and only include email if the type requires it
+    // For magiclink with PKCE tokens (starting with 'pkce_'), we need to use the token directly
+    // For other types, we use 'token' parameter
+    // For 'email' type, we use 'token_hash' and may need email
     const verifyStart = Date.now()
     const otpType = (type as 'email' | 'signup' | 'invite' | 'recovery' | 'magiclink') || 'email'
     
     // Build the verifyOtp params based on type
-    // For 'email' type, we need email, but for verification URLs we use token_hash
-    // For other types like 'magiclink', 'signup', etc., token_hash works without email
+    // For magiclink/signup/invite/recovery: use 'token' parameter
+    // For email type: use 'token_hash' parameter
     const verifyParams: any = {
-      token_hash: token,
       type: otpType
+    }
+    
+    if (otpType === 'email') {
+      verifyParams.token_hash = token
+    } else {
+      // For magiclink, signup, invite, recovery - use 'token' parameter
+      // This works for both regular tokens and PKCE tokens (pkce_*)
+      verifyParams.token = token
     }
     
     const { data, error } = await supabase.auth.verifyOtp(verifyParams)
