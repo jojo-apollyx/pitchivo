@@ -359,10 +359,11 @@ export default async function DashboardPage() {
 
         {/* Metrics Overview */}
         <section id="dashboard-metrics-section" className="px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30">
-          <h2 className="text-lg font-semibold mb-4 text-foreground">
-            Metrics Overview
-          </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">
+              Metrics Overview
+            </h2>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {metrics.map((metric, index) => {
               const Icon = metric.icon
               const metricId = metric.label.toLowerCase().replace(/\s+/g, '-')
@@ -393,15 +394,17 @@ export default async function DashboardPage() {
                 </div>
               )
             })}
+            </div>
           </div>
         </section>
 
         {/* Recent Activity */}
         <section id="dashboard-activity-section" className="px-4 sm:px-6 lg:px-8 py-6">
-          <h2 className="text-lg font-semibold mb-4 text-foreground">
-            Recent Activity
-          </h2>
-          <div className="max-w-4xl">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">
+              Recent Activity
+            </h2>
+            <div className="max-w-4xl">
             <div className="bg-background rounded-lg divide-y divide-border/30">
               {recentActivities.length > 0 ? (
                 recentActivities.map((activity) => {
@@ -467,6 +470,7 @@ export default async function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
           </div>
         </section>
         </div>

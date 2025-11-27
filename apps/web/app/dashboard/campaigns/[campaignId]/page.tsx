@@ -26,11 +26,11 @@ import { SmartleadEventStats } from '@/components/smartlead/event-stats'
 import { SmartleadEventTimeline } from '@/components/smartlead/event-timeline'
 
 const chartColors = {
-  delivered: 'hsl(var(--primary))',
-  opened: 'hsl(var(--accent))',
-  clicked: 'hsl(var(--primary-dark))',
-  rfq: 'hsl(var(--primary-dark))',
-  bounced: 'hsl(var(--destructive))'
+  delivered: 'hsl(var(--primary-dark))',
+  opened: 'hsl(var(--accent-surface))',
+  clicked: 'hsl(var(--primary))',
+  rfq: 'hsl(var(--semantic-success))',
+  bounced: 'hsl(var(--semantic-error))'
 } as const
 
 const deliveryStatusVisuals = {
@@ -869,7 +869,10 @@ export default function CampaignDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading campaign details...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-dark border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading campaign analytics...</p>
+        </div>
       </main>
     )
   }
