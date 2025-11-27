@@ -1,5 +1,5 @@
 // Service Worker for Pitchivo PWA
-const CACHE_VERSION = 'v9' // Bump this to force cache refresh (v9: clear cache for hydration fix)
+const CACHE_VERSION = 'v10' // Bump this to force cache refresh (v10: auth PKCE storage fix)
 const STATIC_CACHE = `pitchivo-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `pitchivo-dynamic-${CACHE_VERSION}`
 const IMAGE_CACHE = `pitchivo-images-${CACHE_VERSION}`
