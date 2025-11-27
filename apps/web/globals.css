@@ -359,6 +359,125 @@ html body [data-sonner-toast] * {
 }
 
 /* ============================================
+   CONSISTENT PAGE LAYOUTS - Dopamine Minimalism
+   ============================================ */
+@layer components {
+  /* Page wrapper for consistent structure */
+  .page-wrapper {
+    @apply min-h-screen bg-background;
+  }
+  
+  /* Sticky page header with backdrop blur */
+  .page-header {
+    @apply sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30;
+  }
+  
+  .page-header-content {
+    @apply px-4 sm:px-6 lg:px-8 py-4 sm:py-6;
+  }
+  
+  /* Page title styling */
+  .page-title {
+    @apply text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground;
+  }
+  
+  .page-subtitle {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+  
+  /* Page section styling */
+  .page-section {
+    @apply px-4 sm:px-6 lg:px-8 py-6;
+  }
+  
+  .page-section-bordered {
+    @apply px-4 sm:px-6 lg:px-8 py-6 border-b border-border/30;
+  }
+  
+  /* Content container with max-width */
+  .page-content {
+    @apply max-w-7xl mx-auto;
+  }
+  
+  .page-content-narrow {
+    @apply max-w-4xl mx-auto;
+  }
+  
+  .page-content-centered {
+    @apply max-w-md mx-auto text-center;
+  }
+  
+  /* Empty state container */
+  .empty-state {
+    @apply py-16 text-center;
+  }
+  
+  .empty-state-illustration {
+    @apply mb-8;
+  }
+  
+  .empty-state-title {
+    @apply text-xl font-semibold mb-2 text-foreground;
+  }
+  
+  .empty-state-description {
+    @apply text-muted-foreground mb-6;
+  }
+  
+  /* Card grid layouts */
+  .card-grid {
+    @apply grid gap-4;
+  }
+  
+  .card-grid-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+  
+  .card-grid-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+  
+  .card-grid-4 {
+    @apply grid grid-cols-2 lg:grid-cols-4 gap-4;
+  }
+  
+  .card-grid-6 {
+    @apply grid grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+  
+  /* Metric card styling */
+  .metric-card {
+    @apply bg-background-secondary rounded-lg p-4 sm:p-5 transition-colors duration-200 hover:bg-accent-surface;
+  }
+  
+  .metric-card-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+  
+  .metric-card-value {
+    @apply text-2xl sm:text-3xl font-semibold text-foreground;
+  }
+  
+  .metric-card-icon {
+    @apply h-9 w-9 rounded-md bg-accent-surface flex items-center justify-center transition-colors duration-200;
+  }
+  
+  /* Action button group */
+  .action-group {
+    @apply flex items-center gap-3;
+  }
+  
+  /* List item styling */
+  .list-item {
+    @apply p-4 sm:p-5 hover:bg-background-secondary transition-colors duration-200;
+  }
+  
+  .list-item-clickable {
+    @apply p-4 sm:p-5 hover:bg-background-secondary transition-colors duration-200 cursor-pointer touch-manipulation;
+  }
+}
+
+/* ============================================
    ANIMATIONS
    ============================================ */
 @keyframes fadeIn {

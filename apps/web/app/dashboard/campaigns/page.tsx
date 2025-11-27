@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, TrendingUp, Users, MousePointerClick, MessageSquare, Calendar, Activity, Mail, X, Pause, Play, MoreVertical, Archive, Trash2, Download, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +34,7 @@ import {
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { EmptyCampaignsIllustration } from '@/components/ui/illustrations'
+import { PageLoadingSkeleton } from '@/components/ui/skeleton-loading'
 
 interface Campaign {
   campaign_id: string
@@ -490,18 +492,20 @@ export default function CampaignsPage() {
 
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading campaigns...</p>
-      </div>
-    )
+    return <PageLoadingSkeleton title subtitle cards={4} />
   }
 
   if (campaigns.length === 0) {
     return (
       <main className="min-h-screen bg-background">
         <div className="relative">
-          <section id="campaigns-header-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
+          <motion.section 
+            id="campaigns-header-section" 
+            className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -510,30 +514,63 @@ export default function CampaignsPage() {
                     Create and manage your email campaigns
                   </p>
                 </div>
-                <Button id="campaigns-new-campaign-button-empty" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 h-10 rounded-md">
-                  <Plus className="h-4 w-4" />
-                  New Campaign
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button id="campaigns-new-campaign-button-empty" aria-label="Create new campaign" onClick={handleCreateCampaign} className="gap-2 h-10 rounded-md">
+                    <Plus className="h-4 w-4" />
+                    New Campaign
+                  </Button>
+                </motion.div>
               </div>
             </div>
-          </section>
+          </motion.section>
 
-          <section id="campaigns-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-16">
+          <motion.section 
+            id="campaigns-empty-state-section" 
+            className="px-4 sm:px-6 lg:px-8 py-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
             <div className="max-w-md mx-auto text-center">
-              {/* Minimalist rocket illustration */}
-              <div className="mb-8">
+              {/* Minimalist rocket illustration with animation */}
+              <motion.div 
+                className="mb-8"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2, type: 'spring', damping: 15 }}
+              >
                 <EmptyCampaignsIllustration size="lg" className="mx-auto" />
-              </div>
-              <h2 className="text-xl font-semibold mb-2 text-foreground">No campaigns yet</h2>
-              <p className="text-muted-foreground mb-6">
+              </motion.div>
+              <motion.h2 
+                className="text-xl font-semibold mb-2 text-foreground"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                No campaigns yet
+              </motion.h2>
+              <motion.p 
+                className="text-muted-foreground mb-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
                 Start your first email campaign to reach potential buyers
-              </p>
-              <Button id="campaigns-create-campaign-button" aria-label="Create first campaign" onClick={handleCreateCampaign} className="gap-2 h-10 rounded-md">
-                <Plus className="h-4 w-4" />
-                Create Campaign
-              </Button>
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button id="campaigns-create-campaign-button" aria-label="Create first campaign" onClick={handleCreateCampaign} className="gap-2 h-10 rounded-md">
+                  <Plus className="h-4 w-4" />
+                  Create Campaign
+                </Button>
+              </motion.div>
             </div>
-          </section>
+          </motion.section>
         </div>
       </main>
     )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { MessageSquare, Search, X, Mail, Phone, Building2, Calendar, Package, CheckCircle2, Clock, Archive, TrendingUp, TrendingDown, MoreVertical, ExternalLink, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { EmptyInboxIllustration, EmptySearchIllustration } from '@/components/ui/illustrations'
+import { PageLoadingSkeleton, LoadingText } from '@/components/ui/skeleton-loading'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -306,44 +308,82 @@ export default function RFQsPage() {
         {/* RFQs List */}
         <section id="rfqs-list-section" className="px-4 sm:px-6 lg:px-8 py-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <motion.div 
+              className="flex items-center justify-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary-dark" />
-                <p className="text-sm text-muted-foreground font-normal">Loading RFQs...</p>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <Loader2 className="h-6 w-6 text-primary-dark" />
+                </motion.div>
+                <LoadingText text="Loading RFQs..." />
               </div>
-            </div>
+            </motion.div>
           ) : rfqs.length === 0 ? (
-            <div className="max-w-2xl mx-auto py-12">
+            <motion.div 
+              className="max-w-2xl mx-auto py-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
               <div className="text-center">
-                {/* Minimalist illustration */}
-                <div className="mb-6">
+                {/* Minimalist illustration with animation */}
+                <motion.div 
+                  className="mb-6"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.1, type: 'spring', damping: 15 }}
+                >
                   {hasActiveFilters ? (
                     <EmptySearchIllustration size="lg" className="mx-auto" />
                   ) : (
                     <EmptyInboxIllustration size="lg" className="mx-auto" />
                   )}
-                </div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">
+                </motion.div>
+                <motion.h2 
+                  className="text-lg sm:text-xl font-semibold mb-2 text-foreground"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
                   {hasActiveFilters ? 'No RFQs found' : 'No RFQs received yet'}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6 font-normal">
+                </motion.h2>
+                <motion.p 
+                  className="text-sm text-muted-foreground mb-6 font-normal"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
                   {hasActiveFilters
                     ? 'Try adjusting your filters or search query'
                     : 'When buyers send you requests for quotation, they\'ll appear here'}
-                </p>
+                </motion.p>
                 {hasActiveFilters && (
-                  <Button
-                    variant="outline"
-                    onClick={clearFilters}
-                    className="gap-2"
-                    size="sm"
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <X className="h-4 w-4" />
-                    Clear Filters
-                  </Button>
+                    <Button
+                      variant="outline"
+                      onClick={clearFilters}
+                      className="gap-2"
+                      size="sm"
+                    >
+                      <X className="h-4 w-4" />
+                      Clear Filters
+                    </Button>
+                  </motion.div>
                 )}
               </div>
-            </div>
+            </motion.div>
           ) : (
             <div className="space-y-2 sm:space-y-3">
               {rfqs.map((rfq) => {

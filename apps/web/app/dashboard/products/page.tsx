@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { SharingLinksPanel } from '@/components/products/SharingLinksPanel'
 import { EmptyProductsIllustration, EmptySearchIllustration } from '@/components/ui/illustrations'
+import { PageLoadingSkeleton } from '@/components/ui/skeleton-loading'
 import QRCode from 'react-qr-code'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -81,11 +83,7 @@ export default function ProductsPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading products...</p>
-      </div>
-    )
+    return <PageLoadingSkeleton title subtitle cards={6} />
   }
 
   if (error) {
@@ -100,7 +98,13 @@ export default function ProductsPage() {
     return (
       <main className="min-h-screen bg-background">
         <div className="relative">
-          <section id="products-empty-header-section" className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30">
+          <motion.section 
+            id="products-empty-header-section" 
+            className="sticky top-0 bg-background/98 backdrop-blur-sm z-10 border-b border-border/30"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -110,33 +114,66 @@ export default function ProductsPage() {
                   </p>
                 </div>
                 <Link href="/dashboard/products/create">
-                  <Button className="gap-2 h-10 rounded-md">
-                    <Plus className="h-4 w-4" />
-                    Add Product
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button className="gap-2 h-10 rounded-md">
+                      <Plus className="h-4 w-4" />
+                      Add Product
+                    </Button>
+                  </motion.div>
                 </Link>
               </div>
             </div>
-          </section>
+          </motion.section>
 
-          <section id="products-empty-state-section" className="px-4 sm:px-6 lg:px-8 py-16">
+          <motion.section 
+            id="products-empty-state-section" 
+            className="px-4 sm:px-6 lg:px-8 py-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
             <div className="max-w-md mx-auto text-center">
-              {/* Minimalist illustration */}
-              <div className="mb-8">
+              {/* Minimalist illustration with animation */}
+              <motion.div 
+                className="mb-8"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2, type: 'spring', damping: 15 }}
+              >
                 <EmptyProductsIllustration size="lg" className="mx-auto" />
-              </div>
-              <h2 className="text-xl font-semibold mb-2 text-foreground">No products yet</h2>
-              <p className="text-muted-foreground mb-6">
+              </motion.div>
+              <motion.h2 
+                className="text-xl font-semibold mb-2 text-foreground"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                No products yet
+              </motion.h2>
+              <motion.p 
+                className="text-muted-foreground mb-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
                 Create your first product page to start showcasing to buyers
-              </p>
-              <Link href="/dashboard/products/create">
-                <Button id="products-create-first-product-button" aria-label="Create first product" className="gap-2 h-10 rounded-md">
-                  <Plus className="h-4 w-4" />
-                  Create Product
-                </Button>
-              </Link>
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link href="/dashboard/products/create">
+                  <Button id="products-create-first-product-button" aria-label="Create first product" className="gap-2 h-10 rounded-md">
+                    <Plus className="h-4 w-4" />
+                    Create Product
+                  </Button>
+                </Link>
+              </motion.div>
             </div>
-          </section>
+          </motion.section>
         </div>
       </main>
     )

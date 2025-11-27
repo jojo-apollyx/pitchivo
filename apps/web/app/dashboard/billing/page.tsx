@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +13,7 @@ import { useSubscription } from '@/lib/hooks/use-subscription'
 import { PRICING_TIERS, formatPrice, formatQuota } from '@/lib/constants/pricing'
 import { QuotaBar } from '@/components/ui/quota-bar'
 import Link from 'next/link'
+import { PageLoadingSkeleton } from '@/components/ui/skeleton-loading'
 
 interface Invoice {
   id: string
@@ -201,9 +203,19 @@ export default function BillingPage() {
 
   if (isLoadingOrg || isLoadingSub) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-dark" />
-      </div>
+      <motion.div 
+        className="flex items-center justify-center min-h-screen bg-background"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        >
+          <Loader2 className="h-8 w-8 text-primary-dark" />
+        </motion.div>
+      </motion.div>
     )
   }
 
