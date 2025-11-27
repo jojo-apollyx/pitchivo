@@ -94,7 +94,7 @@ export const createWaitlistColumns = (
               </Tooltip>
             </>
           )}
-          {entry.status === 'invited' && (
+          {(entry.status === 'invited' || entry.status === 'approved') && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -107,7 +107,7 @@ export const createWaitlistColumns = (
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Resend invitation email</p>
+                <p>{entry.status === 'invited' ? 'Resend invitation email' : 'Send invitation email'}</p>
               </TooltipContent>
             </Tooltip>
           )}
