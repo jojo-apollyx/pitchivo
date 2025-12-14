@@ -15,6 +15,10 @@ interface Buyer {
     email: string | null
     title: string | null
   }>
+  interactionTypes?: string[] // Most recent 3 distinct interaction types
+  categoryFit?: 'High' | 'Medium' | 'Low' | 'Assessment Pending'
+  cooperationPotential?: 'Strong' | 'Neutral' | 'Weak' | 'Assessment Pending'
+  matchScore?: 'A' | 'B' | 'C' | 'D' | 'Assessment Pending'
 }
 
 interface GenerateBuyersResponse {
@@ -67,7 +71,8 @@ export async function POST(request: NextRequest) {
     //    - Match on normalized_name (exact match)
     //    - Match on aliases array (contains check)
     
-    let marketItems: Array<{ id: string; name: string; aliases: string[] }> = []
+    let marketItems: Array<{ id: string; name: string; aliases: string[]; category?: string; similarity?: number }> = []
+    let maxSimilarity = 0 // Track max similarity for match score calculation
 
     try {
       // Generate embedding for the product name using Azure OpenAI
@@ -99,11 +104,17 @@ export async function POST(request: NextRequest) {
           })
 
           if (!semanticError && semanticMatches && semanticMatches.length > 0) {
-            marketItems = semanticMatches.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              aliases: item.aliases || []
-            }))
+            marketItems = semanticMatches.map((item: any) => {
+              const similarity = item.similarity || 0
+              if (similarity > maxSimilarity) maxSimilarity = similarity
+              return {
+                id: item.id,
+                name: item.name,
+                aliases: item.aliases || [],
+                category: item.category || null,
+                similarity: similarity
+              }
+            })
             console.log(`[Generate Buyers] Found ${marketItems.length} items via semantic search`)
           } else if (semanticError) {
             console.warn('[Generate Buyers] Semantic search error:', semanticError.message)
@@ -135,13 +146,13 @@ export async function POST(request: NextRequest) {
       // Try exact normalized name match
       const { data: exactMatches, error: exactError } = await supabase
         .from('leads_market_items')
-        .select('id, name, aliases')
+        .select('id, name, aliases, category')
         .eq('normalized_name', normalizedName)
 
       // Search for items where aliases contain the product name
       const { data: aliasMatches, error: aliasError } = await supabase
         .from('leads_market_items')
-        .select('id, name, aliases')
+        .select('id, name, aliases, category')
         .contains('aliases', [normalizedName])
 
       if (exactError || aliasError) {
@@ -156,7 +167,14 @@ export async function POST(request: NextRequest) {
       const allMatches = [...(exactMatches || []), ...(aliasMatches || [])]
       marketItems = allMatches.filter((item, index, self) => 
         index === self.findIndex(t => t.id === item.id)
-      )
+      ).map(item => ({
+        id: item.id,
+        name: item.name,
+        aliases: item.aliases || [],
+        category: item.category || null,
+        similarity: 1.0 // Exact match = 100% similarity
+      }))
+      maxSimilarity = 1.0 // Exact match
       
       if (marketItems.length > 0) {
         console.log(`[Generate Buyers] Found ${marketItems.length} items via exact matching`)
@@ -178,13 +196,25 @@ export async function POST(request: NextRequest) {
     // Get all item IDs
     const itemIds = marketItems.map(item => item.id)
 
-    // Step 2: Find signals where companies purchased these items
-    // Buying activities: 'purchased', 'requested_quote', 'viewed_item', 'added_to_cart'
+    // Step 2: Find signals where companies purchased/imported/used/distributed/mentioned these items
+    // Buying activities: 'purchased', 'requested_quote', 'viewed_item', 'added_to_cart', 'imported', 'used_in_production', 'distributed', 'mentioned_in_article', 'partnership_announced'
     const { data: signals, error: signalsError } = await supabase
       .from('leads_signals')
-      .select('org_id, item_id, interaction_type')
+      .select('org_id, item_id, interaction_type, event_date, created_at, source_id, is_verified')
       .in('item_id', itemIds)
-      .in('interaction_type', ['purchased', 'requested_quote', 'viewed_item', 'added_to_cart'])
+      .in('interaction_type', [
+        'purchased', 
+        'requested_quote', 
+        'viewed_item', 
+        'added_to_cart', 
+        'imported', 
+        'used_in_production',
+        'distributed',
+        'mentioned_in_article',
+        'partnership_announced'
+      ])
+      .order('event_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
 
     if (signalsError) {
       console.error('[Generate Buyers] Error finding signals:', signalsError)
@@ -220,6 +250,32 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Get source trust scores for match score calculation (batch query for performance)
+    const sourceIds = [...new Set(signals.map(s => s.source_id).filter(Boolean))]
+    const sourceTrustScores = new Map<string, number>()
+    if (sourceIds.length > 0) {
+      const { data: sources } = await supabase
+        .from('leads_sources')
+        .select('id, trust_score')
+        .in('id', sourceIds)
+      
+      if (sources) {
+        sources.forEach(source => {
+          if (source.id) {
+            sourceTrustScores.set(source.id, source.trust_score || 0.5)
+          }
+        })
+      }
+    }
+
+    // Create maps for fast lookups
+    const itemCategoryMap = new Map<string, string>()
+    const itemSimilarityMap = new Map<string, number>()
+    marketItems.forEach(item => {
+      itemCategoryMap.set(item.id, item.category || '')
+      itemSimilarityMap.set(item.id, item.similarity || 0)
+    })
+
     // Step 3: Get organizations with their details
     const { data: organizations, error: orgsError } = await supabase
       .from('leads_organizations')
@@ -245,36 +301,289 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Step 4: Get contacts for each organization
+    // Step 4: Get contacts for each organization (limit to 3 per org for campaign leads)
+    // But we still need total count, so we'll get all and limit later
     const { data: contacts, error: contactsError } = await supabase
       .from('leads_contacts')
       .select('org_id, first_name, last_name, full_name, title, email')
       .in('org_id', orgIds)
       .eq('is_current', true)
       .not('email', 'is', null) // Only include contacts with email addresses
+      .order('created_at', { ascending: false }) // Order by most recent first
 
     if (contactsError) {
       console.error('[Generate Buyers] Error finding contacts:', contactsError)
       // Continue without contacts rather than failing
     }
 
-    // Group contacts by organization
+    // Group contacts by organization and limit to 3 per org for contactDetails
     const contactsByOrg = new Map<string, typeof contacts>()
+    const allContactsByOrg = new Map<string, typeof contacts>() // For total count
     if (contacts) {
       for (const contact of contacts) {
         if (contact.org_id) {
           const orgId = contact.org_id
+          
+          // Track all contacts for total count
+          if (!allContactsByOrg.has(orgId)) {
+            allContactsByOrg.set(orgId, [])
+          }
+          allContactsByOrg.get(orgId)!.push(contact)
+          
+          // Limit to 3 per org for contactDetails (campaign leads)
           if (!contactsByOrg.has(orgId)) {
             contactsByOrg.set(orgId, [])
           }
-          contactsByOrg.get(orgId)!.push(contact)
+          if (contactsByOrg.get(orgId)!.length < 3) {
+            contactsByOrg.get(orgId)!.push(contact)
+          }
         }
       }
+    }
+    
+    // Group signals by organization to get most recent 3 distinct interaction types
+    const signalsByOrg = new Map<string, Array<{ interaction_type: string; event_date: string | null; created_at: string }>>()
+    if (signals) {
+      for (const signal of signals) {
+        if (signal.org_id) {
+          const orgId = signal.org_id
+          if (!signalsByOrg.has(orgId)) {
+            signalsByOrg.set(orgId, [])
+          }
+          signalsByOrg.get(orgId)!.push({
+            interaction_type: signal.interaction_type,
+            event_date: signal.event_date,
+            created_at: signal.created_at
+          })
+        }
+      }
+    }
+    
+    // Get most recent 3 distinct interaction types per organization
+    const interactionTypesByOrg = new Map<string, string[]>()
+    // Enhanced signal aggregation for metrics calculation
+    const signalStatsByOrg = new Map<string, {
+      totalSignals: number
+      verifiedSignals: number
+      distinctItems: number
+      mostRecentDate: Date | null
+      interactionTypes: string[]
+      sourceIds: string[]
+      itemIds: string[]
+    }>()
+
+    signalsByOrg.forEach((orgSignals, orgId) => {
+      // Sort by event_date (most recent first), then by created_at
+      const sorted = orgSignals.sort((a, b) => {
+        if (a.event_date && b.event_date) {
+          return new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+        }
+        if (a.event_date) return -1
+        if (b.event_date) return 1
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
+      
+      // Get distinct interaction types, keeping order (most recent first)
+      const distinctTypes: string[] = []
+      const seen = new Set<string>()
+      for (const signal of sorted) {
+        if (!seen.has(signal.interaction_type)) {
+          distinctTypes.push(signal.interaction_type)
+          seen.add(signal.interaction_type)
+          if (distinctTypes.length >= 3) break
+        }
+      }
+      interactionTypesByOrg.set(orgId, distinctTypes)
+
+      // Calculate signal statistics for metrics
+      const orgSignalsFull = signals.filter(s => s.org_id === orgId)
+      const verifiedCount = orgSignalsFull.filter(s => s.is_verified).length
+      const distinctItemIds = new Set(orgSignalsFull.map(s => s.item_id).filter(Boolean))
+      const mostRecent = orgSignalsFull
+        .map(s => s.event_date ? new Date(s.event_date) : null)
+        .filter((d): d is Date => d !== null)
+        .sort((a, b) => b.getTime() - a.getTime())[0] || null
+      
+      signalStatsByOrg.set(orgId, {
+        totalSignals: orgSignalsFull.length,
+        verifiedSignals: verifiedCount,
+        distinctItems: distinctItemIds.size,
+        mostRecentDate: mostRecent,
+        interactionTypes: orgSignalsFull.map(s => s.interaction_type),
+        sourceIds: orgSignalsFull.map(s => s.source_id).filter(Boolean) as string[],
+        itemIds: Array.from(distinctItemIds) as string[]
+      })
+    })
+
+    // Helper functions for metric calculations
+    const calculateCategoryFit = (
+      org: typeof organizations[0],
+      orgItemIds: string[]
+    ): 'High' | 'Medium' | 'Low' | 'Assessment Pending' => {
+      if (orgItemIds.length === 0) return 'Assessment Pending'
+      
+      const productCategory = productIndustry?.toLowerCase() || ''
+      const orgIndustries = (org.industry_categories || []).map((c: string) => c.toLowerCase())
+      const orgBusinessTypes = (org.business_type || []).map((b: string) => b.toLowerCase())
+      
+      // Get categories from matched items
+      const itemCategories = orgItemIds
+        .map(id => itemCategoryMap.get(id))
+        .filter((c): c is string => Boolean(c))
+        .map(c => c.toLowerCase())
+      
+      // High: Direct industry/category match
+      if (productCategory && orgIndustries.some((ind: string) => 
+        ind.includes(productCategory) || productCategory.includes(ind)
+      )) {
+        return 'High'
+      }
+      
+      // High: Business type indicates relevant activity
+      if (productCategory && orgBusinessTypes.some((bt: string) => 
+        (bt.includes('food') && productCategory.includes('food')) ||
+        (bt.includes('beverage') && productCategory.includes('beverage')) ||
+        (bt.includes('ingredient') && productCategory.includes('ingredient'))
+      )) {
+        return 'High'
+      }
+      
+      // Medium: Category match from items
+      if (itemCategories.length > 0 && productCategory && 
+          itemCategories.some((cat: string) => cat.includes(productCategory) || productCategory.includes(cat))) {
+        return 'Medium'
+      }
+      
+      // Medium: Partial industry match
+      if (productCategory && orgIndustries.length > 0) {
+        return 'Medium'
+      }
+      
+      // Low: No matches but has signals
+      if (orgItemIds.length > 0) {
+        return 'Low'
+      }
+      
+      return 'Assessment Pending'
+    }
+
+    const calculateCooperationPotential = (
+      stats: NonNullable<ReturnType<typeof signalStatsByOrg.get>>
+    ): 'Strong' | 'Neutral' | 'Weak' | 'Assessment Pending' => {
+      if (!stats || stats.totalSignals === 0) return 'Assessment Pending'
+      
+      const now = new Date()
+      const monthsSinceRecent = stats.mostRecentDate 
+        ? Math.floor((now.getTime() - stats.mostRecentDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
+        : 999
+      
+      // High-value interaction weights
+      const highValueTypes = ['purchased', 'partnership_announced', 'used_in_production']
+      const mediumValueTypes = ['requested_quote', 'imported', 'distributed']
+      const highValueCount = stats.interactionTypes.filter(t => highValueTypes.includes(t)).length
+      const mediumValueCount = stats.interactionTypes.filter(t => mediumValueTypes.includes(t)).length
+      
+      // Strong: Multiple verified signals, recent, high-value interactions, multiple items
+      if (stats.verifiedSignals >= 3 && 
+          monthsSinceRecent <= 12 && 
+          (highValueCount >= 2 || stats.distinctItems >= 2)) {
+        return 'Strong'
+      }
+      
+      // Strong: Very recent high-value activity
+      if (monthsSinceRecent <= 6 && highValueCount >= 1 && stats.verifiedSignals >= 1) {
+        return 'Strong'
+      }
+      
+      // Neutral: Some signals, moderate recency
+      if (stats.totalSignals >= 2 && monthsSinceRecent <= 24) {
+        return 'Neutral'
+      }
+      
+      // Neutral: Recent but low-value
+      if (monthsSinceRecent <= 12 && stats.totalSignals >= 1) {
+        return 'Neutral'
+      }
+      
+      // Weak: Old or low-value only
+      if (stats.totalSignals >= 1) {
+        return 'Weak'
+      }
+      
+      return 'Assessment Pending'
+    }
+
+    const calculateMatchScore = (
+      org: typeof organizations[0],
+      stats: NonNullable<ReturnType<typeof signalStatsByOrg.get>> | undefined,
+      orgItemIds: string[]
+    ): 'A' | 'B' | 'C' | 'D' | 'Assessment Pending' => {
+      if (!stats || stats.totalSignals === 0 || orgItemIds.length === 0) {
+        return 'Assessment Pending'
+      }
+      
+      // Get average similarity for this org's items
+      const similarities = orgItemIds
+        .map(id => itemSimilarityMap.get(id) || 0)
+        .filter(s => s > 0)
+      const avgSimilarity = similarities.length > 0
+        ? similarities.reduce((a, b) => a + b, 0) / similarities.length
+        : 0
+      
+      // Calculate average trust score
+      const trustScores = stats.sourceIds
+        .map(id => sourceTrustScores.get(id) || 0.5)
+      const avgTrustScore = trustScores.length > 0
+        ? trustScores.reduce((a, b) => a + b, 0) / trustScores.length
+        : 0.5
+      
+      // Calculate data completeness (0-1)
+      const hasProfile = org.profile_data && typeof org.profile_data === 'object' && Object.keys(org.profile_data).length > 0
+      const hasDomain = !!org.domain
+      const hasContacts = (allContactsByOrg.get(org.id) || []).length > 0
+      const hasIndustry = (org.industry_categories || []).length > 0
+      const completeness = [hasProfile, hasDomain, hasContacts, hasIndustry].filter(Boolean).length / 4
+      
+      // Score calculation
+      let score = 0
+      
+      // Similarity (40% weight)
+      if (avgSimilarity >= 0.85) score += 40
+      else if (avgSimilarity >= 0.75) score += 30
+      else if (avgSimilarity >= 0.65) score += 20
+      else score += 10
+      
+      // Verified signals (30% weight)
+      if (stats.verifiedSignals >= 2) score += 30
+      else if (stats.verifiedSignals >= 1) score += 20
+      else if (stats.totalSignals >= 2) score += 10
+      else score += 5
+      
+      // Data completeness (20% weight)
+      score += completeness * 20
+      
+      // Trust score (10% weight)
+      score += avgTrustScore * 10
+      
+      // Determine grade
+      if (score >= 80) return 'A'
+      if (score >= 60) return 'B'
+      if (score >= 40) return 'C'
+      return 'D'
     }
 
     // Step 5: Build buyer list with company information
     const buyers: Buyer[] = organizations.map(org => {
-      const orgContacts = contactsByOrg.get(org.id) || []
+      const orgContacts = contactsByOrg.get(org.id) || [] // Limited to 3 for campaign leads
+      const allOrgContacts = allContactsByOrg.get(org.id) || [] // All contacts for total count
+      const interactionTypes = interactionTypesByOrg.get(org.id) || []
+      const signalStats = signalStatsByOrg.get(org.id)
+      const orgItemIds = signalStats?.itemIds || []
+      
+      // Calculate metrics
+      const categoryFit = calculateCategoryFit(org, orgItemIds)
+      const cooperationPotential = signalStats ? calculateCooperationPotential(signalStats) : 'Assessment Pending'
+      const matchScore = calculateMatchScore(org, signalStats, orgItemIds)
       
       // Build location string
       const locationParts: string[] = []
@@ -338,8 +647,8 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Build contact details
-      const contactDetails = orgContacts.slice(0, 10).map(contact => ({
+      // Build contact details (limited to 3 per org for campaign leads)
+      const contactDetails = orgContacts.map(contact => ({
         name: contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown',
         email: contact.email || null,
         title: contact.title
@@ -351,8 +660,12 @@ export async function POST(request: NextRequest) {
         location,
         website,
         employeeCount,
-        contacts: orgContacts.length,
-        contactDetails: contactDetails.length > 0 ? contactDetails : undefined
+        contacts: allOrgContacts.length, // Total count of all contacts
+        contactDetails: contactDetails.length > 0 ? contactDetails : undefined,
+        interactionTypes: interactionTypes.length > 0 ? interactionTypes : undefined,
+        categoryFit,
+        cooperationPotential,
+        matchScore
       }
     })
 

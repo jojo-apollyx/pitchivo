@@ -36,7 +36,9 @@
     "generate:embeddings": "tsx scripts/generate-embeddings.ts",
     "generate:embeddings:prod": "tsx scripts/generate-embeddings.ts --env=.env.prod",
     "populate:contacts-org-id": "tsx scripts/populate-leads-contacts-org-id.ts",
-    "populate:contacts-org-id:prod": "tsx scripts/populate-leads-contacts-org-id.ts --env=.env.prod"
+    "populate:contacts-org-id:prod": "tsx scripts/populate-leads-contacts-org-id.ts --env=.env.prod",
+    "backfill:hs-codes": "tsx scripts/backfill-hs-codes.ts",
+    "backfill:hs-codes:prod": "tsx scripts/backfill-hs-codes.ts --env=.env.prod"
   },
   "dependencies": {
     "@ai-sdk/azure": "^2.0.60",

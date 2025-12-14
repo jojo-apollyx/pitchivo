@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingIllustration } from '@/components/ui/loading-illustration'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface Buyer {
   company: string
@@ -23,6 +24,10 @@ interface Buyer {
     email: string | null
     title: string | null
   }>
+  interactionTypes?: string[] // Most recent 3 distinct interaction types
+  categoryFit?: 'High' | 'Medium' | 'Low' | 'Assessment Pending'
+  cooperationPotential?: 'Strong' | 'Neutral' | 'Weak' | 'Assessment Pending'
+  matchScore?: 'A' | 'B' | 'C' | 'D' | 'Assessment Pending'
 }
 
 interface BuyerStats {
@@ -284,6 +289,164 @@ export default function MatchedBuyersPage() {
                                           <ExternalLink className="h-3 w-3" />
                                           <span>Website</span>
                                         </a>
+                                      )}
+                                    </div>
+                                    {buyer.interactionTypes && buyer.interactionTypes.length > 0 && (
+                                      <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                                        <span className="text-xs text-muted-foreground">Activity:</span>
+                                        {buyer.interactionTypes.map((interactionType, idx) => {
+                                          // Format interaction type for display
+                                          const formatted = interactionType
+                                            .split('_')
+                                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                            .join(' ')
+                                          return (
+                                            <Badge 
+                                              key={idx} 
+                                              variant="secondary" 
+                                              className="text-xs font-normal"
+                                            >
+                                              {formatted}
+                                            </Badge>
+                                          )
+                                        })}
+                                      </div>
+                                    )}
+                                    {/* Signal Metrics */}
+                                    <div className="flex items-center gap-2 flex-wrap mt-2 pt-2 border-t border-border/20">
+                                      {/* Product Category Fit */}
+                                      {buyer.categoryFit && (
+                                        <TooltipProvider delayDuration={200}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-xs text-muted-foreground">Category Fit:</span>
+                                                <Badge 
+                                                  variant={
+                                                    buyer.categoryFit === 'High' ? 'default' :
+                                                    buyer.categoryFit === 'Medium' ? 'secondary' :
+                                                    buyer.categoryFit === 'Assessment Pending' ? 'outline' :
+                                                    'outline'
+                                                  }
+                                                  className={cn(
+                                                    "text-xs font-medium cursor-help",
+                                                    buyer.categoryFit === 'High' && "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
+                                                    buyer.categoryFit === 'Medium' && "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
+                                                    buyer.categoryFit === 'Low' && "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20",
+                                                    buyer.categoryFit === 'Assessment Pending' && "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20"
+                                                  )}
+                                                >
+                                                  {buyer.categoryFit}
+                                                </Badge>
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="max-w-xs">
+                                              <div className="space-y-1">
+                                                <p className="font-semibold">Product Category Fit</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                  {buyer.categoryFit === 'Assessment Pending' 
+                                                    ? 'Category fit assessment is being evaluated. We are analyzing company data to determine alignment with your product category.'
+                                                    : buyer.categoryFit === 'High'
+                                                    ? 'Strong match: Company operates in the same industry/category as your product.'
+                                                    : buyer.categoryFit === 'Medium'
+                                                    ? 'Moderate match: Company has some relevance to your product category.'
+                                                    : 'Low match: Limited category alignment with your product.'}
+                                                </p>
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      )}
+                                      
+                                      {/* Long-term Cooperation Potential */}
+                                      {buyer.cooperationPotential && (
+                                        <TooltipProvider delayDuration={200}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-xs text-muted-foreground">Cooperation:</span>
+                                                <Badge 
+                                                  variant={
+                                                    buyer.cooperationPotential === 'Strong' ? 'default' :
+                                                    buyer.cooperationPotential === 'Neutral' ? 'secondary' :
+                                                    buyer.cooperationPotential === 'Assessment Pending' ? 'outline' :
+                                                    'outline'
+                                                  }
+                                                  className={cn(
+                                                    "text-xs font-medium cursor-help",
+                                                    buyer.cooperationPotential === 'Strong' && "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+                                                    buyer.cooperationPotential === 'Neutral' && "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
+                                                    buyer.cooperationPotential === 'Weak' && "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20",
+                                                    buyer.cooperationPotential === 'Assessment Pending' && "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20"
+                                                  )}
+                                                >
+                                                  {buyer.cooperationPotential}
+                                                </Badge>
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="max-w-xs">
+                                              <div className="space-y-1">
+                                                <p className="font-semibold">Long-term Cooperation Potential</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                  {buyer.cooperationPotential === 'Assessment Pending'
+                                                    ? 'Cooperation potential assessment is being evaluated. We are analyzing interaction history and engagement patterns.'
+                                                    : buyer.cooperationPotential === 'Strong'
+                                                    ? 'High potential: Multiple verified signals, recent activity, and high-value interactions indicate strong partnership potential.'
+                                                    : buyer.cooperationPotential === 'Neutral'
+                                                    ? 'Moderate potential: Some signals and activity suggest possible cooperation.'
+                                                    : 'Low potential: Limited or old signals indicate lower cooperation likelihood.'}
+                                                </p>
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      )}
+                                      
+                                      {/* System Match Score */}
+                                      {buyer.matchScore && (
+                                        <TooltipProvider delayDuration={200}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-xs text-muted-foreground">Match Score:</span>
+                                                <Badge 
+                                                  variant={
+                                                    buyer.matchScore === 'A' ? 'default' :
+                                                    buyer.matchScore === 'B' ? 'secondary' :
+                                                    buyer.matchScore === 'Assessment Pending' ? 'outline' :
+                                                    'outline'
+                                                  }
+                                                  className={cn(
+                                                    "text-xs font-bold cursor-help",
+                                                    buyer.matchScore === 'A' && "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
+                                                    buyer.matchScore === 'B' && "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+                                                    buyer.matchScore === 'C' && "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
+                                                    buyer.matchScore === 'D' && "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20",
+                                                    buyer.matchScore === 'Assessment Pending' && "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20"
+                                                  )}
+                                                >
+                                                  {buyer.matchScore}
+                                                </Badge>
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="max-w-xs">
+                                              <div className="space-y-1">
+                                                <p className="font-semibold">System Match Score</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                  {buyer.matchScore === 'Assessment Pending'
+                                                    ? 'Match score assessment is being evaluated. We are analyzing similarity, data quality, and signal verification to determine the match score.'
+                                                    : buyer.matchScore === 'A'
+                                                    ? 'Excellent match: High semantic similarity, verified signals, complete data, and high trust sources.'
+                                                    : buyer.matchScore === 'B'
+                                                    ? 'Good match: Good similarity, some verified signals, and decent data quality.'
+                                                    : buyer.matchScore === 'C'
+                                                    ? 'Moderate match: Acceptable similarity and data quality.'
+                                                    : 'Low match: Limited similarity or data quality issues.'}
+                                                </p>
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
                                       )}
                                     </div>
                                   </div>

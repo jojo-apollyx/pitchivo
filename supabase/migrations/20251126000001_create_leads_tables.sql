@@ -232,14 +232,7 @@ CREATE TABLE IF NOT EXISTS leads_signals (
         'used_in_production',  -- Company uses this item in production
         'mentioned_in_article', -- Item mentioned in company article
         'patent_filed',        -- Company filed patent for this
-        'partnership_announced', -- Partnership related to this item
-        
-        -- Marketplace/Email feedback (legacy support)
-        'requested_sample',
-        'clicked_link',
-        'replied_interested',
-        'replied_not_interested',
-        'opened_email'
+        'partnership_announced' -- Partnership related to this item
     )),
     
     -- Temporal context
