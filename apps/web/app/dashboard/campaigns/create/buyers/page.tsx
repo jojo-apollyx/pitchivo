@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Building2, Users, MapPin, ExternalLink, Briefcase, ChevronDown, ChevronUp, User } from 'lucide-react'
+import { ArrowLeft, Building2, Users, MapPin, ExternalLink, Briefcase, ChevronDown, ChevronUp, User, Search, Sparkles, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCampaignStore } from '@/lib/stores/campaign-store'
 import { useEffect, useState } from 'react'
@@ -30,6 +30,13 @@ interface Buyer {
   matchScore?: 'A' | 'B' | 'C' | 'D' | 'Assessment Pending'
 }
 
+interface MatchedItem {
+  id: string
+  name: string
+  aliases: string[]
+  similarity: number
+}
+
 interface BuyerStats {
   totalBuyers: number
   totalContacts: number
@@ -38,10 +45,37 @@ interface BuyerStats {
   avgContactsPerBuyer: number
 }
 
+// User-friendly messages for interaction types
+const INTERACTION_TYPE_MESSAGES: Record<string, string> = {
+  'purchased': 'Previously purchased this product',
+  'requested_quote': 'Requested a quote in the past',
+  'viewed_item': 'Showed buying interest',
+  'added_to_cart': 'Added to cart previously',
+  'imported': 'Has imported this product',
+  'used_in_production': 'Uses this in their production',
+  'distributed': 'Distributes this product',
+  'mentioned_in_article': 'Mentioned in industry coverage',
+  'partnership_announced': 'Partnership related to this product',
+  'exported': 'Has exported this product',
+  'manufactured': 'Manufactures this product',
+  'sold': 'Has sold this product',
+  'supplied': 'Supplies this product'
+}
+
+// Get user-friendly message for interaction type
+function getInteractionMessage(interactionType: string): string {
+  return INTERACTION_TYPE_MESSAGES[interactionType] || interactionType
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 export default function MatchedBuyersPage() {
   const router = useRouter()
   const { draft, setDraft, nextStep, prevStep } = useCampaignStore()
   const [buyers, setBuyers] = useState<Buyer[]>([])
+  const [matchedItems, setMatchedItems] = useState<MatchedItem[]>([])
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const [stats, setStats] = useState<BuyerStats>({
     totalBuyers: 0,
     totalContacts: 0,
@@ -100,6 +134,8 @@ export default function MatchedBuyersPage() {
 
         const data = await response.json()
         setBuyers(data.buyers || [])
+        setMatchedItems(data.matchedItems || [])
+        setSearchQuery(data.searchQuery || draft.productName || '')
         setStats({
           totalBuyers: data.totalBuyers || 0,
           totalContacts: data.totalContacts || 0,
@@ -205,6 +241,71 @@ export default function MatchedBuyersPage() {
                 </p>
               </div>
 
+              {/* Matched Items Section - Show what was searched */}
+              {!loading && matchedItems.length > 0 && (
+                <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-border/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Search className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Semantic Search Results</span>
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">
+                            We used AI-powered semantic search to find products matching &quot;{searchQuery}&quot;. 
+                            This finds similar items even with different names (e.g., &quot;Vitamin C&quot; matches &quot;Ascorbic Acid&quot;).
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {matchedItems.slice(0, 5).map((item, idx) => (
+                      <TooltipProvider key={item.id} delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background/80 rounded-lg border border-border/50 cursor-help">
+                              <Sparkles className="h-3 w-3 text-primary" />
+                              <span className="text-sm font-medium">{item.name}</span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                                {Math.round(item.similarity * 100)}%
+                              </Badge>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <div className="space-y-1.5">
+                              <p className="font-medium text-xs">Match Confidence: {Math.round(item.similarity * 100)}%</p>
+                              {item.aliases.length > 0 && (
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground mb-1">Also known as:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {item.aliases.slice(0, 5).map((alias, aliasIdx) => (
+                                      <Badge key={aliasIdx} variant="secondary" className="text-[10px] px-1.5 py-0">
+                                        {alias}
+                                      </Badge>
+                                    ))}
+                                    {item.aliases.length > 5 && (
+                                      <span className="text-[10px] text-muted-foreground">+{item.aliases.length - 5} more</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                    {matchedItems.length > 5 && (
+                      <span className="text-xs text-muted-foreground self-center">
+                        +{matchedItems.length - 5} more matches
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Buyers Table */}
               {loading ? (
                 <div className="bg-card/50 rounded-xl p-12 sm:p-16 flex items-center justify-center min-h-[400px]">
@@ -293,23 +394,26 @@ export default function MatchedBuyersPage() {
                                     </div>
                                     {buyer.interactionTypes && buyer.interactionTypes.length > 0 && (
                                       <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                                        <span className="text-xs text-muted-foreground">Activity:</span>
-                                        {buyer.interactionTypes.map((interactionType, idx) => {
-                                          // Format interaction type for display
-                                          const formatted = interactionType
-                                            .split('_')
-                                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                            .join(' ')
-                                          return (
-                                            <Badge 
-                                              key={idx} 
-                                              variant="secondary" 
-                                              className="text-xs font-normal"
-                                            >
-                                              {formatted}
-                                            </Badge>
-                                          )
-                                        })}
+                                        <span className="text-xs text-muted-foreground">Why selected:</span>
+                                        {buyer.interactionTypes.map((interactionType, idx) => (
+                                          <TooltipProvider key={idx} delayDuration={200}>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Badge 
+                                                  variant="secondary" 
+                                                  className="text-xs font-normal cursor-help bg-primary/10 text-primary border-primary/20"
+                                                >
+                                                  {getInteractionMessage(interactionType)}
+                                                </Badge>
+                                              </TooltipTrigger>
+                                              <TooltipContent side="top" className="max-w-xs">
+                                                <p className="text-xs">
+                                                  This company was selected because they have {getInteractionMessage(interactionType).toLowerCase()}.
+                                                </p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        ))}
                                       </div>
                                     )}
                                     {/* Signal Metrics */}
@@ -452,9 +556,29 @@ export default function MatchedBuyersPage() {
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <div className="flex items-center justify-end gap-1 text-right">
-                                    <Users className="h-3 w-3 text-muted-foreground" />
-                                    <span className="text-sm">{buyer.contacts}</span>
+                                  <div className="flex flex-col items-end gap-1">
+                                    <div className="flex items-center gap-1 text-right">
+                                      <Users className="h-3 w-3 text-muted-foreground" />
+                                      <span className="text-sm">{buyer.contacts}</span>
+                                    </div>
+                                    {buyer.contacts === 0 && (
+                                      <TooltipProvider delayDuration={200}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 cursor-help">
+                                              <Info className="h-3 w-3" />
+                                              <span>Will be sourced</span>
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="left" className="max-w-xs">
+                                            <p className="text-xs">
+                                              Contact information will be automatically sourced from multiple channels during campaign execution. 
+                                              Our system enriches company data with verified decision-maker contacts.
+                                            </p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
                                   </div>
                                 </td>
                               </tr>

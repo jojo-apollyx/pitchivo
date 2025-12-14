@@ -21,6 +21,13 @@ interface Buyer {
   matchScore?: 'A' | 'B' | 'C' | 'D' | 'Assessment Pending'
 }
 
+interface MatchedItem {
+  id: string
+  name: string
+  aliases: string[]
+  similarity: number
+}
+
 interface GenerateBuyersResponse {
   buyers: Buyer[]
   totalBuyers: number
@@ -28,6 +35,8 @@ interface GenerateBuyersResponse {
   verifiedFields: number
   countries: number
   avgContactsPerBuyer: number
+  matchedItems: MatchedItem[] // Items matched via semantic search
+  searchQuery: string // The query used for semantic search
 }
 
 /**
@@ -61,135 +70,95 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Step 1: Find market items using semantic/vector search (PRIMARY METHOD)
+    // Step 1: Find market items using semantic/vector search (ONLY METHOD - no fallback)
     // 
     // SEARCH STRATEGY:
-    // 1. Semantic/vector search (primary): Uses embeddings to find similar items
-    //    - Finds items even with different names (e.g., "Vitamin C" = "Ascorbic Acid")
-    //    - More flexible and intelligent matching
-    // 2. Exact name matching (fallback): Only if semantic search fails or isn't available
-    //    - Match on normalized_name (exact match)
-    //    - Match on aliases array (contains check)
+    // Uses embeddings to find semantically similar items
+    // - Finds items even with different names (e.g., "Vitamin C" = "Ascorbic Acid")
+    // - Handles product variations like "Beta-Carotene Powder 1% CWS-K" matching "Beta Carotene"
+    // - More flexible and intelligent matching
+    // - Threshold: 0.65 for good recall while maintaining precision
     
     let marketItems: Array<{ id: string; name: string; aliases: string[]; category?: string; similarity?: number }> = []
     let maxSimilarity = 0 // Track max similarity for match score calculation
 
-    try {
-      // Generate embedding for the product name using Azure OpenAI
-      const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME
-      const apiKey = process.env.AZURE_OPENAI_API_KEY
-      // Use embedding model from env or fallback to text-embedding-ada-002
-      // Available models: text-embedding-ada-002, text-embedding-3-large, etc.
-      const embeddingDeployment = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-ada-002'
+    // Generate embedding for the product name using Azure OpenAI
+    const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME
+    const apiKey = process.env.AZURE_OPENAI_API_KEY
+    // Use embedding model from env or fallback to text-embedding-ada-002
+    // Available models: text-embedding-ada-002, text-embedding-3-large, etc.
+    const embeddingDeployment = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-ada-002'
 
-      if (resourceName && apiKey) {
-        const azure = createAzure({
-          resourceName,
-          apiKey
-        })
-
-        try {
-          // Generate embedding using Azure OpenAI embedding model
-          const { embedding: queryEmbedding } = await embed({
-            model: azure.embedding(embeddingDeployment),
-            value: productName
-          })
-
-          // Use vector similarity search (cosine distance)
-          // Find items with similar embeddings (threshold: 0.7 similarity = 0.3 distance)
-          const { data: semanticMatches, error: semanticError } = await supabase.rpc('match_market_items_semantic', {
-            query_embedding: queryEmbedding,
-            match_threshold: 0.7,
-            match_count: 20
-          })
-
-          if (!semanticError && semanticMatches && semanticMatches.length > 0) {
-            marketItems = semanticMatches.map((item: any) => {
-              const similarity = item.similarity || 0
-              if (similarity > maxSimilarity) maxSimilarity = similarity
-              return {
-                id: item.id,
-                name: item.name,
-                aliases: item.aliases || [],
-                category: item.category || null,
-                similarity: similarity
-              }
-            })
-            console.log(`[Generate Buyers] Found ${marketItems.length} items via semantic search`)
-          } else if (semanticError) {
-            console.warn('[Generate Buyers] Semantic search error:', semanticError.message)
-            // Fall through to exact matching fallback
-          }
-        } catch (embeddingError: any) {
-          // Handle embedding model errors gracefully
-          if (embeddingError?.message?.includes('Unavailable model') || embeddingError?.message?.includes('model')) {
-            console.warn(`[Generate Buyers] Embedding model '${embeddingDeployment}' not available, falling back to exact matching`)
-          } else {
-            console.warn('[Generate Buyers] Embedding generation failed, falling back to exact matching:', embeddingError?.message || embeddingError)
-          }
-          // Fall through to exact matching fallback
-        }
-      } else {
-        console.warn('[Generate Buyers] Azure OpenAI not configured, falling back to exact matching')
-      }
-    } catch (semanticError) {
-      console.warn('[Generate Buyers] Semantic search failed, falling back to exact matching:', semanticError instanceof Error ? semanticError.message : semanticError)
-      // Fall through to exact matching fallback
+    if (!resourceName || !apiKey) {
+      console.error('[Generate Buyers] Azure OpenAI not configured - semantic search required')
+      return NextResponse.json(
+        { error: 'Semantic search is not configured. Please contact support.' },
+        { status: 503 }
+      )
     }
 
-    // Fallback to exact matching if semantic search didn't return results
-    if (!marketItems || marketItems.length === 0) {
-      console.log('[Generate Buyers] No semantic matches, trying exact name matching...')
-      
-      const normalizedName = productName.toLowerCase().trim()
-      
-      // Try exact normalized name match
-      const { data: exactMatches, error: exactError } = await supabase
-        .from('leads_market_items')
-        .select('id, name, aliases, category')
-        .eq('normalized_name', normalizedName)
+    const azure = createAzure({
+      resourceName,
+      apiKey
+    })
 
-      // Search for items where aliases contain the product name
-      const { data: aliasMatches, error: aliasError } = await supabase
-        .from('leads_market_items')
-        .select('id, name, aliases, category')
-        .contains('aliases', [normalizedName])
+    try {
+      // Generate embedding using Azure OpenAI embedding model
+      const { embedding: queryEmbedding } = await embed({
+        model: azure.embedding(embeddingDeployment),
+        value: productName
+      })
 
-      if (exactError || aliasError) {
-        console.error('[Generate Buyers] Error finding market items:', exactError || aliasError)
+      // Use vector similarity search (cosine distance)
+      // Find items with similar embeddings (threshold: 0.65 for good recall)
+      const { data: semanticMatches, error: semanticError } = await supabase.rpc('match_market_items_semantic', {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.65,
+        match_count: 30
+      })
+
+      if (semanticError) {
+        console.error('[Generate Buyers] Semantic search error:', semanticError.message)
         return NextResponse.json(
-          { error: 'Failed to search market items', details: (exactError || aliasError)?.message },
+          { error: 'Failed to perform semantic search', details: semanticError.message },
           { status: 500 }
         )
       }
 
-      // Combine results and deduplicate by id
-      const allMatches = [...(exactMatches || []), ...(aliasMatches || [])]
-      marketItems = allMatches.filter((item, index, self) => 
-        index === self.findIndex(t => t.id === item.id)
-      ).map(item => ({
-        id: item.id,
-        name: item.name,
-        aliases: item.aliases || [],
-        category: item.category || null,
-        similarity: 1.0 // Exact match = 100% similarity
-      }))
-      maxSimilarity = 1.0 // Exact match
-      
-      if (marketItems.length > 0) {
-        console.log(`[Generate Buyers] Found ${marketItems.length} items via exact matching`)
+      if (semanticMatches && semanticMatches.length > 0) {
+        marketItems = semanticMatches.map((item: any) => {
+          const similarity = item.similarity || 0
+          if (similarity > maxSimilarity) maxSimilarity = similarity
+          return {
+            id: item.id,
+            name: item.name,
+            aliases: item.aliases || [],
+            category: item.category || null,
+            similarity: similarity
+          }
+        })
+        console.log(`[Generate Buyers] Found ${marketItems.length} items via semantic search for "${productName}"`)
       }
+    } catch (embeddingError: any) {
+      console.error('[Generate Buyers] Embedding generation failed:', embeddingError?.message || embeddingError)
+      return NextResponse.json(
+        { error: 'Failed to generate embedding for search', details: embeddingError?.message || 'Unknown error' },
+        { status: 500 }
+      )
     }
 
     if (!marketItems || marketItems.length === 0) {
-      // No matching market items found (neither exact nor semantic)
+      // No matching market items found via semantic search
+      console.log(`[Generate Buyers] No semantic matches found for "${productName}"`)
       return NextResponse.json({
         buyers: [],
         totalBuyers: 0,
         totalContacts: 0,
         verifiedFields: 0,
         countries: 0,
-        avgContactsPerBuyer: 0
+        avgContactsPerBuyer: 0,
+        matchedItems: [],
+        searchQuery: productName
       })
     }
 
@@ -689,13 +658,23 @@ export async function POST(request: NextRequest) {
       Object.keys(org.profile_data).length > 0
     ).length
 
+    // Build matched items response with similarity scores
+    const matchedItemsResponse: MatchedItem[] = marketItems.map(item => ({
+      id: item.id,
+      name: item.name,
+      aliases: item.aliases,
+      similarity: item.similarity || 0
+    })).sort((a, b) => b.similarity - a.similarity) // Sort by similarity descending
+
     const response: GenerateBuyersResponse = {
       buyers: topBuyers,
       totalBuyers,
       totalContacts,
       verifiedFields,
       countries,
-      avgContactsPerBuyer: parseFloat(avgContactsPerBuyer.toFixed(1))
+      avgContactsPerBuyer: parseFloat(avgContactsPerBuyer.toFixed(1)),
+      matchedItems: matchedItemsResponse,
+      searchQuery: productName
     }
 
     return NextResponse.json(response)
