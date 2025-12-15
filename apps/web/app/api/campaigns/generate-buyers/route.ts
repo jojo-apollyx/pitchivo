@@ -418,30 +418,45 @@ export async function POST(request: NextRequest) {
         .filter((c): c is string => Boolean(c))
         .map(c => c.toLowerCase())
       
-      // High: Direct industry/category match
+      // High: Direct industry/category match (more lenient - partial matches count)
       if (productCategory && orgIndustries.some((ind: string) => 
-        ind.includes(productCategory) || productCategory.includes(ind)
+        ind.includes(productCategory) || productCategory.includes(ind) ||
+        ind.split(' ').some(word => productCategory.includes(word)) ||
+        productCategory.split(' ').some(word => ind.includes(word))
       )) {
         return 'High'
       }
       
-      // High: Business type indicates relevant activity
+      // High: Business type indicates relevant activity (more lenient)
       if (productCategory && orgBusinessTypes.some((bt: string) => 
-        (bt.includes('food') && productCategory.includes('food')) ||
+        (bt.includes('food') && (productCategory.includes('food') || productCategory.includes('supplement'))) ||
         (bt.includes('beverage') && productCategory.includes('beverage')) ||
-        (bt.includes('ingredient') && productCategory.includes('ingredient'))
+        (bt.includes('ingredient') || bt.includes('supplement') || bt.includes('nutrition'))
       )) {
         return 'High'
       }
       
-      // Medium: Category match from items
+      // High: Has item categories (if items have categories, likely a fit)
+      if (itemCategories.length > 0) {
+        return 'High'
+      }
+      
+      // Medium: Category match from items (more lenient)
       if (itemCategories.length > 0 && productCategory && 
-          itemCategories.some((cat: string) => cat.includes(productCategory) || productCategory.includes(cat))) {
+          itemCategories.some((cat: string) => 
+            cat.includes(productCategory) || productCategory.includes(cat) ||
+            cat.split(' ').some(word => productCategory.includes(word))
+          )) {
         return 'Medium'
       }
       
-      // Medium: Partial industry match
-      if (productCategory && orgIndustries.length > 0) {
+      // Medium: Any industry match (more lenient)
+      if (orgIndustries.length > 0) {
+        return 'Medium'
+      }
+      
+      // Medium: Has business type (indicates some activity)
+      if (orgBusinessTypes.length > 0) {
         return 'Medium'
       }
       
@@ -469,25 +484,35 @@ export async function POST(request: NextRequest) {
       const highValueCount = stats.interactionTypes.filter(t => highValueTypes.includes(t)).length
       const mediumValueCount = stats.interactionTypes.filter(t => mediumValueTypes.includes(t)).length
       
-      // Strong: Multiple verified signals, recent, high-value interactions, multiple items
-      if (stats.verifiedSignals >= 3 && 
-          monthsSinceRecent <= 12 && 
-          (highValueCount >= 2 || stats.distinctItems >= 2)) {
+      // Strong: Multiple verified signals, recent, high-value interactions (more lenient)
+      if (stats.verifiedSignals >= 2 && 
+          monthsSinceRecent <= 18 && 
+          (highValueCount >= 1 || stats.distinctItems >= 2)) {
         return 'Strong'
       }
       
-      // Strong: Very recent high-value activity
-      if (monthsSinceRecent <= 6 && highValueCount >= 1 && stats.verifiedSignals >= 1) {
+      // Strong: Recent high-value activity (more lenient)
+      if (monthsSinceRecent <= 12 && (highValueCount >= 1 || mediumValueCount >= 2)) {
         return 'Strong'
       }
       
-      // Neutral: Some signals, moderate recency
-      if (stats.totalSignals >= 2 && monthsSinceRecent <= 24) {
+      // Strong: Multiple items purchased (indicates active buyer)
+      if (stats.distinctItems >= 2 && monthsSinceRecent <= 24) {
+        return 'Strong'
+      }
+      
+      // Neutral: Some signals, moderate recency (more lenient)
+      if (stats.totalSignals >= 2 && monthsSinceRecent <= 36) {
         return 'Neutral'
       }
       
-      // Neutral: Recent but low-value
-      if (monthsSinceRecent <= 12 && stats.totalSignals >= 1) {
+      // Neutral: Recent activity (more lenient)
+      if (monthsSinceRecent <= 18 && stats.totalSignals >= 1) {
+        return 'Neutral'
+      }
+      
+      // Neutral: Has medium-value interactions
+      if (mediumValueCount >= 1) {
         return 'Neutral'
       }
       
@@ -533,16 +558,19 @@ export async function POST(request: NextRequest) {
       // Score calculation
       let score = 0
       
-      // Similarity (40% weight)
-      if (avgSimilarity >= 0.85) score += 40
-      else if (avgSimilarity >= 0.75) score += 30
-      else if (avgSimilarity >= 0.65) score += 20
+      // Similarity (40% weight) - Lowered thresholds for more lenient scoring
+      if (avgSimilarity >= 0.80) score += 40
+      else if (avgSimilarity >= 0.70) score += 30
+      else if (avgSimilarity >= 0.60) score += 20
+      else if (avgSimilarity >= 0.50) score += 15
       else score += 10
       
-      // Verified signals (30% weight)
+      // Verified signals (30% weight) - More lenient thresholds
       if (stats.verifiedSignals >= 2) score += 30
-      else if (stats.verifiedSignals >= 1) score += 20
-      else if (stats.totalSignals >= 2) score += 10
+      else if (stats.verifiedSignals >= 1) score += 25
+      else if (stats.totalSignals >= 3) score += 20
+      else if (stats.totalSignals >= 2) score += 15
+      else if (stats.totalSignals >= 1) score += 10
       else score += 5
       
       // Data completeness (20% weight)
@@ -551,10 +579,10 @@ export async function POST(request: NextRequest) {
       // Trust score (10% weight)
       score += avgTrustScore * 10
       
-      // Determine grade
-      if (score >= 80) return 'A'
-      if (score >= 60) return 'B'
-      if (score >= 40) return 'C'
+      // Determine grade - Lowered thresholds for better distribution
+      if (score >= 70) return 'A'
+      if (score >= 50) return 'B'
+      if (score >= 35) return 'C'
       return 'D'
     }
 

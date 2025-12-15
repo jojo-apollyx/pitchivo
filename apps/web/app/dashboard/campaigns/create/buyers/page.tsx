@@ -255,7 +255,7 @@ export default function MatchedBuyersPage() {
                         <TooltipContent side="top" className="max-w-xs">
                           <p className="text-xs">
                             We used AI-powered semantic search to find products matching &quot;{searchQuery}&quot;. 
-                            This finds similar items even with different names (e.g., &quot;Vitamin C&quot; matches &quot;Ascorbic Acid&quot;).
+                            This finds items by their aliases and alternative names (e.g., &quot;Beta Carotene&quot; matches &quot;Beta-Carotene Powder&quot; or &quot;Provitamin A&quot;).
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -324,9 +324,8 @@ export default function MatchedBuyersPage() {
                   <p className="text-muted-foreground">No buyers found for this product.</p>
                 </div>
               ) : (
-                <div className="bg-card/50 rounded-xl overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                <div className="bg-card/50 rounded-xl">
+                  <table className="w-full">
                       <thead className="bg-muted/50 border-b border-border/50">
                         <tr>
                           <th className="text-left px-4 py-3 text-sm font-semibold">
@@ -635,7 +634,6 @@ export default function MatchedBuyersPage() {
                         })}
                       </tbody>
                     </table>
-                  </div>
 
                   {/* Table Footer */}
                   <div className="px-4 py-4 border-t border-border/50 bg-muted/30">
