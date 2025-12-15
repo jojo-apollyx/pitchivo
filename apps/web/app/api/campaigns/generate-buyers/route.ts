@@ -421,8 +421,8 @@ export async function POST(request: NextRequest) {
       // High: Direct industry/category match (more lenient - partial matches count)
       if (productCategory && orgIndustries.some((ind: string) => 
         ind.includes(productCategory) || productCategory.includes(ind) ||
-        ind.split(' ').some(word => productCategory.includes(word)) ||
-        productCategory.split(' ').some(word => ind.includes(word))
+        ind.split(' ').some((word: string) => productCategory.includes(word)) ||
+        productCategory.split(' ').some((word: string) => ind.includes(word))
       )) {
         return 'High'
       }
@@ -445,7 +445,7 @@ export async function POST(request: NextRequest) {
       if (itemCategories.length > 0 && productCategory && 
           itemCategories.some((cat: string) => 
             cat.includes(productCategory) || productCategory.includes(cat) ||
-            cat.split(' ').some(word => productCategory.includes(word))
+            cat.split(' ').some((word: string) => productCategory.includes(word))
           )) {
         return 'Medium'
       }
