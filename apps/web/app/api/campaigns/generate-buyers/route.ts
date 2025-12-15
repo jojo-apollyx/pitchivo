@@ -119,6 +119,23 @@ export async function POST(request: NextRequest) {
 
       if (semanticError) {
         console.error('[Generate Buyers] Semantic search error:', semanticError.message)
+        
+        // Check if it's a timeout error
+        const isTimeout = semanticError.message?.toLowerCase().includes('timeout') || 
+                         semanticError.message?.toLowerCase().includes('statement timeout') ||
+                         semanticError.message?.toLowerCase().includes('canceling statement')
+        
+        if (isTimeout) {
+          return NextResponse.json(
+            { 
+              error: 'Semantic search timed out. The database query took too long. This may happen if the vector index needs optimization or there are too many records.',
+              details: semanticError.message,
+              suggestion: 'Please try again with a more specific product name, or contact support if the issue persists.'
+            },
+            { status: 504 } // Gateway Timeout
+          )
+        }
+        
         return NextResponse.json(
           { error: 'Failed to perform semantic search', details: semanticError.message },
           { status: 500 }
