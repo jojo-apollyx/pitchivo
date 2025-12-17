@@ -20,7 +20,7 @@ interface DeleteConfirmationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
-  target: { type: 'signal' | 'all'; signalId?: string; companyId?: string } | null
+  target: { type: 'signal' | 'all' | 'contact' | 'company'; signalId?: string; companyId?: string; contactId?: string; companyName?: string } | null
   company?: Company
 }
 
@@ -44,7 +44,21 @@ export function DeleteConfirmationDialog({
             Confirm Deletion
           </DialogTitle>
           <DialogDescription>
-            {target.type === 'signal' ? (
+            {target.type === 'company' ? (
+              <>
+                <strong className="text-destructive">Warning: This will permanently delete the company "{target.companyName}"</strong>
+                <br /><br />
+                This will also delete:
+                <ul className="list-disc ml-5 mt-2">
+                  <li>All signals associated with this company</li>
+                  <li>All contacts associated with this company</li>
+                </ul>
+                <br />
+                This action cannot be undone.
+              </>
+            ) : target.type === 'contact' ? (
+              'Are you sure you want to delete this contact? This action cannot be undone.'
+            ) : target.type === 'signal' ? (
               'Are you sure you want to delete this signal?'
             ) : isMultipleSignals ? (
               <>
@@ -65,7 +79,7 @@ export function DeleteConfirmationDialog({
             Cancel
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
-            {target.type === 'all' ? 'Delete All Signals' : 'Delete Signal'}
+            {target.type === 'company' ? 'Delete Company' : target.type === 'contact' ? 'Delete Contact' : target.type === 'all' ? 'Delete All Signals' : 'Delete Signal'}
           </Button>
         </div>
       </DialogContent>

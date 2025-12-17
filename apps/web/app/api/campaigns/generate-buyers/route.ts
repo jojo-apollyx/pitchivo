@@ -4,6 +4,7 @@ import { createAzure } from '@ai-sdk/azure'
 import { embed } from 'ai'
 
 interface Buyer {
+  orgId: string // Database ID for admin operations
   company: string
   companyType: string
   location: string
@@ -11,6 +12,7 @@ interface Buyer {
   employeeCount: string | null
   contacts: number
   contactDetails?: Array<{
+    id: string
     name: string
     email: string | null
     title: string | null
@@ -61,7 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { productName, productIndustry } = body
+    const { productName, productIndustry, limit: requestLimit } = body
+    const buyerLimit = requestLimit !== undefined ? requestLimit : 10 // Default to 10, 0 = no limit
 
     if (!productName) {
       return NextResponse.json(
@@ -313,7 +316,7 @@ export async function POST(request: NextRequest) {
     // But we still need total count, so we'll get all and limit later
     const { data: contacts, error: contactsError } = await supabase
       .from('leads_contacts')
-      .select('org_id, first_name, last_name, full_name, title, email')
+      .select('id, org_id, first_name, last_name, full_name, title, email')
       .in('org_id', orgIds)
       .eq('is_current', true)
       .not('email', 'is', null) // Only include contacts with email addresses
@@ -685,12 +688,14 @@ export async function POST(request: NextRequest) {
 
       // Build contact details (limited to 3 per org for campaign leads)
       const contactDetails = orgContacts.map(contact => ({
+        id: contact.id,
         name: contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown',
         email: contact.email || null,
         title: contact.title
       })).filter(contact => contact.email) // Only include contacts with email
 
       return {
+        orgId: org.id, // Database ID for admin operations
         company: org.name,
         companyType,
         location,
@@ -705,9 +710,9 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Sort by contact count (descending) and limit to top 10 for display
+    // Sort by contact count (descending) and apply limit
     buyers.sort((a, b) => b.contacts - a.contacts)
-    const topBuyers = buyers.slice(0, 10)
+    const topBuyers = buyerLimit === 0 ? buyers : buyers.slice(0, buyerLimit)
 
     // Calculate statistics
     const totalBuyers = buyers.length

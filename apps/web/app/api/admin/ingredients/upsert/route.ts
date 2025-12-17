@@ -22,9 +22,16 @@ async function checkAdminAuth() {
   return { user, supabase }
 }
 
+interface ContactInput {
+  firstName?: string
+  lastName?: string
+  email?: string
+  title?: string
+}
+
 /**
  * POST /api/admin/ingredients/upsert
- * Upsert company, contact, and create signal
+ * Upsert company, contacts, and create signal
  */
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +53,8 @@ export async function POST(request: NextRequest) {
       companyCountry,
       companyCity,
       companyState,
-      contactId, // If provided, update existing contact
+      contacts, // Array of contacts (new format)
+      // Legacy single contact fields (for backward compatibility)
       contactFirstName,
       contactLastName,
       contactEmail,
@@ -192,34 +200,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Upsert contact (if provided)
-    let contactIdResult: string | null = null
-    if (contactEmail || contactFirstName || contactLastName) {
-      if (contactId) {
-        // Update existing contact
-        const { error: updateError } = await supabase
-          .from('leads_contacts')
-          .update({
-            first_name: contactFirstName || null,
-            last_name: contactLastName || null,
-            email: contactEmail || null,
-            title: contactTitle || null,
-            org_id: orgId
-          })
-          .eq('id', contactId)
+    // Process contacts
+    const contactIds: string[] = []
+    
+    // Build contacts list from new format or legacy single contact
+    let contactList: ContactInput[] = []
+    
+    if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+      contactList = contacts
+    } else if (contactEmail || contactFirstName || contactLastName) {
+      // Legacy single contact format
+      contactList = [{
+        firstName: contactFirstName,
+        lastName: contactLastName,
+        email: contactEmail,
+        title: contactTitle
+      }]
+    }
 
-        if (updateError) {
-          console.error('Error updating contact:', updateError)
-          // Don't fail the whole request, just log it
-        } else {
-          contactIdResult = contactId
-        }
-      } else if (contactEmail) {
+    // Upsert each contact
+    for (const contact of contactList) {
+      const { firstName, lastName, email, title } = contact
+      
+      // Skip empty contacts
+      if (!firstName && !lastName && !email && !title) {
+        continue
+      }
+
+      let contactIdResult: string | null = null
+
+      if (email) {
         // Check if contact exists by email
         const { data: existingContact } = await supabase
           .from('leads_contacts')
           .select('id')
-          .eq('email', contactEmail.toLowerCase().trim())
+          .eq('email', email.toLowerCase().trim())
           .single()
 
         if (existingContact) {
@@ -227,9 +242,9 @@ export async function POST(request: NextRequest) {
           const { error: updateError } = await supabase
             .from('leads_contacts')
             .update({
-              first_name: contactFirstName || null,
-              last_name: contactLastName || null,
-              title: contactTitle || null,
+              first_name: firstName || null,
+              last_name: lastName || null,
+              title: title || null,
               org_id: orgId
             })
             .eq('id', existingContact.id)
@@ -238,15 +253,15 @@ export async function POST(request: NextRequest) {
             contactIdResult = existingContact.id
           }
         } else {
-          // Create new contact
+          // Create new contact with email
           const { data: newContact, error: insertError } = await supabase
             .from('leads_contacts')
             .insert({
               org_id: orgId,
-              first_name: contactFirstName || null,
-              last_name: contactLastName || null,
-              email: contactEmail ? contactEmail.toLowerCase().trim() : null,
-              title: contactTitle || null
+              first_name: firstName || null,
+              last_name: lastName || null,
+              email: email.toLowerCase().trim(),
+              title: title || null
             })
             .select('id')
             .single()
@@ -261,9 +276,9 @@ export async function POST(request: NextRequest) {
           .from('leads_contacts')
           .insert({
             org_id: orgId,
-            first_name: contactFirstName || null,
-            last_name: contactLastName || null,
-            title: contactTitle || null
+            first_name: firstName || null,
+            last_name: lastName || null,
+            title: title || null
           })
           .select('id')
           .single()
@@ -271,6 +286,10 @@ export async function POST(request: NextRequest) {
         if (!insertError && newContact) {
           contactIdResult = newContact.id
         }
+      }
+
+      if (contactIdResult) {
+        contactIds.push(contactIdResult)
       }
     }
 
@@ -292,19 +311,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         companyId: orgId,
-        contactId: contactIdResult,
+        contactIds,
+        contactsCreated: contactIds.length,
         signalId: existingSignal.id,
         message: 'Signal already exists'
       })
     }
 
-    // Create new signal
+    // Create new signal (link to first contact if any)
     const { data: newSignal, error: signalError } = await supabase
       .from('leads_signals')
       .insert({
         org_id: orgId,
         item_id: ingredientId,
-        contact_id: contactIdResult,
+        contact_id: contactIds[0] || null,
         interaction_type: interactionType,
         event_date: signalDate,
         source: 'admin_manual',
@@ -326,7 +346,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       companyId: orgId,
-      contactId: contactIdResult,
+      contactIds,
+      contactsCreated: contactIds.length,
       signalId: newSignal.id
     })
   } catch (error: any) {
@@ -337,4 +358,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

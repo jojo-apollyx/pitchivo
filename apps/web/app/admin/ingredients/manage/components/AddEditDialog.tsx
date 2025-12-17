@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Loader2, Search } from 'lucide-react'
+import { Loader2, Search, Plus, X } from 'lucide-react'
 
 interface Ingredient {
   id: string
@@ -36,6 +36,13 @@ interface Company {
   country?: string
   signals: any[]
   contacts: any[]
+}
+
+interface Contact {
+  firstName: string
+  lastName: string
+  email: string
+  title: string
 }
 
 interface AddEditDialogProps {
@@ -62,6 +69,8 @@ const INTERACTION_TYPES = [
   'exported'
 ]
 
+const emptyContact: Contact = { firstName: '', lastName: '', email: '', title: '' }
+
 export function AddEditDialog({
   open,
   onOpenChange,
@@ -81,10 +90,7 @@ export function AddEditDialog({
   const [companyCountry, setCompanyCountry] = useState('')
   const [companyCity, setCompanyCity] = useState('')
   const [companyState, setCompanyState] = useState('')
-  const [contactFirstName, setContactFirstName] = useState('')
-  const [contactLastName, setContactLastName] = useState('')
-  const [contactEmail, setContactEmail] = useState('')
-  const [contactTitle, setContactTitle] = useState('')
+  const [contacts, setContacts] = useState<Contact[]>([{ ...emptyContact }])
   const [interactionType, setInteractionType] = useState('purchased')
   const [eventDate, setEventDate] = useState(new Date().toISOString().split('T')[0])
 
@@ -102,6 +108,7 @@ export function AddEditDialog({
       }
       setSelectedCompany({ id: company.id, name: company.name, domain: company.domain })
       setCompanySearch(company.name)
+      setContacts([{ ...emptyContact }])
     } else {
       // Reset form for new company
       setCompanyName('')
@@ -109,10 +116,7 @@ export function AddEditDialog({
       setCompanyCountry('')
       setCompanyCity('')
       setCompanyState('')
-      setContactFirstName('')
-      setContactLastName('')
-      setContactEmail('')
-      setContactTitle('')
+      setContacts([{ ...emptyContact }])
       setInteractionType('purchased')
       setEventDate(new Date().toISOString().split('T')[0])
       setSelectedCompany(null)
@@ -156,11 +160,32 @@ export function AddEditDialog({
     setCompanySuggestions([])
   }
 
+  function addContact() {
+    setContacts([...contacts, { ...emptyContact }])
+  }
+
+  function removeContact(index: number) {
+    if (contacts.length > 1) {
+      setContacts(contacts.filter((_, i) => i !== index))
+    }
+  }
+
+  function updateContact(index: number, field: keyof Contact, value: string) {
+    const updated = [...contacts]
+    updated[index] = { ...updated[index], [field]: value }
+    setContacts(updated)
+  }
+
   async function handleSubmit() {
     if (!companyName || !interactionType) {
       toast.error('Company name and interaction type are required')
       return
     }
+
+    // Filter out empty contacts
+    const validContacts = contacts.filter(c => 
+      c.firstName || c.lastName || c.email || c.title
+    )
 
     try {
       setLoading(true)
@@ -178,10 +203,7 @@ export function AddEditDialog({
           companyCountry,
           companyCity,
           companyState,
-          contactFirstName: contactFirstName || undefined,
-          contactLastName: contactLastName || undefined,
-          contactEmail: contactEmail || undefined,
-          contactTitle: contactTitle || undefined,
+          contacts: validContacts.length > 0 ? validContacts : undefined,
           interactionType,
           eventDate: eventDate || undefined
         })
@@ -192,7 +214,13 @@ export function AddEditDialog({
         throw new Error(errorData.error || 'Failed to save')
       }
 
-      toast.success(company ? 'Updated successfully' : 'Added successfully')
+      const result = await response.json()
+      const contactCount = result.contactsCreated || validContacts.length
+      toast.success(
+        company 
+          ? 'Updated successfully' 
+          : `Added successfully${contactCount > 0 ? ` with ${contactCount} contact(s)` : ''}`
+      )
       onSuccess()
       onOpenChange(false)
     } catch (err) {
@@ -211,7 +239,7 @@ export function AddEditDialog({
             {company ? 'Edit Company & Signal' : 'Add Company & Signal'}
           </DialogTitle>
           <DialogDescription>
-            {company ? 'Update company information and add a new signal' : 'Add a new company, contact, and signal for this ingredient'}
+            {company ? 'Update company information and add a new signal' : 'Add a new company, contacts, and signal for this ingredient'}
           </DialogDescription>
         </DialogHeader>
 
@@ -305,47 +333,78 @@ export function AddEditDialog({
             </div>
           </div>
 
-          {/* Contact Information (Optional) */}
+          {/* Contacts Section */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium mb-4">Contact Information (Optional)</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="contactFirstName">First Name</Label>
-                <Input
-                  id="contactFirstName"
-                  value={contactFirstName}
-                  onChange={(e) => setContactFirstName(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="contactLastName">Last Name</Label>
-                <Input
-                  id="contactLastName"
-                  value={contactLastName}
-                  onChange={(e) => setContactLastName(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="contactEmail">Email</Label>
-                <Input
-                  id="contactEmail"
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="contactTitle">Title</Label>
-                <Input
-                  id="contactTitle"
-                  value={contactTitle}
-                  onChange={(e) => setContactTitle(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium">Contacts (Optional)</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addContact}
+                className="gap-1"
+              >
+                <Plus className="h-3 w-3" />
+                Add Contact
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              {contacts.map((contact, index) => (
+                <div key={index} className="relative p-4 bg-muted/30 rounded-lg">
+                  {contacts.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeContact(index)}
+                      className="absolute top-2 right-2 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <div className="text-xs text-muted-foreground mb-2">Contact {index + 1}</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor={`firstName-${index}`} className="text-xs">First Name</Label>
+                      <Input
+                        id={`firstName-${index}`}
+                        value={contact.firstName}
+                        onChange={(e) => updateContact(index, 'firstName', e.target.value)}
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`lastName-${index}`} className="text-xs">Last Name</Label>
+                      <Input
+                        id={`lastName-${index}`}
+                        value={contact.lastName}
+                        onChange={(e) => updateContact(index, 'lastName', e.target.value)}
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`email-${index}`} className="text-xs">Email</Label>
+                      <Input
+                        id={`email-${index}`}
+                        type="email"
+                        value={contact.email}
+                        onChange={(e) => updateContact(index, 'email', e.target.value)}
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`title-${index}`} className="text-xs">Title</Label>
+                      <Input
+                        id={`title-${index}`}
+                        value={contact.title}
+                        onChange={(e) => updateContact(index, 'title', e.target.value)}
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -396,4 +455,3 @@ export function AddEditDialog({
     </Dialog>
   )
 }
-
