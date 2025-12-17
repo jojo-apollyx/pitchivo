@@ -1,15 +1,14 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { getSupabaseConfig } from './config'
 
 /**
  * SSR-compatible client for general use (data fetching, etc.)
  * Uses cookie-based storage for SSR compatibility
  */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const config = getSupabaseConfig()
+  return createBrowserClient(config.url, config.anonKey)
 }
 
 /**
@@ -30,17 +29,16 @@ export function createClient() {
  * - exchangeCodeForSession() - retrieves code_verifier from localStorage
  */
 export function createAuthClient() {
+  const config = getSupabaseConfig()
+  
   if (typeof window === 'undefined') {
     // Server-side: return a basic client (won't be used for PKCE anyway)
-    return createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    return createSupabaseClient(config.url, config.anonKey)
   }
 
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    config.url,
+    config.anonKey,
     {
       auth: {
         flowType: 'pkce',

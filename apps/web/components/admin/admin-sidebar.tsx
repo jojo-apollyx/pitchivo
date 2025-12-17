@@ -14,7 +14,8 @@ import {
   BarChart3,
   TestTube2,
   ArrowLeft,
-  Database
+  Database,
+  Package
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -63,6 +64,11 @@ const menuItems = [
     label: 'Leads Management',
     href: '/admin/leads',
     icon: Database,
+  },
+  {
+    label: 'Ingredient Management',
+    href: '/admin/ingredients/manage',
+    icon: Package,
   },
   {
     label: 'System Metrics',

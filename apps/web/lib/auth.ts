@@ -5,11 +5,37 @@ import { cookies } from 'next/headers'
 export async function requireAuth() {
   const supabase = await createServerClient()
   
+  console.log('[requireAuth] 🔍 CHECKING_AUTH', {
+    timestamp: new Date().toISOString()
+  })
+  
   const { data: { user }, error } = await supabase.auth.getUser()
   
+  console.log('[requireAuth] 📊 AUTH_CHECK_RESULT', {
+    timestamp: new Date().toISOString(),
+    has_user: !!user,
+    user_id: user?.id,
+    user_email: user?.email,
+    error: error ? {
+      message: error.message,
+      status: error.status,
+      name: error.name
+    } : null
+  })
+  
   if (error || !user) {
+    console.log('[requireAuth] ❌ AUTH_FAILED_REDIRECTING', {
+      timestamp: new Date().toISOString(),
+      reason: error ? 'error' : 'no_user',
+      error_details: error
+    })
     redirect('/')
   }
+  
+  console.log('[requireAuth] ✅ AUTH_SUCCESS', {
+    timestamp: new Date().toISOString(),
+    user_id: user.id
+  })
   
   return user
 }

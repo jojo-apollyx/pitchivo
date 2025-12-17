@@ -184,9 +184,10 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Find signals where companies purchased/imported/used/distributed/mentioned these items
     // Buying activities: 'purchased', 'requested_quote', 'viewed_item', 'added_to_cart', 'imported', 'used_in_production', 'distributed', 'mentioned_in_article', 'partnership_announced'
-    const { data: signals, error: signalsError } = await supabase
+    // Exclude signals that have been soft-deleted via leads_signal_exclusions
+    const { data: allSignals, error: allSignalsError } = await supabase
       .from('leads_signals')
-      .select('org_id, item_id, interaction_type, event_date, created_at, source_id, is_verified')
+      .select('id, org_id, item_id, interaction_type, event_date, created_at, source_id, is_verified')
       .in('item_id', itemIds)
       .in('interaction_type', [
         'purchased', 
@@ -202,23 +203,44 @@ export async function POST(request: NextRequest) {
       .order('event_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
 
-    if (signalsError) {
-      console.error('[Generate Buyers] Error finding signals:', signalsError)
+    if (allSignalsError) {
+      console.error('[Generate Buyers] Error finding signals:', allSignalsError)
       return NextResponse.json(
-        { error: 'Failed to search signals', details: signalsError.message },
+        { error: 'Failed to search signals', details: allSignalsError.message },
         { status: 500 }
       )
     }
 
+    // Filter out excluded signals
+    const signalIds = allSignals?.map(s => s.id) || []
+    let signals = allSignals || []
+    
+    if (signalIds.length > 0) {
+      const { data: exclusions } = await supabase
+        .from('leads_signal_exclusions')
+        .select('signal_id')
+        .in('signal_id', signalIds)
+
+      const excludedSignalIds = new Set(exclusions?.map(e => e.signal_id) || [])
+      signals = signals.filter(s => !excludedSignalIds.has(s.id))
+    }
+
     if (!signals || signals.length === 0) {
-      // No purchasing signals found
+      // No purchasing signals found (or all were excluded)
       return NextResponse.json({
         buyers: [],
         totalBuyers: 0,
         totalContacts: 0,
         verifiedFields: 0,
         countries: 0,
-        avgContactsPerBuyer: 0
+        avgContactsPerBuyer: 0,
+        matchedItems: marketItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          aliases: item.aliases || [],
+          similarity: item.similarity || 0
+        })),
+        searchQuery: productName
       })
     }
 

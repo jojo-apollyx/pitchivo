@@ -279,13 +279,72 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
       }
 
       // Sync the session to the main cookie-based client
+      console.log('[OTP Verify] 🔄 SYNCING_SESSION_TO_COOKIES', {
+        timestamp: new Date().toISOString(),
+        has_access_token: !!data.session.access_token,
+        has_refresh_token: !!data.session.refresh_token,
+        access_token_length: data.session.access_token.length,
+        refresh_token_length: data.session.refresh_token.length,
+        supabase_url: (supabase as any).supabaseUrl || 'unknown'
+      });
+      
+      // Check cookies before setting session
+      const cookiesBefore = document.cookie.split(';').filter(c => 
+        c.includes('sb-') || c.includes('supabase') || c.includes('auth')
+      )
+      console.log('[OTP Verify] 🍪 COOKIES_BEFORE_SYNC', {
+        timestamp: new Date().toISOString(),
+        auth_cookies_count: cookiesBefore.length,
+        auth_cookies: cookiesBefore.map(c => c.split('=')[0].trim())
+      })
+      
       const { error: syncError } = await supabase.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
       });
 
       if (syncError) {
-        console.error('[OTP Verify] ❌ SESSION_SYNC_FAILED', syncError);
+        console.error('[OTP Verify] ❌ SESSION_SYNC_FAILED', {
+          timestamp: new Date().toISOString(),
+          error: {
+            message: syncError.message,
+            status: syncError.status,
+            name: syncError.name
+          }
+        });
+      } else {
+        console.log('[OTP Verify] ✅ SESSION_SYNCED_TO_COOKIES', {
+          timestamp: new Date().toISOString()
+        });
+        
+        // Check cookies after setting session
+        const cookiesAfter = document.cookie.split(';').filter(c => 
+          c.includes('sb-') || c.includes('supabase') || c.includes('auth')
+        )
+        console.log('[OTP Verify] 🍪 COOKIES_AFTER_SYNC', {
+          timestamp: new Date().toISOString(),
+          auth_cookies_count: cookiesAfter.length,
+          auth_cookies: cookiesAfter.map(c => c.split('=')[0].trim()),
+          new_cookies: cookiesAfter.filter(c => 
+            !cookiesBefore.some(b => b.split('=')[0].trim() === c.split('=')[0].trim())
+          ).map(c => c.split('=')[0].trim())
+        })
+        
+        // Wait a bit for cookies to be set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Verify session is in cookies by checking again
+        const { data: { session: verifySession }, error: verifyError } = await supabase.auth.getSession();
+        console.log('[OTP Verify] 🔍 VERIFYING_SESSION_IN_COOKIES', {
+          timestamp: new Date().toISOString(),
+          has_session: !!verifySession,
+          session_user_id: verifySession?.user?.id,
+          session_expires_at: verifySession?.expires_at,
+          verify_error: verifyError ? {
+            message: verifyError.message,
+            status: verifyError.status
+          } : null
+        });
       }
 
       console.log('[OTP Verify] ✅ SUCCESS', {
@@ -294,39 +353,117 @@ export function HeroEmailForm({ onOpenWaitlist }: HeroEmailFormProps) {
         user_id: data.user.id,
         user_email: data.user.email,
         session_synced: !syncError,
+        session_expires_at: data.session.expires_at,
+        has_access_token: !!data.session.access_token,
+        has_refresh_token: !!data.session.refresh_token,
+      });
+
+      // Verify session is actually set
+      const { data: { user: currentUser }, error: getUserError } = await supabase.auth.getUser();
+      console.log('[OTP Verify] 🔍 VERIFYING_SESSION', {
+        timestamp: new Date().toISOString(),
+        current_user_id: currentUser?.id,
+        current_user_email: currentUser?.email,
+        matches_verified_user: currentUser?.id === data.user.id,
+        get_user_error: getUserError ? {
+          message: getUserError.message,
+          status: getUserError.status
+        } : null
       });
 
       toast.success("Signed in successfully!");
 
       // Check if user has completed organization setup
+      console.log('[OTP Verify] 📋 CHECKING_USER_PROFILE', {
+        timestamp: new Date().toISOString(),
+        user_id: data.user.id
+      });
+      
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id, domain, organization_id, org_role')
         .eq('id', data.user.id)
         .single();
 
+      console.log('[OTP Verify] 📋 PROFILE_CHECK_RESULT', {
+        timestamp: new Date().toISOString(),
+        has_profile: !!profile,
+        profile_error: profileError ? {
+          message: profileError.message,
+          code: profileError.code,
+          details: profileError.details
+        } : null,
+        profile_data: profile ? {
+          id: profile.id,
+          domain: profile.domain,
+          organization_id: profile.organization_id,
+          org_role: profile.org_role
+        } : null
+      });
+
       if (profileError || !profile) {
-        console.log('[OTP Verify] Profile not found, redirecting to setup');
+        console.log('[OTP Verify] 🔄 REDIRECTING_TO_SETUP (no profile)', {
+          timestamp: new Date().toISOString(),
+          reason: profileError ? 'profile_error' : 'profile_not_found'
+        });
         router.push('/setup/organization');
         return;
       }
 
       // Check organization onboarding status
-      const { data: organizations } = await supabase
+      console.log('[OTP Verify] 🏢 CHECKING_ORGANIZATION', {
+        timestamp: new Date().toISOString(),
+        domain: profile.domain
+      });
+      
+      const { data: organizations, error: orgError } = await supabase
         .from('organizations')
         .select('id, onboarding_completed_at')
         .eq('domain', profile.domain)
         .not('onboarding_completed_at', 'is', null)
         .limit(1);
 
+      console.log('[OTP Verify] 🏢 ORGANIZATION_CHECK_RESULT', {
+        timestamp: new Date().toISOString(),
+        organizations_found: organizations?.length || 0,
+        organization_error: orgError ? {
+          message: orgError.message,
+          code: orgError.code
+        } : null,
+        organization_data: organizations?.[0] ? {
+          id: organizations[0].id,
+          onboarding_completed_at: organizations[0].onboarding_completed_at
+        } : null
+      });
+
       const organization = organizations?.[0];
       const hasOrgOnboardingCompleted = !!organization?.onboarding_completed_at;
       const hasUserCompletedProfile = !!profile.org_role;
 
+      console.log('[OTP Verify] 🎯 ONBOARDING_STATUS', {
+        timestamp: new Date().toISOString(),
+        has_org_onboarding_completed: hasOrgOnboardingCompleted,
+        has_user_completed_profile: hasUserCompletedProfile,
+        org_role: profile.org_role
+      });
+
       if (!hasOrgOnboardingCompleted || !hasUserCompletedProfile) {
-        router.push('/setup/organization');
+        console.log('[OTP Verify] 🔄 REDIRECTING_TO_SETUP (incomplete onboarding)', {
+          timestamp: new Date().toISOString(),
+          reason: !hasOrgOnboardingCompleted ? 'org_onboarding_incomplete' : 'user_profile_incomplete'
+        });
+        // Use window.location for hard redirect to ensure cookies are sent
+        window.location.href = '/setup/organization';
       } else {
-        router.push('/dashboard');
+        console.log('[OTP Verify] 🔄 REDIRECTING_TO_DASHBOARD', {
+          timestamp: new Date().toISOString(),
+          user_id: data.user.id,
+          organization_id: organization?.id,
+          redirect_method: 'window.location.href (hard redirect to ensure cookies)'
+        });
+        // Use window.location.href for hard redirect to ensure cookies are sent with the request
+        // router.push() might not send cookies properly in some cases
+        window.location.href = '/dashboard';
       }
     } catch {
       toast.error("An unexpected error occurred");

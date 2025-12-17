@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSupabaseConfig } from './supabase/config'
 
 // Create Supabase client only on client side
 function getSupabaseClient() {
@@ -7,10 +8,8 @@ function getSupabaseClient() {
     return null as any
   }
   
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const config = getSupabaseConfig()
+  return createClient(config.url, config.anonKey)
 }
 
 export const supabase = getSupabaseClient()
